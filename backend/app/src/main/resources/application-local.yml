@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/brooks
+    username: brooks
+    password: brooks_local
+
+ai:
+  key-encryption-secret: 0000000000000000000000000000000000000000000000000000000000000000
+
+unipay:
+  merchant-id: test_merchant
+  secret-key: test_secret

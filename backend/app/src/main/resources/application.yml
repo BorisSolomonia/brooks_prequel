@@ -1,0 +1,102 @@
+spring:
+  application:
+    name: brooks-backend
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: ${MEDIA_MAX_UPLOAD_SIZE_MB:10}MB
+      max-request-size: ${MEDIA_MAX_UPLOAD_SIZE_MB:10}MB
+  cache:
+    type: caffeine
+    cache-names: guidePreviews
+    caffeine:
+      spec: maximumSize=5000,expireAfterWrite=60s
+
+server:
+  port: 8080
+
+auth0:
+  domain: ${AUTH0_DOMAIN:brooks.auth0.com}
+  audience: ${AUTH0_AUDIENCE:https://api.brooks-prequel.com}
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+  admin-emails: ${ADMIN_EMAILS:}
+  seed:
+    example:
+      enabled: ${SEED_EXAMPLE_ENABLED:true}
+      auth0-subject: ${SEED_EXAMPLE_AUTH0_SUBJECT:}
+      email: ${SEED_EXAMPLE_EMAIL:}
+      username: ${SEED_EXAMPLE_USERNAME:}
+      display-name: ${SEED_EXAMPLE_DISPLAY_NAME:}
+      bio: ${SEED_EXAMPLE_BIO:}
+      avatar-url: ${SEED_EXAMPLE_AVATAR_URL:}
+      region: ${SEED_EXAMPLE_REGION:}
+      interests: ${SEED_EXAMPLE_INTERESTS:}
+      latitude: ${SEED_EXAMPLE_LATITUDE:}
+      longitude: ${SEED_EXAMPLE_LONGITUDE:}
+      follower-count: ${SEED_EXAMPLE_FOLLOWER_COUNT:}
+      following-count: ${SEED_EXAMPLE_FOLLOWING_COUNT:}
+      verified: ${SEED_EXAMPLE_VERIFIED:}
+      guide-title: ${SEED_EXAMPLE_GUIDE_TITLE:}
+      guide-summary: ${SEED_EXAMPLE_GUIDE_SUMMARY:}
+      guide-city: ${SEED_EXAMPLE_GUIDE_CITY:}
+      guide-country: ${SEED_EXAMPLE_GUIDE_COUNTRY:}
+      guide-cover-image-url: ${SEED_EXAMPLE_GUIDE_COVER_IMAGE_URL:}
+      guide-price-cents: ${SEED_EXAMPLE_GUIDE_PRICE_CENTS:}
+      guide-currency: ${SEED_EXAMPLE_GUIDE_CURRENCY:}
+      guide-tags: ${SEED_EXAMPLE_GUIDE_TAGS:}
+      day-title: ${SEED_EXAMPLE_DAY_TITLE:}
+      day-description: ${SEED_EXAMPLE_DAY_DESCRIPTION:}
+      block-title: ${SEED_EXAMPLE_BLOCK_TITLE:}
+      block-description: ${SEED_EXAMPLE_BLOCK_DESCRIPTION:}
+      block-type: ${SEED_EXAMPLE_BLOCK_TYPE:}
+      place-name: ${SEED_EXAMPLE_PLACE_NAME:}
+      place-description: ${SEED_EXAMPLE_PLACE_DESCRIPTION:}
+      place-address: ${SEED_EXAMPLE_PLACE_ADDRESS:}
+      place-latitude: ${SEED_EXAMPLE_PLACE_LATITUDE:}
+      place-longitude: ${SEED_EXAMPLE_PLACE_LONGITUDE:}
+      place-category: ${SEED_EXAMPLE_PLACE_CATEGORY:}
+      place-price-level: ${SEED_EXAMPLE_PLACE_PRICE_LEVEL:}
+      place-image-url: ${SEED_EXAMPLE_PLACE_IMAGE_URL:}
+  platform-fee-percent: ${PLATFORM_FEE_PERCENT:10}
+  place-image-max-count: ${PLACE_IMAGE_MAX_COUNT:4}
+  payout-schedule-cron: ${PAYOUT_SCHEDULE_CRON:0 0 2 * * MON}
+  ranking-refresh-cron: ${RANKING_REFRESH_CRON:0 0 3 * * *}
+
+ai:
+  key-encryption-secret: ${AI_KEY_ENCRYPTION_SECRET}
+
+unipay:
+  merchant-id: ${UNIPAY_MERCHANT_ID}
+  secret-key: ${UNIPAY_SECRET_KEY}
+  api-base-url: ${UNIPAY_API_BASE_URL:https://checkout.unipay.com}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    com.brooks: INFO
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG

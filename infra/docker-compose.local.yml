@@ -1,0 +1,126 @@
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/brooks
+      - DB_USERNAME=brooks
+      - DB_PASSWORD=brooks_local
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN:-brooks.auth0.com}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-https://api.brooks-prequel.com}
+      - CORS_ALLOWED_ORIGINS=http://localhost:3001
+      - APP_BASE_URL=http://localhost:8080
+      - SEED_EXAMPLE_ENABLED=${SEED_EXAMPLE_ENABLED:-true}
+      - SEED_EXAMPLE_AUTH0_SUBJECT=${SEED_EXAMPLE_AUTH0_SUBJECT:-}
+      - SEED_EXAMPLE_EMAIL=${SEED_EXAMPLE_EMAIL:-}
+      - SEED_EXAMPLE_USERNAME=${SEED_EXAMPLE_USERNAME:-}
+      - SEED_EXAMPLE_DISPLAY_NAME=${SEED_EXAMPLE_DISPLAY_NAME:-}
+      - SEED_EXAMPLE_BIO=${SEED_EXAMPLE_BIO:-}
+      - SEED_EXAMPLE_AVATAR_URL=${SEED_EXAMPLE_AVATAR_URL:-}
+      - SEED_EXAMPLE_REGION=${SEED_EXAMPLE_REGION:-}
+      - SEED_EXAMPLE_INTERESTS=${SEED_EXAMPLE_INTERESTS:-}
+      - SEED_EXAMPLE_LATITUDE=${SEED_EXAMPLE_LATITUDE:-}
+      - SEED_EXAMPLE_LONGITUDE=${SEED_EXAMPLE_LONGITUDE:-}
+      - SEED_EXAMPLE_FOLLOWER_COUNT=${SEED_EXAMPLE_FOLLOWER_COUNT:-}
+      - SEED_EXAMPLE_FOLLOWING_COUNT=${SEED_EXAMPLE_FOLLOWING_COUNT:-}
+      - SEED_EXAMPLE_VERIFIED=${SEED_EXAMPLE_VERIFIED:-}
+      - SEED_EXAMPLE_GUIDE_TITLE=${SEED_EXAMPLE_GUIDE_TITLE:-}
+      - SEED_EXAMPLE_GUIDE_SUMMARY=${SEED_EXAMPLE_GUIDE_SUMMARY:-}
+      - SEED_EXAMPLE_GUIDE_CITY=${SEED_EXAMPLE_GUIDE_CITY:-}
+      - SEED_EXAMPLE_GUIDE_COUNTRY=${SEED_EXAMPLE_GUIDE_COUNTRY:-}
+      - SEED_EXAMPLE_GUIDE_COVER_IMAGE_URL=${SEED_EXAMPLE_GUIDE_COVER_IMAGE_URL:-}
+      - SEED_EXAMPLE_GUIDE_PRICE_CENTS=${SEED_EXAMPLE_GUIDE_PRICE_CENTS:-}
+      - SEED_EXAMPLE_GUIDE_CURRENCY=${SEED_EXAMPLE_GUIDE_CURRENCY:-}
+      - SEED_EXAMPLE_GUIDE_TAGS=${SEED_EXAMPLE_GUIDE_TAGS:-}
+      - SEED_EXAMPLE_DAY_TITLE=${SEED_EXAMPLE_DAY_TITLE:-}
+      - SEED_EXAMPLE_DAY_DESCRIPTION=${SEED_EXAMPLE_DAY_DESCRIPTION:-}
+      - SEED_EXAMPLE_BLOCK_TITLE=${SEED_EXAMPLE_BLOCK_TITLE:-}
+      - SEED_EXAMPLE_BLOCK_DESCRIPTION=${SEED_EXAMPLE_BLOCK_DESCRIPTION:-}
+      - SEED_EXAMPLE_BLOCK_TYPE=${SEED_EXAMPLE_BLOCK_TYPE:-}
+      - SEED_EXAMPLE_PLACE_NAME=${SEED_EXAMPLE_PLACE_NAME:-}
+      - SEED_EXAMPLE_PLACE_DESCRIPTION=${SEED_EXAMPLE_PLACE_DESCRIPTION:-}
+      - SEED_EXAMPLE_PLACE_ADDRESS=${SEED_EXAMPLE_PLACE_ADDRESS:-}
+      - SEED_EXAMPLE_PLACE_LATITUDE=${SEED_EXAMPLE_PLACE_LATITUDE:-}
+      - SEED_EXAMPLE_PLACE_LONGITUDE=${SEED_EXAMPLE_PLACE_LONGITUDE:-}
+      - SEED_EXAMPLE_PLACE_CATEGORY=${SEED_EXAMPLE_PLACE_CATEGORY:-}
+      - SEED_EXAMPLE_PLACE_PRICE_LEVEL=${SEED_EXAMPLE_PLACE_PRICE_LEVEL:-}
+      - SEED_EXAMPLE_PLACE_IMAGE_URL=${SEED_EXAMPLE_PLACE_IMAGE_URL:-}
+      - UNIPAY_MERCHANT_ID=${UNIPAY_MERCHANT_ID:-test_merchant}
+      - UNIPAY_SECRET_KEY=${UNIPAY_SECRET_KEY:-test_secret}
+      - UNIPAY_API_BASE_URL=${UNIPAY_API_BASE_URL:-https://checkout.unipay.com}
+      - FRONTEND_BASE_URL=http://localhost:3001
+      - AI_KEY_ENCRYPTION_SECRET=${AI_KEY_ENCRYPTION_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+      - proxy
+
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+        NEXT_PUBLIC_AUTH0_DOMAIN: ${AUTH0_DOMAIN:-brooks.auth0.com}
+        NEXT_PUBLIC_AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-}
+        NEXT_PUBLIC_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://api.brooks-prequel.com}
+        NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN: ${MAPBOX_PUBLIC_TOKEN:-}
+        NEXT_PUBLIC_MAPBOX_STYLE: ${MAPBOX_STYLE:-mapbox://styles/mapbox/dark-v11}
+    ports:
+      - "3001:3000"
+    environment:
+      # Runtime env vars — read by server components and Auth0 SDK on the server side
+      - API_INTERNAL_BASE_URL=http://backend:8080
+      - AUTH0_SECRET=${AUTH0_SECRET:-replace-with-a-long-random-string}
+      - AUTH0_BASE_URL=http://localhost:3001
+      - AUTH0_ISSUER_BASE_URL=https://${AUTH0_DOMAIN:-brooks.auth0.com}
+      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID:-}
+      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET:-}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-https://api.brooks-prequel.com}
+      - MAPBOX_PUBLIC_TOKEN=${MAPBOX_PUBLIC_TOKEN:-}
+      - MAPBOX_STYLE=${MAPBOX_STYLE:-mapbox://styles/mapbox/dark-v11}
+      - MAP_DEFAULT_LAT=${MAP_DEFAULT_LAT:-41.7151}
+      - MAP_DEFAULT_LNG=${MAP_DEFAULT_LNG:-44.8271}
+      - MAP_DEFAULT_ZOOM=${MAP_DEFAULT_ZOOM:-10}
+    networks:
+      - proxy
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=brooks
+      - POSTGRES_USER=brooks
+      - POSTGRES_PASSWORD=brooks_local
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brooks"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - internal
+
+volumes:
+  postgres_local_data:
+
+networks:
+  internal:
+    driver: bridge
+  proxy:
+    driver: bridge

@@ -1,0 +1,127 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: brooks-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME?DB_NAME must be set}
+      POSTGRES_USER: ${DB_USERNAME?DB_USERNAME must be set}
+      POSTGRES_PASSWORD: ${DB_PASSWORD?DB_PASSWORD must be set}
+    volumes:
+      - brooks-postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME?DB_USERNAME must be set} -d ${DB_NAME?DB_NAME must be set}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  backend:
+    image: ${BROOKS_BACKEND_IMAGE?BROOKS_BACKEND_IMAGE must be set}
+    container_name: brooks-backend
+    restart: unless-stopped
+    env_file:
+      - ../.env.runtime
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME?DB_NAME must be set}
+      DB_USERNAME: ${DB_USERNAME?DB_USERNAME must be set}
+      DB_PASSWORD: ${DB_PASSWORD?DB_PASSWORD must be set}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-production}
+      JAVA_OPTS: ${JAVA_OPTS:-}
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+      - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 6
+      start_period: 45s
+
+  web:
+    image: ${BROOKS_WEB_IMAGE?BROOKS_WEB_IMAGE must be set}
+    container_name: brooks-web
+    restart: unless-stopped
+    env_file:
+      - ../.env.runtime
+    environment:
+      NODE_ENV: production
+      PORT: ${WEB_PORT:-3000}
+      HOSTNAME: 0.0.0.0
+      API_INTERNAL_BASE_URL: http://backend:8080
+      AUTH0_SECRET: ${AUTH0_SECRET?AUTH0_SECRET must be set}
+      AUTH0_BASE_URL: ${AUTH0_BASE_URL?AUTH0_BASE_URL must be set}
+      AUTH0_ISSUER_BASE_URL: ${AUTH0_ISSUER_BASE_URL?AUTH0_ISSUER_BASE_URL must be set}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID?AUTH0_CLIENT_ID must be set}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET?AUTH0_CLIENT_SECRET must be set}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE?AUTH0_AUDIENCE must be set}
+      MAPBOX_PUBLIC_TOKEN: ${NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN:-}
+      MAPBOX_STYLE: ${NEXT_PUBLIC_MAPBOX_STYLE:-mapbox://styles/mapbox/dark-v11}
+      MAP_DEFAULT_LAT: ${MAP_DEFAULT_LAT:-41.7151}
+      MAP_DEFAULT_LNG: ${MAP_DEFAULT_LNG:-44.8271}
+      MAP_DEFAULT_ZOOM: ${MAP_DEFAULT_ZOOM:-10}
+    expose:
+      - "${WEB_PORT:-3000}"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:${WEB_PORT:-3000}/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 6
+      start_period: 20s
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: brooks-caddy
+    restart: unless-stopped
+    env_file:
+      - ../.env.runtime
+    environment:
+      DOMAIN: ${DOMAIN?DOMAIN must be set}
+      WEB_HOST: ${WEB_HOST:-web}
+      WEB_PORT: ${WEB_PORT:-3000}
+      BACKEND_HOST: ${BACKEND_HOST:-backend}
+      BACKEND_PORT: ${BACKEND_PORT:-8080}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - brooks-caddy-data:/data
+      - brooks-caddy-config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 6
+      start_period: 15s
+
+volumes:
+  brooks-postgres-data:
+  brooks-caddy-data:
+  brooks-caddy-config:
+
+networks:
+  internal:
+    driver: bridge
+  proxy:
+    driver: bridge

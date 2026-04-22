@@ -1,0 +1,1 @@
+ALTER TABLE user_ai_keys ADD COLUMN model VARCHAR(100);

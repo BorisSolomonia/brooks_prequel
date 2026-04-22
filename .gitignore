@@ -1,0 +1,86 @@
+# =========================
+# Gradle / Java
+# =========================
+.gradle/
+**/.gradle/
+**/.gradle-local/
+**/.gradle-user-home/
+**/.gradle-user-home-local/
+**/.gradle-user-home-ci/
+build/
+**/build/
+*.class
+*.jar
+
+# =========================
+# Node / Frontend
+# =========================
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+**/out/
+dist/
+**/dist/
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+!.env.template
+gcp-credentials.json
+*.pem
+
+# =========================
+# IDE / Editor
+# =========================
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Docker / runtime
+# =========================
+docker-compose.override.yml
+infra/runtime/
+
+# =========================
+# Optional generated/binary docs
+# =========================
+*.pdf
+
+# Gradle caches
+.gradle/
+**/.gradle/
+**/.gradle-local/
+**/.gradle-user-home/
+**/.gradle-user-home-local/
+**/.gradle-user-home-ci/
+
+gradle-user-home/
+**/gradle-user-home/
+gradle-user-home-local/
+**/gradle-user-home-local/
+gradle-user-home-ci/
+**/gradle-user-home-ci/
+
+build/
+**/build/
+*.class
+*.jar*.har

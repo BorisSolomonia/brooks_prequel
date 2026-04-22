@@ -1,0 +1,2 @@
+ALTER TABLE guide_trip_items ADD COLUMN visited BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE guide_trip_items ADD COLUMN visited_at TIMESTAMPTZ;

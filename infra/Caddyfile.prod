@@ -1,0 +1,26 @@
+{
+  email {$LETSENCRYPT_EMAIL}
+}
+
+{$DOMAIN} {
+  encode gzip zstd
+
+  @health path /health
+  respond @health "OK" 200
+
+  @api path /api/*
+  reverse_proxy @api {$BACKEND_HOST}:{$BACKEND_PORT}
+
+  @actuator path /actuator/*
+  reverse_proxy @actuator {$BACKEND_HOST}:{$BACKEND_PORT}
+
+  reverse_proxy {$WEB_HOST}:{$WEB_PORT}
+
+  header {
+    -Server
+    X-Content-Type-Options nosniff
+    X-Frame-Options SAMEORIGIN
+    Referrer-Policy strict-origin-when-cross-origin
+    Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
+  }
+}

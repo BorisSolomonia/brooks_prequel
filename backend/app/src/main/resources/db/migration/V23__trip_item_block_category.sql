@@ -1,0 +1,1 @@
+ALTER TABLE guide_trip_items ADD COLUMN block_category VARCHAR(30) NOT NULL DEFAULT 'ACTIVITY';

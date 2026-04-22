@@ -1,0 +1,11 @@
+{$DOMAIN:localhost} {
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+    handle /actuator/* {
+        reverse_proxy backend:8080
+    }
+    handle {
+        reverse_proxy web:3000
+    }
+}
