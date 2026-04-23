@@ -312,7 +312,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
 
           {!reviewSummary?.canReview && (
             <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-secondary">
-              Creator reviews unlock after you complete purchases for two of this creator&apos;s guides.
+              Purchase a guide from this creator to leave a review.
             </div>
           )}
 

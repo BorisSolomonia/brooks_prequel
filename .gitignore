@@ -83,4 +83,6 @@ gradle-user-home-ci/
 build/
 **/build/
 *.class
-*.jar*.har
+*.jar
+*.har
+brooks-485009-*.json

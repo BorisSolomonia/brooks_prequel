@@ -24,7 +24,6 @@ jobs:
 
     permissions:
       contents: read
-      id-token: write
 
     steps:
       - name: Checkout
@@ -59,8 +58,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -312,7 +310,7 @@ jobs:
                 echo "Backend health check passed via localhost publish path"
                 break
               fi
-              backend_ip="$(docker_cmd inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' brooks-backend 2>/dev/null || true)"
+              backend_ip="$(docker_cmd inspect -f '{{with index .NetworkSettings.Networks "internal"}}{{.IPAddress}}{{end}}' brooks-backend 2>/dev/null || true)"
               if [ -n "$backend_ip" ] && curl -fsS --max-time 10 "http://${backend_ip}:8080/actuator/health" >/dev/null 2>&1; then
                 echo "Backend health check passed via bridge IP ${backend_ip}"
                 break

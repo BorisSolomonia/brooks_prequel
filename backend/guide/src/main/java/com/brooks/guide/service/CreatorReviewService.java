@@ -145,12 +145,12 @@ public class CreatorReviewService {
 
     private void ensureCreatorReviewAllowed(UUID reviewerId, UUID creatorId) {
         if (!canReviewCreator(reviewerId, creatorId)) {
-            throw new BusinessException("You can review a creator only after completing 2 purchases from them");
+            throw new BusinessException("You can review a creator only after purchasing one of their guides");
         }
     }
 
     private boolean canReviewCreator(UUID reviewerId, UUID creatorId) {
-        return guidePurchaseRepository.countByBuyerIdAndCreatorIdAndStatus(reviewerId, creatorId, GuidePurchaseStatus.COMPLETED) >= 2;
+        return guidePurchaseRepository.countByBuyerIdAndCreatorIdAndStatus(reviewerId, creatorId, GuidePurchaseStatus.COMPLETED) >= 1;
     }
 
     private void ensureVoteAllowed(UUID voterId, UUID creatorId, UUID reviewAuthorId) {
