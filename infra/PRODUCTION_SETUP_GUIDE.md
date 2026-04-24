@@ -66,7 +66,7 @@ You need to create two new resources inside it specifically for production: a **
 
 This is a random secret used by the Next.js Auth0 SDK to encrypt session cookies. It is not related to Auth0's own credentials.
 
-Run on your local machine (Git Bash, WSL, or Mac/Linux terminal):
+Run on your local machine (Git Bash, WSL, or Mac/Linux terminal):.
 
 ```bash
 openssl rand -hex 32
