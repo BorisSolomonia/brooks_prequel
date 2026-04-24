@@ -9,6 +9,8 @@ import com.brooks.guide.repository.GuideBlockRepository;
 import com.brooks.guide.repository.GuideDayRepository;
 import com.brooks.guide.repository.GuidePlaceRepository;
 import com.brooks.guide.repository.GuideRepository;
+import com.brooks.guide.repository.GuidePurchaseRepository;
+import com.brooks.guide.repository.GuideReviewRepository;
 import com.brooks.guide.repository.GuideTagRepository;
 import com.brooks.guide.repository.GuideVersionRepository;
 import com.brooks.guide.repository.SavedGuideRepository;
@@ -40,6 +42,8 @@ class GuideServiceTest {
     @Mock private GuideVersionRepository versionRepository;
     @Mock private SavedGuideRepository savedGuideRepository;
     @Mock private UserProfileRepository profileRepository;
+    @Mock private GuidePurchaseRepository purchaseRepository;
+    @Mock private GuideReviewRepository reviewRepository;
     @Mock private UserService userService;
     @Mock private ApplicationEventPublisher eventPublisher;
 
@@ -58,6 +62,8 @@ class GuideServiceTest {
                 versionRepository,
                 savedGuideRepository,
                 profileRepository,
+                purchaseRepository,
+                reviewRepository,
                 userService,
                 new ObjectMapper(),
                 eventPublisher
