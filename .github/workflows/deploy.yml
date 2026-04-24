@@ -55,6 +55,22 @@ jobs:
             fi
           done
 
+      - name: SSH handshake
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ env.VM_HOST }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_VM_SSH_KEY }}
+          port: 22
+          timeout: 30s
+          command_timeout: 30s
+          script: |
+            set -euo pipefail
+            echo "SSH handshake successful"
+            echo "Host: $(hostname)"
+            echo "User: $(whoami)"
+            echo "UTC time: $(date -u)"
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -148,22 +164,6 @@ jobs:
           echo "BROOKS_WEB_IMAGE=${BROOKS_WEB_IMAGE}"
           echo "Runtime env lines: $(wc -l < .env.runtime)"
           echo "::endgroup::"
-
-      - name: SSH handshake
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ env.VM_HOST }}
-          username: ${{ secrets.GCP_VM_USER }}
-          key: ${{ secrets.GCP_VM_SSH_KEY }}
-          port: 22
-          timeout: 30s
-          command_timeout: 30s
-          script: |
-            set -euo pipefail
-            echo "SSH handshake successful"
-            echo "Host: $(hostname)"
-            echo "User: $(whoami)"
-            echo "UTC time: $(date -u)"
 
       - name: Prepare remote directories
         uses: appleboy/ssh-action@v1.2.0
