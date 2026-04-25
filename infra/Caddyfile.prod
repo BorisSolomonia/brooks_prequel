@@ -8,6 +8,9 @@
   @health path /health
   respond @health "OK" 200
 
+  @auth path /api/auth/*
+  reverse_proxy @auth {$WEB_HOST}:{$WEB_PORT}
+
   @api path /api/*
   reverse_proxy @api {$BACKEND_HOST}:{$BACKEND_PORT}
 
