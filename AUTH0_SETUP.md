@@ -2,7 +2,7 @@
 
 This guide covers how to set up Auth0 for the Brooks travel-guide marketplace. Brooks uses:
 - **Frontend:** `@auth0/nextjs-auth0` v3 (server-side SDK for Next.js App Router)
-- **Backend:** Spring Boot OAuth2 Resource Server (JWT validation via Auth0 JWKS)
+- **Backend:** Spring Boot OAuth2 Resource Server (JWT validation via Auth0 JWKS).
 
 ---
 
