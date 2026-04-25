@@ -9,7 +9,7 @@ It is based on the setup in `AUTH0_SETUP.md`:
 
 ---
 
-## 1. Big Picture.
+## 1. Big Picture
 
 Auth0 is a **trusted identity service**
 
