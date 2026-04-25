@@ -325,7 +325,7 @@ jobs:
             done
 
             log_section "start caddy"
-            compose_cmd up -d caddy
+            compose_cmd up -d --force-recreate caddy
 
             log_section "compose status"
             compose_cmd ps
