@@ -214,7 +214,7 @@ Copy `infra/.env.production.example` and fill in all values. The minimum require
 
 ```
 DOMAIN=app.yourdomain.com
-LETSENCRYPT_EMAIL=your@email.com
+LETSENCRYPT_EMAIL=placeholder
 APP_BASE_URL=https://app.yourdomain.com
 FRONTEND_BASE_URL=https://app.yourdomain.com
 CORS_ALLOWED_ORIGINS=https://app.yourdomain.com
