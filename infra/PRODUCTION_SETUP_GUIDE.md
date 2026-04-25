@@ -4,7 +4,7 @@ Complete checklist for configuring external services before the first deployment
 
 ---
 
-## Part 1 — Auth0.
+## Part 1 — Auth0
 
 You are using the existing tenant: **`dev-4zduxht0r6gq1f7f.us.auth0.com`**
 
