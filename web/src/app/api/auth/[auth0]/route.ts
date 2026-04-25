@@ -1,8 +1,9 @@
 import { handleAuth, handleLogin, handleCallback } from '@auth0/nextjs-auth0';
+import type { AfterCallbackAppRoute } from '@auth0/nextjs-auth0';
 
 const API_INTERNAL = process.env.API_INTERNAL_BASE_URL ?? 'http://backend:8080';
 
-async function afterCallback(_req: Request, session: { accessToken?: string; [key: string]: unknown }) {
+const afterCallback: AfterCallbackAppRoute = async (_req, session) => {
   try {
     const res = await fetch(`${API_INTERNAL}/api/auth/callback`, {
       method: 'POST',
@@ -15,7 +16,7 @@ async function afterCallback(_req: Request, session: { accessToken?: string; [ke
     console.error('[auth] user provision error:', err);
   }
   return session;
-}
+};
 
 export const GET = handleAuth({
   login: handleLogin({
