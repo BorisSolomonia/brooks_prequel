@@ -177,7 +177,8 @@ jobs:
           script: |
             set -euo pipefail
             APP_ROOT="${{ env.APP_ROOT }}"
-            mkdir -p "${APP_ROOT}/infra/postgres" "${APP_ROOT}/infra/scripts"
+            sudo mkdir -p "${APP_ROOT}/infra/postgres" "${APP_ROOT}/infra/scripts"
+            sudo chown -R "$(whoami):$(whoami)" "${APP_ROOT}"
 
       - name: Upload deployment files
         id: upload
