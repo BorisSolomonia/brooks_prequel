@@ -306,20 +306,15 @@ jobs:
             compose_cmd up -d backend web
 
             log_section "wait for backend"
-            for attempt in $(seq 1 24); do
-              if curl -fsS --max-time 10 http://127.0.0.1:8080/actuator/health >/dev/null 2>&1; then
-                echo "Backend health check passed via localhost publish path"
+            for attempt in $(seq 1 36); do
+              if docker_cmd inspect -f '{{.State.Health.Status}}' brooks-backend 2>/dev/null | grep -q '^healthy$'; then
+                echo "Backend is healthy"
                 break
               fi
-              backend_ip="$(docker_cmd inspect -f '{{with index .NetworkSettings.Networks "internal"}}{{.IPAddress}}{{end}}' brooks-backend 2>/dev/null || true)"
-              if [ -n "$backend_ip" ] && curl -fsS --max-time 10 "http://${backend_ip}:8080/actuator/health" >/dev/null 2>&1; then
-                echo "Backend health check passed via bridge IP ${backend_ip}"
-                break
-              fi
-              echo "Backend not healthy yet (attempt ${attempt}/24)"
-              docker_cmd logs brooks-backend --tail 40 || true
+              echo "Backend not healthy yet (attempt ${attempt}/36)"
+              docker_cmd logs brooks-backend --tail 20 || true
               sleep 5
-              if [ "$attempt" -eq 24 ]; then
+              if [ "$attempt" -eq 36 ]; then
                 fail_with_context "backend failed health check"
               fi
             done
