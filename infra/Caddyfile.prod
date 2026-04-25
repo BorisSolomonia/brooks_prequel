@@ -2,6 +2,11 @@
   email {$LETSENCRYPT_EMAIL}
 }
 
+http://127.0.0.1 {
+  @health path /health
+  respond @health "OK" 200
+}
+
 {$DOMAIN} {
   encode gzip zstd
 
