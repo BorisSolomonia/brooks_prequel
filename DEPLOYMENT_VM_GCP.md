@@ -55,7 +55,7 @@ GitHub Actions
 
 ## Step 1 — Provision GCP resources (one time)
 
-Follow `GCP_SETUP_STEP_BY_STEP.md` in full. That document covers:
+Follow `GCP_SETUP_STEP_BY_STEP.md` in full. That document covers
 
 1. Enabling required APIs via GCP Console
 2. Adding `artifactregistry.writer` and `secretmanager.secretAccessor` roles to the `brooks-prequel-vm` service account
