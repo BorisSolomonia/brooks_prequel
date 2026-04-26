@@ -181,6 +181,49 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
         </div>
       </div>
 
+      {(data.priceCents ?? 0) > 0 && (
+        <div className="rounded-lg border border-ig-border bg-ig-secondary/50 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-ig-text-secondary">Discount / Sale</span>
+            {(data as GuideUpdateRequest).salePriceCents != null && (
+              <button
+                type="button"
+                onClick={() => onChange({ ...data, salePriceCents: null, saleEndsAt: null })}
+                className="text-xs text-ig-text-tertiary hover:text-ig-error transition-colors"
+              >
+                Clear discount
+              </button>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs text-ig-text-tertiary mb-1">Sale price (cents) — leave blank or 0 to disable</label>
+            <input
+              type="number"
+              value={(data as GuideUpdateRequest).salePriceCents ?? ''}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                const price = isNaN(val) || val <= 0 ? null : val;
+                onChange({ ...data, salePriceCents: price, saleEndsAt: price == null ? null : (data as GuideUpdateRequest).saleEndsAt ?? null });
+              }}
+              min={0}
+              placeholder="e.g. 500 for $5.00"
+              className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
+            />
+          </div>
+          {(data as GuideUpdateRequest).salePriceCents != null && (data as GuideUpdateRequest).salePriceCents! > 0 && (
+            <div>
+              <label className="block text-xs text-ig-text-tertiary mb-1">Sale ends (optional)</label>
+              <input
+                type="datetime-local"
+                value={(data as GuideUpdateRequest).saleEndsAt ? (data as GuideUpdateRequest).saleEndsAt!.slice(0, 16) : ''}
+                onChange={(e) => update('saleEndsAt', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <div className="flex items-center gap-1.5 mb-1">
           <label className="text-sm font-semibold text-ig-text-secondary">Cover Image URL</label>

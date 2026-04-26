@@ -66,12 +66,34 @@ public class SearchRepository {
     public List<GuideSearchResult> searchGuides(String tsQuery, int limit, int offset, String stage, List<String> personas) {
         StringBuilder sql = new StringBuilder("""
             SELECT g.id, g.title, g.cover_image_url, g.region, g.primary_city,
-                   g.day_count, g.place_count, g.price_cents, g.currency,
+                   g.day_count, g.place_count, g.price_cents, g.sale_price_cents,
+                   CASE
+                       WHEN g.sale_price_cents IS NOT NULL
+                        AND (g.sale_ends_at IS NULL OR g.sale_ends_at > NOW())
+                       THEN g.sale_price_cents
+                       ELSE g.price_cents
+                   END AS effective_price_cents,
+                   g.currency,
+                   COALESCE(NULLIF(g.primary_city, ''), NULLIF(g.region, ''), g.country) AS display_location,
+                   COALESCE(AVG(gr.rating), 0) AS average_rating,
+                   COUNT(DISTINCT gr.id) AS review_count,
+                   (
+                       COUNT(DISTINCT gp.id) FILTER (
+                           WHERE gp.status = 'COMPLETED'
+                             AND gp.created_at >= NOW() - INTERVAL '7 days'
+                       ) * 2
+                       + COUNT(DISTINCT sg.id) FILTER (
+                           WHERE sg.created_at >= NOW() - INTERVAL '7 days'
+                       )
+                   )::int AS weekly_popularity_score,
                    u.username AS creator_username,
                    p.display_name AS creator_display_name
             FROM guides g
             JOIN users u ON u.id = g.creator_id
             LEFT JOIN user_profiles p ON p.user_id = g.creator_id
+            LEFT JOIN guide_reviews gr ON gr.guide_id = g.id
+            LEFT JOIN guide_purchases gp ON gp.guide_id = g.id
+            LEFT JOIN saved_guides sg ON sg.guide_id = g.id
             WHERE g.search_vector @@ plainto_tsquery('english', ?)
               AND g.status = 'PUBLISHED'
             """);
@@ -89,7 +111,11 @@ public class SearchRepository {
             }
             sql.append("))");
         }
-        sql.append(" ORDER BY ts_rank(g.search_vector, plainto_tsquery('english', ?)) DESC, g.created_at DESC LIMIT ? OFFSET ?");
+        sql.append("""
+             GROUP BY g.id, u.username, p.display_name
+             ORDER BY ts_rank(g.search_vector, plainto_tsquery('english', ?)) DESC, g.created_at DESC
+             LIMIT ? OFFSET ?
+            """);
         params.add(tsQuery);
         params.add(limit);
         params.add(offset);
@@ -103,7 +129,15 @@ public class SearchRepository {
                 .dayCount(rs.getInt("day_count"))
                 .placeCount(rs.getInt("place_count"))
                 .priceCents(rs.getInt("price_cents"))
+                .salePriceCents(rs.getObject("sale_price_cents") != null ? rs.getInt("sale_price_cents") : null)
+                .effectivePriceCents(rs.getInt("effective_price_cents"))
                 .currency(rs.getString("currency"))
+                .displayLocation(rs.getString("display_location"))
+                .spotCount(rs.getInt("place_count"))
+                .averageRating(rs.getDouble("average_rating"))
+                .reviewCount(rs.getInt("review_count"))
+                .weeklyPopularityScore(rs.getInt("weekly_popularity_score"))
+                .popularThisWeek(rs.getInt("weekly_popularity_score") >= 5)
                 .creatorUsername(rs.getString("creator_username"))
                 .creatorDisplayName(rs.getString("creator_display_name"))
                 .build(),

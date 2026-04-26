@@ -23,12 +23,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class GuideService {
+
+    private static final int WEEKLY_PURCHASE_WEIGHT = 2;
+    private static final int POPULAR_THIS_WEEK_THRESHOLD = 5;
 
     private final GuideRepository guideRepository;
     private final GuideDayRepository dayRepository;
@@ -405,15 +410,21 @@ public class GuideService {
                 .dayCount(guide.getDayCount())
                 .placeCount(guide.getPlaceCount())
                 .priceCents(guide.getPriceCents())
-                .currency(guide.getCurrency())
-                .creatorId(guide.getCreatorId())
                 .salePriceCents(guide.getSalePriceCents())
                 .saleEndsAt(guide.getSaleEndsAt())
+                .effectivePriceCents(effectivePrice(guide))
+                .currency(guide.getCurrency())
+                .creatorId(guide.getCreatorId())
                 .region(guide.getRegion())
+                .primaryCity(guide.getPrimaryCity())
+                .displayLocation(displayLocation(guide))
+                .spotCount(guide.getPlaceCount())
                 .creatorUsername(creator.getUsername())
                 .purchaseCount(purchaseCount)
                 .averageRating(avgRating)
                 .reviewCount(reviewCount)
+                .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
+                .popularThisWeek(isPopularThisWeek(guide.getId()))
                 .bestSeasonStartMonth(guide.getBestSeasonStartMonth())
                 .bestSeasonEndMonth(guide.getBestSeasonEndMonth())
                 .bestSeasonLabel(guide.getBestSeasonLabel())
@@ -506,10 +517,20 @@ public class GuideService {
                             .dayCount(guide.getDayCount())
                             .placeCount(guide.getPlaceCount())
                             .priceCents(guide.getPriceCents())
+                            .salePriceCents(guide.getSalePriceCents())
+                            .saleEndsAt(guide.getSaleEndsAt())
+                            .effectivePriceCents(effectivePrice(guide))
                             .currency(guide.getCurrency())
                             .versionNumber(guide.getVersionNumber())
                             .savedAt(savedEntry.getCreatedAt())
                             .creatorUsername(userService.findById(guide.getCreatorId()).getUsername())
+                            .displayLocation(displayLocation(guide))
+                            .spotCount(guide.getPlaceCount())
+                            .averageRating(reviewRepository.averageRatingByGuideId(guide.getId()))
+                            .reviewCount((int) reviewRepository.countByGuideId(guide.getId()))
+                            .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
+                            .popularThisWeek(isPopularThisWeek(guide.getId()))
+                            .savedByViewer(true)
                             .build();
                 })
                 .filter(Objects::nonNull)
@@ -644,11 +665,20 @@ public class GuideService {
                 .country(guide.getCountry())
                 .timezone(guide.getTimezone())
                 .priceCents(guide.getPriceCents())
+                .salePriceCents(guide.getSalePriceCents())
+                .saleEndsAt(guide.getSaleEndsAt())
+                .effectivePriceCents(effectivePrice(guide))
                 .currency(guide.getCurrency())
                 .status(guide.getStatus().name())
                 .versionNumber(guide.getVersionNumber())
                 .dayCount(guide.getDayCount())
                 .placeCount(guide.getPlaceCount())
+                .displayLocation(displayLocation(guide))
+                .spotCount(guide.getPlaceCount())
+                .averageRating(reviewRepository.averageRatingByGuideId(guide.getId()))
+                .reviewCount((int) reviewRepository.countByGuideId(guide.getId()))
+                .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
+                .popularThisWeek(isPopularThisWeek(guide.getId()))
                 .tags(tagNames)
                 .days(dayResponses)
                 .createdAt(guide.getCreatedAt())
@@ -732,8 +762,17 @@ public class GuideService {
                 .dayCount(guide.getDayCount())
                 .placeCount(guide.getPlaceCount())
                 .priceCents(guide.getPriceCents())
+                .salePriceCents(guide.getSalePriceCents())
+                .saleEndsAt(guide.getSaleEndsAt())
+                .effectivePriceCents(effectivePrice(guide))
                 .currency(guide.getCurrency())
                 .versionNumber(guide.getVersionNumber())
+                .displayLocation(displayLocation(guide))
+                .spotCount(guide.getPlaceCount())
+                .averageRating(reviewRepository.averageRatingByGuideId(guide.getId()))
+                .reviewCount((int) reviewRepository.countByGuideId(guide.getId()))
+                .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
+                .popularThisWeek(isPopularThisWeek(guide.getId()))
                 .createdAt(guide.getCreatedAt())
                 .updatedAt(guide.getUpdatedAt())
                 .build();
@@ -748,10 +787,50 @@ public class GuideService {
                 .dayCount(guide.getDayCount())
                 .placeCount(guide.getPlaceCount())
                 .priceCents(guide.getPriceCents())
+                .salePriceCents(guide.getSalePriceCents())
+                .saleEndsAt(guide.getSaleEndsAt())
+                .effectivePriceCents(effectivePrice(guide))
                 .currency(guide.getCurrency())
                 .versionNumber(guide.getVersionNumber())
                 .creatorUsername(userService.findById(guide.getCreatorId()).getUsername())
+                .displayLocation(displayLocation(guide))
+                .spotCount(guide.getPlaceCount())
+                .averageRating(reviewRepository.averageRatingByGuideId(guide.getId()))
+                .reviewCount((int) reviewRepository.countByGuideId(guide.getId()))
+                .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
+                .popularThisWeek(isPopularThisWeek(guide.getId()))
+                .savedByViewer(false)
                 .build();
+    }
+
+    private String displayLocation(Guide guide) {
+        if (guide.getPrimaryCity() != null && !guide.getPrimaryCity().isBlank()) {
+            return guide.getPrimaryCity();
+        }
+        if (guide.getRegion() != null && !guide.getRegion().isBlank()) {
+            return guide.getRegion();
+        }
+        return guide.getCountry();
+    }
+
+    private int weeklyPopularityScore(UUID guideId) {
+        Instant since = Instant.now().minus(7, ChronoUnit.DAYS);
+        long weeklyPurchases = purchaseRepository.countByGuideIdAndStatusAndCreatedAtAfter(
+                guideId, GuidePurchaseStatus.COMPLETED, since);
+        long weeklySaves = savedGuideRepository.countByGuideIdAndCreatedAtAfter(guideId, since);
+        return Math.toIntExact(Math.min(Integer.MAX_VALUE, weeklyPurchases * WEEKLY_PURCHASE_WEIGHT + weeklySaves));
+    }
+
+    private boolean isPopularThisWeek(UUID guideId) {
+        return weeklyPopularityScore(guideId) >= POPULAR_THIS_WEEK_THRESHOLD;
+    }
+
+    private int effectivePrice(Guide guide) {
+        if (guide.getSalePriceCents() != null
+                && (guide.getSaleEndsAt() == null || guide.getSaleEndsAt().isAfter(Instant.now()))) {
+            return guide.getSalePriceCents();
+        }
+        return guide.getPriceCents();
     }
 
     private GuideResponse parseGuideSnapshot(GuideVersion version) {

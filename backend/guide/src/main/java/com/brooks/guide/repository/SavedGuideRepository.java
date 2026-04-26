@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 import java.util.UUID;
 
 @Repository
@@ -16,4 +17,6 @@ public interface SavedGuideRepository extends JpaRepository<SavedGuide, UUID> {
     Optional<SavedGuide> findByUserIdAndGuideId(UUID userId, UUID guideId);
 
     List<SavedGuide> findByUserIdOrderByCreatedAtDesc(UUID userId);
+
+    long countByGuideIdAndCreatedAtAfter(UUID guideId, Instant createdAt);
 }

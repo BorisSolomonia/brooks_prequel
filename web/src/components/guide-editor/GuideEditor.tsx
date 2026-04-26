@@ -34,6 +34,8 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     country: initialGuide?.country || '',
     timezone: initialGuide?.timezone || 'UTC',
     priceCents: initialGuide?.priceCents || 0,
+    salePriceCents: initialGuide?.salePriceCents ?? null,
+    saleEndsAt: initialGuide?.saleEndsAt ?? null,
     currency: initialGuide?.currency || 'USD',
     tags: initialGuide?.tags || [],
     travelerStage: initialGuide?.travelerStage ?? undefined,
@@ -272,6 +274,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
               >
                 🎁 Gift to Follower
               </button>
+              <PublishButton onPublish={handlePublish} label="Publish Changes" />
               <span className="inline-flex min-h-9 items-center rounded-pill bg-ig-success/20 px-3 py-1 text-sm font-semibold text-ig-success">Published v{guide.versionNumber}</span>
             </>
           )}

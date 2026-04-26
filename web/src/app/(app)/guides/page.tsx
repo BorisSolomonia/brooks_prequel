@@ -65,9 +65,10 @@ export default function MyGuidesPage() {
   const activeItems = tabs.find((tab) => tab.key === activeTab)?.items ?? [];
 
   const formatPrice = (item: GuideLibraryItem) => {
-    if (item.priceCents <= 0) return 'Free';
+    const cents = item.effectivePriceCents ?? item.priceCents;
+    if (cents <= 0) return 'Free';
     const symbol = item.currency === 'USD' ? '$' : `${item.currency} `;
-    return `${symbol}${(item.priceCents / 100).toFixed(2)}`;
+    return `${symbol}${(cents / 100).toFixed(2)}`;
   };
 
   const formatDate = (value: string | null) => {
@@ -182,11 +183,16 @@ export default function MyGuidesPage() {
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ig-text-tertiary">
-                    {guide.region && <span>{guide.region}</span>}
+                    {(guide.displayLocation || guide.region) && <span>{guide.displayLocation || guide.region}</span>}
                     <span>{guide.dayCount} days</span>
-                    <span>{guide.placeCount} places</span>
+                    <span>{guide.spotCount ?? guide.placeCount} spots</span>
                     <span>{formatPrice(guide)}</span>
                   </div>
+                  {guide.popularThisWeek && (
+                    <span className="mt-2 inline-flex rounded-pill bg-brand-500/15 px-2.5 py-1 text-xs font-semibold text-brand-500">
+                      Popular this week
+                    </span>
+                  )}
                   {guide.creatorUsername && activeTab !== 'created' && (
                     <p className="mt-2 text-xs text-ig-text-tertiary">@{guide.creatorUsername}</p>
                   )}

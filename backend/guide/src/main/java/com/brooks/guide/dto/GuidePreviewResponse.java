@@ -16,17 +16,23 @@ public class GuidePreviewResponse {
     private int dayCount;
     private int placeCount;
     private int priceCents;
-    private String currency;
-    private UUID creatorId;
     private Integer salePriceCents;
     private Instant saleEndsAt;
+    private int effectivePriceCents;
+    private String currency;
+    private UUID creatorId;
     private String region;
+    private String primaryCity;
+    private String displayLocation;
+    private int spotCount;
     private String creatorUsername;
 
     // Social proof
     private int purchaseCount;
     private double averageRating;
     private int reviewCount;
+    private int weeklyPopularityScore;
+    private boolean popularThisWeek;
 
     // Seasonal signal
     private Integer bestSeasonStartMonth;

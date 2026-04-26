@@ -2,6 +2,8 @@
 # Gradle / Java
 # =========================
 .gradle/
+.gradle-user/
+backend/.gradle-user/
 **/.gradle/
 **/.gradle-local/
 **/.gradle-user-home/

@@ -5,9 +5,10 @@ import { useState } from 'react';
 interface Props {
   onPublish: () => Promise<void>;
   disabled?: boolean;
+  label?: string;
 }
 
-export default function PublishButton({ onPublish, disabled }: Props) {
+export default function PublishButton({ onPublish, disabled, label = 'Publish' }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
@@ -43,7 +44,7 @@ export default function PublishButton({ onPublish, disabled }: Props) {
       disabled={disabled}
       className="px-4 py-2 bg-ig-success text-white rounded-md text-sm font-semibold disabled:opacity-50 hover:opacity-90"
     >
-      Publish
+      {label}
     </button>
   );
 }

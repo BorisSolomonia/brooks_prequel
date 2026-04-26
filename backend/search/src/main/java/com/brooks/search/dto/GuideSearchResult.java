@@ -18,7 +18,15 @@ public class GuideSearchResult {
     private int dayCount;
     private int placeCount;
     private int priceCents;
+    private Integer salePriceCents;
+    private int effectivePriceCents;
     private String currency;
+    private String displayLocation;
+    private int spotCount;
+    private double averageRating;
+    private int reviewCount;
+    private int weeklyPopularityScore;
+    private boolean popularThisWeek;
     private String creatorUsername;
     private String creatorDisplayName;
 }

@@ -50,7 +50,9 @@ public class GuidePurchaseService {
         if (guide.getCreatorId().equals(buyer.getId())) {
             throw new BusinessException("Creators cannot purchase their own guides");
         }
-        if (guide.getPriceCents() > 0) {
+
+        int effectivePrice = effectivePrice(guide);
+        if (effectivePrice > 0) {
             throw new BusinessException("Payment provider not configured — this guide requires payment");
         }
 
@@ -76,7 +78,7 @@ public class GuidePurchaseService {
                 version.getId(),
                 version.getVersionNumber(),
                 "mock",
-                guide.getPriceCents(),
+                effectivePrice,
                 guide.getCurrency()
         );
         purchase.setStatus(GuidePurchaseStatus.COMPLETED);
@@ -529,5 +531,13 @@ public class GuidePurchaseService {
                 .replace("\n", "\\n")
                 .replace(",", "\\,")
                 .replace(";", "\\;");
+    }
+
+    private int effectivePrice(Guide guide) {
+        if (guide.getSalePriceCents() != null &&
+                (guide.getSaleEndsAt() == null || guide.getSaleEndsAt().isAfter(Instant.now()))) {
+            return guide.getSalePriceCents();
+        }
+        return guide.getPriceCents();
     }
 }

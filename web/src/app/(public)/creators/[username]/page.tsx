@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Avatar from '@/components/ui/Avatar';
 import FollowButton from '@/components/ui/FollowButton';
+import GuideCard from '@/components/ui/GuideCard';
 import ReviewComposer from '@/components/reviews/ReviewComposer';
 import ReviewText from '@/components/reviews/ReviewText';
 import StarRating from '@/components/reviews/StarRating';
@@ -152,8 +153,6 @@ export default function CreatorProfilePage({ params }: { params: { username: str
     return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
   }
 
-  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 flex items-start gap-4">
@@ -235,7 +234,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
             <p className="mb-2 text-ig-text-secondary">No guides yet</p>
             {isOwnProfile && (
               <Link href="/guides/new" className="text-sm text-brand-500 hover:underline">
-                Create your first guide →
+                Create your first guide -&gt;
               </Link>
             )}
           </div>
@@ -248,47 +247,31 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                 onDragStart={isOwnProfile ? () => handleDragStart(guide.id) : undefined}
                 onDragOver={isOwnProfile ? (event) => event.preventDefault() : undefined}
                 onDrop={isOwnProfile ? () => handleDrop(guide.id) : undefined}
-                className={`relative overflow-hidden rounded-lg border border-ig-border bg-ig-elevated transition-colors ${
-                  draggedId === guide.id ? 'opacity-50' : ''
-                } ${isOwnProfile ? 'cursor-grab' : ''}`}
+                className={`relative ${draggedId === guide.id ? 'opacity-50' : ''} ${isOwnProfile ? 'cursor-grab' : ''}`}
               >
-                {guide.status !== 'PUBLISHED' && (
-                  <span className="absolute left-2 top-2 z-10 rounded bg-amber-500/90 px-1.5 py-0.5 text-xs font-semibold text-white">
-                    {guide.status === 'DRAFT' ? 'Draft' : guide.status}
+                {isOwnProfile && (
+                  <span className="absolute right-3 top-3 z-10 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white">
+                    Drag
                   </span>
                 )}
-                {isOwnProfile && (
-                  <span className="absolute right-2 top-2 z-10 select-none text-lg text-white/70">⠿</span>
-                )}
-
-                {guide.coverImageUrl ? (
-                  <div className="h-36 bg-ig-secondary">
-                    <img src={guide.coverImageUrl} alt="" className="h-full w-full object-cover" />
-                  </div>
-                ) : (
-                  <div className="flex h-36 items-center justify-center bg-ig-secondary">
-                    <span className="text-3xl text-ig-text-tertiary">🗺️</span>
-                  </div>
-                )}
-
-                <div className="p-3">
-                  <h3 className="mb-1 truncate text-sm font-semibold text-ig-text-primary">{guide.title}</h3>
-                  <div className="mb-3 flex items-center gap-3 text-xs text-ig-text-tertiary">
-                    {guide.region && <span>{guide.region}</span>}
-                    <span>{guide.dayCount} days</span>
-                    <span>{guide.placeCount} places</span>
-                  </div>
-                  <Link
-                    href={`/guides/${guide.id}/view`}
-                    className={`inline-flex min-h-11 w-full items-center justify-center rounded-md py-2 text-sm font-semibold transition-colors md:min-h-0 md:py-1.5 md:text-xs ${
-                      guide.priceCents > 0
-                        ? 'bg-brand-500 text-white hover:bg-brand-600'
-                        : 'border border-ig-border text-ig-text-primary hover:bg-ig-secondary'
-                    }`}
-                  >
-                    {guide.priceCents > 0 ? `Buy · ${formatPrice(guide.priceCents)}` : 'View'}
-                  </Link>
-                </div>
+                <GuideCard
+                  href={`/guides/${guide.id}/view`}
+                  title={guide.title}
+                  coverImageUrl={guide.coverImageUrl}
+                  displayLocation={guide.displayLocation || guide.region}
+                  region={guide.region}
+                  dayCount={guide.dayCount}
+                  spotCount={guide.spotCount ?? guide.placeCount}
+                  placeCount={guide.placeCount}
+                  priceCents={guide.priceCents}
+                  effectivePriceCents={guide.effectivePriceCents}
+                  currency={guide.currency}
+                  averageRating={guide.averageRating}
+                  reviewCount={guide.reviewCount}
+                  popularThisWeek={guide.popularThisWeek}
+                  statusBadge={guide.status !== 'PUBLISHED' ? (guide.status === 'DRAFT' ? 'Draft' : guide.status) : null}
+                  showSaveButton={false}
+                />
               </div>
             ))}
           </div>

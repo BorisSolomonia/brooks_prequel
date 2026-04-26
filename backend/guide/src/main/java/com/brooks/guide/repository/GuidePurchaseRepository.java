@@ -5,6 +5,7 @@ import com.brooks.guide.domain.GuidePurchaseStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,4 +36,6 @@ public interface GuidePurchaseRepository extends JpaRepository<GuidePurchase, UU
     Optional<GuidePurchase> findByProviderSessionId(String providerSessionId);
 
     long countByGuideIdAndStatus(UUID guideId, GuidePurchaseStatus status);
+
+    long countByGuideIdAndStatusAndCreatedAtAfter(UUID guideId, GuidePurchaseStatus status, Instant createdAt);
 }
