@@ -9,7 +9,7 @@ export default function PlaceSearchCard({ place }: PlaceSearchCardProps) {
   return (
     <Link
       href={`/guides/${place.guideId}/view`}
-      className="flex items-center gap-3 p-3 rounded-xl bg-ig-elevated hover:bg-ig-border transition-colors"
+      className="flex min-h-20 items-center gap-3 rounded-xl bg-ig-elevated p-3 transition-colors hover:bg-ig-border"
     >
       <div className="w-10 h-10 rounded-lg bg-ig-border flex items-center justify-center flex-shrink-0">
         <svg className="w-5 h-5 text-ig-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -18,7 +18,7 @@ export default function PlaceSearchCard({ place }: PlaceSearchCardProps) {
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-ig-text-primary truncate">{place.name}</span>
           {place.category && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-ig-border text-ig-text-secondary flex-shrink-0">

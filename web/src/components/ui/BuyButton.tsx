@@ -45,11 +45,11 @@ export default function BuyButton({ guideId, priceCents, currency, salePriceCent
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       <button
         onClick={handleBuy}
         disabled={loading}
-        className="px-6 py-2.5 bg-ig-blue text-white rounded-lg text-sm font-semibold hover:bg-ig-blue-hover transition-colors disabled:opacity-50"
+        className="min-h-11 rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:opacity-50"
       >
         {loading ? 'Processing...' : effectivePrice === 0 ? 'Get Guide Free' : `Buy for ${symbol}${(effectivePrice / 100).toFixed(2)}`}
       </button>

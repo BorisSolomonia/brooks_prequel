@@ -137,7 +137,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
             key={cat.value}
             type="button"
             onClick={() => setActiveCategory(cat.value)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+            className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors md:min-h-0 md:px-3 md:py-1 md:text-xs ${
               activeCategory === cat.value
                 ? 'border-ig-blue bg-ig-blue/10 text-ig-blue'
                 : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:border-ig-blue/40'
@@ -147,7 +147,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
           </button>
         ))}
       </div>
-      <div ref={mapContainerRef} className="h-80 w-full overflow-hidden rounded-2xl border border-ig-border" />
+      <div ref={mapContainerRef} className="h-[60vh] max-h-96 min-h-72 w-full overflow-hidden rounded-2xl border border-ig-border md:h-80" />
     </div>
   );
 }

@@ -199,7 +199,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
             {isOwnProfile && (
               <Link
                 href="/guides"
-                className="inline-block rounded-md border border-ig-border px-4 py-1.5 text-sm font-medium text-ig-text-primary transition-colors hover:bg-ig-secondary"
+                className="inline-flex min-h-11 items-center rounded-md border border-ig-border px-4 py-2 text-sm font-medium text-ig-text-primary transition-colors hover:bg-ig-secondary"
               >
                 Manage guides
               </Link>
@@ -216,7 +216,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`border-b-2 px-4 py-2 text-sm font-medium capitalize transition-colors ${
+            className={`min-h-11 border-b-2 px-4 py-2 text-sm font-medium capitalize transition-colors ${
               activeTab === tab
                 ? 'border-brand-500 text-brand-500'
                 : 'border-transparent text-ig-text-tertiary hover:text-ig-text-primary'
@@ -280,7 +280,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                   </div>
                   <Link
                     href={`/guides/${guide.id}/view`}
-                    className={`inline-flex w-full items-center justify-center rounded-md py-1.5 text-xs font-semibold transition-colors ${
+                    className={`inline-flex min-h-11 w-full items-center justify-center rounded-md py-2 text-sm font-semibold transition-colors md:min-h-0 md:py-1.5 md:text-xs ${
                       guide.priceCents > 0
                         ? 'bg-brand-500 text-white hover:bg-brand-600'
                         : 'border border-ig-border text-ig-text-primary hover:bg-ig-secondary'
@@ -357,7 +357,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                           type="button"
                           disabled={!review.canVote}
                           onClick={() => handleVote(review.id, 'HELPFUL').catch((err) => alert(err instanceof Error ? err.message : 'Failed to vote'))}
-                          className={`rounded-full border px-3 py-1 transition ${
+                          className={`min-h-9 rounded-full border px-3 py-1 transition ${
                             review.viewerVote === 'HELPFUL'
                               ? 'border-brand-500/30 bg-brand-500/10 text-brand-500'
                               : 'border-ig-border text-ig-text-secondary'
@@ -369,7 +369,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                           type="button"
                           disabled={!review.canVote}
                           onClick={() => handleVote(review.id, 'NOT_HELPFUL').catch((err) => alert(err instanceof Error ? err.message : 'Failed to vote'))}
-                          className={`rounded-full border px-3 py-1 transition ${
+                          className={`min-h-9 rounded-full border px-3 py-1 transition ${
                             review.viewerVote === 'NOT_HELPFUL'
                               ? 'border-ig-error/30 bg-ig-error/10 text-ig-error'
                               : 'border-ig-border text-ig-text-secondary'

@@ -43,7 +43,7 @@ export default function MyTripsPage() {
         </div>
         <Link
           href="/search"
-          className="rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover"
+          className="inline-flex min-h-11 items-center rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover"
         >
           Find guides
         </Link>
@@ -74,7 +74,7 @@ export default function MyTripsPage() {
                 <div className="flex h-44 items-center justify-center bg-ig-secondary text-4xl text-ig-text-tertiary">🗺️</div>
               )}
               <div className="p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-semibold text-ig-text-primary">{trip.title}</h2>
                   <span className="rounded-pill bg-brand-500/15 px-3 py-1 text-xs font-semibold text-brand-500">
                     v{trip.guideVersionNumber}

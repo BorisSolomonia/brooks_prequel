@@ -53,7 +53,7 @@ export default function FollowButton({ userId, initialFollowing = false, onFollo
       <button
         type="button"
         disabled
-        className="rounded-md border border-ig-border bg-ig-elevated px-5 py-[7px] text-sm font-semibold text-ig-text-tertiary opacity-70"
+        className="min-h-11 rounded-md border border-ig-border bg-ig-elevated px-5 py-2 text-sm font-semibold text-ig-text-tertiary opacity-70"
       >
         Follow
       </button>
@@ -65,7 +65,7 @@ export default function FollowButton({ userId, initialFollowing = false, onFollo
       type="button"
       disabled={busy}
       onClick={handleToggle}
-      className={`rounded-md px-5 py-[7px] text-sm font-semibold transition-colors ${
+      className={`min-h-11 rounded-md px-5 py-2 text-sm font-semibold transition-colors ${
         following
           ? 'bg-ig-elevated border border-ig-border text-ig-text-primary hover:bg-ig-secondary'
           : 'bg-ig-blue text-white hover:bg-ig-blue-hover'

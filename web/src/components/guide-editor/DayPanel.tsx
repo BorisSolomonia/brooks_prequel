@@ -52,21 +52,21 @@ export default function DayPanel({
 
   return (
     <div className="border border-ig-border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-ig-elevated cursor-pointer" onClick={() => setCollapsed(!collapsed)}>
-        <div className="flex items-center gap-3">
+      <div className="flex cursor-pointer flex-col gap-3 bg-ig-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between" onClick={() => setCollapsed(!collapsed)}>
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <span className="text-xs text-ig-text-tertiary">{collapsed ? '▶' : '▼'}</span>
           <span className="text-sm font-semibold text-ig-blue">Day {day.dayNumber}</span>
           {editingTitle ? (
-            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="px-2 py-1 bg-ig-secondary border border-ig-border rounded text-sm text-ig-text-primary focus:outline-none focus:border-ig-blue"
+                className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); }}
                 autoFocus
               />
-              <button onClick={handleSaveTitle} className="text-ig-blue text-sm font-semibold">Save</button>
+              <button onClick={handleSaveTitle} className="min-h-11 rounded-md px-3 text-sm font-semibold text-ig-blue">Save</button>
             </div>
           ) : (
             <span
@@ -77,9 +77,9 @@ export default function DayPanel({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <span className="text-xs text-ig-text-tertiary">{day.blocks.length} blocks</span>
-          <button onClick={() => onDeleteDay(day.id)} className="text-ig-text-tertiary hover:text-ig-error text-xs">Delete</button>
+          <button onClick={() => onDeleteDay(day.id)} className="min-h-9 rounded-md px-2 text-xs text-ig-text-tertiary hover:text-ig-error">Delete</button>
         </div>
       </div>
 
@@ -107,7 +107,7 @@ export default function DayPanel({
                     key={cat.value}
                     type="button"
                     onClick={() => setNewBlockCategory(cat.value)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                    className={`flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors md:min-h-0 md:px-2.5 md:py-1.5 md:text-xs ${
                       newBlockCategory === cat.value
                         ? cat.value === 'SECRET'
                           ? 'border-amber-500 bg-amber-500/15 text-amber-400'
@@ -120,16 +120,16 @@ export default function DayPanel({
                   </button>
                 ))}
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleAddBlock}
-                  className="px-4 py-1.5 bg-ig-blue text-white rounded-lg text-sm font-semibold hover:bg-ig-blue-hover transition-colors"
+                  className="min-h-11 rounded-lg bg-ig-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
                 >
                   Add Block
                 </button>
                 <button
                   onClick={() => { setAddingBlock(false); setNewBlockCategory('ACTIVITY'); }}
-                  className="px-4 py-1.5 border border-ig-border rounded-lg text-sm text-ig-text-secondary hover:border-ig-blue/40 transition-colors"
+                  className="min-h-11 rounded-lg border border-ig-border px-4 py-2 text-sm text-ig-text-secondary transition-colors hover:border-ig-blue/40"
                 >
                   Cancel
                 </button>
@@ -138,7 +138,7 @@ export default function DayPanel({
           ) : (
             <button
               onClick={() => setAddingBlock(true)}
-              className="w-full py-2 border border-dashed border-ig-border rounded-lg text-sm text-ig-blue hover:border-ig-blue hover:bg-ig-secondary/50 transition-colors"
+              className="min-h-11 w-full rounded-lg border border-dashed border-ig-border py-2 text-sm text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50"
             >
               + Add Block
             </button>

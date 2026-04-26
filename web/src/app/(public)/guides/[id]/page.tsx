@@ -101,7 +101,7 @@ export default function PublicGuidePreviewPage() {
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Link
             href="/api/auth/login"
-            className="px-6 py-2.5 bg-ig-blue text-white rounded-lg text-sm font-semibold hover:bg-ig-blue-hover transition-colors inline-block"
+            className="inline-flex min-h-11 items-center rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
           >
             {preview.priceCents > 0 ? 'Sign in to purchase' : 'Sign in to save'}
           </Link>
@@ -147,7 +147,7 @@ export default function PublicGuidePreviewPage() {
         {(preview.lockedDays ?? []).map((stub) => (
           <div
             key={stub.dayNumber}
-            className="rounded-xl border border-dashed border-ig-border bg-ig-elevated/40 p-5 flex items-center justify-between opacity-60"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-ig-border bg-ig-elevated/40 p-5 opacity-60"
           >
             <div>
               <p className="text-sm font-semibold text-brand-400">Day {stub.dayNumber}</p>

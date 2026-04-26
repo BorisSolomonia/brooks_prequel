@@ -17,7 +17,7 @@ export default function SearchSection({ title, totalCount, seeAllHref, children 
         {totalCount > 5 && (
           <Link
             href={seeAllHref}
-            className="text-sm text-ig-action-blue hover:underline"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-ig-blue hover:underline md:min-h-0"
           >
             See all {totalCount} results
           </Link>

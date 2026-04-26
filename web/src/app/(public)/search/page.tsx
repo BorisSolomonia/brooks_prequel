@@ -26,7 +26,7 @@ export default function SearchPage() {
           placeholder="Search guides, creators, places..."
           value={query}
           onChange={(e) => search(e.target.value)}
-          className="w-full px-4 py-3 pl-10 bg-ig-elevated border border-ig-border rounded-xl text-ig-text-primary placeholder-ig-text-tertiary focus:ring-2 focus:ring-ig-action-blue focus:border-transparent outline-none"
+          className="min-h-12 w-full rounded-xl border border-ig-border bg-ig-elevated px-4 py-3 pl-10 text-base text-ig-text-primary placeholder-ig-text-tertiary outline-none focus:border-transparent focus:ring-2 focus:ring-ig-blue"
         />
         <svg className="absolute left-3 top-3.5 h-5 w-5 text-ig-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

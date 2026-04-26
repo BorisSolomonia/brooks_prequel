@@ -110,11 +110,11 @@ export default function MyGuidesPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-ig-text-primary">My Guides</h1>
         <Link
           href="/guides/new"
-          className="px-4 py-2 bg-ig-blue text-white rounded-md text-sm font-semibold hover:bg-ig-blue-hover"
+          className="inline-flex min-h-11 items-center rounded-md bg-ig-blue px-4 py-2 text-sm font-semibold text-white hover:bg-ig-blue-hover"
         >
           + New Guide
         </Link>
@@ -126,7 +126,7 @@ export default function MyGuidesPage() {
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`rounded-pill px-4 py-2 text-sm font-medium transition-colors ${
+            className={`min-h-11 rounded-pill px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab.key
                 ? 'bg-ig-blue text-white'
                 : 'bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
@@ -181,7 +181,7 @@ export default function MyGuidesPage() {
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-ig-text-tertiary">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ig-text-tertiary">
                     {guide.region && <span>{guide.region}</span>}
                     <span>{guide.dayCount} days</span>
                     <span>{guide.placeCount} places</span>
@@ -204,7 +204,7 @@ export default function MyGuidesPage() {
                     type="button"
                     onClick={() => handleDeleteGuide(guide)}
                     disabled={deletingGuideId === guide.id}
-                    className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="min-h-9 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {deletingGuideId === guide.id ? 'Deleting…' : 'Delete'}
                   </button>

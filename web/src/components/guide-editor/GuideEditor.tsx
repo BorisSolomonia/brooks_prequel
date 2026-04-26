@@ -245,17 +245,17 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold text-ig-text-primary">
           {guide ? 'Edit Guide' : 'New Guide'}
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {guide && (
             <button
               type="button"
               onClick={handleDeleteGuide}
               disabled={deleting}
-              className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-11 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {deleting ? 'Deleting…' : 'Delete Guide'}
             </button>
@@ -268,11 +268,11 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
               <button
                 type="button"
                 onClick={() => setShowGiftModal(true)}
-                className="rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover"
+                className="min-h-11 rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover"
               >
                 🎁 Gift to Follower
               </button>
-              <span className="px-3 py-1 bg-ig-success/20 text-ig-success rounded-pill text-sm font-semibold">Published v{guide.versionNumber}</span>
+              <span className="inline-flex min-h-9 items-center rounded-pill bg-ig-success/20 px-3 py-1 text-sm font-semibold text-ig-success">Published v{guide.versionNumber}</span>
             </>
           )}
         </div>
@@ -294,7 +294,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
           <button
             onClick={handleSaveMetadata}
             disabled={saving || !metadata.title}
-            className="w-full py-2.5 bg-ig-blue text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-ig-blue-hover transition-colors"
+            className="min-h-11 w-full rounded-lg bg-ig-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:opacity-50"
           >
             {saving ? 'Saving…' : guide ? 'Save Changes' : 'Create Guide'}
           </button>
@@ -330,14 +330,14 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
       {/* Days */}
       {guide && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-ig-text-primary">Itinerary</h2>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm text-ig-text-tertiary">{guide.dayCount} days, {guide.placeCount} places</span>
               {aiKeys.length > 0 && (
                 <button
                   onClick={() => setShowAiPanel((v) => !v)}
-                  className="flex items-center gap-1.5 px-3 py-1 text-xs border border-[var(--border)] rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                  className="flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] md:min-h-0 md:py-1 md:text-xs"
                 >
                   <span>✨</span>
                   <span>{showAiPanel ? 'Hide AI' : 'Create with AI'}</span>
@@ -398,7 +398,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
 
           <button
             onClick={handleAddDay}
-            className="w-full py-3 border-2 border-dashed border-ig-border rounded-lg text-sm text-ig-blue font-semibold hover:border-ig-blue hover:bg-ig-secondary/50 transition-colors"
+            className="min-h-12 w-full rounded-lg border-2 border-dashed border-ig-border py-3 text-sm font-semibold text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50"
           >
             + Add Day
           </button>

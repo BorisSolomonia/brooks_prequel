@@ -68,7 +68,7 @@ function DestinationMap({ lat, lng, onChange }: { lat: number | null | undefined
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!MAPBOX_TOKEN) return null;
-  return <div ref={containerRef} className="h-44 w-full rounded-lg overflow-hidden border border-ig-border" />;
+  return <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-lg border border-ig-border md:h-44" />;
 }
 
 export default function GuideMetadataForm({ data, onChange, tagInput, onTagInputChange, onAddTag, onRemoveTag }: Props) {
@@ -100,7 +100,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
           value={data.title || ''}
           onChange={(e) => update('title', e.target.value)}
           placeholder="e.g. 3 Days in Tokyo"
-          className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue"
+          className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
         />
       </div>
 
@@ -111,7 +111,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
           onChange={(e) => update('description', e.target.value)}
           placeholder="Describe your travel guide..."
           rows={3}
-          className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue resize-none"
+          className="w-full resize-none rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
         />
         {descHints.length > 0 && (
           <div className="mt-1.5 space-y-1">
@@ -125,7 +125,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Region</label>
           <input
@@ -133,7 +133,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
             value={data.region || ''}
             onChange={(e) => update('region', e.target.value)}
             placeholder="e.g. East Asia"
-            className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue"
+            className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
         </div>
         <div>
@@ -143,12 +143,12 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
             value={data.primaryCity || ''}
             onChange={(e) => update('primaryCity', e.target.value)}
             placeholder="e.g. Tokyo"
-            className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue"
+            className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Country</label>
           <input
@@ -156,7 +156,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
             value={data.country || ''}
             onChange={(e) => update('country', e.target.value)}
             placeholder="e.g. Japan"
-            className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue"
+            className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
         </div>
         <div>
@@ -166,7 +166,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
             value={data.timezone || ''}
             onChange={(e) => update('timezone', e.target.value)}
             placeholder="e.g. Europe/Tbilisi"
-            className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue"
+            className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
         </div>
         <div>
@@ -176,7 +176,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
             value={data.priceCents || 0}
             onChange={(e) => update('priceCents', parseInt(e.target.value) || 0)}
             min={0}
-            className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary focus:outline-none focus:border-ig-blue"
+            className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none"
           />
         </div>
       </div>
@@ -196,7 +196,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
           value={data.coverImageUrl || ''}
           onChange={(e) => update('coverImageUrl', e.target.value)}
           placeholder="https://..."
-          className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue"
+          className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
         />
       </div>
 
@@ -205,7 +205,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
         <select
           value={(data as GuideUpdateRequest).travelerStage ?? ''}
           onChange={(e) => update('travelerStage', e.target.value || null)}
-          className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary focus:outline-none focus:border-ig-blue text-sm"
+          className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
         >
           <option value="">— any stage —</option>
           <option value="DREAMING">Dreaming — inspiring wanderlust</option>
@@ -227,7 +227,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
                   const current = (data as GuideUpdateRequest).personas ?? [];
                   update('personas', selected ? current.filter((p) => p !== persona) : [...current, persona]);
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors md:min-h-0 md:px-3 md:py-1.5 md:text-xs ${
                   selected
                     ? 'border-brand-500 bg-brand-500/15 text-brand-400'
                     : 'border-ig-border bg-ig-secondary text-ig-text-secondary hover:border-brand-500/40'
@@ -243,13 +243,13 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
       <div>
         <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Best time to visit</label>
         <p className="text-xs text-ig-text-tertiary mb-2">Shown as a badge on your guide to signal when to book.</p>
-        <div className="grid grid-cols-2 gap-3 mb-2">
+        <div className="mb-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="block text-xs text-ig-text-tertiary mb-1">From month</label>
             <select
               value={(data as GuideUpdateRequest).bestSeasonStartMonth ?? ''}
               onChange={(e) => update('bestSeasonStartMonth', e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary focus:outline-none focus:border-ig-blue text-sm"
+              className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
             >
               <option value="">— any —</option>
               {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
@@ -262,7 +262,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
             <select
               value={(data as GuideUpdateRequest).bestSeasonEndMonth ?? ''}
               onChange={(e) => update('bestSeasonEndMonth', e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary focus:outline-none focus:border-ig-blue text-sm"
+              className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
             >
               <option value="">— any —</option>
               {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
@@ -277,7 +277,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
           onChange={(e) => update('bestSeasonLabel', e.target.value || null)}
           placeholder="e.g. Spring cherry blossom season"
           maxLength={60}
-          className="w-full px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue text-sm"
+          className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none md:text-sm"
         />
       </div>
 
@@ -300,22 +300,22 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
         <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Tags</label>
         <div className="flex gap-2 mb-2 flex-wrap">
           {(data.tags || []).map((tag) => (
-            <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 bg-ig-elevated border border-ig-border rounded-pill text-sm text-ig-text-primary">
+            <span key={tag} className="inline-flex min-h-9 items-center gap-1 rounded-pill border border-ig-border bg-ig-elevated px-2 py-1 text-sm text-ig-text-primary">
               {tag}
               <button onClick={() => onRemoveTag(tag)} className="text-ig-text-tertiary hover:text-ig-error ml-1">&times;</button>
             </span>
           ))}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             type="text"
             value={tagInput}
             onChange={(e) => onTagInputChange(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onAddTag(); } }}
             placeholder="Add a tag..."
-            className="flex-1 px-3 py-2 bg-ig-secondary border border-ig-border rounded-md text-ig-text-primary placeholder:text-ig-text-tertiary focus:outline-none focus:border-ig-blue"
+            className="min-h-11 min-w-0 flex-1 rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
-          <button onClick={onAddTag} className="px-4 py-2 bg-ig-blue text-white rounded-md text-sm font-semibold hover:bg-ig-blue-hover">Add</button>
+          <button onClick={onAddTag} className="min-h-11 rounded-md bg-ig-blue px-4 py-2 text-sm font-semibold text-white hover:bg-ig-blue-hover">Add</button>
         </div>
       </div>
     </div>

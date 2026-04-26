@@ -8,16 +8,16 @@ export default function LandingPage() {
         Discover amazing travel guides from creators around the world.
         Plan your next adventure with curated itineraries.
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap justify-center gap-3">
         <Link
           href="/login"
-          className="px-6 py-[10px] bg-ig-blue text-white rounded-md font-semibold text-sm hover:bg-ig-blue-hover transition-colors"
+          className="inline-flex min-h-11 items-center rounded-md bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
         >
           Get Started
         </Link>
         <Link
           href="/search"
-          className="px-6 py-[10px] border border-ig-border text-ig-text-primary rounded-md font-semibold text-sm hover:bg-ig-hover transition-colors"
+          className="inline-flex min-h-11 items-center rounded-md border border-ig-border px-6 py-2.5 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover"
         >
           Explore Guides
         </Link>

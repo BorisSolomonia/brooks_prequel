@@ -24,7 +24,7 @@ export default function GuideSearchCard({ guide }: GuideSearchCardProps) {
   return (
     <Link
       href={`/guides/${guide.id}/view`}
-      className="flex gap-3 p-3 rounded-xl bg-ig-elevated hover:bg-ig-border transition-colors"
+      className="flex min-h-28 gap-3 rounded-xl bg-ig-elevated p-3 transition-colors hover:bg-ig-border"
     >
       <div className="w-20 h-20 rounded-lg bg-ig-border flex-shrink-0 overflow-hidden relative">
         {guide.coverImageUrl ? (
@@ -47,13 +47,13 @@ export default function GuideSearchCard({ guide }: GuideSearchCardProps) {
         <p className="text-sm text-ig-text-secondary truncate">
           by {guide.creatorDisplayName || guide.creatorUsername}
         </p>
-        <div className="flex gap-3 mt-1 text-xs text-ig-text-tertiary">
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ig-text-tertiary">
           {guide.region && <span>{guide.primaryCity || guide.region}</span>}
           <span>{guide.dayCount} days</span>
           <span>{guide.placeCount} places</span>
         </div>
-        <div className="flex items-center gap-3 mt-1">
-          <p className="text-sm font-semibold text-ig-accent">{price}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="text-sm font-semibold text-accent-500">{price}</p>
           {(guide.purchaseCount ?? 0) > 0 && (
             <span className="text-xs text-ig-text-tertiary">{guide.purchaseCount} travelers</span>
           )}

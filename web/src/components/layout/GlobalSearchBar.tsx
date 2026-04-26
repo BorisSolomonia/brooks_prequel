@@ -36,7 +36,7 @@ function SearchResultRow({ href, title, subtitle, meta, badge, icon, onSelect }:
     <Link
       href={href}
       onClick={onSelect}
-      className="flex items-start gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-ig-hover"
+      className="flex min-h-12 items-start gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-ig-hover"
     >
       <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-ig-border bg-ig-primary text-ig-text-secondary">
         {icon}
@@ -201,7 +201,7 @@ export default function GlobalSearchBar() {
   };
 
   return (
-    <div ref={searchContainerRef} className="relative flex-1 max-w-xl">
+    <div ref={searchContainerRef} className="relative min-w-0 flex-1 md:max-w-xl">
       <div className="relative">
         <svg
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ig-text-tertiary"
@@ -223,7 +223,7 @@ export default function GlobalSearchBar() {
             }
           }}
           placeholder="Search creators, guides, places..."
-          className="h-10 w-full rounded-full border border-ig-border bg-ig-elevated pl-10 pr-20 text-sm text-ig-text-primary outline-none transition focus:border-brand-500 focus:bg-ig-primary"
+          className="h-11 w-full rounded-full border border-ig-border bg-ig-elevated pl-10 pr-12 text-base text-ig-text-primary outline-none transition placeholder:text-sm focus:border-brand-500 focus:bg-ig-primary md:h-10 md:pr-20 md:text-sm"
           aria-label="Search creators, guides, and places"
         />
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -234,7 +234,7 @@ export default function GlobalSearchBar() {
             <button
               type="button"
               onClick={clearSearch}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-ig-text-tertiary transition hover:bg-ig-hover hover:text-ig-text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-ig-text-tertiary transition hover:bg-ig-hover hover:text-ig-text-primary md:h-7 md:w-7"
               aria-label="Clear search"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -246,7 +246,7 @@ export default function GlobalSearchBar() {
       </div>
 
       {open && inputValue.trim() && (
-        <div className="absolute inset-x-0 top-[calc(100%+10px)] z-50 overflow-hidden rounded-[28px] border border-ig-border bg-ig-elevated/95 p-3 shadow-2xl backdrop-blur">
+        <div className="fixed inset-x-3 top-[76px] z-50 max-h-[calc(100vh-140px)] overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-3 shadow-2xl backdrop-blur md:absolute md:inset-x-0 md:top-[calc(100%+10px)] md:max-h-[70vh] md:rounded-[28px]">
           {error ? (
             <div className="rounded-2xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-secondary">
               {error}
@@ -332,7 +332,7 @@ export default function GlobalSearchBar() {
             <button
               type="button"
               onClick={handleSubmit}
-              className="w-full rounded-2xl border border-ig-border bg-ig-primary px-4 py-2.5 text-left text-sm font-semibold text-ig-text-primary transition hover:bg-ig-hover"
+              className="min-h-12 w-full rounded-2xl border border-ig-border bg-ig-primary px-4 py-3 text-left text-sm font-semibold text-ig-text-primary transition hover:bg-ig-hover"
             >
               Search everything for &ldquo;{inputValue.trim()}&rdquo;
             </button>

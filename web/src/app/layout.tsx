@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { UserProvider } from '@auth0/nextjs-auth0/client';
 import Navbar from '@/components/layout/Navbar';
 import './globals.css';
@@ -6,6 +6,11 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Brooks - Travel Guide Marketplace',
   description: 'Discover, create, and share travel guides. A marketplace for travel creators.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -18,7 +23,7 @@ export default function RootLayout({
       <body className="font-sans bg-ig-primary text-ig-text-primary">
         <UserProvider>
           <Navbar />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen pb-16 md:pb-0">{children}</main>
         </UserProvider>
       </body>
     </html>

@@ -36,23 +36,23 @@ export default function PlaceCard({ place, onUpdate, onDelete }: Props) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Place name"
-          className="w-full px-2 py-1 bg-ig-secondary border border-ig-border rounded text-sm text-ig-text-primary focus:outline-none focus:border-ig-blue"
+          className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
         />
         <input
           type="text"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="Address"
-          className="w-full px-2 py-1 bg-ig-secondary border border-ig-border rounded text-sm text-ig-text-primary focus:outline-none focus:border-ig-blue"
+          className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Description"
           rows={2}
-          className="w-full px-2 py-1 bg-ig-secondary border border-ig-border rounded text-sm text-ig-text-primary resize-none focus:outline-none focus:border-ig-blue"
+          className="w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary resize-none focus:border-ig-blue focus:outline-none md:text-sm"
         />
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <input
             type="number"
             min={0}
@@ -60,7 +60,7 @@ export default function PlaceCard({ place, onUpdate, onDelete }: Props) {
             value={suggestedStartMinute}
             onChange={(e) => setSuggestedStartMinute(e.target.value)}
             placeholder="Suggested start minute"
-            className="w-full px-2 py-1 bg-ig-secondary border border-ig-border rounded text-sm text-ig-text-primary focus:outline-none focus:border-ig-blue"
+            className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
           />
           <input
             type="number"
@@ -68,19 +68,19 @@ export default function PlaceCard({ place, onUpdate, onDelete }: Props) {
             value={suggestedDurationMinutes}
             onChange={(e) => setSuggestedDurationMinutes(e.target.value)}
             placeholder="Duration minutes"
-            className="w-full px-2 py-1 bg-ig-secondary border border-ig-border rounded text-sm text-ig-text-primary focus:outline-none focus:border-ig-blue"
+            className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
           />
         </div>
-        <div className="flex gap-2">
-          <button onClick={handleSave} className="px-3 py-1 bg-ig-blue text-white rounded text-sm font-semibold">Save</button>
-          <button onClick={() => setEditing(false)} className="px-3 py-1 text-ig-text-secondary text-sm">Cancel</button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={handleSave} className="min-h-11 rounded bg-ig-blue px-4 py-2 text-sm font-semibold text-white">Save</button>
+          <button onClick={() => setEditing(false)} className="min-h-11 rounded px-4 py-2 text-sm text-ig-text-secondary">Cancel</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 bg-ig-primary border border-ig-border rounded-md flex items-start justify-between group">
+    <div className="group flex flex-col gap-3 rounded-md border border-ig-border bg-ig-primary p-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm">📍</span>
@@ -104,9 +104,9 @@ export default function PlaceCard({ place, onUpdate, onDelete }: Props) {
           </div>
         )}
       </div>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-        <button onClick={() => setEditing(true)} className="p-1 text-ig-text-tertiary hover:text-ig-text-primary text-xs">Edit</button>
-        <button onClick={() => onDelete(place.id)} className="p-1 text-ig-text-tertiary hover:text-ig-error text-xs">Delete</button>
+      <div className="flex gap-1 sm:ml-2 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+        <button onClick={() => setEditing(true)} className="min-h-9 rounded-md px-2 text-xs text-ig-text-tertiary hover:text-ig-text-primary">Edit</button>
+        <button onClick={() => onDelete(place.id)} className="min-h-9 rounded-md px-2 text-xs text-ig-text-tertiary hover:text-ig-error">Delete</button>
       </div>
     </div>
   );

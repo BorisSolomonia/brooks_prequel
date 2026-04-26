@@ -270,7 +270,7 @@ function FilterChip({ label, activeCount, onClick, active }: FilterChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+      className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition md:min-h-0 md:px-3 md:py-1.5 md:text-xs ${
         active || activeCount > 0
           ? 'border-brand-500/30 bg-brand-500/10 text-brand-600'
           : 'border-ig-border bg-ig-primary/80 text-ig-text-secondary hover:border-brand-500/20 hover:text-ig-text-primary'
@@ -294,12 +294,12 @@ function FilterSection({ title, options, selected, onToggle, renderLabel }: Filt
         {options.map((option) => {
           const isSelected = selected.includes(option);
 
-          return (
+              return (
             <button
               key={option}
               type="button"
               onClick={() => onToggle(option)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition ${
+              className={`min-h-11 rounded-full border px-4 py-2 text-sm transition md:min-h-0 md:px-3 md:py-1.5 md:text-xs ${
                 isSelected
                   ? 'border-brand-500/30 bg-brand-500/10 text-brand-600'
                   : 'border-ig-border bg-ig-primary text-ig-text-secondary hover:text-ig-text-primary'
@@ -369,7 +369,7 @@ function InfluencerViewportSlice({ pin, onHoverStart, onHoverEnd }: InfluencerVi
 
 function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
   return (
-    <div className="absolute inset-x-4 bottom-4 z-10 mx-auto max-w-md rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur">
+    <div className="absolute inset-x-3 bottom-4 z-10 mx-auto max-w-md rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur">
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-3">
           <div className="h-14 w-14 overflow-hidden rounded-full border border-white/90 bg-ig-secondary shadow-[0_0_0_2px_var(--brand-primary)]">
@@ -403,7 +403,7 @@ function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
         <button
           type="button"
           onClick={onClose}
-          className="text-sm text-ig-text-tertiary transition-colors hover:text-ig-text-primary"
+          className="min-h-11 rounded-full px-3 text-sm text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
           aria-label="Close influencer details"
         >
           Close
@@ -412,7 +412,7 @@ function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
       <div className="mt-4">
         <Link
           href={`/creators/${pin.username}`}
-          className="inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
+          className="inline-flex min-h-11 items-center rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
         >
           Open profile
         </Link>
@@ -453,6 +453,7 @@ export default function MapsExperience({
   const [hoveredSlicePinId, setHoveredSlicePinId] = useState<string | null>(null);
   const [hoveredMarkerPinId, setHoveredMarkerPinId] = useState<string | null>(null);
   const [openFilterMenu, setOpenFilterMenu] = useState<FilterMenuKey>(null);
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
   const mapConfigured = Boolean(
     mapboxToken &&
@@ -946,23 +947,28 @@ export default function MapsExperience({
   }
 
   return (
-    <div className="relative h-[calc(100vh-60px)] w-full overflow-hidden bg-ig-primary">
+    <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden bg-ig-primary md:h-[calc(100vh-60px)]">
       {(tokenLoading || !token) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-ig-primary">
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      <div className="absolute left-4 top-4 z-10 w-[min(380px,calc(100vw-2rem))] rounded-[28px] border border-ig-border bg-ig-elevated/95 p-4 shadow-xl backdrop-blur">
+      <div className="absolute inset-x-3 bottom-4 z-10 max-h-[62vh] rounded-[28px] border border-ig-border bg-ig-elevated/95 p-4 shadow-xl backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:w-[min(380px,calc(100vw-2rem))] md:max-h-[calc(100vh-92px)]">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Brooks Maps</p>
-            <h1 className="mt-1 text-2xl font-semibold text-ig-text-primary">Influencers in view</h1>
+            <h1 className="mt-1 text-xl font-semibold text-ig-text-primary md:text-2xl">Influencers in view</h1>
           </div>
-          <span className="rounded-pill bg-brand-500/15 px-3 py-1 text-xs font-semibold text-brand-500">
+          <button
+            type="button"
+            onClick={() => setMobilePanelOpen((open) => !open)}
+            className="min-h-11 rounded-full bg-brand-500/15 px-4 py-2 text-sm font-semibold text-brand-500 md:pointer-events-none md:min-h-0 md:px-3 md:py-1 md:text-xs"
+          >
             {viewportPins.length}{searchQuery ? ` / ${filteredPins.length}` : ''} visible
-          </span>
+          </button>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className={`${mobilePanelOpen ? 'block' : 'hidden'} md:block`}>
+        <div className="mt-4 flex max-h-28 flex-wrap gap-2 overflow-y-auto md:max-h-none">
           <FilterChip
             label="Country"
             activeCount={activeFilters.countries.length}
@@ -1015,7 +1021,7 @@ export default function MapsExperience({
             type="button"
             onClick={clearAllFilters}
             disabled={activeFilterCount === 0}
-            className="rounded-full border border-transparent px-3 py-1.5 text-xs font-medium text-ig-text-tertiary transition hover:text-ig-text-primary disabled:cursor-default disabled:opacity-50"
+            className="min-h-11 rounded-full border border-transparent px-4 py-2 text-sm font-medium text-ig-text-tertiary transition hover:text-ig-text-primary disabled:cursor-default disabled:opacity-50 md:min-h-0 md:px-3 md:py-1.5 md:text-xs"
           >
             Clear all
           </button>
@@ -1093,7 +1099,7 @@ export default function MapsExperience({
             )}
           </div>
         )}
-        <p className="mt-2 text-sm text-ig-text-secondary">
+        <p className="mt-2 hidden text-sm text-ig-text-secondary md:block">
           The panel tracks the current map viewport. Pan or zoom the map and this list updates to show creators visible in the area on screen.
         </p>
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-ig-text-tertiary">
@@ -1116,7 +1122,7 @@ export default function MapsExperience({
             <span className="rounded-pill border border-ig-border px-2 py-1">No creators in the current view</span>
           )}
         </div>
-        <div className="mt-4 max-h-[55vh] space-y-3 overflow-y-auto pr-1">
+        <div className="mt-4 max-h-[26vh] space-y-3 overflow-y-auto pr-1 md:max-h-[55vh]">
           {viewportPins.map((pin) => (
             <InfluencerViewportSlice
               key={pin.userId}
@@ -1125,6 +1131,7 @@ export default function MapsExperience({
               onHoverEnd={() => setHoveredSlicePinId(null)}
             />
           ))}
+        </div>
         </div>
       </div>
 

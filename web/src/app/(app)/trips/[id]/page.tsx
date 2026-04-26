@@ -49,18 +49,18 @@ function NavigateMenu({ lat, lng }: { lat: number; lng: number }) {
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="text-xs px-2.5 py-1 rounded-full border border-ig-border text-ig-text-secondary hover:border-brand-500/50 hover:text-brand-400 transition-colors"
+        className="min-h-11 rounded-full border border-ig-border px-4 py-2 text-sm text-ig-text-secondary transition-colors hover:border-brand-500/50 hover:text-brand-400 md:min-h-0 md:px-2.5 md:py-1 md:text-xs"
       >
         Navigate
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-10 w-44 rounded-xl border border-ig-border bg-ig-elevated shadow-lg py-1">
           <a href={buildMapsUrl(lat, lng)} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-ig-text-primary hover:bg-ig-hover">Google Maps</a>
+            className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Google Maps</a>
           <a href={buildAppleMapsUrl(lat, lng)} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-ig-text-primary hover:bg-ig-hover">Apple Maps</a>
+            className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Apple Maps</a>
           <a href={buildWazeUrl(lat, lng)} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-ig-text-primary hover:bg-ig-hover">Waze</a>
+            className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Waze</a>
         </div>
       )}
     </div>
@@ -261,13 +261,13 @@ export default function TripDetailPage() {
             href={buildGoogleMapsAllUrl(visibleItems)}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover"
+            className="inline-flex min-h-11 items-center rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover"
           >
             Open in Maps
           </a>
           <button
             onClick={() => setShowCalendarModal(true)}
-            className="inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+            className="inline-flex min-h-11 items-center rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
           >
             Add to Calendar
           </button>
@@ -285,7 +285,7 @@ export default function TripDetailPage() {
               <button
                 key={star}
                 onClick={() => setReview((r) => ({ ...r, rating: star }))}
-                className={`text-2xl transition-colors ${star <= review.rating ? 'text-yellow-400' : 'text-ig-border hover:text-yellow-300'}`}
+              className={`min-h-11 min-w-11 rounded-full text-2xl transition-colors ${star <= review.rating ? 'text-yellow-400' : 'text-ig-border hover:text-yellow-300'}`}
               >
                 ★
               </button>
@@ -302,7 +302,7 @@ export default function TripDetailPage() {
           <button
             onClick={handleSubmitReview}
             disabled={review.rating === 0 || review.submitting}
-            className="mt-3 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+            className="mt-3 min-h-11 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
           >
             {review.submitting ? 'Submitting...' : 'Submit review'}
           </button>
@@ -328,7 +328,7 @@ export default function TripDetailPage() {
               <button
                 onClick={handleSaveSetup}
                 disabled={saving}
-                className="rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50"
+                className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save setup'}
               </button>
@@ -340,7 +340,7 @@ export default function TripDetailPage() {
                   type="date"
                   value={tripStartDate}
                   onChange={(e) => setTripStartDate(e.target.value)}
-                  className="w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                  className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none"
                 />
               </label>
               <label className="block text-sm">
@@ -349,7 +349,7 @@ export default function TripDetailPage() {
                   type="text"
                   value={tripTimezone}
                   onChange={(e) => setTripTimezone(e.target.value)}
-                  className="w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                  className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none"
                 />
               </label>
             </div>
@@ -389,7 +389,7 @@ export default function TripDetailPage() {
                                 <button
                                   onClick={() => handleToggleVisited(item)}
                                   title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
-                                  className={`mt-0.5 flex-shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                  className={`mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-5 sm:w-5 ${
                                     isVisited
                                       ? 'border-brand-500 bg-brand-500 text-white'
                                       : 'border-ig-border hover:border-brand-500/50'
@@ -413,7 +413,7 @@ export default function TripDetailPage() {
                                 {item.latitude !== null && item.longitude !== null && (
                                   <NavigateMenu lat={item.latitude} lng={item.longitude} />
                                 )}
-                                <label className="inline-flex items-center gap-2 text-sm text-ig-text-secondary">
+                                <label className="inline-flex min-h-11 items-center gap-2 text-sm text-ig-text-secondary">
                                   <input
                                     type="checkbox"
                                     checked={edit.skipped}
@@ -434,7 +434,7 @@ export default function TripDetailPage() {
                                   ...current,
                                   [item.placeId]: { ...edit, scheduledStart: e.target.value },
                                 }))}
-                                className="w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none md:text-sm"
                               />
                               <input
                                 type="datetime-local"
@@ -443,7 +443,7 @@ export default function TripDetailPage() {
                                   ...current,
                                   [item.placeId]: { ...edit, scheduledEnd: e.target.value },
                                 }))}
-                                className="w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none md:text-sm"
                               />
                             </div>
                             <p className="mt-2 text-xs text-ig-text-tertiary">
@@ -494,7 +494,7 @@ export default function TripDetailPage() {
                     : '#'}
                   target="_blank"
                   rel="noreferrer"
-                  className="block rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-primary hover:border-brand-500/50"
+                  className="block min-h-14 rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-primary hover:border-brand-500/50"
                 >
                   <div className="font-semibold">{item.placeName}</div>
                   {item.placeAddress && <div className="mt-1 text-xs text-ig-text-tertiary">{item.placeAddress}</div>}
@@ -516,7 +516,7 @@ export default function TripDetailPage() {
               <a
                 href={`/api/me/trips/${trip.id}/calendar.ics`}
                 onClick={() => setShowCalendarModal(false)}
-                className="block w-full rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-primary hover:border-brand-500/50 transition-colors"
+                className="block min-h-14 w-full rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-primary transition-colors hover:border-brand-500/50"
               >
                 <div className="font-semibold">Download .ics file</div>
                 <div className="text-xs text-ig-text-tertiary mt-0.5">Works with Apple Calendar, Outlook, Google Calendar, and more.</div>
@@ -528,7 +528,7 @@ export default function TripDetailPage() {
             </div>
             <button
               onClick={() => setShowCalendarModal(false)}
-              className="mt-4 w-full text-sm text-ig-text-tertiary hover:text-ig-text-secondary"
+              className="mt-4 min-h-11 w-full text-sm text-ig-text-tertiary hover:text-ig-text-secondary"
             >
               Skip for now
             </button>
