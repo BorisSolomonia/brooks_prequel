@@ -4,8 +4,10 @@ import com.brooks.common.exception.BusinessException;
 import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.social.domain.Follow;
 import com.brooks.social.dto.FollowResponse;
+import com.brooks.social.dto.FollowerSummaryResponse;
 import com.brooks.social.event.FollowEvent;
 import com.brooks.social.repository.FollowRepository;
+import com.brooks.profile.domain.UserProfile;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -76,6 +80,32 @@ public class FollowService {
     @Transactional(readOnly = true)
     public List<UUID> getFollowerIds(UUID userId) {
         return followRepository.findFollowerIdsByFollowingId(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FollowerSummaryResponse> getMyFollowers(String auth0Subject) {
+        User me = userService.findByAuth0Subject(auth0Subject);
+        List<UUID> followerIds = followRepository.findFollowerIdsByFollowingId(me.getId());
+        if (followerIds.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, User> userMap = userService.findAllByIds(followerIds);
+        Map<UUID, UserProfile> profileMap = profileRepository.findAllByUserIdIn(followerIds)
+                .stream().collect(Collectors.toMap(UserProfile::getUserId, p -> p));
+
+        return followerIds.stream()
+                .filter(userMap::containsKey)
+                .map(id -> {
+                    User u = userMap.get(id);
+                    UserProfile p = profileMap.get(id);
+                    return FollowerSummaryResponse.builder()
+                            .userId(id)
+                            .username(u.getUsername())
+                            .displayName(p != null ? p.getDisplayName() : u.getUsername())
+                            .avatarUrl(p != null ? p.getAvatarUrl() : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     private void updateCounts(UUID followerId, UUID followingId) {

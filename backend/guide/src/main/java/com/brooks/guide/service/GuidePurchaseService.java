@@ -94,6 +94,60 @@ public class GuidePurchaseService {
     }
 
     @Transactional
+    public GuideCheckoutSessionResponse giftGuide(String creatorAuth0Subject, String creatorEmail, UUID guideId, UUID recipientUserId) {
+        User creator = resolveBuyer(creatorAuth0Subject, creatorEmail);
+        Guide guide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new ResourceNotFoundException("Guide", guideId));
+
+        if (!guide.getCreatorId().equals(creator.getId())) {
+            throw new BusinessException("Only the guide creator can gift this guide");
+        }
+        if (guide.getStatus() != GuideStatus.PUBLISHED) {
+            throw new BusinessException("Only published guides can be gifted");
+        }
+
+        User recipient = userService.findById(recipientUserId);
+
+        GuideVersion version = guideVersionRepository.findByGuideIdAndVersionNumber(guideId, guide.getVersionNumber())
+                .orElseThrow(() -> new BusinessException("Published guide version snapshot is missing"));
+
+        Optional<GuidePurchase> existingPurchase = guidePurchaseRepository
+                .findByBuyerIdAndGuideVersionIdAndStatus(recipient.getId(), version.getId(), GuidePurchaseStatus.COMPLETED);
+
+        if (existingPurchase.isPresent()) {
+            GuidePurchase existing = existingPurchase.get();
+            return GuideCheckoutSessionResponse.builder()
+                    .provider("gift")
+                    .checkoutUrl(frontendBaseUrl + "/trips/" + existing.getId())
+                    .alreadyOwned(true)
+                    .tripId(existing.getId())
+                    .build();
+        }
+
+        GuidePurchase purchase = new GuidePurchase(
+                recipient.getId(),
+                guideId,
+                version.getId(),
+                version.getVersionNumber(),
+                "gift",
+                0,
+                guide.getCurrency()
+        );
+        purchase.setStatus(GuidePurchaseStatus.COMPLETED);
+        purchase.setTripTimezone(defaultTripTimezone(parseSnapshot(version)));
+        purchase = guidePurchaseRepository.save(purchase);
+
+        seedTripItems(purchase, parseSnapshot(version));
+
+        return GuideCheckoutSessionResponse.builder()
+                .provider("gift")
+                .checkoutUrl(frontendBaseUrl + "/trips/" + purchase.getId())
+                .alreadyOwned(false)
+                .tripId(purchase.getId())
+                .build();
+    }
+
+    @Transactional
     public void materializeTripForPurchase(UUID buyerId, UUID guideId, int guideVersionNumber, int amountCents, String currency, String provider) {
         GuideVersion version = guideVersionRepository.findByGuideIdAndVersionNumber(guideId, guideVersionNumber)
                 .orElseThrow(() -> new BusinessException("Guide version snapshot is missing"));

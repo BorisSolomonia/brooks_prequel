@@ -402,6 +402,13 @@ export interface GuidePlaceRequest {
   imageUrls?: string[];
 }
 
+export interface FollowerSummary {
+  userId: string;
+  username: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
 export interface GuideCheckoutSessionResponse {
   provider: string;
   checkoutUrl: string | null;

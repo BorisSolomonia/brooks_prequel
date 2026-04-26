@@ -12,6 +12,7 @@ import type {
 import GuideMetadataForm from './GuideMetadataForm';
 import DayPanel from './DayPanel';
 import PublishButton from './PublishButton';
+import GiftGuideModal from './GiftGuideModal';
 import { CreatorAiPanel } from '@/components/ai/CreatorAiPanel';
 import type { AiKeyResponse } from '@/types';
 
@@ -46,6 +47,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAiPanel, setShowAiPanel] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
 
   const handleAddTag = () => {
     const tag = tagInput.trim();
@@ -233,6 +235,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
   };
 
   return (
+    <>
     <div className="max-w-3xl mx-auto px-4 py-6">
       {error && (
         <div className="mb-4 p-3 bg-ig-error/10 border border-ig-error/30 rounded-md text-ig-error text-sm">
@@ -261,7 +264,16 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
             <PublishButton onPublish={handlePublish} />
           )}
           {guide && guide.status === 'PUBLISHED' && (
-            <span className="px-3 py-1 bg-ig-success/20 text-ig-success rounded-pill text-sm font-semibold">Published v{guide.versionNumber}</span>
+            <>
+              <button
+                type="button"
+                onClick={() => setShowGiftModal(true)}
+                className="rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover"
+              >
+                🎁 Gift to Follower
+              </button>
+              <span className="px-3 py-1 bg-ig-success/20 text-ig-success rounded-pill text-sm font-semibold">Published v{guide.versionNumber}</span>
+            </>
           )}
         </div>
       </div>
@@ -393,5 +405,14 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
         </div>
       )}
     </div>
+
+      {showGiftModal && guide && (
+        <GiftGuideModal
+          guideId={guide.id}
+          token={token}
+          onClose={() => setShowGiftModal(false)}
+        />
+      )}
+    </>
   );
 }
