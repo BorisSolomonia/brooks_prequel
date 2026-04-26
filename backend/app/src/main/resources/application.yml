@@ -42,7 +42,7 @@ app:
   admin-emails: ${ADMIN_EMAILS:}
   seed:
     example:
-      enabled: ${SEED_EXAMPLE_ENABLED:true}
+      enabled: ${SEED_EXAMPLE_ENABLED:false}
       auth0-subject: ${SEED_EXAMPLE_AUTH0_SUBJECT:}
       email: ${SEED_EXAMPLE_EMAIL:}
       username: ${SEED_EXAMPLE_USERNAME:}

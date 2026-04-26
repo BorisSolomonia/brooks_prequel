@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Avatar from '@/components/ui/Avatar';
-import PlaceholderNotice from '@/components/ui/PlaceholderNotice';
 import { AiKeysPanel } from '@/components/ai/AiKeysPanel';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
@@ -65,11 +64,6 @@ function ProfilePageInner() {
 
       {activeTab === 'overview' && (
         <>
-          <PlaceholderNotice
-            title="Profile overview is partially implemented"
-            body="Your live profile data is loaded here now, including whether you have creator coordinates for the maps experience. Guide analytics and richer creator insights are still pending."
-          />
-
           {error && <p className="mb-4 text-sm text-ig-error">{error}</p>}
 
           {profile ? (

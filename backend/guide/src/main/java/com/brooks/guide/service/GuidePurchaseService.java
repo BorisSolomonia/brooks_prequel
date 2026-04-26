@@ -50,6 +50,9 @@ public class GuidePurchaseService {
         if (guide.getCreatorId().equals(buyer.getId())) {
             throw new BusinessException("Creators cannot purchase their own guides");
         }
+        if (guide.getPriceCents() > 0) {
+            throw new BusinessException("Payment provider not configured — this guide requires payment");
+        }
 
         GuideVersion version = guideVersionRepository.findByGuideIdAndVersionNumber(guideId, guide.getVersionNumber())
                 .orElseThrow(() -> new BusinessException("Published guide version snapshot is missing"));

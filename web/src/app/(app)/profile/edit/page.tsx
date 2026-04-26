@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
 import { useRouter } from 'next/navigation';
-import PlaceholderNotice from '@/components/ui/PlaceholderNotice';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import type { Profile, ProfileUpdateRequest } from '@/types';
@@ -168,11 +167,6 @@ export default function EditProfilePage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8">
-      <PlaceholderNotice
-        title="Profile save is live for map location"
-        body="This screen now persists creator profile basics and optional coordinates for the maps experience. Guide lists and richer profile analytics are still pending."
-      />
-
       <h1 className="text-2xl font-bold mb-6 text-ig-text-primary">Complete Your Profile</h1>
 
       {message && (

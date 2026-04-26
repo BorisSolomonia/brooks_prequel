@@ -22,8 +22,8 @@ export default function FeedPage() {
     }
 
     Promise.all([
-      api.get<CreatorStoryStrip[]>('/api/stories/feed', token).catch(() => [] as CreatorStoryStrip[]),
-      api.get<FeedItem[]>('/api/feed', token).catch(() => [] as FeedItem[]),
+      api.get<CreatorStoryStrip[]>('/api/stories/feed', token).catch((err) => { console.error('[feed] stories:', err); return [] as CreatorStoryStrip[]; }),
+      api.get<FeedItem[]>('/api/feed', token).catch((err) => { console.error('[feed] items:', err); return [] as FeedItem[]; }),
     ])
       .then(([strips, items]) => {
         setStoryStrips(strips);

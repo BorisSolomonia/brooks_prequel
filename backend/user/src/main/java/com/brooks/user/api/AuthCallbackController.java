@@ -5,6 +5,7 @@ import com.brooks.user.domain.User;
 import com.brooks.user.dto.UserResponse;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,9 @@ public class AuthCallbackController {
 
     @PostMapping("/callback")
     public ResponseEntity<UserResponse> callback(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         String subject = authService.extractSubject(authentication);
         String email = authService.extractEmail(authentication).orElse("");
         User user = userService.findOrCreateUser(subject, email);

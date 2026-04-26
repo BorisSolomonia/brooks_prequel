@@ -30,7 +30,7 @@ public class UserService {
         return userRepository.findByAuth0Subject(auth0Subject)
                 .orElseGet(() -> {
                     User user = new User(auth0Subject, email);
-                    if (adminEmails.contains(email)) {
+                    if (adminEmails.stream().anyMatch(e -> e.equalsIgnoreCase(email))) {
                         user.setRole(UserRole.ADMIN);
                     }
                     return userRepository.save(user);

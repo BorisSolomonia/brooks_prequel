@@ -19,9 +19,6 @@ http://127.0.0.1 {
   @api path /api/*
   reverse_proxy @api {$BACKEND_HOST}:{$BACKEND_PORT}
 
-  @actuator path /actuator/*
-  reverse_proxy @actuator {$BACKEND_HOST}:{$BACKEND_PORT}
-
   reverse_proxy {$WEB_HOST}:{$WEB_PORT}
 
   header {

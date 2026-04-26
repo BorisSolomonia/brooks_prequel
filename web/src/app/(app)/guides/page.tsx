@@ -48,7 +48,7 @@ export default function MyGuidesPage() {
           purchased,
         });
       })
-      .catch(() => {})
+      .catch((err) => console.error('[guides] library load failed:', err))
       .finally(() => setLoading(false));
   }, [token, tokenLoading, router]);
 

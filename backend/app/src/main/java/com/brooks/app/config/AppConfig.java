@@ -18,7 +18,7 @@ public class AppConfig {
     public CommonsRequestLoggingFilter requestLoggingFilter() {
         CommonsRequestLoggingFilter filter = new CommonsRequestLoggingFilter();
         filter.setIncludeClientInfo(true);
-        filter.setIncludeQueryString(true);
+        filter.setIncludeQueryString(false);
         filter.setIncludeHeaders(false);
         filter.setIncludePayload(false);
         filter.setBeforeMessagePrefix("HTTP request started: ");
