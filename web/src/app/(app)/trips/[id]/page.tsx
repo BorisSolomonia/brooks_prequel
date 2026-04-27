@@ -7,7 +7,7 @@ import PurchasedTripMap from '@/components/maps/PurchasedTripMap';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
-import type { MyTripDetail, MyTripItem, MyTripItemUpdateRequest, MyTripSetupRequest, AiKeyResponse } from '@/types';
+import type { MyTripDetail, MyTripItem, MyTripItemUpdateRequest, MyTripSetupRequest, AiKeyResponse, GuidePlace } from '@/types';
 import { BuyerChatPanel } from '@/components/ai/BuyerChatPanel';
 
 function toLocalInputValue(value: string | null): string {
@@ -151,6 +151,18 @@ export default function TripDetailPage() {
     [visitedMap],
   );
   const showReviewPrompt = totalPlaces > 0 && visitedCount >= Math.ceil(totalPlaces * 0.5) && !review.submitted;
+
+  const placeLookup = useMemo(() => {
+    const map = new Map<string, GuidePlace>();
+    trip?.guide.days.forEach((day) => {
+      day.blocks.forEach((block) => {
+        block.places.forEach((place) => {
+          map.set(place.id, place);
+        });
+      });
+    });
+    return map;
+  }, [trip?.guide]);
 
   const handleToggleVisited = async (item: MyTripItem) => {
     if (!token) return;
@@ -395,51 +407,74 @@ export default function TripDetailPage() {
                           skipped: item.skipped,
                         };
                         const isVisited = visitedMap[item.id] ?? item.visited;
+                        const placeData = placeLookup.get(item.placeId);
+                        const firstImage = placeData?.images[0]?.imageUrl;
+                        const placeTags = placeData?.tags ?? [];
+                        const displayTags = placeTags.slice(0, 2);
+                        const extraTags = placeTags.length > 2 ? placeTags.length - 2 : 0;
+                        const tagLine = displayTags.length > 0
+                          ? displayTags.join(' • ') + (extraTags > 0 ? ` • +${extraTags}` : '')
+                          : '';
                         return (
-                          <div key={item.placeId} className={`rounded-xl border bg-ig-primary p-4 transition-colors ${isVisited ? 'border-brand-500/30' : 'border-ig-border'}`}>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="flex items-start gap-3 flex-1">
-                                <button
-                                  onClick={() => handleToggleVisited(item)}
-                                  title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
-                                  className={`mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-5 sm:w-5 ${
-                                    isVisited
-                                      ? 'border-brand-500 bg-brand-500 text-white'
-                                      : 'border-ig-border hover:border-brand-500/50'
-                                  }`}
-                                >
-                                  {isVisited && (
-                                    <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
-                                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                  )}
-                                </button>
-                                <div>
-                                  <h3 className={`text-base font-semibold ${isVisited ? 'text-ig-text-secondary line-through' : 'text-ig-text-primary'}`}>
+                          <div key={item.placeId} className={`rounded-xl border bg-ig-primary transition-colors ${isVisited ? 'border-brand-500/30' : 'border-ig-border'}`}>
+                            <div className="flex gap-3 p-3">
+                              <button
+                                onClick={() => handleToggleVisited(item)}
+                                title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
+                                className={`mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-5 sm:w-5 ${
+                                  isVisited
+                                    ? 'border-brand-500 bg-brand-500 text-white'
+                                    : 'border-ig-border hover:border-brand-500/50'
+                                }`}
+                              >
+                                {isVisited && (
+                                  <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+                                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                )}
+                              </button>
+                              <div className="h-16 w-16 flex-shrink-0 rounded-lg border border-ig-border bg-ig-elevated overflow-hidden">
+                                {firstImage && <img src={firstImage} alt="" className="h-full w-full object-cover" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className={`text-sm font-semibold truncate ${isVisited ? 'text-ig-text-secondary line-through' : 'text-ig-text-primary'}`}>
                                     {item.placeName}
                                   </h3>
-                                  {item.blockTitle && <p className="text-sm text-ig-text-secondary">{item.blockTitle}</p>}
-                                  {item.placeAddress && <p className="mt-1 text-sm text-ig-text-tertiary">{item.placeAddress}</p>}
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    {item.latitude !== null && item.longitude !== null && (
+                                      <a
+                                        href={`https://brooksweb.uk/maps?lat=${item.latitude}&lng=${item.longitude}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="flex h-7 w-7 items-center justify-center rounded-full text-brand-400 hover:bg-brand-500/10 hover:text-brand-300 transition-colors"
+                                        title="View on map"
+                                      >
+                                        📍
+                                      </a>
+                                    )}
+                                    {item.latitude !== null && item.longitude !== null && (
+                                      <NavigateMenu lat={item.latitude} lng={item.longitude} />
+                                    )}
+                                    <label className="inline-flex min-h-9 items-center gap-1 text-xs text-ig-text-secondary cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={edit.skipped}
+                                        onChange={(e) => setItemEdits((current) => ({
+                                          ...current,
+                                          [item.placeId]: { ...edit, skipped: e.target.checked },
+                                        }))}
+                                      />
+                                      Skip
+                                    </label>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                {item.latitude !== null && item.longitude !== null && (
-                                  <NavigateMenu lat={item.latitude} lng={item.longitude} />
-                                )}
-                                <label className="inline-flex min-h-11 items-center gap-2 text-sm text-ig-text-secondary">
-                                  <input
-                                    type="checkbox"
-                                    checked={edit.skipped}
-                                    onChange={(e) => setItemEdits((current) => ({
-                                      ...current,
-                                      [item.placeId]: { ...edit, skipped: e.target.checked },
-                                    }))}
-                                  />
-                                  Skip
-                                </label>
+                                {tagLine && <p className="mt-0.5 text-xs text-ig-text-secondary">{tagLine}</p>}
+                                {item.placeAddress && <p className="mt-0.5 text-xs text-ig-text-tertiary truncate">{item.placeAddress}</p>}
+                                {placeData?.description && <p className="mt-1 text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
                               </div>
                             </div>
-                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <div className="grid gap-3 px-3 pb-3 sm:grid-cols-2">
                               <input
                                 type="datetime-local"
                                 value={edit.scheduledStart}
@@ -459,7 +494,7 @@ export default function TripDetailPage() {
                                 className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none md:text-sm"
                               />
                             </div>
-                            <p className="mt-2 text-xs text-ig-text-tertiary">
+                            <p className="px-3 pb-3 text-xs text-ig-text-tertiary">
                               {item.suggestedStartMinute !== null ? `Creator start hint: +${item.suggestedStartMinute} min.` : 'No creator start hint.'}
                               {item.suggestedDurationMinutes !== null ? ` Suggested: ${item.suggestedDurationMinutes} min.` : ''}
                             </p>

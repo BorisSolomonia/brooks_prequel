@@ -10,6 +10,8 @@ const SUGGESTED_TAGS = [
   'temple', 'church', 'nightlife', 'entertainment',
 ];
 
+const MAPS_BASE = 'https://brooksweb.uk/maps';
+
 interface Props {
   token: string;
   place: GuidePlace;
@@ -19,12 +21,17 @@ interface Props {
 
 export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(false);
+
+  // edit-form state
   const [name, setName] = useState(place.name);
   const [description, setDescription] = useState(place.description || '');
   const [address, setAddress] = useState(place.address || '');
+  const [latStr, setLatStr] = useState(place.latitude?.toString() || '');
+  const [lngStr, setLngStr] = useState(place.longitude?.toString() || '');
   const [suggestedStartMinute, setSuggestedStartMinute] = useState(place.suggestedStartMinute?.toString() || '');
   const [suggestedDurationMinutes, setSuggestedDurationMinutes] = useState(place.suggestedDurationMinutes?.toString() || '');
-  const [imageUrls, setImageUrls] = useState(place.images.map((image) => image.imageUrl));
+  const [imageUrls, setImageUrls] = useState(place.images.map((img) => img.imageUrl));
   const [tags, setTags] = useState<string[]>(place.tags ?? []);
   const [tagInput, setTagInput] = useState('');
 
@@ -34,25 +41,40 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
     setTags((prev) => [...prev, t]);
     setTagInput('');
   };
-
   const removeTag = (tag: string) => setTags((prev) => prev.filter((t) => t !== tag));
 
+  const buildRequest = (): GuidePlaceRequest => ({
+    name,
+    description: description || undefined,
+    address: address || undefined,
+    latitude: latStr ? Number(latStr) : undefined,
+    longitude: lngStr ? Number(lngStr) : undefined,
+    suggestedStartMinute: suggestedStartMinute ? Number(suggestedStartMinute) : undefined,
+    suggestedDurationMinutes: suggestedDurationMinutes ? Number(suggestedDurationMinutes) : undefined,
+    imageUrls,
+    tags,
+  });
+
   const handleSave = () => {
-    onUpdate(place.id, {
-      name,
-      description,
-      address,
-      suggestedStartMinute: suggestedStartMinute === '' ? undefined : Number(suggestedStartMinute),
-      suggestedDurationMinutes: suggestedDurationMinutes === '' ? undefined : Number(suggestedDurationMinutes),
-      imageUrls,
-      tags,
-    });
+    onUpdate(place.id, buildRequest());
     setEditing(false);
   };
 
+  const handleSaveLocation = () => {
+    onUpdate(place.id, {
+      name: place.name,
+      imageUrls: place.images.map((i) => i.imageUrl),
+      tags: place.tags ?? [],
+      latitude: latStr ? Number(latStr) : undefined,
+      longitude: lngStr ? Number(lngStr) : undefined,
+    });
+    setEditingLocation(false);
+  };
+
+  // ── Edit form ─────────────────────────────────────────────
   if (editing) {
     return (
-      <div className="p-3 bg-ig-primary border border-ig-border rounded-md space-y-3">
+      <div className="rounded-lg border border-ig-border bg-ig-primary p-3 space-y-3">
         <input
           type="text"
           value={name}
@@ -74,14 +96,32 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
           rows={2}
           className="w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary resize-none focus:border-ig-blue focus:outline-none md:text-sm"
         />
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="number"
+            step="any"
+            value={latStr}
+            onChange={(e) => setLatStr(e.target.value)}
+            placeholder="Latitude"
+            className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
+          />
+          <input
+            type="number"
+            step="any"
+            value={lngStr}
+            onChange={(e) => setLngStr(e.target.value)}
+            placeholder="Longitude"
+            className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
           <input
             type="number"
             min={0}
             max={1439}
             value={suggestedStartMinute}
             onChange={(e) => setSuggestedStartMinute(e.target.value)}
-            placeholder="Suggested start minute"
+            placeholder="Start minute"
             className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
           />
           <input
@@ -89,13 +129,13 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
             min={1}
             value={suggestedDurationMinutes}
             onChange={(e) => setSuggestedDurationMinutes(e.target.value)}
-            placeholder="Duration minutes"
+            placeholder="Duration (min)"
             className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
           />
         </div>
 
         <div>
-          <p className="text-xs text-ig-text-tertiary mb-2">Tags</p>
+          <p className="text-xs text-ig-text-tertiary mb-1.5">Tags</p>
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {tags.map((tag) => (
@@ -127,11 +167,7 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
               placeholder="Custom tag..."
               className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none md:text-sm"
             />
-            <button
-              type="button"
-              onClick={() => addTag(tagInput)}
-              className="min-h-11 rounded bg-ig-elevated border border-ig-border px-3 text-sm text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue"
-            >
+            <button type="button" onClick={() => addTag(tagInput)} className="min-h-11 rounded border border-ig-border px-3 text-sm text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue">
               Add
             </button>
           </div>
@@ -140,7 +176,7 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
         <ImageUploadList
           token={token}
           usage="PLACE_IMAGE"
-          label="Place images"
+          label="Photos"
           values={imageUrls}
           onChange={setImageUrls}
           maxImages={4}
@@ -153,57 +189,87 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
     );
   }
 
+  // ── View mode ────────────────────────────────────────────
   const firstImage = place.images[0]?.imageUrl;
+  const hasCoords = place.latitude !== null && place.longitude !== null;
+  const mapsUrl = hasCoords ? `${MAPS_BASE}?lat=${place.latitude}&lng=${place.longitude}` : null;
+
+  const displayTags = (place.tags ?? []).slice(0, 2);
+  const extraTags = (place.tags ?? []).length > 2 ? (place.tags ?? []).length - 2 : 0;
+  const tagLine = displayTags.length > 0
+    ? displayTags.join(' • ') + (extraTags > 0 ? ` • +${extraTags}` : '')
+    : '';
 
   return (
-    <div className="group rounded-md border border-ig-border bg-ig-primary p-3">
-      <div className="flex items-start gap-3">
-        {firstImage && (
-          <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-ig-border bg-ig-elevated">
-            <img src={firstImage} alt="" className="h-full w-full object-cover" />
-          </div>
-        )}
+    <div className="group rounded-lg border border-ig-border bg-ig-primary overflow-hidden">
+      <div className="flex gap-3 p-3">
+        {/* Left: photo thumbnail or gray placeholder */}
+        <div className="h-16 w-16 flex-shrink-0 rounded-lg border border-ig-border bg-ig-elevated overflow-hidden">
+          {firstImage && <img src={firstImage} alt="" className="h-full w-full object-cover" />}
+        </div>
+
+        {/* Right: info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">📍</span>
-                <p className="text-sm font-semibold text-ig-text-primary truncate">{place.name}</p>
+            <p className="text-sm font-semibold text-ig-text-primary truncate">{place.name}</p>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {mapsUrl ? (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-brand-400 hover:bg-brand-500/10 hover:text-brand-300 transition-colors"
+                  title="View on map"
+                >
+                  📍
+                </a>
+              ) : (
+                <button
+                  onClick={() => setEditingLocation(true)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-ig-text-tertiary hover:bg-ig-hover hover:text-brand-400 transition-colors"
+                  title="Set location"
+                >
+                  📍
+                </button>
+              )}
+              <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => setEditing(true)} className="min-h-9 rounded px-2 text-xs text-ig-text-tertiary hover:text-ig-text-primary">Edit</button>
+                <button onClick={() => onDelete(place.id)} className="min-h-9 rounded px-2 text-xs text-ig-text-tertiary hover:text-ig-error">✕</button>
               </div>
-              {place.address && <p className="text-xs text-ig-text-tertiary mt-0.5 truncate">{place.address}</p>}
-              {place.description && <p className="text-xs text-ig-text-secondary mt-1 line-clamp-2">{place.description}</p>}
-              {(place.tags ?? []).length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {(place.tags ?? []).map((tag) => (
-                    <span key={tag} className="rounded-pill bg-ig-elevated border border-ig-border px-2 py-0.5 text-xs text-ig-text-secondary">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {(place.suggestedStartMinute !== null || place.suggestedDurationMinutes !== null) && (
-                <p className="mt-1 text-xs text-ig-text-tertiary">
-                  {place.suggestedStartMinute !== null ? `start +${place.suggestedStartMinute}m` : 'flex start'}
-                  {place.suggestedDurationMinutes !== null ? ` · ${place.suggestedDurationMinutes} min` : ''}
-                </p>
-              )}
-            </div>
-            <div className="flex gap-1 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-              <button onClick={() => setEditing(true)} className="min-h-9 rounded-md px-2 text-xs text-ig-text-tertiary hover:text-ig-text-primary">Edit</button>
-              <button onClick={() => onDelete(place.id)} className="min-h-9 rounded-md px-2 text-xs text-ig-text-tertiary hover:text-ig-error">Delete</button>
             </div>
           </div>
-          {place.images.length > 1 && (
-            <div className="flex gap-1 mt-2">
-              {place.images.slice(1).map((img) => (
-                <div key={img.id} className="w-8 h-8 rounded bg-ig-elevated overflow-hidden">
-                  <img src={img.imageUrl} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
+          {tagLine && <p className="mt-0.5 text-xs text-ig-text-secondary">{tagLine}</p>}
+          {place.address && <p className="mt-0.5 text-xs text-ig-text-tertiary truncate">{place.address}</p>}
+          {place.description && <p className="mt-1 text-xs text-ig-text-secondary line-clamp-2">{place.description}</p>}
         </div>
       </div>
+
+      {/* Inline location picker */}
+      {editingLocation && (
+        <div className="border-t border-ig-border px-3 pb-3 pt-2 space-y-2">
+          <p className="text-xs text-ig-text-tertiary">Set location coordinates</p>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="number"
+              step="any"
+              value={latStr}
+              onChange={(e) => setLatStr(e.target.value)}
+              placeholder="Latitude"
+              className="min-h-9 w-32 rounded border border-ig-border bg-ig-secondary px-2 py-1 text-xs text-ig-text-primary focus:border-ig-blue focus:outline-none"
+            />
+            <input
+              type="number"
+              step="any"
+              value={lngStr}
+              onChange={(e) => setLngStr(e.target.value)}
+              placeholder="Longitude"
+              className="min-h-9 w-32 rounded border border-ig-border bg-ig-secondary px-2 py-1 text-xs text-ig-text-primary focus:border-ig-blue focus:outline-none"
+            />
+            <button onClick={handleSaveLocation} className="min-h-9 rounded bg-ig-blue px-3 text-xs font-semibold text-white">Set</button>
+            <button onClick={() => setEditingLocation(false)} className="min-h-9 rounded px-3 text-xs text-ig-text-secondary hover:text-ig-text-primary">Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

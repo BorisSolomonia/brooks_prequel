@@ -28,13 +28,8 @@ public class UserService {
     @Transactional
     public User findOrCreateUser(String auth0Subject, String email) {
         return userRepository.findByAuth0Subject(auth0Subject)
-                .orElseGet(() -> {
-                    User user = new User(auth0Subject, email);
-                    if (adminEmails.stream().anyMatch(e -> e.equalsIgnoreCase(email))) {
-                        user.setRole(UserRole.ADMIN);
-                    }
-                    return userRepository.save(user);
-                });
+                .map(user -> syncAdminRole(user, email))
+                .orElseGet(() -> userRepository.save(syncAdminRole(new User(auth0Subject, email), email)));
     }
 
     @Transactional(readOnly = true)
@@ -68,5 +63,21 @@ public class UserService {
     public Map<UUID, User> findAllByIds(Collection<UUID> ids) {
         return userRepository.findAllById(ids).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
+    }
+
+    private User syncAdminRole(User user, String email) {
+        if (isConfiguredAdminEmail(email)) {
+            user.setRole(UserRole.ADMIN);
+        }
+        return user;
+    }
+
+    private boolean isConfiguredAdminEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        return adminEmails.stream()
+                .map(String::trim)
+                .anyMatch(e -> e.equalsIgnoreCase(email));
     }
 }

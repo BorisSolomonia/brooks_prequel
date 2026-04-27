@@ -35,7 +35,8 @@ public class AuthCallbackController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me(Authentication authentication) {
         String subject = authService.extractSubject(authentication);
-        User user = userService.findByAuth0Subject(subject);
+        String email = authService.extractEmail(authentication).orElse("");
+        User user = userService.findOrCreateUser(subject, email);
         return ResponseEntity.ok(toResponse(user));
     }
 
