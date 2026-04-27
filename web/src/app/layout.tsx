@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { UserProvider } from '@auth0/nextjs-auth0/client';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({
         <UserProvider>
           <Navbar />
           <main className="min-h-screen pb-16 md:pb-0">{children}</main>
+          <Footer />
         </UserProvider>
       </body>
     </html>

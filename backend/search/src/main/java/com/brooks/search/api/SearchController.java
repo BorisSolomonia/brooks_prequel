@@ -42,6 +42,13 @@ public class SearchController {
         return ResponseEntity.ok(searchService.searchGuides(query, page, Math.min(size, 50), stage, personas));
     }
 
+    @GetMapping("/guides/catalog")
+    public ResponseEntity<PageResponse<GuideSearchResult>> catalogGuides(
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "50") @Min(1) int size) {
+        return ResponseEntity.ok(searchService.catalogGuides(page, Math.min(size, 100)));
+    }
+
     @GetMapping("/places")
     public ResponseEntity<PageResponse<PlaceSearchResult>> searchPlaces(
             @RequestParam("q") String query,

@@ -65,6 +65,13 @@ public class SearchService {
         return new PageResponse<>(content, page, size, total, totalPages, page >= totalPages - 1);
     }
 
+    public PageResponse<GuideSearchResult> catalogGuides(int page, int size) {
+        long total = searchRepository.countPublishedGuides();
+        List<GuideSearchResult> content = searchRepository.listPublishedGuides(size, page * size);
+        int totalPages = (int) Math.ceil((double) total / size);
+        return new PageResponse<>(content, page, size, total, totalPages, page >= totalPages - 1);
+    }
+
     public PageResponse<PlaceSearchResult> searchPlaces(String query, int page, int size) {
         String sanitized = sanitizeQuery(query);
         if (sanitized.isBlank()) {

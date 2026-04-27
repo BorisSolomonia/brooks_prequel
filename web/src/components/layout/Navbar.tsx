@@ -14,6 +14,7 @@ function SearchBarFallback() {
 
 const desktopLinks = [
   { href: '/search', label: 'Explore' },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/maps', label: 'Maps', auth: true },
   { href: '/guides', label: 'My Guides', auth: true },
   { href: '/purchases', label: 'Purchases', auth: true },
