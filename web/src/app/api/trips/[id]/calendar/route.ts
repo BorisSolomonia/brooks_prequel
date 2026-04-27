@@ -6,10 +6,15 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   '';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const { accessToken } = await getAccessToken();
-    const response = await fetch(`${API_BASE_URL}/api/me/trips/${params.id}/calendar.ics`, {
+    const incomingUrl = new URL(request.url);
+    const acknowledgedLateItemIds = incomingUrl.searchParams.getAll('acknowledgedLateItemIds');
+    const query = new URLSearchParams();
+    acknowledgedLateItemIds.forEach((id) => query.append('acknowledgedLateItemIds', id));
+    const queryString = query.toString();
+    const response = await fetch(`${API_BASE_URL}/api/me/trips/${params.id}/calendar.ics${queryString ? `?${queryString}` : ''}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

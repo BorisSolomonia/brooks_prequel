@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PurchasedTripMap from '@/components/maps/PurchasedTripMap';
+import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import type { MyTripDetail, MyTripItem, MyTripItemUpdateRequest, MyTripSetupRequest, AiKeyResponse } from '@/types';
@@ -92,6 +93,7 @@ export default function TripDetailPage() {
   const { token, loading: tokenLoading } = useAccessToken();
   const [trip, setTrip] = useState<MyTripDetail | null>(null);
   const [tripStartDate, setTripStartDate] = useState('');
+  const [tripStartTime, setTripStartTime] = useState('09:00');
   const [tripTimezone, setTripTimezone] = useState('UTC');
   const [itemEdits, setItemEdits] = useState<Record<string, { scheduledStart: string; scheduledEnd: string; skipped: boolean }>>({});
   const [visitedMap, setVisitedMap] = useState<Record<string, boolean>>({});
@@ -120,6 +122,7 @@ export default function TripDetailPage() {
       .then((response) => {
         setTrip(response);
         setTripStartDate(response.tripStartDate ?? '');
+        setTripStartTime((response.tripStartTime || '09:00').slice(0, 5));
         setTripTimezone(response.tripTimezone || response.guide.timezone || 'UTC');
         const edits: Record<string, { scheduledStart: string; scheduledEnd: string; skipped: boolean }> = {};
         const visited: Record<string, boolean> = {};
@@ -178,6 +181,7 @@ export default function TripDetailPage() {
     try {
       const updated = await api.patch<MyTripDetail>(`/api/me/trips/${tripId}/setup`, {
         tripStartDate: tripStartDate || undefined,
+        tripStartTime: tripStartTime || undefined,
         tripTimezone: tripTimezone || undefined,
         items,
       } as MyTripSetupRequest, token);
@@ -333,13 +337,22 @@ export default function TripDetailPage() {
                 {saving ? 'Saving...' : 'Save setup'}
               </button>
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <label className="block text-sm">
                 <span className="mb-1 block text-ig-text-secondary">Trip start date</span>
                 <input
                   type="date"
                   value={tripStartDate}
                   onChange={(e) => setTripStartDate(e.target.value)}
+                  className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block text-ig-text-secondary">Start time</span>
+                <input
+                  type="time"
+                  value={tripStartTime}
+                  onChange={(e) => setTripStartTime(e.target.value)}
                   className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none"
                 />
               </label>
@@ -507,14 +520,14 @@ export default function TripDetailPage() {
     </div>
 
       {/* Calendar modal */}
-      {showCalendarModal && (
+      {false && showCalendarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setShowCalendarModal(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-ig-border bg-ig-elevated p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base font-semibold text-ig-text-primary mb-1">Add to Calendar</h2>
             <p className="text-sm text-ig-text-secondary mb-5">Choose how to add your trip events to your calendar.</p>
             <div className="space-y-3">
               <a
-                href={`/api/me/trips/${trip.id}/calendar.ics`}
+                href={`/api/me/trips/${trip?.id ?? tripId}/calendar.ics`}
                 onClick={() => setShowCalendarModal(false)}
                 className="block min-h-14 w-full rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-primary transition-colors hover:border-brand-500/50"
               >
@@ -534,6 +547,9 @@ export default function TripDetailPage() {
             </button>
           </div>
         </div>
+      )}
+      {showCalendarModal && token && (
+        <AddToCalendarModal tripId={trip.id} token={token} onClose={() => setShowCalendarModal(false)} />
       )}
     </>
   );

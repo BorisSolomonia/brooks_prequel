@@ -11,6 +11,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -46,6 +48,13 @@ public class GuidePurchaseController {
         return ResponseEntity.ok(guidePurchaseService.getTripByGuide(subject(authentication), email(authentication), guideId));
     }
 
+    @PostMapping("/me/guides/{guideId}/trip-copy")
+    public ResponseEntity<MyTripSummaryResponse> createCreatorTripCopy(
+            Authentication authentication,
+            @PathVariable(name = "guideId") UUID guideId) {
+        return ResponseEntity.ok(guidePurchaseService.createCreatorTripCopy(subject(authentication), email(authentication), guideId));
+    }
+
     @PatchMapping("/me/trips/{tripId}/setup")
     public ResponseEntity<MyTripDetailResponse> updateTripSetup(
             Authentication authentication,
@@ -62,15 +71,24 @@ public class GuidePurchaseController {
         return ResponseEntity.ok(guidePurchaseService.toggleVisited(subject(authentication), email(authentication), tripId, itemId));
     }
 
-    @GetMapping(value = "/me/trips/{tripId}/calendar.ics", produces = "text/calendar")
-    public ResponseEntity<String> downloadCalendar(
+    @GetMapping(value = "/me/trips/{tripId}/calendar.ics")
+    public ResponseEntity<?> downloadCalendar(
             Authentication authentication,
-            @PathVariable(name = "tripId") UUID tripId) {
+            @PathVariable(name = "tripId") UUID tripId,
+            @RequestParam(name = "acknowledgedLateItemIds", required = false) Set<UUID> acknowledgedLateItemIds) {
         String filename = "brooks-trip-" + tripId + ".ics";
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .contentType(MediaType.parseMediaType("text/calendar"))
-                .body(guidePurchaseService.buildCalendarFile(subject(authentication), email(authentication), tripId));
+        try {
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType("text/calendar"))
+                    .body(guidePurchaseService.buildCalendarFile(
+                            subject(authentication),
+                            email(authentication),
+                            tripId,
+                            acknowledgedLateItemIds != null ? acknowledgedLateItemIds : Collections.emptySet()));
+        } catch (GuidePurchaseService.LateCalendarEventsException ex) {
+            return ResponseEntity.status(409).body(guidePurchaseService.lateEventsResponse(ex.getLateEvents()));
+        }
     }
 
     private String subject(Authentication authentication) {

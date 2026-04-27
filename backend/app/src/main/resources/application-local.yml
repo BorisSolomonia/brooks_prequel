@@ -7,6 +7,12 @@ spring:
 ai:
   key-encryption-secret: 0000000000000000000000000000000000000000000000000000000000000000
 
+calendar:
+  token-encryption-secret: 0000000000000000000000000000000000000000000000000000000000000000
+  google:
+    client-id:
+    client-secret:
+
 unipay:
   merchant-id: test_merchant
   secret-key: test_secret

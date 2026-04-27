@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Getter
@@ -26,5 +27,7 @@ public class MyTripSummaryResponse {
     private String currency;
     private Instant purchasedAt;
     private LocalDate tripStartDate;
+    private LocalTime tripStartTime;
     private LocalDate tripEndDate;
+    private String tripSource;
 }

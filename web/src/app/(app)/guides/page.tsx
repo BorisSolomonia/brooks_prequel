@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
-import type { GuideLibraryItem, GuideLibraryResponse, PageResponse, PurchaseResponse } from '@/types';
+import type { GuideLibraryItem, GuideLibraryResponse, MyTripSummary, PageResponse, PurchaseResponse } from '@/types';
 
 type LibraryTab = 'created' | 'saved' | 'purchased';
 
@@ -16,6 +17,8 @@ export default function MyGuidesPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<LibraryTab>('created');
   const [deletingGuideId, setDeletingGuideId] = useState<string | null>(null);
+  const [calendarTripId, setCalendarTripId] = useState<string | null>(null);
+  const [calendarLoadingGuideId, setCalendarLoadingGuideId] = useState<string | null>(null);
 
   useEffect(() => {
     if (tokenLoading) return;
@@ -106,6 +109,21 @@ export default function MyGuidesPage() {
       alert(err instanceof Error ? err.message : 'Failed to delete guide');
     } finally {
       setDeletingGuideId(null);
+    }
+  };
+
+  const openCalendarForGuide = async (guide: GuideLibraryItem) => {
+    if (!token || calendarLoadingGuideId) return;
+    setCalendarLoadingGuideId(guide.id);
+    try {
+      const trip = activeTab === 'created'
+        ? await api.post<MyTripSummary>(`/api/me/guides/${guide.id}/trip-copy`, undefined, token)
+        : await api.get<MyTripSummary>(`/api/me/trips/by-guide/${guide.id}`, token);
+      setCalendarTripId(trip.id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to prepare calendar trip');
+    } finally {
+      setCalendarLoadingGuideId(null);
     }
   };
 
@@ -204,6 +222,18 @@ export default function MyGuidesPage() {
                   )}
                 </div>
               </Link>
+              {(activeTab === 'created' || activeTab === 'purchased') && (
+                <div className="flex justify-end border-t border-ig-border px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => openCalendarForGuide(guide)}
+                    disabled={calendarLoadingGuideId === guide.id}
+                    className="min-h-9 rounded-md border border-ig-border px-3 py-1.5 text-xs font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {calendarLoadingGuideId === guide.id ? 'Preparing...' : 'Add to calendar'}
+                  </button>
+                </div>
+              )}
               {activeTab === 'created' && (
                 <div className="flex justify-end border-t border-ig-border px-3 py-2">
                   <button
@@ -219,6 +249,9 @@ export default function MyGuidesPage() {
             </div>
           ))}
         </div>
+      )}
+      {calendarTripId && token && (
+        <AddToCalendarModal tripId={calendarTripId} token={token} onClose={() => setCalendarTripId(null)} />
       )}
     </div>
   );

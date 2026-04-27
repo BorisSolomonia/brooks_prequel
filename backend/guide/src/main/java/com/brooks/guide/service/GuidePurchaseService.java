@@ -33,10 +33,14 @@ public class GuidePurchaseService {
     private final GuidePurchaseRepository guidePurchaseRepository;
     private final GuideTripItemRepository guideTripItemRepository;
     private final UserService userService;
+    private final GuideService guideService;
     private final ObjectMapper objectMapper;
 
     @Value("${app.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
+
+    private static final LocalTime DEFAULT_TRIP_START_TIME = LocalTime.of(9, 0);
+    private static final LocalTime LATE_EVENT_START_TIME = LocalTime.of(20, 0);
 
     @Transactional
     public GuideCheckoutSessionResponse createCheckoutSession(String auth0Subject, String email, UUID guideId) {
@@ -83,6 +87,7 @@ public class GuidePurchaseService {
         );
         purchase.setStatus(GuidePurchaseStatus.COMPLETED);
         purchase.setTripTimezone(defaultTripTimezone(parseSnapshot(version)));
+        purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
         purchase = guidePurchaseRepository.save(purchase);
 
         seedTripItems(purchase, parseSnapshot(version));
@@ -137,6 +142,7 @@ public class GuidePurchaseService {
         );
         purchase.setStatus(GuidePurchaseStatus.COMPLETED);
         purchase.setTripTimezone(defaultTripTimezone(parseSnapshot(version)));
+        purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
         purchase = guidePurchaseRepository.save(purchase);
 
         seedTripItems(purchase, parseSnapshot(version));
@@ -171,9 +177,57 @@ public class GuidePurchaseService {
         );
         purchase.setStatus(GuidePurchaseStatus.COMPLETED);
         purchase.setTripTimezone(defaultTripTimezone(parseSnapshot(version)));
+        purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
         purchase = guidePurchaseRepository.save(purchase);
 
         seedTripItems(purchase, parseSnapshot(version));
+    }
+
+    @Transactional
+    public MyTripSummaryResponse createCreatorTripCopy(String auth0Subject, String email, UUID guideId) {
+        User creator = resolveBuyer(auth0Subject, email);
+        Guide guide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new ResourceNotFoundException("Guide", guideId));
+        if (!guide.getCreatorId().equals(creator.getId())) {
+            throw new BusinessException("Only the guide creator can add this guide to their calendar");
+        }
+        if (guide.getStatus() == GuideStatus.DELETED) {
+            throw new BusinessException("Deleted guides cannot be added to calendar");
+        }
+
+        Optional<GuidePurchase> existing = guidePurchaseRepository
+                .findFirstByBuyerIdAndGuideIdAndProviderAndStatusOrderByCreatedAtDesc(
+                        creator.getId(), guideId, "creator_copy", GuidePurchaseStatus.COMPLETED);
+        if (existing.isPresent()) {
+            return toSummaryResponse(existing.get());
+        }
+
+        GuideResponse snapshot = guideService.getGuide(auth0Subject, guideId);
+        String snapshotJson;
+        try {
+            snapshotJson = objectMapper.writeValueAsString(snapshot);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("Failed to create guide snapshot");
+        }
+
+        GuidePurchase purchase = new GuidePurchase(
+                creator.getId(),
+                guideId,
+                null,
+                guide.getVersionNumber(),
+                "creator_copy",
+                0,
+                guide.getCurrency()
+        );
+        purchase.setStatus(GuidePurchaseStatus.COMPLETED);
+        purchase.setTripSource("CREATOR_COPY");
+        purchase.setGuideSnapshot(snapshotJson);
+        purchase.setTripTimezone(defaultTripTimezone(snapshot));
+        purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
+        purchase = guidePurchaseRepository.save(purchase);
+
+        seedTripItems(purchase, snapshot);
+        return toSummaryResponse(purchase);
     }
 
     @Transactional(readOnly = true)
@@ -214,8 +268,10 @@ public class GuidePurchaseService {
                 .guideVersionNumber(purchase.getGuideVersionNumber())
                 .purchasedAt(purchase.getCreatedAt())
                 .tripStartDate(purchase.getTripStartDate())
+                .tripStartTime(resolveTripStartTime(purchase))
                 .tripEndDate(purchase.getTripEndDate())
                 .tripTimezone(resolveTripTimezone(purchase, guide))
+                .tripSource(purchase.getTripSource())
                 .guide(guide)
                 .items(items)
                 .build();
@@ -231,6 +287,11 @@ public class GuidePurchaseService {
             purchase.setTripStartDate(request.getTripStartDate());
             purchase.setTripEndDate(request.getTripStartDate().plusDays(Math.max(guide.getDayCount() - 1L, 0L)));
         }
+        if (request.getTripStartTime() != null) {
+            purchase.setTripStartTime(request.getTripStartTime());
+        } else if (purchase.getTripStartTime() == null) {
+            purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
+        }
 
         String timezone = request.getTripTimezone();
         if (timezone == null || timezone.isBlank()) {
@@ -239,7 +300,7 @@ public class GuidePurchaseService {
         purchase.setTripTimezone(timezone);
 
         List<GuideTripItem> items = guideTripItemRepository.findByPurchaseIdOrderByDayNumberAscBlockPositionAscPlacePositionAsc(tripId);
-        autoScheduleItems(items, purchase.getTripStartDate(), timezone);
+        autoScheduleItems(items, purchase.getTripStartDate(), resolveTripStartTime(purchase), timezone, true);
 
         if (request.getItems() != null) {
             Map<UUID, MyTripItemUpdateRequest> updates = new HashMap<>();
@@ -282,18 +343,13 @@ public class GuidePurchaseService {
         return toItemResponse(item);
     }
 
-    @Transactional(readOnly = true)
-    public String buildCalendarFile(String auth0Subject, String email, UUID tripId) {
-        User buyer = resolveBuyer(auth0Subject, email);
-        GuidePurchase purchase = findOwnedTrip(tripId, buyer.getId());
-        GuideResponse guide = parseSnapshot(purchase);
-        List<GuideTripItem> items = guideTripItemRepository.findByPurchaseIdOrderByDayNumberAscBlockPositionAscPlacePositionAsc(tripId);
-
-        if (purchase.getTripStartDate() != null) {
-            autoScheduleItems(items, purchase.getTripStartDate(), resolveTripTimezone(purchase, guide));
-        }
-
-        String timezone = resolveTripTimezone(purchase, guide);
+    @Transactional
+    public String buildCalendarFile(String auth0Subject, String email, UUID tripId, Set<UUID> acknowledgedLateItemIds) {
+        CalendarExport export = prepareCalendarExport(auth0Subject, email, tripId, acknowledgedLateItemIds);
+        GuideResponse guide = export.guide();
+        List<GuideTripItem> items = export.items();
+        GuidePurchase purchase = export.purchase();
+        String timezone = export.timezone();
         StringBuilder builder = new StringBuilder();
         builder.append("BEGIN:VCALENDAR\r\n");
         builder.append("VERSION:2.0\r\n");
@@ -322,6 +378,37 @@ public class GuidePurchaseService {
 
         builder.append("END:VCALENDAR\r\n");
         return builder.toString();
+    }
+
+    @Transactional
+    public CalendarExport prepareCalendarExport(String auth0Subject, String email, UUID tripId, Set<UUID> acknowledgedLateItemIds) {
+        User buyer = resolveBuyer(auth0Subject, email);
+        GuidePurchase purchase = findOwnedTrip(tripId, buyer.getId());
+        GuideResponse guide = parseSnapshot(purchase);
+        if (purchase.getTripStartDate() == null) {
+            throw new BusinessException("Choose a trip start date before adding this guide to calendar");
+        }
+        if (purchase.getTripStartTime() == null) {
+            purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
+        }
+
+        String timezone = resolveTripTimezone(purchase, guide);
+        List<GuideTripItem> items = guideTripItemRepository.findByPurchaseIdOrderByDayNumberAscBlockPositionAscPlacePositionAsc(tripId);
+        autoScheduleItems(items, purchase.getTripStartDate(), resolveTripStartTime(purchase), timezone, false);
+
+        List<CalendarLateEventResponse> lateEvents = lateEvents(items, timezone, acknowledgedLateItemIds);
+        if (!lateEvents.isEmpty()) {
+            throw new LateCalendarEventsException(lateEvents);
+        }
+        return new CalendarExport(purchase, guide, items, timezone);
+    }
+
+    public CalendarLateEventsResponse lateEventsResponse(List<CalendarLateEventResponse> lateEvents) {
+        return CalendarLateEventsResponse.builder()
+                .code("LATE_EVENTS_REQUIRE_CONFIRMATION")
+                .message("Some events start after 20:00. Review them before adding this guide to calendar.")
+                .lateEvents(lateEvents)
+                .build();
     }
 
     private User resolveBuyer(String auth0Subject, String email) {
@@ -359,7 +446,9 @@ public class GuidePurchaseService {
                 .currency(purchase.getCurrency())
                 .purchasedAt(purchase.getCreatedAt())
                 .tripStartDate(purchase.getTripStartDate())
+                .tripStartTime(resolveTripStartTime(purchase))
                 .tripEndDate(purchase.getTripEndDate())
+                .tripSource(purchase.getTripSource())
                 .build();
     }
 
@@ -387,6 +476,13 @@ public class GuidePurchaseService {
     }
 
     private GuideResponse parseSnapshot(GuidePurchase purchase) {
+        if (purchase.getGuideSnapshot() != null && !purchase.getGuideSnapshot().isBlank()) {
+            try {
+                return objectMapper.readValue(purchase.getGuideSnapshot(), GuideResponse.class);
+            } catch (JsonProcessingException e) {
+                throw new BusinessException("Failed to parse guide snapshot");
+            }
+        }
         GuideVersion version = guideVersionRepository.findById(purchase.getGuideVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("GuideVersion", purchase.getGuideVersionId()));
         return parseSnapshot(version);
@@ -443,27 +539,44 @@ public class GuidePurchaseService {
         return UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8));
     }
 
-    private void autoScheduleItems(List<GuideTripItem> items, LocalDate tripStartDate, String timezone) {
+    private void autoScheduleItems(List<GuideTripItem> items, LocalDate tripStartDate, LocalTime tripStartTime, String timezone, boolean resetExisting) {
         if (tripStartDate == null) {
             return;
         }
 
         ZoneId zoneId = parseZoneId(timezone);
+        LocalTime startTime = tripStartTime != null ? tripStartTime : DEFAULT_TRIP_START_TIME;
+        List<Instant> defaultStarts = new ArrayList<>();
+        List<Instant> defaultEnds = new ArrayList<>();
         Map<Integer, Instant> dayCursor = new HashMap<>();
 
         for (GuideTripItem item : items) {
             LocalDate itemDate = tripStartDate.plusDays(Math.max(item.getDayNumber() - 1L, 0L));
             Instant defaultStart = defaultStart(item, itemDate, zoneId, dayCursor.get(item.getDayNumber()));
             Instant defaultEnd = defaultStart.plus(defaultDuration(item), ChronoUnit.MINUTES);
+            defaultStarts.add(defaultStart);
+            defaultEnds.add(defaultEnd);
+            dayCursor.put(item.getDayNumber(), defaultEnd.plus(15, ChronoUnit.MINUTES));
+        }
 
-            if (item.getScheduledStart() == null) {
-                item.setScheduledStart(defaultStart);
-            }
-            if (item.getScheduledEnd() == null) {
-                item.setScheduledEnd(defaultEnd);
-            }
+        Optional<Instant> firstDefault = defaultStarts.stream().findFirst();
+        if (firstDefault.isEmpty()) {
+            return;
+        }
+        Instant requestedFirstStart = tripStartDate.atTime(startTime).atZone(zoneId).toInstant();
+        Duration shift = Duration.between(firstDefault.get(), requestedFirstStart);
 
-            dayCursor.put(item.getDayNumber(), item.getScheduledEnd().plus(15, ChronoUnit.MINUTES));
+        for (int i = 0; i < items.size(); i++) {
+            GuideTripItem item = items.get(i);
+            Instant shiftedStart = defaultStarts.get(i).plus(shift);
+            Instant shiftedEnd = defaultEnds.get(i).plus(shift);
+
+            if (resetExisting || item.getScheduledStart() == null) {
+                item.setScheduledStart(shiftedStart);
+            }
+            if (resetExisting || item.getScheduledEnd() == null) {
+                item.setScheduledEnd(shiftedEnd);
+            }
         }
     }
 
@@ -507,6 +620,10 @@ public class GuidePurchaseService {
         return defaultTripTimezone(guide);
     }
 
+    private LocalTime resolveTripStartTime(GuidePurchase purchase) {
+        return purchase.getTripStartTime() != null ? purchase.getTripStartTime() : DEFAULT_TRIP_START_TIME;
+    }
+
     private String defaultTripTimezone(GuideResponse guide) {
         return (guide.getTimezone() != null && !guide.getTimezone().isBlank()) ? guide.getTimezone() : "UTC";
     }
@@ -533,11 +650,48 @@ public class GuidePurchaseService {
                 .replace(";", "\\;");
     }
 
+    private List<CalendarLateEventResponse> lateEvents(List<GuideTripItem> items, String timezone, Set<UUID> acknowledgedLateItemIds) {
+        Set<UUID> acknowledged = acknowledgedLateItemIds != null ? acknowledgedLateItemIds : Set.of();
+        ZoneId zoneId = parseZoneId(timezone);
+        List<CalendarLateEventResponse> lateEvents = new ArrayList<>();
+        for (GuideTripItem item : items) {
+            if (item.isSkipped() || item.getScheduledStart() == null || acknowledged.contains(item.getId())) {
+                continue;
+            }
+            LocalTime localStart = item.getScheduledStart().atZone(zoneId).toLocalTime();
+            if (localStart.isAfter(LATE_EVENT_START_TIME)) {
+                lateEvents.add(CalendarLateEventResponse.builder()
+                        .itemId(item.getId())
+                        .placeName(item.getPlaceName())
+                        .scheduledStart(item.getScheduledStart())
+                        .localStartTime(localStart.truncatedTo(ChronoUnit.MINUTES).toString())
+                        .build());
+            }
+        }
+        return lateEvents;
+    }
+
     private int effectivePrice(Guide guide) {
         if (guide.getSalePriceCents() != null &&
                 (guide.getSaleEndsAt() == null || guide.getSaleEndsAt().isAfter(Instant.now()))) {
             return guide.getSalePriceCents();
         }
         return guide.getPriceCents();
+    }
+
+    public record CalendarExport(GuidePurchase purchase, GuideResponse guide, List<GuideTripItem> items, String timezone) {
+    }
+
+    public static class LateCalendarEventsException extends RuntimeException {
+        private final List<CalendarLateEventResponse> lateEvents;
+
+        public LateCalendarEventsException(List<CalendarLateEventResponse> lateEvents) {
+            super("Some events start after 20:00");
+            this.lateEvents = lateEvents;
+        }
+
+        public List<CalendarLateEventResponse> getLateEvents() {
+            return lateEvents;
+        }
     }
 }

@@ -5,8 +5,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +27,7 @@ public class GuidePurchase extends BaseEntity {
     @Column(name = "guide_id", nullable = false)
     private UUID guideId;
 
-    @Column(name = "guide_version_id", nullable = false)
+    @Column(name = "guide_version_id")
     private UUID guideVersionId;
 
     @Column(name = "guide_version_number", nullable = false)
@@ -49,11 +52,21 @@ public class GuidePurchase extends BaseEntity {
     @Column(name = "trip_start_date")
     private LocalDate tripStartDate;
 
+    @Column(name = "trip_start_time")
+    private LocalTime tripStartTime;
+
     @Column(name = "trip_end_date")
     private LocalDate tripEndDate;
 
     @Column(name = "trip_timezone", length = 80)
     private String tripTimezone;
+
+    @Column(name = "trip_source", nullable = false, length = 30)
+    private String tripSource = "PURCHASE";
+
+    @Column(name = "guide_snapshot", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String guideSnapshot;
 
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("dayNumber ASC, blockPosition ASC, placePosition ASC")

@@ -21,6 +21,9 @@ public interface GuidePurchaseRepository extends JpaRepository<GuidePurchase, UU
 
     Optional<GuidePurchase> findFirstByBuyerIdAndGuideIdAndStatusOrderByCreatedAtDesc(UUID buyerId, UUID guideId, GuidePurchaseStatus status);
 
+    Optional<GuidePurchase> findFirstByBuyerIdAndGuideIdAndProviderAndStatusOrderByCreatedAtDesc(
+            UUID buyerId, UUID guideId, String provider, GuidePurchaseStatus status);
+
     boolean existsByBuyerIdAndStatus(UUID buyerId, GuidePurchaseStatus status);
 
     @org.springframework.data.jpa.repository.Query("""

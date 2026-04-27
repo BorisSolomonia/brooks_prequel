@@ -85,6 +85,13 @@ app:
 ai:
   key-encryption-secret: ${AI_KEY_ENCRYPTION_SECRET}
 
+calendar:
+  token-encryption-secret: ${CALENDAR_TOKEN_ENCRYPTION_SECRET:${AI_KEY_ENCRYPTION_SECRET}}
+  google:
+    client-id: ${GOOGLE_CALENDAR_CLIENT_ID:}
+    client-secret: ${GOOGLE_CALENDAR_CLIENT_SECRET:}
+    calendar-name: ${GOOGLE_CALENDAR_NAME:Brooks Trips}
+
 unipay:
   merchant-id: ${UNIPAY_MERCHANT_ID}
   secret-key: ${UNIPAY_SECRET_KEY}

@@ -455,7 +455,7 @@ export interface GuideCheckoutSessionResponse {
 export interface MyTripSummary {
   id: string;
   guideId: string;
-  guideVersionId: string;
+  guideVersionId: string | null;
   guideVersionNumber: number;
   title: string;
   coverImageUrl: string | null;
@@ -469,7 +469,9 @@ export interface MyTripSummary {
   currency: string;
   purchasedAt: string;
   tripStartDate: string | null;
+  tripStartTime: string | null;
   tripEndDate: string | null;
+  tripSource?: string | null;
 }
 
 export interface MyTripItem {
@@ -496,12 +498,14 @@ export interface MyTripItem {
 export interface MyTripDetail {
   id: string;
   guideId: string;
-  guideVersionId: string;
+  guideVersionId: string | null;
   guideVersionNumber: number;
   purchasedAt: string;
   tripStartDate: string | null;
+  tripStartTime: string | null;
   tripEndDate: string | null;
   tripTimezone: string | null;
+  tripSource?: string | null;
   guide: Guide;
   items: MyTripItem[];
 }
@@ -519,8 +523,35 @@ export interface MyTripItemUpdateRequest {
 
 export interface MyTripSetupRequest {
   tripStartDate?: string;
+  tripStartTime?: string;
   tripTimezone?: string;
   items?: MyTripItemUpdateRequest[];
+}
+
+export interface CalendarConnectionStatusResponse {
+  googleConnected: boolean;
+  googleAccountEmail: string | null;
+  googleCalendarId: string | null;
+}
+
+export interface CalendarLateEvent {
+  itemId: string;
+  placeName: string;
+  scheduledStart: string;
+  localStartTime: string;
+}
+
+export interface CalendarLateEventsResponse {
+  code: 'LATE_EVENTS_REQUIRE_CONFIRMATION';
+  message: string;
+  lateEvents: CalendarLateEvent[];
+}
+
+export interface GoogleCalendarSyncResponse {
+  created: number;
+  updated: number;
+  deleted: number;
+  calendarUrl: string | null;
 }
 
 export interface PageResponse<T> {

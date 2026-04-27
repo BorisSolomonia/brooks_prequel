@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,8 +18,10 @@ public class MyTripDetailResponse {
     private int guideVersionNumber;
     private Instant purchasedAt;
     private LocalDate tripStartDate;
+    private LocalTime tripStartTime;
     private LocalDate tripEndDate;
     private String tripTimezone;
+    private String tripSource;
     private GuideResponse guide;
     private List<MyTripItemResponse> items;
 }
