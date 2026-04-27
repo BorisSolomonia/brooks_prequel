@@ -1,10 +1,10 @@
 export const compliance = {
   companyName: 'Brooks Prequel',
   legalEntity: 'Brooks Prequel',
-  legalIdentifier: 'To be updated with registered business ID',
+  legalIdentifier: '405713777',
   domain: 'https://brooksweb.uk',
-  email: 'borissolomoniaphone@gmail.com',
-  phone: 'To be updated with a customer support phone number',
+  email: 'info@brooksweb.uk',
+  phone: '+995595036076',
   businessHours: 'Monday-Friday, 10:00-18:00 Asia/Tbilisi time',
   supportResponseTime: 'within 1 business day',
   serviceDescription: 'Digital travel guides, itinerary content, and related travel planning tools sold through the Brooks marketplace.',

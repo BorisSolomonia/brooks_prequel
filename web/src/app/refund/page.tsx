@@ -20,7 +20,7 @@ export default function RefundPage() {
         </section>
         <section>
           <h2 className="text-lg font-semibold text-ig-text-primary">How to request a refund</h2>
-          <p>Email {compliance.email} with the account email, purchase date, guide title, payment reference if available, and refund reason.</p>
+          <p>Describe the issue and email it to {compliance.email} with the account email, purchase date, guide title, payment reference if available, and refund reason.</p>
         </section>
         <section>
           <h2 className="text-lg font-semibold text-ig-text-primary">Processing time</h2>
