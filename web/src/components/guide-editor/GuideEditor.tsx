@@ -291,6 +291,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
             onTagInputChange={setTagInput}
             onAddTag={handleAddTag}
             onRemoveTag={handleRemoveTag}
+            token={token}
           />
         </div>
         <div className="sticky bottom-0 px-4 py-3 bg-ig-elevated border-t border-ig-border">
@@ -387,6 +388,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
             <DayPanel
               key={day.id}
               guideId={guide.id}
+              token={token}
               day={day}
               onUpdateDay={handleUpdateDay}
               onDeleteDay={handleDeleteDay}

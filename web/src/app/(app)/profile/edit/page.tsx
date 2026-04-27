@@ -5,6 +5,7 @@ import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
 import { useRouter } from 'next/navigation';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
+import { ImageUploadField } from '@/components/media/ImageUploadField';
 import type { Profile, ProfileUpdateRequest } from '@/types';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? '';
@@ -214,15 +215,15 @@ export default function EditProfilePage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-ig-text-secondary mb-1">Avatar URL</label>
-          <input
-            type="url"
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            className="w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-ig-text-primary"
-          />
-        </div>
+        <ImageUploadField
+          token={token!}
+          usage="PROFILE_AVATAR"
+          label="Profile picture"
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+          previewShape="circle"
+          helpText="JPEG, PNG, or WebP. This image appears on your public profile."
+        />
 
         <div>
           <label className="block text-sm font-medium text-ig-text-secondary mb-1">Region</label>

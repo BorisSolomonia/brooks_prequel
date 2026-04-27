@@ -40,6 +40,15 @@ export interface ProfileUpdateRequest {
   longitude?: number;
 }
 
+export type MediaUsage = 'PROFILE_AVATAR' | 'GUIDE_COVER' | 'PLACE_IMAGE';
+
+export interface MediaUploadResponse {
+  url: string;
+  objectName: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
 export interface InfluencerMapPin {
   userId: string;
   username: string;

@@ -1,21 +1,24 @@
 'use client';
 
 import { useState } from 'react';
+import { ImageUploadList } from '@/components/media/ImageUploadField';
 import type { GuidePlace, GuidePlaceRequest } from '@/types';
 
 interface Props {
+  token: string;
   place: GuidePlace;
   onUpdate: (placeId: string, data: GuidePlaceRequest) => void;
   onDelete: (placeId: string) => void;
 }
 
-export default function PlaceCard({ place, onUpdate, onDelete }: Props) {
+export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(place.name);
   const [description, setDescription] = useState(place.description || '');
   const [address, setAddress] = useState(place.address || '');
   const [suggestedStartMinute, setSuggestedStartMinute] = useState(place.suggestedStartMinute?.toString() || '');
   const [suggestedDurationMinutes, setSuggestedDurationMinutes] = useState(place.suggestedDurationMinutes?.toString() || '');
+  const [imageUrls, setImageUrls] = useState(place.images.map((image) => image.imageUrl));
 
   const handleSave = () => {
     onUpdate(place.id, {
@@ -24,6 +27,7 @@ export default function PlaceCard({ place, onUpdate, onDelete }: Props) {
       address,
       suggestedStartMinute: suggestedStartMinute === '' ? undefined : Number(suggestedStartMinute),
       suggestedDurationMinutes: suggestedDurationMinutes === '' ? undefined : Number(suggestedDurationMinutes),
+      imageUrls,
     });
     setEditing(false);
   };
@@ -71,6 +75,14 @@ export default function PlaceCard({ place, onUpdate, onDelete }: Props) {
             className="min-h-11 w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
           />
         </div>
+        <ImageUploadList
+          token={token}
+          usage="PLACE_IMAGE"
+          label="Place images"
+          values={imageUrls}
+          onChange={setImageUrls}
+          maxImages={4}
+        />
         <div className="flex flex-wrap gap-2">
           <button onClick={handleSave} className="min-h-11 rounded bg-ig-blue px-4 py-2 text-sm font-semibold text-white">Save</button>
           <button onClick={() => setEditing(false)} className="min-h-11 rounded px-4 py-2 text-sm text-ig-text-secondary">Cancel</button>

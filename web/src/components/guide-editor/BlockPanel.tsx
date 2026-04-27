@@ -6,6 +6,7 @@ import PlaceCard from './PlaceCard';
 
 interface Props {
   guideId: string;
+  token: string;
   block: GuideBlock;
   onUpdateBlock: (blockId: string, data: GuideBlockRequest) => void;
   onDeleteBlock: (blockId: string) => void;
@@ -25,7 +26,7 @@ const BLOCK_CATEGORIES: { value: string; icon: string; label: string }[] = [
   { value: 'SECRET', icon: '🔑', label: 'Secret' },
 ];
 
-export default function BlockPanel({ block, onUpdateBlock, onDeleteBlock, onAddPlace, onUpdatePlace, onDeletePlace }: Props) {
+export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock, onAddPlace, onUpdatePlace, onDeletePlace }: Props) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(block.title || '');
   const [suggestedStartMinute, setSuggestedStartMinute] = useState(block.suggestedStartMinute?.toString() || '');
@@ -136,6 +137,7 @@ export default function BlockPanel({ block, onUpdateBlock, onDeleteBlock, onAddP
         {block.places.map((place) => (
           <PlaceCard
             key={place.id}
+            token={token}
             place={place}
             onUpdate={onUpdatePlace}
             onDelete={(placeId) => onDeletePlace(block.id, placeId)}

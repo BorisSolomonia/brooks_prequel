@@ -28,6 +28,7 @@ GITHUB_REPO="${GITHUB_REPO:?Set GITHUB_REPO}"
 APP="brooks-prequel"
 VM_NAME="${APP}-vm"
 VM_MACHINE_TYPE="${VM_MACHINE_TYPE:-e2-standard-2}"
+MEDIA_BUCKET="${GCS_BUCKET:-}"
 AR_REPO="${APP}"
 SA_VM="${APP}-vm"
 SA_GITHUB="${APP}-ci"
@@ -52,6 +53,7 @@ gcloud services enable \
   compute.googleapis.com \
   artifactregistry.googleapis.com \
   secretmanager.googleapis.com \
+  storage.googleapis.com \
   iam.googleapis.com \
   iamcredentials.googleapis.com \
   cloudresourcemanager.googleapis.com \
@@ -86,6 +88,27 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --member="serviceAccount:${SA_VM_EMAIL}" \
   --role="roles/artifactregistry.reader" --quiet >/dev/null
 ok "Granted Artifact Registry reader to VM SA"
+
+if [[ -n "$MEDIA_BUCKET" ]]; then
+  if gcloud storage buckets describe "gs://${MEDIA_BUCKET}" --project="$PROJECT_ID" &>/dev/null; then
+    gcloud storage buckets add-iam-policy-binding "gs://${MEDIA_BUCKET}" \
+      --member="serviceAccount:${SA_VM_EMAIL}" \
+      --role="roles/storage.objectAdmin" \
+      --project="$PROJECT_ID" --quiet >/dev/null
+    ok "Granted Storage object admin on gs://${MEDIA_BUCKET} to VM SA"
+
+    if gcloud storage buckets add-iam-policy-binding "gs://${MEDIA_BUCKET}" \
+      --member="allUsers" \
+      --role="roles/storage.objectViewer" \
+      --project="$PROJECT_ID" --quiet >/dev/null; then
+      ok "Granted public object read on gs://${MEDIA_BUCKET}"
+    else
+      info "Could not grant public read on gs://${MEDIA_BUCKET}; configure allUsers roles/storage.objectViewer manually."
+    fi
+  else
+    info "GCS_BUCKET=${MEDIA_BUCKET} was set, but the bucket was not found; skipping storage IAM grants."
+  fi
+fi
 
 # ── GCE VM ────────────────────────────────────────────────────────────────────
 section "Compute VM"

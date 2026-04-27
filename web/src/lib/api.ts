@@ -1,3 +1,5 @@
+import type { MediaUploadResponse, MediaUsage } from '@/types';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 interface RequestOptions extends RequestInit {
@@ -99,4 +101,25 @@ export const api = {
 
   delete: <T>(path: string, token?: string) =>
     request<T>(path, { method: 'DELETE', token }),
+
+  uploadMedia: async (file: File, usage: MediaUsage, token: string): Promise<MediaUploadResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('usage', usage);
+
+    const response = await fetch(`${API_BASE_URL}/api/media`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  },
 };

@@ -2,6 +2,7 @@
 
 import { useMemo, useEffect, useRef } from 'react';
 import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
+import { ImageUploadField } from '@/components/media/ImageUploadField';
 import type { GuideCreateRequest, GuideUpdateRequest } from '@/types';
 
 const GENERIC_ADJECTIVES = /\b(beautiful|nice|amazing|great|wonderful|awesome|fantastic|incredible|gorgeous|lovely|perfect|excellent)\b/gi;
@@ -13,6 +14,7 @@ interface Props {
   onTagInputChange: (value: string) => void;
   onAddTag: () => void;
   onRemoveTag: (tag: string) => void;
+  token: string;
 }
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? '';
@@ -71,7 +73,7 @@ function DestinationMap({ lat, lng, onChange }: { lat: number | null | undefined
   return <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-lg border border-ig-border md:h-44" />;
 }
 
-export default function GuideMetadataForm({ data, onChange, tagInput, onTagInputChange, onAddTag, onRemoveTag }: Props) {
+export default function GuideMetadataForm({ data, onChange, tagInput, onTagInputChange, onAddTag, onRemoveTag, token }: Props) {
   const update = (field: string, value: unknown) => {
     onChange({ ...data, [field]: value });
   };
@@ -224,24 +226,15 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
         </div>
       )}
 
-      <div>
-        <div className="flex items-center gap-1.5 mb-1">
-          <label className="text-sm font-semibold text-ig-text-secondary">Cover Image URL</label>
-          <span className="group relative cursor-help text-ig-text-tertiary text-xs select-none">
-            ℹ️
-            <span className="absolute left-5 top-0 z-10 w-56 rounded-lg border border-ig-border bg-ig-elevated p-2.5 text-xs text-ig-text-secondary shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Use RAW or high-res JPEG for sharpest results. Landscape 16:9 works best for covers. Natural light only — avoid heavy filters.
-            </span>
-          </span>
-        </div>
-        <input
-          type="text"
-          value={data.coverImageUrl || ''}
-          onChange={(e) => update('coverImageUrl', e.target.value)}
-          placeholder="https://..."
-          className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
-        />
-      </div>
+      <ImageUploadField
+        token={token}
+        usage="GUIDE_COVER"
+        label="Cover image"
+        value={data.coverImageUrl || ''}
+        onChange={(url) => update('coverImageUrl', url)}
+        previewShape="wide"
+        helpText="Landscape images work best for guide cards and previews."
+      />
 
       <div>
         <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Traveler stage</label>

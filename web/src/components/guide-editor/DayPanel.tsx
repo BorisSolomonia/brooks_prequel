@@ -17,6 +17,7 @@ const BLOCK_CATEGORIES = [
 
 interface Props {
   guideId: string;
+  token: string;
   day: GuideDay;
   onUpdateDay: (dayId: string, data: GuideDayRequest) => void;
   onDeleteDay: (dayId: string) => void;
@@ -29,7 +30,7 @@ interface Props {
 }
 
 export default function DayPanel({
-  guideId, day, onUpdateDay, onDeleteDay,
+  guideId, token, day, onUpdateDay, onDeleteDay,
   onAddBlock, onUpdateBlock, onDeleteBlock,
   onAddPlace, onUpdatePlace, onDeletePlace,
 }: Props) {
@@ -89,6 +90,7 @@ export default function DayPanel({
             <BlockPanel
               key={block.id}
               guideId={guideId}
+              token={token}
               block={block}
               onUpdateBlock={onUpdateBlock}
               onDeleteBlock={(blockId) => onDeleteBlock(day.id, blockId)}
