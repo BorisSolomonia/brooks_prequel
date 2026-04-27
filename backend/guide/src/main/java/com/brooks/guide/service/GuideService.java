@@ -133,6 +133,7 @@ public class GuideService {
         GuideDay day = new GuideDay(guide, nextNumber);
         day.setTitle(request.getTitle());
         day.setDescription(request.getDescription());
+        if (request.getImageUrl() != null) day.setImageUrl(request.getImageUrl());
         day = dayRepository.save(day);
         guide.setDayCount(nextNumber);
         return toDayResponse(day);
@@ -144,6 +145,7 @@ public class GuideService {
         GuideDay day = findGuideDay(guideId, dayId);
         if (request.getTitle() != null) day.setTitle(request.getTitle());
         if (request.getDescription() != null) day.setDescription(request.getDescription());
+        if (request.getImageUrl() != null) day.setImageUrl(request.getImageUrl().isEmpty() ? null : request.getImageUrl());
         return toDayResponse(day);
     }
 
@@ -194,6 +196,7 @@ public class GuideService {
         if (request.getBlockType() != null) block.setBlockType(request.getBlockType());
         if (request.getBlockCategory() != null) block.setBlockCategory(request.getBlockCategory());
         block.setSuggestedStartMinute(request.getSuggestedStartMinute());
+        block.setSuggestedDurationMinutes(request.getSuggestedDurationMinutes());
         return toBlockResponse(block);
     }
 
@@ -243,6 +246,11 @@ public class GuideService {
             placeRepository.save(place);
         }
 
+        if (request.getTags() != null) {
+            place.getTags().clear();
+            place.getTags().addAll(request.getTags());
+        }
+
         guide.setPlaceCount(guide.getPlaceCount() + 1);
         return toPlaceResponse(place);
     }
@@ -270,6 +278,11 @@ public class GuideService {
             for (int i = 0; i < maxImages; i++) {
                 place.getImages().add(new GuidePlaceImage(place, request.getImageUrls().get(i), i));
             }
+        }
+
+        if (request.getTags() != null) {
+            place.getTags().clear();
+            place.getTags().addAll(request.getTags());
         }
 
         return toPlaceResponse(place);
@@ -703,6 +716,7 @@ public class GuideService {
                 .dayNumber(day.getDayNumber())
                 .title(day.getTitle())
                 .description(day.getDescription())
+                .imageUrl(day.getImageUrl())
                 .blocks(blockResponses)
                 .build();
     }
@@ -720,6 +734,7 @@ public class GuideService {
                 .blockType(block.getBlockType())
                 .blockCategory(block.getBlockCategory())
                 .suggestedStartMinute(block.getSuggestedStartMinute())
+                .suggestedDurationMinutes(block.getSuggestedDurationMinutes())
                 .places(placeResponses)
                 .build();
     }
@@ -749,6 +764,7 @@ public class GuideService {
                 .suggestedDurationMinutes(place.getSuggestedDurationMinutes())
                 .sponsored(place.isSponsored())
                 .images(imageResponses)
+                .tags(new java.util.ArrayList<>(place.getTags()))
                 .build();
     }
 

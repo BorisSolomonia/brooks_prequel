@@ -39,6 +39,9 @@ public class GuideBlock extends BaseEntity {
     @Column(name = "suggested_start_minute")
     private Integer suggestedStartMinute;
 
+    @Column(name = "suggested_duration_minutes")
+    private Integer suggestedDurationMinutes;
+
     @OneToMany(mappedBy = "block", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     @BatchSize(size = 50)

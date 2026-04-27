@@ -40,7 +40,7 @@ export interface ProfileUpdateRequest {
   longitude?: number;
 }
 
-export type MediaUsage = 'PROFILE_AVATAR' | 'GUIDE_COVER' | 'PLACE_IMAGE';
+export type MediaUsage = 'PROFILE_AVATAR' | 'GUIDE_COVER' | 'PLACE_IMAGE' | 'DAY_IMAGE';
 
 export interface MediaUploadResponse {
   url: string;
@@ -145,6 +145,7 @@ export interface GuidePlace {
   suggestedDurationMinutes: number | null;
   sponsored: boolean;
   images: GuidePlaceImage[];
+  tags?: string[];
 }
 
 export interface GuideBlock {
@@ -155,6 +156,7 @@ export interface GuideBlock {
   blockType: string;
   blockCategory: string;
   suggestedStartMinute: number | null;
+  suggestedDurationMinutes?: number | null;
   places: GuidePlace[];
 }
 
@@ -163,6 +165,7 @@ export interface GuideDay {
   dayNumber: number;
   title: string | null;
   description: string | null;
+  imageUrl?: string | null;
   blocks: GuideBlock[];
 }
 
@@ -422,6 +425,7 @@ export interface GuideUpdateRequest {
 export interface GuideDayRequest {
   title?: string;
   description?: string;
+  imageUrl?: string;
 }
 
 export interface GuideBlockRequest {
@@ -430,6 +434,7 @@ export interface GuideBlockRequest {
   blockType?: string;
   blockCategory?: string;
   suggestedStartMinute?: number;
+  suggestedDurationMinutes?: number;
 }
 
 export interface GuidePlaceRequest {
@@ -445,6 +450,7 @@ export interface GuidePlaceRequest {
   suggestedDurationMinutes?: number;
   sponsored?: boolean;
   imageUrls?: string[];
+  tags?: string[];
 }
 
 export interface FollowerSummary {

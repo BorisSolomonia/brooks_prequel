@@ -3,7 +3,8 @@ package com.brooks.app.media;
 public enum MediaUsage {
     PROFILE_AVATAR("profiles"),
     GUIDE_COVER("guides/covers"),
-    PLACE_IMAGE("guides/places");
+    PLACE_IMAGE("guides/places"),
+    DAY_IMAGE("guides/days");
 
     private final String pathPrefix;
 

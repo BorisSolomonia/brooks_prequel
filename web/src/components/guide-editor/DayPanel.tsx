@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { GuideDay, GuideDayRequest, GuideBlockRequest, GuidePlaceRequest } from '@/types';
+import { ImageUploadField } from '@/components/media/ImageUploadField';
 import BlockPanel from './BlockPanel';
 
 const BLOCK_CATEGORIES = [
@@ -27,6 +28,22 @@ interface Props {
   onAddPlace: (blockId: string, data: GuidePlaceRequest) => void;
   onUpdatePlace: (placeId: string, data: GuidePlaceRequest) => void;
   onDeletePlace: (blockId: string, placeId: string) => void;
+}
+
+function DayImageUpload({ token, day, onUpdateDay }: { token: string; day: GuideDay; onUpdateDay: (dayId: string, data: GuideDayRequest) => void }) {
+  return (
+    <div className="px-4 pb-3">
+      <ImageUploadField
+        token={token}
+        usage="DAY_IMAGE"
+        label="Day cover image"
+        value={day.imageUrl ?? ''}
+        onChange={(url) => onUpdateDay(day.id, { imageUrl: url })}
+        previewShape="wide"
+        helpText="Optional. Adds a visual header to this day."
+      />
+    </div>
+  );
 }
 
 export default function DayPanel({
@@ -85,7 +102,9 @@ export default function DayPanel({
       </div>
 
       {!collapsed && (
-        <div className="p-4 space-y-3">
+        <div className="space-y-3 pb-4">
+          <DayImageUpload token={token} day={day} onUpdateDay={onUpdateDay} />
+          <div className="px-4 space-y-3">
           {day.blocks.map((block) => (
             <BlockPanel
               key={block.id}
@@ -145,6 +164,7 @@ export default function DayPanel({
               + Add Block
             </button>
           )}
+          </div>
         </div>
       )}
     </div>

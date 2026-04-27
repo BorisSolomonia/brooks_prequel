@@ -23,4 +23,5 @@ public class GuidePlaceResponse {
     private Integer suggestedDurationMinutes;
     private boolean sponsored;
     private List<GuidePlaceImageResponse> images;
+    private List<String> tags;
 }

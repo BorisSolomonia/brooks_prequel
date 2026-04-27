@@ -30,6 +30,9 @@ public class GuideDay extends BaseEntity {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "image_url", length = 2048)
+    private String imageUrl;
+
     @OneToMany(mappedBy = "day", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     @BatchSize(size = 50)

@@ -16,5 +16,6 @@ public class GuideBlockResponse {
     private String blockType;
     private String blockCategory;
     private Integer suggestedStartMinute;
+    private Integer suggestedDurationMinutes;
     private List<GuidePlaceResponse> places;
 }

@@ -13,5 +13,6 @@ public class GuideDayResponse {
     private int dayNumber;
     private String title;
     private String description;
+    private String imageUrl;
     private List<GuideBlockResponse> blocks;
 }

@@ -26,10 +26,25 @@ const BLOCK_CATEGORIES: { value: string; icon: string; label: string }[] = [
   { value: 'SECRET', icon: '🔑', label: 'Secret' },
 ];
 
+function minutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60).toString().padStart(2, '0');
+  const m = (minutes % 60).toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function minutesToDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
 export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock, onAddPlace, onUpdatePlace, onDeletePlace }: Props) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(block.title || '');
   const [suggestedStartMinute, setSuggestedStartMinute] = useState(block.suggestedStartMinute?.toString() || '');
+  const [suggestedDurationMinutes, setSuggestedDurationMinutes] = useState(block.suggestedDurationMinutes?.toString() || '');
   const [addingPlace, setAddingPlace] = useState(false);
   const [newPlaceName, setNewPlaceName] = useState('');
 
@@ -43,6 +58,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
       blockType: block.blockType,
       blockCategory: block.blockCategory,
       suggestedStartMinute: suggestedStartMinute === '' ? undefined : Number(suggestedStartMinute),
+      suggestedDurationMinutes: suggestedDurationMinutes === '' ? undefined : Number(suggestedDurationMinutes),
     });
     setEditingTitle(false);
   };
@@ -79,16 +95,28 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
               <button onClick={handleSaveTitle} className="min-h-11 rounded-md px-3 text-sm font-semibold text-ig-blue">Save</button>
               <button onClick={() => setEditingTitle(false)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary">Cancel</button>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-ig-text-tertiary">Suggested start minute</label>
-              <input
-                type="number"
-                min={0}
-                max={1439}
-                value={suggestedStartMinute}
-                onChange={(e) => setSuggestedStartMinute(e.target.value)}
-                className="min-h-11 w-32 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none md:min-h-0 md:w-28 md:py-1 md:text-xs"
-              />
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-ig-text-tertiary">Start (min)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={1439}
+                  value={suggestedStartMinute}
+                  onChange={(e) => setSuggestedStartMinute(e.target.value)}
+                  className="min-h-11 w-24 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none md:min-h-0 md:w-20 md:py-1 md:text-xs"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-ig-text-tertiary">Duration (min)</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={suggestedDurationMinutes}
+                  onChange={(e) => setSuggestedDurationMinutes(e.target.value)}
+                  className="min-h-11 w-24 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none md:min-h-0 md:w-20 md:py-1 md:text-xs"
+                />
+              </div>
             </div>
             <div>
               <p className="text-xs text-ig-text-tertiary mb-1.5">Block category</p>
@@ -126,7 +154,10 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
               {block.title || 'Untitled Block'}
             </h4>
             {block.suggestedStartMinute !== null && block.suggestedStartMinute !== undefined && (
-              <span className="text-xs text-ig-text-tertiary">start +{block.suggestedStartMinute}m</span>
+              <span className="text-xs text-ig-text-tertiary">
+                ⏰ {minutesToTime(block.suggestedStartMinute)}
+                {block.suggestedDurationMinutes ? ` ⏱ ${minutesToDuration(block.suggestedDurationMinutes)}` : ''}
+              </span>
             )}
           </div>
         )}

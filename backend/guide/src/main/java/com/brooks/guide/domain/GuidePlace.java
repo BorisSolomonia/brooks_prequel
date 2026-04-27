@@ -57,6 +57,12 @@ public class GuidePlace extends BaseEntity {
     @Column(name = "is_sponsored", nullable = false)
     private boolean sponsored = false;
 
+    @ElementCollection
+    @CollectionTable(name = "guide_place_tags", joinColumns = @JoinColumn(name = "place_id"))
+    @Column(name = "tag")
+    @BatchSize(size = 50)
+    private List<String> tags = new ArrayList<>();
+
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     @BatchSize(size = 50)

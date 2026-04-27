@@ -32,4 +32,5 @@ public class GuidePlaceRequest {
     private Integer suggestedDurationMinutes;
     private boolean sponsored = false;
     private List<String> imageUrls;
+    private List<String> tags;
 }

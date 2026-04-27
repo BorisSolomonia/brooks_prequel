@@ -12,4 +12,7 @@ public class GuideDayRequest {
     private String title;
 
     private String description;
+
+    @Size(max = 2048)
+    private String imageUrl;
 }

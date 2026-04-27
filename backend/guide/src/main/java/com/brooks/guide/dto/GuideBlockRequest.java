@@ -15,4 +15,5 @@ public class GuideBlockRequest {
     private String blockType = "ACTIVITY";
     private String blockCategory = "ACTIVITY";
     private Integer suggestedStartMinute;
+    private Integer suggestedDurationMinutes;
 }
