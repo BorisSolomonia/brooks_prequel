@@ -6,7 +6,7 @@
 
 ---
 
-## 1. Project Overview
+## 1. Project Overview.
 
 Brooks is a **travel-guide marketplace** with social discovery and creator commerce.
 
