@@ -14,12 +14,12 @@ function SearchBarFallback() {
 
 const desktopLinks = [
   { href: '/search', label: 'Explore' },
-  { href: '/pricing', label: 'Pricing' },
   { href: '/maps', label: 'Maps', auth: true },
-  { href: '/guides', label: 'My Guides', auth: true },
   { href: '/purchases', label: 'Purchases', auth: true },
+  { href: '/guides', label: 'My Guides', auth: true },
   { href: '/trips', label: 'My Trips', auth: true },
-  { href: '/transport', label: 'Transport', auth: true },
+  { href: '/contact', label: 'Contact' },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/profile', label: 'Profile', auth: true },
 ];
 
@@ -107,7 +107,6 @@ export default function Navbar() {
               </summary>
               <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-48 overflow-hidden rounded-2xl border border-ig-border bg-ig-elevated shadow-2xl">
                 <Link href="/purchases" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Purchases</Link>
-                <Link href="/transport" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Transport</Link>
                 <a href="/api/auth/logout" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
               </div>
             </details>
