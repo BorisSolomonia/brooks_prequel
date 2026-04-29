@@ -12,10 +12,13 @@ export default function FloatingFeatureCard({ icon, title, body, bottomIcons, st
   return (
     <div
       style={{
+        boxSizing: 'border-box',
+        width: '100%',
+        maxWidth: '100%',
         background: '#f5ead8',
         borderRadius: 14,
         boxShadow: '0 12px 30px rgba(0,0,0,0.18)',
-        padding: 22,
+        padding: 'clamp(18px, 2vw, 22px)',
         display: 'flex',
         flexDirection: 'column',
         ...style,
@@ -50,7 +53,7 @@ export default function FloatingFeatureCard({ icon, title, body, bottomIcons, st
         {body}
       </p>
       {bottomIcons && bottomIcons.length > 0 && (
-        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
           {bottomIcons.map((ic, i) => (
             <div
               key={i}

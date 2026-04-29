@@ -29,6 +29,7 @@ class MediaStorageServiceTest {
         storage = mock(Storage.class);
         service = new MediaStorageService(storage);
         ReflectionTestUtils.setField(service, "bucketName", "brooks-media");
+        ReflectionTestUtils.setField(service, "credentialsJson", "fake-credentials");
         ReflectionTestUtils.setField(service, "maxUploadSizeMb", 10L);
     }
 

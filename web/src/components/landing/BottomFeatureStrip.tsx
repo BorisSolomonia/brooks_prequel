@@ -89,24 +89,23 @@ const features: FeatureItem[] = [
 export default function BottomFeatureStrip() {
   return (
     <div
-      className="absolute inset-x-0 bottom-0 flex items-stretch overflow-hidden"
-      style={{ height: 180, background: 'rgba(5,5,5,0.92)' }}
+      className="flex flex-col items-stretch overflow-hidden lg:absolute lg:inset-x-0 lg:bottom-0 lg:h-[180px] lg:flex-row"
+      style={{ background: 'rgba(5,5,5,0.92)' }}
     >
-      {/* Feature items */}
       <div
-        className="flex items-center"
+        className="flex items-stretch overflow-x-auto lg:items-center"
         style={{
           flex: 1,
-          paddingLeft: 45,
-          paddingTop: 30,
-          paddingBottom: 25,
-          overflowX: 'auto',
+          paddingLeft: 'clamp(20px, 4vw, 45px)',
+          paddingRight: 'clamp(20px, 4vw, 32px)',
+          paddingTop: 'clamp(22px, 4vw, 30px)',
+          paddingBottom: 'clamp(22px, 4vw, 25px)',
           gap: 0,
         }}
       >
         {features.map((f, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-            <div style={{ width: 200 }}>
+            <div style={{ width: 'clamp(158px, 17vw, 200px)' }}>
               <div style={{ marginBottom: 10 }}>{f.icon}</div>
               <p
                 style={{
@@ -140,7 +139,7 @@ export default function BottomFeatureStrip() {
                   width: 1,
                   height: 95,
                   background: 'rgba(255,255,255,0.3)',
-                  margin: '0 28px',
+                  margin: '0 clamp(18px, 2.2vw, 28px)',
                   flexShrink: 0,
                 }}
               />
@@ -149,12 +148,9 @@ export default function BottomFeatureStrip() {
         ))}
       </div>
 
-      {/* Teal logo block */}
       <div
+        className="h-32 w-full lg:h-[180px] lg:w-64 lg:min-w-64"
         style={{
-          width: 260,
-          minWidth: 260,
-          height: 180,
           background: TEAL,
           display: 'flex',
           flexDirection: 'column',

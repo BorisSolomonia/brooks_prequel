@@ -325,3 +325,12 @@ AUTH0_FLOW_EXPLAINED.md       Auth flow explanation
 PROJECT_ALTERNATIVE.md        Full product specification (source of truth for product rules)
 PROJECT_DOCUMENTATION.md      Implementation status document
 ```
+
+
+┌───────────────────────────────────────────────┐
+│ [IMAGE]   MuseumsQuartier Wien       📍 4     │
+│           Art center • Museums • +2           │ 
+│                                               │
+│           One of the largest cultural...      │
+│                                               │
+└───────────────────────────────────────────────┘

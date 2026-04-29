@@ -10,6 +10,7 @@ const PINK = '#ef2f6d';
 const BLACK = '#050505';
 const YELLOW = '#ffd21a';
 const TEAL = '#12c7c9';
+const MOBILE_CARD_STYLE = { width: 'min(100%, 360px)' };
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ function ListSmall() {
 // ── Hero content (shared desktop / mobile) ────────────────────────────────────
 
 function HeroContent({ antonClass, mobile = false }: { antonClass: string; mobile?: boolean }) {
-  const size = mobile ? 48 : 78;
+  const size = mobile ? 'clamp(44px, 13vw, 58px)' : 'clamp(58px, 6vw, 78px)';
   return (
     <>
       <div className={antonClass} style={{ lineHeight: 0.95 }}>
@@ -134,7 +135,7 @@ function HeroContent({ antonClass, mobile = false }: { antonClass: string; mobil
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          width: 270,
+          width: 'min(270px, 100%)',
           height: 64,
           background: BLACK,
           borderRadius: 8,
@@ -180,21 +181,27 @@ const card3Icons = [
 
 export default function LandingPage() {
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] overflow-x-hidden overflow-y-auto">
       <section
-        className="relative"
+        className="relative overflow-hidden lg:pb-[180px]"
         style={{
-          minHeight: '100vh',
-          backgroundImage: 'url(/images/brooks-hero-bg.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          paddingBottom: 180,
+          minHeight: 'max(100vh, 900px)',
+          backgroundColor: '#e9c18f',
+          backgroundImage: [
+            'radial-gradient(circle at 15% 8%, rgba(255, 210, 26, 0.45), transparent 24%)',
+            'radial-gradient(circle at 83% 18%, rgba(18, 199, 201, 0.38), transparent 24%)',
+            'linear-gradient(135deg, rgba(245, 234, 216, 0.88), rgba(239, 47, 109, 0.16) 48%, rgba(5, 5, 5, 0.08))',
+            'url(/images/brooks-hero-bg.png)',
+          ].join(', '),
+          backgroundSize: 'auto, auto, auto, cover',
+          backgroundPosition: 'center, center, center, center',
+          backgroundRepeat: 'no-repeat',
         }}
       >
         {/* ── Top Nav ── */}
         <nav
           className="absolute inset-x-0 top-0 z-10 flex items-start justify-between"
-          style={{ paddingLeft: 45, paddingRight: 45, paddingTop: 28 }}
+          style={{ paddingLeft: 'clamp(24px, 4vw, 45px)', paddingRight: 'clamp(24px, 4vw, 45px)', paddingTop: 28 }}
         >
           <div className="flex items-baseline" style={{ gap: 6 }}>
             <span className={anton.className} style={{ fontSize: 24, color: BLACK, letterSpacing: 1, lineHeight: 1 }}>
@@ -205,7 +212,7 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <div className="hidden md:flex items-center" style={{ gap: 42, paddingTop: 4 }}>
+          <div className="hidden lg:flex items-center" style={{ gap: 'clamp(24px, 3vw, 42px)', paddingTop: 4 }}>
             <Link href="/search" style={{ fontSize: 15, fontWeight: 800, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>EXPLORE</Link>
             <Link href="/search" style={{ fontSize: 15, fontWeight: 800, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>GUIDES</Link>
             <Link href="#" style={{ fontSize: 15, fontWeight: 800, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>FOR CREATORS</Link>
@@ -217,63 +224,66 @@ export default function LandingPage() {
         </nav>
 
         {/* ── Desktop: hero text at absolute position ── */}
-        <div className="hidden md:block absolute" style={{ left: 45, top: 110, width: 560 }}>
+        <div className="hidden lg:block absolute" style={{ left: 'clamp(32px, 4vw, 45px)', top: 110, width: 'clamp(410px, 43vw, 560px)' }}>
           <HeroContent antonClass={anton.className} />
         </div>
 
         {/* ── Mobile: hero text in normal flow ── */}
-        <div className="md:hidden" style={{ padding: '90px 24px 32px' }}>
+        <div className="lg:hidden" style={{ padding: '90px clamp(24px, 7vw, 48px) 32px', maxWidth: 680 }}>
           <HeroContent antonClass={anton.className} mobile />
         </div>
 
         {/* ── Desktop: floating feature cards ── */}
-        <div className="hidden md:block">
-          <div className="absolute" style={{ top: 90, right: 78 }}>
+        <div className="hidden lg:block">
+          <div className="absolute" style={{ top: 'clamp(90px, 8vw, 104px)', right: 'clamp(30px, 6vw, 78px)' }}>
             <FloatingFeatureCard
               icon={<PinIcon />}
               title="LEAVE A MEMORY"
               body={"Leave something meaningful.\nSomeone will find it someday."}
-              style={{ width: 260, minHeight: 135 }}
+              style={{ width: 'clamp(220px, 20vw, 260px)', minHeight: 135 }}
             />
           </div>
-          <div className="absolute" style={{ top: 255, right: 50 }}>
+          <div className="absolute" style={{ top: 'clamp(245px, 23vw, 270px)', right: 'clamp(24px, 4vw, 50px)' }}>
             <FloatingFeatureCard
               icon={<CompassIcon />}
               title="CURATED GUIDES"
               body={"Guides built around your interests.\nDifferent stories, different perspectives."}
               bottomIcons={card2Icons}
-              style={{ width: 280, minHeight: 165 }}
+              style={{ width: 'clamp(230px, 22vw, 280px)', minHeight: 165 }}
             />
           </div>
-          <div className="absolute" style={{ top: 465, right: 140 }}>
+          <div className="absolute" style={{ top: 'clamp(430px, 42vw, 465px)', right: 'clamp(72px, 11vw, 140px)' }}>
             <FloatingFeatureCard
               icon={<CalendarIcon />}
               title={"FROM DISCOVERY\nTO PLAN"}
               body={"Turn places and stories into your\ncalendar, itinerary and maps."}
               bottomIcons={card3Icons}
-              style={{ width: 245, minHeight: 160 }}
+              style={{ width: 'clamp(215px, 19vw, 245px)', minHeight: 160 }}
             />
           </div>
-          <div className="absolute" style={{ top: 665, right: 70 }}>
+          <div className="absolute" style={{ top: 'clamp(590px, 59vw, 665px)', right: 'clamp(36px, 6vw, 70px)' }}>
             <FloatingFeatureCard
               icon={<EyeOffIcon />}
               title="FOCUS YOUR SEARCH"
               body={"Hide places you're not interested in.\nSee what matters to you."}
-              style={{ width: 275, minHeight: 125 }}
+              style={{ width: 'clamp(230px, 21vw, 275px)', minHeight: 125 }}
             />
           </div>
         </div>
 
         {/* ── Mobile: stacked cards ── */}
-        <div className="md:hidden" style={{ padding: '0 24px 32px', display: 'grid', gap: 16 }}>
-          <FloatingFeatureCard icon={<PinIcon />} title="LEAVE A MEMORY" body={"Leave something meaningful.\nSomeone will find it someday."} />
-          <FloatingFeatureCard icon={<CompassIcon />} title="CURATED GUIDES" body={"Guides built around your interests.\nDifferent stories, different perspectives."} bottomIcons={card2Icons} />
-          <FloatingFeatureCard icon={<CalendarIcon />} title={"FROM DISCOVERY\nTO PLAN"} body={"Turn places and stories into your\ncalendar, itinerary and maps."} bottomIcons={card3Icons} />
-          <FloatingFeatureCard icon={<EyeOffIcon />} title="FOCUS YOUR SEARCH" body={"Hide places you're not interested in.\nSee what matters to you."} />
+        <div
+          className="grid justify-items-center gap-4 sm:grid-cols-2 lg:hidden"
+          style={{ padding: '0 clamp(20px, 6vw, 40px) 36px', maxWidth: 780, margin: '0 auto' }}
+        >
+          <FloatingFeatureCard icon={<PinIcon />} title="LEAVE A MEMORY" body={"Leave something meaningful.\nSomeone will find it someday."} style={MOBILE_CARD_STYLE} />
+          <FloatingFeatureCard icon={<CompassIcon />} title="CURATED GUIDES" body={"Guides built around your interests.\nDifferent stories, different perspectives."} bottomIcons={card2Icons} style={MOBILE_CARD_STYLE} />
+          <FloatingFeatureCard icon={<CalendarIcon />} title={"FROM DISCOVERY\nTO PLAN"} body={"Turn places and stories into your\ncalendar, itinerary and maps."} bottomIcons={card3Icons} style={MOBILE_CARD_STYLE} />
+          <FloatingFeatureCard icon={<EyeOffIcon />} title="FOCUS YOUR SEARCH" body={"Hide places you're not interested in.\nSee what matters to you."} style={MOBILE_CARD_STYLE} />
         </div>
 
         {/* ── Desktop: memory card ── */}
-        <div className="hidden md:block absolute" style={{ left: 835, top: 610 }}>
+        <div className="hidden xl:block absolute" style={{ left: 'clamp(640px, 58vw, 835px)', top: 610 }}>
           <MemoryPreviewCard />
         </div>
 
