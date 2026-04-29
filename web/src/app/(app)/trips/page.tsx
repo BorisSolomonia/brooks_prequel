@@ -5,11 +5,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { MyTripSummary, MyTripsResponse } from '@/types';
 
 export default function MyTripsPage() {
   const router = useRouter();
   const { token, loading: tokenLoading } = useAccessToken();
+  const { formatAmount } = useCurrency();
   const [trips, setTrips] = useState<MyTripSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export default function MyTripsPage() {
                   {trip.region && <span>{trip.region}</span>}
                   <span>{trip.dayCount} days</span>
                   <span>{trip.placeCount} places</span>
-                  <span>${(trip.amountCents / 100).toFixed(2)}</span>
+                  <span>{formatAmount(trip.amountCents)}</span>
                 </div>
                 <div className="mt-4 text-sm text-ig-text-secondary">
                   {trip.tripStartDate ? (

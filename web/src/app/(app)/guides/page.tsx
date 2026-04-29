@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { GuideLibraryItem, GuideLibraryResponse, MyTripSummary, PageResponse, PurchaseResponse } from '@/types';
 
 type LibraryTab = 'created' | 'saved' | 'purchased';
 
 export default function MyGuidesPage() {
   const { token, loading: tokenLoading } = useAccessToken();
+  const { formatAmount } = useCurrency();
   const router = useRouter();
   const [library, setLibrary] = useState<GuideLibraryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,9 +71,7 @@ export default function MyGuidesPage() {
 
   const formatPrice = (item: GuideLibraryItem) => {
     const cents = item.effectivePriceCents ?? item.priceCents;
-    if (cents <= 0) return 'Free';
-    const symbol = item.currency === 'USD' ? '$' : `${item.currency} `;
-    return `${symbol}${(cents / 100).toFixed(2)}`;
+    return formatAmount(cents ?? 0);
   };
 
   const formatDate = (value: string | null) => {

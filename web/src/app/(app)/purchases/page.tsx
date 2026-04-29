@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { PurchaseResponse, PageResponse } from '@/types';
 
 export default function MyPurchasesPage() {
   const { token, loading: tokenLoading } = useAccessToken();
+  const { formatAmount } = useCurrency();
   const [purchases, setPurchases] = useState<PurchaseResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -69,7 +71,7 @@ export default function MyPurchasesPage() {
                   <div className="flex items-center gap-2 mt-1 text-xs text-ig-text-tertiary">
                     {purchase.guideRegion && <span>{purchase.guideRegion}</span>}
                     <span>v{purchase.guideVersionNumber}</span>
-                    <span>${(purchase.priceCentsPaid / 100).toFixed(2)}</span>
+                    <span>{formatAmount(purchase.priceCentsPaid)}</span>
                   </div>
                 </div>
               </Link>

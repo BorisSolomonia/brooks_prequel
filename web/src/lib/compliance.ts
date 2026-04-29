@@ -12,8 +12,6 @@ export const compliance = {
 
 export function formatMoney(cents: number, currency = 'USD') {
   if (cents <= 0) return 'Free';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-  }).format(cents / 100);
+  const symbol = currency === 'GEL' ? '₾' : currency === 'USD' ? '$' : `${currency} `;
+  return `${symbol}${(cents / 100).toFixed(2)}`;
 }

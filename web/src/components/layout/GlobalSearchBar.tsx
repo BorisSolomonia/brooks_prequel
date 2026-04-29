@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { api } from '@/lib/api';
+import { useCurrency } from '@/hooks/useCurrency';
 import type {
   CreatorSearchResult,
   GuideSearchResult,
@@ -80,6 +81,7 @@ function SearchSection({ title, count, children }: SearchSectionProps) {
 }
 
 export default function GlobalSearchBar() {
+  const { formatAmount } = useCurrency();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -289,7 +291,7 @@ export default function GlobalSearchBar() {
                     title={guide.title}
                     subtitle={`by ${guide.creatorDisplayName || guide.creatorUsername}`}
                     meta={[guide.primaryCity || guide.region, `${guide.dayCount} days`, `${guide.placeCount} places`].filter(Boolean).join(' · ')}
-                    badge={guide.priceCents === 0 ? 'Free' : `${(guide.priceCents / 100).toFixed(2)} ${guide.currency}`}
+                    badge={formatAmount(guide.priceCents)}
                     onSelect={() => setOpen(false)}
                     icon={
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

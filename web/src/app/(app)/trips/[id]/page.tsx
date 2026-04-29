@@ -7,6 +7,7 @@ import PurchasedTripMap from '@/components/maps/PurchasedTripMap';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { MyTripDetail, MyTripItem, MyTripItemUpdateRequest, MyTripSetupRequest, AiKeyResponse, GuidePlace } from '@/types';
 import { BuyerChatPanel } from '@/components/ai/BuyerChatPanel';
 
@@ -91,6 +92,7 @@ export default function TripDetailPage() {
   const router = useRouter();
   const tripId = params.id as string;
   const { token, loading: tokenLoading } = useAccessToken();
+  const { formatAmount } = useCurrency();
   const [trip, setTrip] = useState<MyTripDetail | null>(null);
   const [tripStartDate, setTripStartDate] = useState('');
   const [tripStartTime, setTripStartTime] = useState('09:00');
@@ -256,7 +258,7 @@ export default function TripDetailPage() {
             {trip.guide.region && <span>{trip.guide.region}</span>}
             <span>{trip.guide.dayCount} days</span>
             <span>{trip.guide.placeCount} places</span>
-            <span>${(trip.guide.priceCents / 100).toFixed(2)}</span>
+            <span>{formatAmount(trip.guide.priceCents)}</span>
             {totalPlaces > 0 && (
               <span className="font-medium text-brand-400">
                 {visitedCount} of {totalPlaces} places visited

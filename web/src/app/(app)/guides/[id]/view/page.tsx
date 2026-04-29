@@ -10,6 +10,7 @@ import ReviewText from '@/components/reviews/ReviewText';
 import StarRating from '@/components/reviews/StarRating';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useCurrency } from '@/hooks/useCurrency';
 import type {
   Guide,
   GuidePreview,
@@ -34,6 +35,7 @@ export default function ViewGuidePage() {
   const guideId = params.id as string;
   const { token, loading: tokenLoading } = useAccessToken();
   const router = useRouter();
+  const { formatAmount } = useCurrency();
 
   const [mode, setMode] = useState<ViewMode>('loading');
   const [guide, setGuide] = useState<Guide | null>(null);
@@ -234,7 +236,7 @@ export default function ViewGuidePage() {
               <span>{displayGuide?.placeCount || displayPreview?.placeCount} places</span>
               {mode !== 'buyer' && (displayGuide?.priceCents || displayPreview?.priceCents || 0) > 0 && (
                 <span className="font-semibold text-ig-text-primary">
-                  ${(((displayGuide?.priceCents ?? displayPreview?.priceCents) || 0) / 100).toFixed(2)}
+                  {formatAmount((displayGuide?.priceCents ?? displayPreview?.priceCents) ?? 0)}
                 </span>
               )}
             </div>

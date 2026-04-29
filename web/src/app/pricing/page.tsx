@@ -3,15 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { compliance, formatMoney } from '@/lib/compliance';
+import { compliance } from '@/lib/compliance';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { GuideSearchResult, PageResponse } from '@/types';
 
-function productPrice(guide: GuideSearchResult) {
-  const effective = guide.effectivePriceCents ?? guide.priceCents;
-  return formatMoney(effective, guide.currency);
-}
-
 export default function PricingPage() {
+  const { formatAmount } = useCurrency();
   const [guides, setGuides] = useState<GuideSearchResult[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -95,10 +92,10 @@ export default function PricingPage() {
                 </span>
               </span>
               <span className="text-right font-semibold text-ig-text-primary">
-                {productPrice(guide)}
+                {formatAmount(guide.effectivePriceCents ?? guide.priceCents)}
                 {guide.salePriceCents != null && guide.salePriceCents !== guide.priceCents && (
                   <span className="block text-xs font-normal text-ig-text-tertiary line-through">
-                    {formatMoney(guide.priceCents, guide.currency)}
+                    {formatAmount(guide.priceCents)}
                   </span>
                 )}
               </span>

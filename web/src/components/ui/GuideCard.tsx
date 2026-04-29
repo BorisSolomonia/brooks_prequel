@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface GuideCardProps {
   href: string;
@@ -25,14 +26,6 @@ interface GuideCardProps {
   className?: string;
 }
 
-function formatPrice(cents: number | undefined, currency = 'USD') {
-  const amount = cents ?? 0;
-  if (amount <= 0) {
-    return 'Free';
-  }
-  const symbol = currency === 'USD' ? '$' : `${currency} `;
-  return `From ${symbol}${(amount / 100).toFixed(0)}`;
-}
 
 function formatDuration(dayCount?: number) {
   if (!dayCount) {
@@ -63,6 +56,7 @@ export default function GuideCard({
   statusBadge,
   className = '',
 }: GuideCardProps) {
+  const { formatAmount } = useCurrency();
   const location = displayLocation || region || 'Destination';
   const spots = spotCount ?? placeCount ?? 0;
   const cardPrice = effectivePriceCents ?? priceCents ?? 0;
@@ -128,7 +122,7 @@ export default function GuideCard({
             )}
           </div>
           <p className="shrink-0 text-sm font-semibold text-ig-text-primary">
-            {formatPrice(cardPrice, currency)}
+            {cardPrice <= 0 ? 'Free' : `From ${formatAmount(cardPrice, 0)}`}
           </p>
         </div>
       </Link>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { GuideCheckoutSessionResponse } from '@/types';
 
 interface BuyButtonProps {
@@ -14,15 +15,15 @@ interface BuyButtonProps {
   token: string;
 }
 
-export default function BuyButton({ guideId, priceCents, currency, salePriceCents, saleEndsAt, token }: BuyButtonProps) {
+export default function BuyButton({ guideId, priceCents, salePriceCents, saleEndsAt, token }: BuyButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { formatAmount } = useCurrency();
 
   const saleActive = salePriceCents && salePriceCents > 0 &&
     (!saleEndsAt || new Date(saleEndsAt) > new Date());
 
   const effectivePrice = saleActive ? salePriceCents : priceCents;
-  const symbol = currency === 'USD' ? '$' : currency;
 
   const handleBuy = async () => {
     setLoading(true);
@@ -51,11 +52,11 @@ export default function BuyButton({ guideId, priceCents, currency, salePriceCent
         disabled={loading}
         className="min-h-11 rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:opacity-50"
       >
-        {loading ? 'Processing...' : effectivePrice === 0 ? 'Get Guide Free' : `Buy for ${symbol}${(effectivePrice / 100).toFixed(2)}`}
+        {loading ? 'Processing...' : effectivePrice === 0 ? 'Get Guide Free' : `Buy for ${formatAmount(effectivePrice)}`}
       </button>
       {saleActive && (
         <span className="text-sm text-ig-text-tertiary line-through">
-          {symbol}{(priceCents / 100).toFixed(2)}
+          {formatAmount(priceCents)}
         </span>
       )}
     </div>
