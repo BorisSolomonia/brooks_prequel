@@ -40,7 +40,7 @@ export interface ProfileUpdateRequest {
   longitude?: number;
 }
 
-export type MediaUsage = 'PROFILE_AVATAR' | 'GUIDE_COVER' | 'PLACE_IMAGE' | 'DAY_IMAGE';
+export type MediaUsage = 'PROFILE_AVATAR' | 'GUIDE_COVER' | 'PLACE_IMAGE' | 'DAY_IMAGE' | 'MEMORY_IMAGE' | 'MEMORY_AUDIO';
 
 export interface MediaUploadResponse {
   url: string;
@@ -74,6 +74,87 @@ export interface InfluencerMapPin {
 
 export interface InfluencerMapResponse {
   pins: InfluencerMapPin[];
+}
+
+export type MemoryVisibility = 'PRIVATE' | 'SHARED_LINK' | 'FOLLOWERS_PUBLIC';
+
+export interface MemoryMediaRequest {
+  mediaType: 'IMAGE' | 'AUDIO';
+  url: string;
+  objectName?: string;
+  contentType?: string;
+  sizeBytes?: number;
+}
+
+export interface MemoryMedia {
+  id: string;
+  mediaType: 'IMAGE' | 'AUDIO';
+  url: string;
+  contentType: string | null;
+  sizeBytes: number | null;
+}
+
+export interface MemoryMapPin {
+  id: string;
+  creatorId: string;
+  creatorUsername: string | null;
+  creatorDisplayName: string;
+  creatorAvatarUrl: string | null;
+  textPreview: string;
+  latitude: number;
+  longitude: number;
+  placeLabel: string | null;
+  visibility: MemoryVisibility;
+  ownedByViewer: boolean;
+  hasImage: boolean;
+  hasAudio: boolean;
+  createdAt: string;
+}
+
+export interface MemoryMapResponse {
+  memories: MemoryMapPin[];
+}
+
+export interface Memory {
+  id: string;
+  creatorId: string;
+  creatorUsername: string | null;
+  creatorDisplayName: string;
+  creatorAvatarUrl: string | null;
+  textContent: string;
+  latitude: number;
+  longitude: number;
+  placeLabel: string | null;
+  visibility: MemoryVisibility;
+  expiresAt: string | null;
+  media: MemoryMedia[];
+  ownedByViewer: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryShareResponse {
+  token: string;
+  shareUrl: string;
+}
+
+export interface MemoryShareTeaser {
+  token: string;
+  senderName: string | null;
+  senderAvatarUrl: string | null;
+  placeLabel: string | null;
+  approximateLatitude: number;
+  approximateLongitude: number;
+  available: boolean;
+  unavailableReason: string | null;
+  createdAt: string | null;
+}
+
+export interface MemoryRevealResponse {
+  revealed: boolean;
+  distanceMeters: number;
+  unlockRadiusMeters: number;
+  memory: Memory | null;
 }
 
 export interface FollowResponse {

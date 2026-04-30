@@ -1,0 +1,6 @@
+It is very important to have this features as a part of the whole app!!! no separate quick demo is needed !!! this must be a part of the app it is very important!!!
+
+1. what is the main target short term?
+on viva-tech when interested person arrives one must be able to register with google very soon by QR code and make first memory and share it to friend. this must be the prime feature.
+So at this point main target is to have a good design, quick registration with email or phon, quick redirect to the map, visual easy show demo of memory creation feature, and quick feature of sharing a link with this feature so one receives the link must be able to see what is shared with him. for example {interested person A reaches me on stand, he must be able to quickly scan QR code, get on the app, easily register, make a memory pin and share it to the person B. person B receives a link with message you have a hidden memory from person A, person B opens a link and if person A shared the location, sees this memory location on the map, and when he reaches it, real message pops. map can be choosable by user either google or other.}
+It is very important to have this features as a part of the whole app!!! no separate quick demo is needed !!! this must be a part of the app it is very important!!!

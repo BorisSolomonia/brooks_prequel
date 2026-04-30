@@ -8,7 +8,16 @@ import StarRating from '@/components/reviews/StarRating';
 import { api } from '@/lib/api';
 import { scoreSearchMatch } from '@/lib/fuzzySearch';
 import { useAccessToken } from '@/hooks/useAccessToken';
-import type { InfluencerMapPin, InfluencerMapResponse } from '@/types';
+import type {
+  InfluencerMapPin,
+  InfluencerMapResponse,
+  MediaUploadResponse,
+  MemoryMapPin,
+  MemoryMapResponse,
+  MemoryMediaRequest,
+  MemoryShareResponse,
+  MemoryVisibility,
+} from '@/types';
 
 // Kick off the mapbox-gl download immediately when this module loads in the browser,
 // before any useEffect fires. The awaits inside effects then resolve from cache.
@@ -20,6 +29,11 @@ if (typeof window !== 'undefined') {
 let _cachedPins: InfluencerMapPin[] | null = null;
 let _pinsCacheExpiry = 0;
 const PINS_CACHE_TTL = 5 * 60 * 1000;
+
+let _cachedMemories: MemoryMapPin[] | null = null;
+let _memoriesCacheExpiry = 0;
+const MEMORIES_CACHE_TTL = 60 * 1000;
+const LAYER_STORAGE_KEY = 'brooks.maps.layers';
 
 interface MapsExperienceProps {
   mapboxToken: string;
@@ -48,6 +62,11 @@ type MapFilterState = {
   followerBuckets: string[];
 };
 
+type MapLayerState = {
+  memories: boolean;
+  guides: boolean;
+};
+
 type FilterMenuKey = keyof MapFilterState | null;
 
 type FilterChipProps = {
@@ -67,6 +86,19 @@ type FilterSectionProps = {
 
 type SearchParamReader = {
   get: (key: string) => string | null;
+};
+
+type MemoryViewportSliceProps = {
+  memory: MemoryMapPin;
+  onSelect: (memory: MemoryMapPin) => void;
+};
+
+type SelectedMemoryCardProps = {
+  memory: MemoryMapPin;
+  onClose: () => void;
+  onShare: (memoryId: string) => void;
+  onDelete: (memoryId: string) => void;
+  busy: boolean;
 };
 
 const FILTER_PARAM_KEYS: Array<keyof MapFilterState> = [
@@ -109,6 +141,11 @@ const VERIFIED_LABELS: Record<string, string> = {
   unverified: 'Unverified',
 };
 
+const DEFAULT_LAYERS: MapLayerState = {
+  memories: true,
+  guides: true,
+};
+
 interface SelectedPinCardProps {
   pin: InfluencerMapPin;
   onClose: () => void;
@@ -144,6 +181,46 @@ function isPinWithinBounds(pin: InfluencerMapPin, bounds: MapBoundsState | null)
     : pin.longitude >= bounds.west || pin.longitude <= bounds.east;
 
   return withinLatitude && withinLongitude;
+}
+
+function isMemoryWithinBounds(memory: MemoryMapPin, bounds: MapBoundsState | null): boolean {
+  if (!bounds) {
+    return true;
+  }
+
+  const withinLatitude = memory.latitude >= bounds.south && memory.latitude <= bounds.north;
+  const withinLongitude = bounds.west <= bounds.east
+    ? memory.longitude >= bounds.west && memory.longitude <= bounds.east
+    : memory.longitude >= bounds.west || memory.longitude <= bounds.east;
+
+  return withinLatitude && withinLongitude;
+}
+
+function parseLayerState(value: string | null): MapLayerState | null {
+  if (!value) {
+    return null;
+  }
+
+  const parts = value.split(',').map((part) => part.trim()).filter(Boolean);
+  const next = {
+    memories: parts.includes('memories'),
+    guides: parts.includes('guides'),
+  };
+
+  return next.memories || next.guides ? next : null;
+}
+
+function serializeLayerState(layers: MapLayerState): string {
+  return [
+    layers.memories ? 'memories' : null,
+    layers.guides ? 'guides' : null,
+  ].filter(Boolean).join(',');
+}
+
+function layerLabel(layers: MapLayerState): string {
+  if (layers.memories && layers.guides) return 'Memories + guides';
+  if (layers.memories) return 'Memories';
+  return 'Guides';
 }
 
 function parseFilterValues(searchParams: SearchParamReader, key: keyof MapFilterState): string[] {
@@ -367,6 +444,82 @@ function InfluencerViewportSlice({ pin, onHoverStart, onHoverEnd }: InfluencerVi
   );
 }
 
+function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
+  const visibilityLabel = memory.visibility === 'FOLLOWERS_PUBLIC'
+    ? 'Followers'
+    : memory.visibility === 'SHARED_LINK'
+      ? 'Shared'
+      : 'Private';
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(memory)}
+      className="flex w-full items-center gap-3 rounded-[24px] border border-ig-border bg-ig-primary/90 px-3 py-2 text-left shadow-[0_8px_21px_rgba(15,23,42,0.08)] backdrop-blur transition-transform duration-150 hover:-translate-y-0.5"
+    >
+      <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-black text-white shadow-[0_0_0_2px_rgba(255,255,255,0.9)]">
+        M
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-semibold text-ig-text-primary">{memory.textPreview}</p>
+        <p className="mt-1 truncate text-[11px] leading-4 text-ig-text-tertiary">
+          {memory.placeLabel || `By ${memory.creatorDisplayName}`} · {visibilityLabel}
+          {memory.hasAudio ? ' · Audio' : ''}
+          {memory.hasImage ? ' · Photo' : ''}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function SelectedMemoryCard({ memory, onClose, onShare, onDelete, busy }: SelectedMemoryCardProps) {
+  return (
+    <div className="absolute inset-x-3 bottom-4 z-10 mx-auto max-w-md rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Memory pin</p>
+          <h2 className="mt-1 text-base font-semibold text-ig-text-primary">{memory.textPreview}</h2>
+          <p className="mt-2 text-sm text-ig-text-secondary">
+            {memory.placeLabel || 'Hidden at this location'} · by {memory.creatorDisplayName}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-ig-text-tertiary">
+            <span className="rounded-pill border border-ig-border px-2 py-1">{memory.visibility}</span>
+            {memory.hasImage && <span className="rounded-pill border border-ig-border px-2 py-1">Photo</span>}
+            {memory.hasAudio && <span className="rounded-pill border border-ig-border px-2 py-1">Audio</span>}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="min-h-11 rounded-full px-3 text-sm text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
+        >
+          Close
+        </button>
+      </div>
+      {memory.ownedByViewer && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onShare(memory.id)}
+            className="min-h-11 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+          >
+            Share
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onDelete(memory.id)}
+            className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary disabled:opacity-60"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
   return (
     <div className="absolute inset-x-3 bottom-4 z-10 mx-auto max-w-md rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur">
@@ -436,16 +589,24 @@ export default function MapsExperience({
   const mapRef = useRef<MapboxMap | null>(null);
   const markersRef = useRef<MapboxMarker[]>([]);
   const markerElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
+  const memoryMarkersRef = useRef<MapboxMarker[]>([]);
   const userLocationMarkerRef = useRef<MapboxMarker | null>(null);
 
   const [pins, setPins] = useState<InfluencerMapPin[]>(
     () => (_cachedPins && Date.now() < _pinsCacheExpiry ? _cachedPins : [])
   );
+  const [memories, setMemories] = useState<MemoryMapPin[]>(
+    () => (_cachedMemories && Date.now() < _memoriesCacheExpiry ? _cachedMemories : [])
+  );
   const [pinsLoading, setPinsLoading] = useState(
     !(_cachedPins && Date.now() < _pinsCacheExpiry)
   );
+  const [memoriesLoading, setMemoriesLoading] = useState(
+    !(_cachedMemories && Date.now() < _memoriesCacheExpiry)
+  );
   const [pageError, setPageError] = useState<string | null>(null);
   const [selectedPin, setSelectedPin] = useState<InfluencerMapPin | null>(null);
+  const [selectedMemory, setSelectedMemory] = useState<MemoryMapPin | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('locating');
   const [userCoordinates, setUserCoordinates] = useState<LngLatLike | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -454,6 +615,17 @@ export default function MapsExperience({
   const [hoveredMarkerPinId, setHoveredMarkerPinId] = useState<string | null>(null);
   const [openFilterMenu, setOpenFilterMenu] = useState<FilterMenuKey>(null);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [activeLayers, setActiveLayers] = useState<MapLayerState>(DEFAULT_LAYERS);
+  const [createMemoryOpen, setCreateMemoryOpen] = useState(false);
+  const [memoryText, setMemoryText] = useState('');
+  const [memoryPlaceLabel, setMemoryPlaceLabel] = useState('');
+  const [memoryVisibility, setMemoryVisibility] = useState<MemoryVisibility>('SHARED_LINK');
+  const [memoryPhoto, setMemoryPhoto] = useState<MemoryMediaRequest | null>(null);
+  const [memoryAudio, setMemoryAudio] = useState<MemoryMediaRequest | null>(null);
+  const [memoryBusy, setMemoryBusy] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<BlobPart[]>([]);
 
   const mapConfigured = Boolean(
     mapboxToken &&
@@ -511,15 +683,68 @@ export default function MapsExperience({
     return searchFilteredPins.filter((pin) => matchesMapFilters(pin, activeFilters));
   }, [activeFilters, searchFilteredPins]);
 
+  const visibleGuidePins = useMemo(() => (activeLayers.guides ? filteredPins : []), [activeLayers.guides, filteredPins]);
+  const visibleMemories = useMemo(() => (activeLayers.memories ? memories : []), [activeLayers.memories, memories]);
+
   const viewportPins = useMemo(() => {
-    return filteredPins.filter((pin) => isPinWithinBounds(pin, currentBounds));
-  }, [currentBounds, filteredPins]);
+    return visibleGuidePins.filter((pin) => isPinWithinBounds(pin, currentBounds));
+  }, [currentBounds, visibleGuidePins]);
+
+  const viewportMemories = useMemo(() => {
+    return visibleMemories.filter((memory) => isMemoryWithinBounds(memory, currentBounds));
+  }, [currentBounds, visibleMemories]);
 
   useEffect(() => {
     if (!tokenLoading && !token) {
       router.push('/api/auth/login');
     }
   }, [router, token, tokenLoading]);
+
+  useEffect(() => {
+    const fromUrl = parseLayerState(searchParams.get('layers'));
+    if (fromUrl) {
+      setActiveLayers(fromUrl);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(LAYER_STORAGE_KEY, serializeLayerState(fromUrl));
+      }
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const fromStorage = parseLayerState(window.localStorage.getItem(LAYER_STORAGE_KEY));
+    if (fromStorage) {
+      setActiveLayers(fromStorage);
+    }
+  }, [searchParams]);
+
+  const updateLayerState = (nextLayers: MapLayerState) => {
+    const normalized = nextLayers.memories || nextLayers.guides ? nextLayers : activeLayers;
+    setActiveLayers(normalized);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LAYER_STORAGE_KEY, serializeLayerState(normalized));
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    const serialized = serializeLayerState(normalized);
+    if (serialized === serializeLayerState(DEFAULT_LAYERS)) {
+      nextParams.delete('layers');
+    } else {
+      nextParams.set('layers', serialized);
+    }
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  };
+
+  const toggleLayer = (layer: keyof MapLayerState) => {
+    const nextLayers = { ...activeLayers, [layer]: !activeLayers[layer] };
+    if (!nextLayers.memories && !nextLayers.guides) {
+      return;
+    }
+    updateLayerState(nextLayers);
+  };
 
   const updateFilterValues = (key: keyof MapFilterState, values: string[]) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -550,6 +775,162 @@ export default function MapsExperience({
     setOpenFilterMenu(null);
   };
 
+  const uploadMemoryFile = async (file: File, mediaType: 'IMAGE' | 'AUDIO'): Promise<MemoryMediaRequest> => {
+    if (!token) {
+      throw new Error('Sign in is required');
+    }
+    const upload: MediaUploadResponse = await api.uploadMedia(
+      file,
+      mediaType === 'IMAGE' ? 'MEMORY_IMAGE' : 'MEMORY_AUDIO',
+      token,
+    );
+    return {
+      mediaType,
+      url: upload.url,
+      objectName: upload.objectName,
+      contentType: upload.contentType,
+      sizeBytes: upload.sizeBytes,
+    };
+  };
+
+  const handlePhotoSelected = async (file: File | null) => {
+    if (!file) {
+      return;
+    }
+    setMemoryBusy(true);
+    try {
+      setMemoryPhoto(await uploadMemoryFile(file, 'IMAGE'));
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'Photo upload failed');
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const handleAudioSelected = async (file: File | null) => {
+    if (!file) {
+      return;
+    }
+    setMemoryBusy(true);
+    try {
+      setMemoryAudio(await uploadMemoryFile(file, 'AUDIO'));
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'Audio upload failed');
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const startRecording = async () => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+      setPageError('Audio recording is not available in this browser');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recordedChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        const blob = new Blob(recordedChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const file = new File([blob], `memory-${Date.now()}.webm`, { type: blob.type || 'audio/webm' });
+        await handleAudioSelected(file);
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+    } catch {
+      setPageError('Microphone permission is required to record a memory');
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    setRecording(false);
+  };
+
+  const handleCreateMemory = async () => {
+    if (!token || !userCoordinates || !Array.isArray(userCoordinates)) {
+      setPageError('Your current location is required to create a memory');
+      return;
+    }
+    const trimmedText = memoryText.trim();
+    if (!trimmedText) {
+      setPageError('Memory text is required');
+      return;
+    }
+
+    setMemoryBusy(true);
+    try {
+      const media = [memoryPhoto, memoryAudio].filter((item): item is MemoryMediaRequest => Boolean(item));
+      const created = await api.post<{ id: string }>('/api/memories', {
+        textContent: trimmedText,
+        latitude: userCoordinates[1],
+        longitude: userCoordinates[0],
+        placeLabel: memoryPlaceLabel.trim() || undefined,
+        visibility: memoryVisibility,
+        media,
+      }, token);
+      setMemoryText('');
+      setMemoryPlaceLabel('');
+      setMemoryPhoto(null);
+      setMemoryAudio(null);
+      setCreateMemoryOpen(false);
+      await api.post<MemoryShareResponse>(`/api/memories/${created.id}/shares`, undefined, token).then(async (share) => {
+        if (navigator.share) {
+          await navigator.share({ title: 'Hidden Brooks memory', text: 'You have a hidden memory waiting for you.', url: share.shareUrl });
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(share.shareUrl);
+          setPageError('Share link copied');
+        }
+      });
+      refreshMemories();
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'Could not create memory');
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const handleShareMemory = async (memoryId: string) => {
+    if (!token) return;
+    setMemoryBusy(true);
+    try {
+      const share = await api.post<MemoryShareResponse>(`/api/memories/${memoryId}/shares`, undefined, token);
+      if (navigator.share) {
+        await navigator.share({ title: 'Hidden Brooks memory', text: 'You have a hidden memory waiting for you.', url: share.shareUrl });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(share.shareUrl);
+        setPageError('Share link copied');
+      }
+      refreshMemories();
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'Could not share memory');
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const handleDeleteMemory = async (memoryId: string) => {
+    if (!token) return;
+    setMemoryBusy(true);
+    try {
+      await api.delete(`/api/memories/${memoryId}`, token);
+      setSelectedMemory(null);
+      refreshMemories();
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'Could not delete memory');
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
   useEffect(() => {
     if (!token) {
       return;
@@ -565,6 +946,26 @@ export default function MapsExperience({
       .catch((error) => setPageError(error instanceof Error ? error.message : 'Failed to load influencer map data'))
       .finally(() => setPinsLoading(false));
   }, [token]);
+
+  const refreshMemories = () => {
+    if (!token) {
+      return;
+    }
+
+    setMemoriesLoading(true);
+    api.get<MemoryMapResponse>('/api/memories/map', token)
+      .then((response) => {
+        _cachedMemories = response.memories;
+        _memoriesCacheExpiry = Date.now() + MEMORIES_CACHE_TTL;
+        setMemories(response.memories);
+      })
+      .catch((error) => setPageError(error instanceof Error ? error.message : 'Failed to load memories'))
+      .finally(() => setMemoriesLoading(false));
+  };
+
+  useEffect(() => {
+    refreshMemories();
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!fallbackCenter || typeof window === 'undefined' || !navigator.geolocation) {
@@ -698,6 +1099,8 @@ export default function MapsExperience({
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
       markerElementsRef.current.clear();
+      memoryMarkersRef.current.forEach((marker) => marker.remove());
+      memoryMarkersRef.current = [];
       userLocationMarkerRef.current?.remove();
       userLocationMarkerRef.current = null;
       setMapReady(false);
@@ -731,7 +1134,7 @@ export default function MapsExperience({
       if (clusterSource) {
         clusterSource.setData({
           type: 'FeatureCollection',
-          features: filteredPins.map((pin) => ({
+          features: visibleGuidePins.map((pin) => ({
             type: 'Feature' as const,
             geometry: { type: 'Point' as const, coordinates: [pin.longitude, pin.latitude] },
             properties: { userId: pin.userId },
@@ -739,7 +1142,7 @@ export default function MapsExperience({
         });
       }
 
-      filteredPins.forEach((pin) => {
+      visibleGuidePins.forEach((pin) => {
         const markerElement = document.createElement('button');
         markerElement.type = 'button';
         markerElement.setAttribute('aria-label', `${pin.displayName} influencer pin`);
@@ -803,6 +1206,7 @@ export default function MapsExperience({
         });
         markerElement.addEventListener('click', () => {
           setSelectedPin(pin);
+          setSelectedMemory(null);
           map.flyTo({
             center: [pin.longitude, pin.latitude],
             zoom: Math.max(map.getZoom(), 11),
@@ -826,7 +1230,7 @@ export default function MapsExperience({
     renderPins().catch(() => {
       setPageError('Failed to render influencer pins');
     });
-  }, [filteredPins, mapReady]);
+  }, [visibleGuidePins, mapReady]);
 
   useEffect(() => {
     const activeIds = new Set<string>();
@@ -843,15 +1247,82 @@ export default function MapsExperience({
   }, [hoveredMarkerPinId, hoveredSlicePinId]);
 
   useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) {
+      return;
+    }
+
+    const renderMemoryPins = async () => {
+      const mapboxglModule = await import('mapbox-gl');
+      const mapboxgl = mapboxglModule.default;
+
+      memoryMarkersRef.current.forEach((marker) => marker.remove());
+      memoryMarkersRef.current = [];
+
+      visibleMemories.forEach((memory) => {
+        const markerElement = document.createElement('button');
+        markerElement.type = 'button';
+        markerElement.setAttribute('aria-label', 'Memory pin');
+        markerElement.style.width = '38px';
+        markerElement.style.height = '38px';
+        markerElement.style.borderRadius = '9999px';
+        markerElement.style.border = '2px solid #ffffff';
+        markerElement.style.background = memory.ownedByViewer ? '#ef2f6d' : '#12c7c9';
+        markerElement.style.color = '#ffffff';
+        markerElement.style.fontWeight = '900';
+        markerElement.style.boxShadow = '0 12px 24px rgba(0,0,0,0.24)';
+        markerElement.style.cursor = 'pointer';
+        markerElement.style.transition = 'transform 140ms ease';
+        markerElement.textContent = 'M';
+        markerElement.addEventListener('mouseenter', () => {
+          markerElement.style.transform = 'translateY(-4px) scale(1.05)';
+        });
+        markerElement.addEventListener('mouseleave', () => {
+          markerElement.style.transform = 'translateY(0) scale(1)';
+        });
+        markerElement.addEventListener('click', () => {
+          setSelectedMemory(memory);
+          setSelectedPin(null);
+          map.flyTo({
+            center: [memory.longitude, memory.latitude],
+            zoom: Math.max(map.getZoom(), 12),
+            essential: true,
+          });
+        });
+
+        const marker = new mapboxgl.Marker({ element: markerElement, anchor: 'center' })
+          .setLngLat([memory.longitude, memory.latitude])
+          .addTo(map);
+        memoryMarkersRef.current.push(marker);
+      });
+    };
+
+    renderMemoryPins().catch(() => {
+      setPageError('Failed to render memory pins');
+    });
+  }, [mapReady, visibleMemories]);
+
+  useEffect(() => {
     if (!selectedPin) {
       return;
     }
 
-    const stillVisible = filteredPins.some((pin) => pin.userId === selectedPin.userId);
+    const stillVisible = visibleGuidePins.some((pin) => pin.userId === selectedPin.userId);
     if (!stillVisible) {
       setSelectedPin(null);
     }
-  }, [filteredPins, selectedPin]);
+  }, [visibleGuidePins, selectedPin]);
+
+  useEffect(() => {
+    if (!selectedMemory) {
+      return;
+    }
+
+    const stillVisible = visibleMemories.some((memory) => memory.id === selectedMemory.id);
+    if (!stillVisible) {
+      setSelectedMemory(null);
+    }
+  }, [selectedMemory, visibleMemories]);
 
   useEffect(() => {
     if (!hoveredSlicePinId) {
@@ -957,18 +1428,120 @@ export default function MapsExperience({
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Brooks Maps</p>
-            <h1 className="mt-1 text-xl font-semibold text-ig-text-primary md:text-2xl">Influencers in view</h1>
+            <h1 className="mt-1 text-xl font-semibold text-ig-text-primary md:text-2xl">{activeLayers.guides ? 'Guides in view' : 'Memories in view'}</h1>
           </div>
           <button
             type="button"
             onClick={() => setMobilePanelOpen((open) => !open)}
             className="min-h-11 rounded-full bg-brand-500/15 px-4 py-2 text-sm font-semibold text-brand-500 md:pointer-events-none md:min-h-0 md:px-3 md:py-1 md:text-xs"
           >
-            {viewportPins.length}{searchQuery ? ` / ${filteredPins.length}` : ''} visible
+            {activeLayers.guides ? viewportPins.length : viewportMemories.length} visible
           </button>
         </div>
         <div className={`${mobilePanelOpen ? 'block' : 'hidden'} md:block`}>
-        <div className="mt-4 flex max-h-28 flex-wrap gap-2 overflow-y-auto md:max-h-none">
+        <div className="mt-4 rounded-3xl border border-ig-border bg-ig-primary/80 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ig-text-tertiary">Map layers</p>
+            <span className="text-xs text-ig-text-tertiary">{layerLabel(activeLayers)}</span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => toggleLayer('memories')}
+              className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
+                activeLayers.memories
+                  ? 'border-brand-500/30 bg-brand-500/10 text-brand-600'
+                  : 'border-ig-border text-ig-text-secondary hover:text-ig-text-primary'
+              }`}
+            >
+              {activeLayers.memories ? '✓ ' : ''}Memories
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleLayer('guides')}
+              className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
+                activeLayers.guides
+                  ? 'border-brand-500/30 bg-brand-500/10 text-brand-600'
+                  : 'border-ig-border text-ig-text-secondary hover:text-ig-text-primary'
+              }`}
+            >
+              {activeLayers.guides ? '✓ ' : ''}Guides
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCreateMemoryOpen((open) => !open)}
+            className="mt-3 min-h-11 w-full rounded-2xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600"
+          >
+            {createMemoryOpen ? 'Close memory creator' : 'Create hidden memory'}
+          </button>
+        </div>
+        {createMemoryOpen && (
+          <div className="mt-3 rounded-3xl border border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ig-text-tertiary">New memory</p>
+            <textarea
+              value={memoryText}
+              onChange={(event) => setMemoryText(event.target.value.slice(0, 500))}
+              placeholder="Write the memory someone will unlock here..."
+              className="mt-3 min-h-24 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+            />
+            <div className="mt-2 flex items-center justify-between text-xs text-ig-text-tertiary">
+              <span>{Array.isArray(userCoordinates) ? 'Using your current map location' : 'Location required'}</span>
+              <span>{memoryText.length}/500</span>
+            </div>
+            <input
+              value={memoryPlaceLabel}
+              onChange={(event) => setMemoryPlaceLabel(event.target.value)}
+              placeholder="Place label, optional"
+              className="mt-3 min-h-11 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+            />
+            <select
+              value={memoryVisibility}
+              onChange={(event) => setMemoryVisibility(event.target.value as MemoryVisibility)}
+              className="mt-3 min-h-11 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+            >
+              <option value="SHARED_LINK">Hidden link</option>
+              <option value="FOLLOWERS_PUBLIC">Followers public</option>
+              <option value="PRIVATE">Private</option>
+            </select>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary">
+                {memoryPhoto ? 'Photo added' : 'Add photo'}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => void handlePhotoSelected(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary">
+                {memoryAudio ? 'Audio added' : 'Upload audio'}
+                <input
+                  type="file"
+                  accept="audio/mpeg,audio/mp4,audio/webm,audio/ogg,audio/wav"
+                  className="hidden"
+                  onChange={(event) => void handleAudioSelected(event.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              className="mt-2 min-h-11 w-full rounded-2xl border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary"
+            >
+              {recording ? 'Stop recording' : memoryAudio ? 'Record again' : 'Record audio'}
+            </button>
+            <button
+              type="button"
+              disabled={memoryBusy}
+              onClick={handleCreateMemory}
+              className="mt-3 min-h-11 w-full rounded-2xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60"
+            >
+              {memoryBusy ? 'Saving...' : 'Save and share'}
+            </button>
+          </div>
+        )}
+        <div className={`${activeLayers.guides ? 'flex' : 'hidden'} mt-4 max-h-28 flex-wrap gap-2 overflow-y-auto md:max-h-none`}>
           <FilterChip
             label="Country"
             activeCount={activeFilters.countries.length}
@@ -1026,7 +1599,7 @@ export default function MapsExperience({
             Clear all
           </button>
         </div>
-        {openFilterMenu && (
+        {activeLayers.guides && openFilterMenu && (
           <div className="mt-3 rounded-3xl border border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
             {openFilterMenu === 'countries' && (
               <FilterSection
@@ -1100,7 +1673,7 @@ export default function MapsExperience({
           </div>
         )}
         <p className="mt-2 hidden text-sm text-ig-text-secondary md:block">
-          The panel tracks the current map viewport. Pan or zoom the map and this list updates to show creators visible in the area on screen.
+          The panel tracks the current map viewport. When both layers are on, guide slices stay here first; uncheck Guides to browse memory slices.
         </p>
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-ig-text-tertiary">
           <span className="rounded-pill border border-ig-border px-2 py-1">
@@ -1116,21 +1689,36 @@ export default function MapsExperience({
               {activeFilterCount} active filters
             </span>
           )}
-          {pinsLoading && <span className="rounded-pill border border-ig-border px-2 py-1">Loading pins</span>}
+          {pinsLoading && activeLayers.guides && <span className="rounded-pill border border-ig-border px-2 py-1">Loading guide pins</span>}
+          {memoriesLoading && activeLayers.memories && <span className="rounded-pill border border-ig-border px-2 py-1">Loading memories</span>}
           {tokenError && <span className="rounded-pill border border-ig-border px-2 py-1">{tokenError}</span>}
-          {!pinsLoading && viewportPins.length === 0 && (
-            <span className="rounded-pill border border-ig-border px-2 py-1">No creators in the current view</span>
+          {!pinsLoading && activeLayers.guides && viewportPins.length === 0 && (
+            <span className="rounded-pill border border-ig-border px-2 py-1">No guides in the current view</span>
+          )}
+          {!activeLayers.guides && !memoriesLoading && activeLayers.memories && viewportMemories.length === 0 && (
+            <span className="rounded-pill border border-ig-border px-2 py-1">No memories in the current view</span>
           )}
         </div>
         <div className="mt-4 max-h-[26vh] space-y-3 overflow-y-auto pr-1 md:max-h-[55vh]">
-          {viewportPins.map((pin) => (
-            <InfluencerViewportSlice
-              key={pin.userId}
-              pin={pin}
-              onHoverStart={setHoveredSlicePinId}
-              onHoverEnd={() => setHoveredSlicePinId(null)}
-            />
-          ))}
+          {activeLayers.guides
+            ? viewportPins.map((pin) => (
+                <InfluencerViewportSlice
+                  key={pin.userId}
+                  pin={pin}
+                  onHoverStart={setHoveredSlicePinId}
+                  onHoverEnd={() => setHoveredSlicePinId(null)}
+                />
+              ))
+            : viewportMemories.map((memory) => (
+                <MemoryViewportSlice
+                  key={memory.id}
+                  memory={memory}
+                  onSelect={(nextMemory) => {
+                    setSelectedMemory(nextMemory);
+                    setSelectedPin(null);
+                  }}
+                />
+              ))}
         </div>
         </div>
       </div>
@@ -1144,6 +1732,15 @@ export default function MapsExperience({
       <div ref={mapContainerRef} className="h-full w-full" />
 
       {selectedPin && <SelectedPinCard pin={selectedPin} onClose={() => setSelectedPin(null)} />}
+      {selectedMemory && (
+        <SelectedMemoryCard
+          memory={selectedMemory}
+          onClose={() => setSelectedMemory(null)}
+          onShare={handleShareMemory}
+          onDelete={handleDeleteMemory}
+          busy={memoryBusy}
+        />
+      )}
     </div>
   );
 }

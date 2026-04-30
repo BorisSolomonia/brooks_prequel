@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":profile"))
     implementation(project(":social"))
     implementation(project(":guide"))
+    implementation(project(":memory"))
     implementation(project(":search"))
     implementation(project(":purchase"))
     implementation(project(":ai"))

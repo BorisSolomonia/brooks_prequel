@@ -4,7 +4,9 @@ public enum MediaUsage {
     PROFILE_AVATAR("profiles"),
     GUIDE_COVER("guides/covers"),
     PLACE_IMAGE("guides/places"),
-    DAY_IMAGE("guides/days");
+    DAY_IMAGE("guides/days"),
+    MEMORY_IMAGE("memories/images"),
+    MEMORY_AUDIO("memories/audio");
 
     private final String pathPrefix;
 

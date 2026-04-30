@@ -23,11 +23,20 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MediaStorageService {
 
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp",
+            "audio/mpeg", "audio/mp4", "audio/webm", "audio/ogg", "audio/wav", "audio/x-wav"
+    );
     private static final Map<String, String> EXTENSIONS = Map.of(
             "image/jpeg", "jpg",
             "image/png", "png",
-            "image/webp", "webp"
+            "image/webp", "webp",
+            "audio/mpeg", "mp3",
+            "audio/mp4", "m4a",
+            "audio/webm", "webm",
+            "audio/ogg", "ogg",
+            "audio/wav", "wav",
+            "audio/x-wav", "wav"
     );
 
     private final Storage storage;
@@ -68,7 +77,7 @@ public class MediaStorageService {
             Files.createDirectories(filePath.getParent());
             Files.write(filePath, file.getBytes());
         } catch (IOException ex) {
-            throw new BusinessException("Could not save image locally: " + ex.getMessage());
+            throw new BusinessException("Could not save media locally: " + ex.getMessage());
         }
         log.debug("Saved media locally: {}", filePath);
         return MediaUploadResponse.builder()
@@ -95,7 +104,7 @@ public class MediaStorageService {
         try {
             storage.create(blobInfo, file.getBytes());
         } catch (IOException ex) {
-            throw new BusinessException("Could not read uploaded image");
+            throw new BusinessException("Could not read uploaded media");
         } catch (RuntimeException ex) {
             log.error("GCS upload failed: {}", ex.getMessage(), ex);
             throw new BusinessException("Could not upload image to storage: " + ex.getMessage());
@@ -115,11 +124,11 @@ public class MediaStorageService {
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new BusinessException("Only JPEG, PNG, and WebP images are supported");
+            throw new BusinessException("Only JPEG, PNG, WebP, MP3, M4A, WebM, OGG, and WAV media are supported");
         }
         long maxBytes = maxUploadSizeMb * 1024 * 1024;
         if (file.getSize() > maxBytes) {
-            throw new BusinessException("Image must be " + maxUploadSizeMb + " MB or smaller");
+            throw new BusinessException("Media must be " + maxUploadSizeMb + " MB or smaller");
         }
     }
 

@@ -81,6 +81,10 @@ app:
   place-image-max-count: ${PLACE_IMAGE_MAX_COUNT:4}
   payout-schedule-cron: ${PAYOUT_SCHEDULE_CRON:0 0 2 * * MON}
   ranking-refresh-cron: ${RANKING_REFRESH_CRON:0 0 3 * * *}
+  memory:
+    unlock-radius-meters: ${MEMORY_UNLOCK_RADIUS_METERS:50}
+    daily-create-limit: ${MEMORY_DAILY_CREATE_LIMIT:25}
+    blocked-terms: ${MEMORY_BLOCKED_TERMS:}
 
 ai:
   key-encryption-secret: ${AI_KEY_ENCRYPTION_SECRET}

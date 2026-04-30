@@ -19,11 +19,22 @@ const afterCallback: AfterCallbackAppRoute = async (_req, session) => {
 };
 
 export const GET = handleAuth({
-  login: handleLogin({
-    returnTo: '/maps',
-    authorizationParams: {
-      audience: process.env.AUTH0_AUDIENCE,
-    },
+  login: handleLogin((req) => {
+    const url = 'nextUrl' in req
+      ? req.nextUrl
+      : new URL(req.url ?? '/', process.env.AUTH0_BASE_URL ?? 'http://localhost:3000');
+    const requestedReturnTo = url.searchParams.get('returnTo');
+    const returnTo = requestedReturnTo?.startsWith('/') && !requestedReturnTo.startsWith('//')
+      ? requestedReturnTo
+      : '/maps';
+
+    return {
+      returnTo,
+      authorizationParams: {
+        audience: process.env.AUTH0_AUDIENCE,
+        connection: url.searchParams.get('connection') ?? undefined,
+      },
+    };
   }),
   callback: handleCallback({
     redirectUri: process.env.AUTH0_BASE_URL + '/api/auth/callback',
