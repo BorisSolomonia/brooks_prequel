@@ -34,6 +34,7 @@ public class MemoryService {
     private final MemoryRevealRepository revealRepository;
     private final MemoryCreatorVisibilityPreferenceRepository visibilityPreferenceRepository;
     private final ProductEventService productEventService;
+    private final MemorySchemaHealthService memorySchemaHealthService;
     private final UserService userService;
     private final UserProfileRepository profileRepository;
 
@@ -52,6 +53,9 @@ public class MemoryService {
     @Transactional
     public MemoryResponse createMemory(String auth0Subject, MemoryCreateRequest request) {
         User creator = userService.findByAuth0Subject(auth0Subject);
+        if (!memorySchemaHealthService.isMemorySchemaReady()) {
+            throw new BusinessException("Memory storage is not ready. Run database migrations and retry.");
+        }
         enforceDailyLimit(creator.getId());
         validateText(request.getTextContent());
         validateFutureExpiration(request.getExpiresAt());
@@ -113,6 +117,11 @@ public class MemoryService {
 
     public MemoryMapResponse getMapMemories(String auth0Subject, double north, double south, double east, double west) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
+        if (!memorySchemaHealthService.isMemorySchemaReady()) {
+            return MemoryMapResponse.builder()
+                    .memories(List.of())
+                    .build();
+        }
         validateBounds(north, south, east, west);
         List<Memory> memories;
         try {
