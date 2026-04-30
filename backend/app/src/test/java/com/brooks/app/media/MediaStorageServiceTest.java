@@ -70,7 +70,7 @@ class MediaStorageServiceTest {
 
         assertThatThrownBy(() -> service.upload(UUID.randomUUID(), MediaUsage.PROFILE_AVATAR, file))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Only JPEG, PNG, and WebP images are supported");
+                .hasMessage("Only JPEG, PNG, WebP, MP3, M4A, WebM, OGG, and WAV media are supported");
     }
 
     @Test
