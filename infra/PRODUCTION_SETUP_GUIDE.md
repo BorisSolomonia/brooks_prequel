@@ -62,7 +62,7 @@ You need to create two new resources inside it specifically for production: a **
 
 ---
 
-### 1C — Generate AUTH0_SECRET
+### 1C — Generate AUTH0_SECRET.
 
 This is a random secret used by the Next.js Auth0 SDK to encrypt session cookies. It is not related to Auth0's own credentials.
 
