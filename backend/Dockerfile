@@ -8,6 +8,7 @@ COPY user/ user/
 COPY profile/ profile/
 COPY social/ social/
 COPY guide/ guide/
+COPY memory/ memory/
 COPY search/ search/
 COPY purchase/ purchase/
 COPY ai/ ai/
