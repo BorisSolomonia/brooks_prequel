@@ -180,6 +180,26 @@ jobs:
             sudo mkdir -p "${APP_ROOT}/infra/postgres" "${APP_ROOT}/infra/scripts"
             sudo chown -R "$(whoami):$(whoami)" "${APP_ROOT}"
 
+      - name: Pre-upload diagnostics
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ env.VM_HOST }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_VM_SSH_KEY }}
+          port: 22
+          timeout: 30s
+          command_timeout: 30s
+          script: |
+            echo "=== scp binary ==="
+            which scp || echo "scp NOT FOUND"
+            echo "=== disk space ==="
+            df -h /opt || df -h /
+            echo "=== /opt/brooks ownership ==="
+            ls -la /opt/ | grep brooks || echo "/opt/brooks does not exist"
+            ls -la "${{ env.APP_ROOT }}/" || echo "APP_ROOT missing"
+            echo "=== whoami ==="
+            whoami
+
       - name: Upload deployment files
         id: upload
         continue-on-error: true
@@ -192,6 +212,7 @@ jobs:
           timeout: 120s
           command_timeout: 180s
           overwrite: true
+          debug: true
           source: ".env.runtime,infra/docker-compose.prod.yml,infra/Caddyfile.prod,infra/postgres/init.sql,infra/scripts/diagnostics.sh,infra/scripts/setup-vm.sh"
           target: ${{ env.APP_ROOT }}/
 
@@ -206,6 +227,7 @@ jobs:
           timeout: 120s
           command_timeout: 180s
           overwrite: true
+          debug: true
           source: ".env.runtime,infra/docker-compose.prod.yml,infra/Caddyfile.prod,infra/postgres/init.sql,infra/scripts/diagnostics.sh,infra/scripts/setup-vm.sh"
           target: ${{ env.APP_ROOT }}/
 
