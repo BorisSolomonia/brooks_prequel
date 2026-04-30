@@ -28,8 +28,13 @@ public class MemoryController {
     }
 
     @GetMapping("/memories/map")
-    public ResponseEntity<MemoryMapResponse> getMapMemories(Authentication authentication) {
-        return ResponseEntity.ok(memoryService.getMapMemories(subject(authentication)));
+    public ResponseEntity<MemoryMapResponse> getMapMemories(
+            Authentication authentication,
+            @RequestParam double north,
+            @RequestParam double south,
+            @RequestParam double east,
+            @RequestParam double west) {
+        return ResponseEntity.ok(memoryService.getMapMemories(subject(authentication), north, south, east, west));
     }
 
     @GetMapping("/memories/{memoryId}")

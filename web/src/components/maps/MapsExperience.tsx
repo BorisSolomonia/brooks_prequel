@@ -948,12 +948,19 @@ export default function MapsExperience({
   }, [token]);
 
   const refreshMemories = () => {
-    if (!token) {
+    if (!token || !currentBounds) {
       return;
     }
 
+    const params = new URLSearchParams({
+      north: String(currentBounds.north),
+      south: String(currentBounds.south),
+      east: String(currentBounds.east),
+      west: String(currentBounds.west),
+    });
+
     setMemoriesLoading(true);
-    api.get<MemoryMapResponse>('/api/memories/map', token)
+    api.get<MemoryMapResponse>(`/api/memories/map?${params.toString()}`, token)
       .then((response) => {
         _cachedMemories = response.memories;
         _memoriesCacheExpiry = Date.now() + MEMORIES_CACHE_TTL;
@@ -965,7 +972,7 @@ export default function MapsExperience({
 
   useEffect(() => {
     refreshMemories();
-  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, currentBounds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!fallbackCenter || typeof window === 'undefined' || !navigator.geolocation) {
@@ -1012,6 +1019,10 @@ export default function MapsExperience({
 
       map.on('load', () => {
         setMapReady(true);
+        const initialBounds = map.getBounds();
+        if (initialBounds) {
+          setCurrentBounds(getBoundsState(initialBounds));
+        }
 
         // Cluster source + layers for zoomed-out view
         map.addSource('creator-clusters', {
@@ -1108,12 +1119,6 @@ export default function MapsExperience({
       mapRef.current = null;
     };
   }, [fallbackCenter, fallbackZoom, mapConfigured, mapStyle, mapboxToken]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady || !userCoordinates) return;
-    map.flyTo({ center: userCoordinates, zoom: Math.max(fallbackZoom ?? 9, 10), essential: true });
-  }, [mapReady, userCoordinates, fallbackZoom]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1401,7 +1406,7 @@ export default function MapsExperience({
       zoom: Math.max(map.getZoom(), fallbackZoom ?? 9, 10),
       essential: true,
     });
-  }, [fallbackZoom, userCoordinates]);
+  }, [fallbackZoom, mapReady, userCoordinates]);
 
   if (!mapConfigured) {
     return (

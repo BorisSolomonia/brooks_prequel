@@ -43,6 +43,7 @@ CREATE TABLE memory_shares (
 
 CREATE INDEX idx_memory_shares_memory_id ON memory_shares(memory_id);
 CREATE INDEX idx_memory_shares_token ON memory_shares(token);
+CREATE UNIQUE INDEX idx_memory_shares_one_active_per_memory ON memory_shares(memory_id) WHERE revoked_at IS NULL;
 
 CREATE TABLE memory_reveals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

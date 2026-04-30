@@ -17,6 +17,11 @@ public interface MemoryRepository extends JpaRepository<Memory, UUID> {
         FROM memories m
         WHERE m.deleted_at IS NULL
           AND (m.expires_at IS NULL OR m.expires_at > NOW())
+          AND m.latitude BETWEEN :south AND :north
+          AND (
+            (:west <= :east AND m.longitude BETWEEN :west AND :east)
+            OR (:west > :east AND (m.longitude >= :west OR m.longitude <= :east))
+          )
           AND (
             m.creator_id = :viewerId
             OR (
@@ -34,8 +39,14 @@ public interface MemoryRepository extends JpaRepository<Memory, UUID> {
             )
           )
         ORDER BY m.created_at DESC
+        LIMIT 250
         """, nativeQuery = true)
-    List<Memory> findVisibleMapMemories(@Param("viewerId") UUID viewerId);
+    List<Memory> findVisibleMapMemories(
+            @Param("viewerId") UUID viewerId,
+            @Param("north") double north,
+            @Param("south") double south,
+            @Param("east") double east,
+            @Param("west") double west);
 
     long countByCreatorIdAndDeletedAtIsNullAndCreatedAtAfter(UUID creatorId, java.time.Instant createdAt);
 }

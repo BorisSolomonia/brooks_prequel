@@ -28,7 +28,6 @@ public class MemoryService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final MemoryRepository memoryRepository;
-    private final MemoryMediaRepository mediaRepository;
     private final MemoryShareRepository shareRepository;
     private final MemoryRevealRepository revealRepository;
     private final MemoryCreatorVisibilityPreferenceRepository visibilityPreferenceRepository;
@@ -53,13 +52,14 @@ public class MemoryService {
         User creator = userService.findByAuth0Subject(auth0Subject);
         enforceDailyLimit(creator.getId());
         validateText(request.getTextContent());
+        validateFutureExpiration(request.getExpiresAt());
 
         Memory memory = new Memory(creator.getId(), request.getTextContent().trim(), request.getLatitude(), request.getLongitude());
         memory.setPlaceLabel(blankToNull(request.getPlaceLabel()));
         memory.setVisibility(request.getVisibility() != null ? request.getVisibility() : MemoryVisibility.PRIVATE);
         memory.setExpiresAt(request.getExpiresAt());
 
-        replaceMedia(memory, request.getMedia());
+        replaceMedia(memory, request.getMedia(), creator.getId());
         memory = memoryRepository.save(memory);
         productEventRepository.save(new ProductEvent("MEMORY_CREATED", creator.getId(), memory.getId(), null, null));
         return toResponse(memory, creator.getId());
@@ -88,10 +88,11 @@ public class MemoryService {
             memory.setVisibility(request.getVisibility());
         }
         if (request.getExpiresAt() != null) {
+            validateFutureExpiration(request.getExpiresAt());
             memory.setExpiresAt(request.getExpiresAt());
         }
         if (request.getMedia() != null) {
-            replaceMedia(memory, request.getMedia());
+            replaceMedia(memory, request.getMedia(), viewer.getId());
         }
 
         return toResponse(memory, viewer.getId());
@@ -102,15 +103,17 @@ public class MemoryService {
         User viewer = userService.findByAuth0Subject(auth0Subject);
         Memory memory = findOwnedMemory(viewer.getId(), memoryId);
         memory.setDeletedAt(Instant.now());
-        shareRepository.findFirstByMemory_IdAndRevokedAtIsNullOrderByCreatedAtDesc(memoryId)
-                .ifPresent(share -> share.setRevokedAt(Instant.now()));
+        Instant revokedAt = Instant.now();
+        shareRepository.findByMemory_IdAndRevokedAtIsNull(memoryId)
+                .forEach(share -> share.setRevokedAt(revokedAt));
         productEventRepository.save(new ProductEvent("MEMORY_DELETED", viewer.getId(), memoryId, null, null));
     }
 
     @Transactional(readOnly = true)
-    public MemoryMapResponse getMapMemories(String auth0Subject) {
+    public MemoryMapResponse getMapMemories(String auth0Subject, double north, double south, double east, double west) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
-        List<Memory> memories = memoryRepository.findVisibleMapMemories(viewer.getId());
+        validateBounds(north, south, east, west);
+        List<Memory> memories = memoryRepository.findVisibleMapMemories(viewer.getId(), north, south, east, west);
         return MemoryMapResponse.builder()
                 .memories(toMapPins(memories, viewer.getId()))
                 .build();
@@ -238,7 +241,7 @@ public class MemoryService {
         }
     }
 
-    private void replaceMedia(Memory memory, List<MemoryMediaRequest> mediaRequests) {
+    private void replaceMedia(Memory memory, List<MemoryMediaRequest> mediaRequests, UUID ownerId) {
         memory.getMedia().clear();
         if (mediaRequests == null) {
             return;
@@ -249,6 +252,7 @@ public class MemoryService {
             if (!seen.add(request.getMediaType())) {
                 throw new BusinessException("Only one image and one audio file are supported per memory");
             }
+            validateMemoryMedia(request, ownerId);
             MemoryMedia media = new MemoryMedia(memory, request.getMediaType(), request.getUrl(), position++);
             media.setObjectName(request.getObjectName());
             media.setContentType(request.getContentType());
@@ -346,6 +350,46 @@ public class MemoryService {
 
     private boolean isActive(Memory memory) {
         return memory.getDeletedAt() == null && (memory.getExpiresAt() == null || memory.getExpiresAt().isAfter(Instant.now()));
+    }
+
+    private static void validateFutureExpiration(Instant expiresAt) {
+        if (expiresAt != null && !expiresAt.isAfter(Instant.now())) {
+            throw new BusinessException("Memory expiration must be in the future");
+        }
+    }
+
+    private static void validateBounds(double north, double south, double east, double west) {
+        if (north < south || north > 90 || south < -90 || east < -180 || east > 180 || west < -180 || west > 180) {
+            throw new BusinessException("Invalid map bounds");
+        }
+    }
+
+    private static void validateMemoryMedia(MemoryMediaRequest request, UUID ownerId) {
+        if (request.getMediaType() == null) {
+            throw new BusinessException("Memory media type is required");
+        }
+        String objectName = request.getObjectName();
+        if (objectName == null || objectName.isBlank()) {
+            throw new BusinessException("Memory media must be uploaded through Brooks before it can be attached");
+        }
+
+        String expectedPrefix = request.getMediaType() == MemoryMediaType.IMAGE
+                ? "memories/images/" + ownerId + "/"
+                : "memories/audio/" + ownerId + "/";
+        if (!objectName.replace("\\", "/").startsWith(expectedPrefix)) {
+            throw new BusinessException("Memory media does not belong to this user");
+        }
+
+        String contentType = request.getContentType();
+        if (contentType == null || contentType.isBlank()) {
+            return;
+        }
+        boolean validType = request.getMediaType() == MemoryMediaType.IMAGE
+                ? contentType.startsWith("image/")
+                : contentType.startsWith("audio/");
+        if (!validType) {
+            throw new BusinessException("Memory media content type does not match the media type");
+        }
     }
 
     private static String preview(String value) {
