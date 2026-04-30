@@ -195,6 +195,7 @@ export default function LandingPage() {
           alt=""
           fill
           priority
+          unoptimized
           sizes="100vw"
           className="-z-20 object-cover"
         />
