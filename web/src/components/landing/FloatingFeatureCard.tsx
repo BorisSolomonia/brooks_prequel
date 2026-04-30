@@ -16,9 +16,9 @@ export default function FloatingFeatureCard({ icon, title, body, bottomIcons, st
         width: '100%',
         maxWidth: '100%',
         background: '#f5ead8',
-        borderRadius: 14,
-        boxShadow: '0 12px 30px rgba(0,0,0,0.18)',
-        padding: 'clamp(18px, 2vw, 22px)',
+        borderRadius: 8,
+        boxShadow: '0 10px 24px rgba(0,0,0,0.18)',
+        padding: 'clamp(13px, 1.45vw, 17px)',
         display: 'flex',
         flexDirection: 'column',
         ...style,
@@ -29,7 +29,7 @@ export default function FloatingFeatureCard({ icon, title, body, bottomIcons, st
         style={{
           color: '#050505',
           fontWeight: 900,
-          fontSize: 15,
+          fontSize: 'clamp(12px, 1vw, 14px)',
           letterSpacing: '0.5px',
           textTransform: 'uppercase',
           lineHeight: 1.2,
@@ -42,8 +42,8 @@ export default function FloatingFeatureCard({ icon, title, body, bottomIcons, st
       <p
         style={{
           color: '#050505',
-          fontSize: 14,
-          lineHeight: 1.3,
+          fontSize: 'clamp(12px, 0.95vw, 13px)',
+          lineHeight: 1.25,
           marginTop: 8,
           flex: 1,
           whiteSpace: 'pre-line',
@@ -53,13 +53,13 @@ export default function FloatingFeatureCard({ icon, title, body, bottomIcons, st
         {body}
       </p>
       {bottomIcons && bottomIcons.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
           {bottomIcons.map((ic, i) => (
             <div
               key={i}
               style={{
-                width: 30,
-                height: 30,
+                width: 26,
+                height: 26,
                 borderRadius: '50%',
                 background: 'rgba(0,0,0,0.08)',
                 display: 'flex',
@@ -73,7 +73,7 @@ export default function FloatingFeatureCard({ icon, title, body, bottomIcons, st
           ))}
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
         <svg
           width={14}
           height={14}

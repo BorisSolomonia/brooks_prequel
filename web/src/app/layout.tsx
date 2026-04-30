@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { UserProvider } from '@auth0/nextjs-auth0/client';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import AppShell from '@/components/layout/AppShell';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -22,11 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="font-sans bg-ig-primary text-ig-text-primary">
-        <UserProvider>
-          <Navbar />
-          <main className="min-h-screen pb-16 md:pb-0">{children}</main>
-          <Footer />
-        </UserProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
