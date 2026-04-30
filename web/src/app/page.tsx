@@ -186,14 +186,14 @@ export default function LandingPage() {
         className="relative overflow-hidden lg:pb-[180px]"
         style={{
           minHeight: 'max(100vh, 900px)',
-          backgroundColor: '#e9c18f',
+          backgroundColor: '#ffd21a',
           backgroundImage: [
+            'url(/images/brooks-hero-bg.webp)',
             'radial-gradient(circle at 15% 8%, rgba(255, 210, 26, 0.45), transparent 24%)',
             'radial-gradient(circle at 83% 18%, rgba(18, 199, 201, 0.38), transparent 24%)',
             'linear-gradient(135deg, rgba(245, 234, 216, 0.88), rgba(239, 47, 109, 0.16) 48%, rgba(5, 5, 5, 0.08))',
-            'url(/images/brooks-hero-bg.webp)',
           ].join(', '),
-          backgroundSize: 'auto, auto, auto, cover',
+          backgroundSize: 'cover, auto, auto, auto',
           backgroundPosition: 'center, center, center, center',
           backgroundRepeat: 'no-repeat',
         }}
