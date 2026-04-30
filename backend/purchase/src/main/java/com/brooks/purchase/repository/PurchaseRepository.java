@@ -18,7 +18,7 @@ import java.util.List;
 @Repository
 public interface PurchaseRepository extends JpaRepository<Purchase, UUID> {
 
-    Optional<Purchase> findByUnipayOrderId(String unipayOrderId);
+    Optional<Purchase> findByBogOrderId(String bogOrderId);
 
     boolean existsByBuyerIdAndGuideIdAndStatus(UUID buyerId, UUID guideId, PurchaseStatus status);
 

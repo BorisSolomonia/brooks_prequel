@@ -47,7 +47,7 @@ public class PurchaseService {
     private final GuideVersionRepository versionRepository;
     private final UserProfileRepository profileRepository;
     private final UserService userService;
-    private final UniPayService uniPayService;
+    private final BogIpayClient bogIpayClient;
     private final CommissionRateResolver commissionRateResolver;
     private final CreatorEarningRepository creatorEarningRepository;
     private final ObjectMapper objectMapper;
@@ -89,19 +89,19 @@ public class PurchaseService {
         CommissionRateResolver.Resolution resolution = commissionRateResolver.resolve(guide.getCreatorId(), creatorRegion);
         int platformFee = (int) Math.ceil((long) effectivePrice * resolution.rateBps() / 10000.0);
 
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("guide_id", guide.getId().toString());
-        metadata.put("buyer_id", buyer.getId().toString());
-        metadata.put("version_number", String.valueOf(guide.getVersionNumber()));
+        // BOG iPay supports GEL only — verify guide is priced in GEL
+        if (!"GEL".equalsIgnoreCase(guide.getCurrency())) {
+            throw new BusinessException("This guide is not priced in GEL and cannot be purchased through BOG iPay");
+        }
+
+        String shopOrderId = UUID.randomUUID().toString();
 
         try {
-            UniPayService.OrderResult order = uniPayService.createOrder(
-                    guide.getId().toString(),
-                    guide.getTitle(),
+            BogIpayClient.CreatedOrder order = bogIpayClient.createOrder(
+                    shopOrderId,
                     effectivePrice,
-                    guide.getCurrency(),
-                    buyer.getEmail(),
-                    metadata
+                    guide.getTitle(),
+                    guide.getId().toString()
             );
 
             Purchase purchase = new Purchase();
@@ -109,27 +109,32 @@ public class PurchaseService {
             purchase.setGuideId(guide.getId());
             purchase.setGuideVersionNumber(guide.getVersionNumber());
             purchase.setPriceCentsPaid(effectivePrice);
-            purchase.setCurrency(guide.getCurrency());
+            purchase.setCurrency("GEL");
             purchase.setPlatformFeeCents(platformFee);
             purchase.setCommissionRateBps(resolution.rateBps());
-            purchase.setUnipayOrderId(order.orderId());
+            purchase.setBogOrderId(order.orderId());
+            purchase.setBogPaymentHash(order.paymentHash());
             purchase.setStatus(PurchaseStatus.PENDING);
             purchaseRepository.save(purchase);
 
-            return new CheckoutResponse(order.checkoutUrl(), order.orderId());
+            return new CheckoutResponse(order.approveUrl(), order.orderId());
         } catch (Exception e) {
-            log.error("Failed to create UniPay checkout order", e);
+            log.error("Failed to create BOG iPay checkout order", e);
             throw new BusinessException("Failed to initiate checkout");
         }
     }
 
+    /**
+     * Called by the BOG iPay webhook AFTER server-side verification (Payment Details API
+     * confirmed the order is in 'success' state and payment_hash matches the stored value).
+     */
     @Transactional
-    public void handleCheckoutCompleted(String orderId, String transactionId) {
-        Purchase purchase = purchaseRepository.findByUnipayOrderId(orderId)
+    public void handleCheckoutCompleted(String bogOrderId, String ipayPaymentId, String transactionId) {
+        Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId)
                 .orElse(null);
 
         if (purchase == null) {
-            log.warn("No purchase found for UniPay order: {}", orderId);
+            log.warn("No purchase found for BOG iPay order: {}", bogOrderId);
             return;
         }
 
@@ -139,7 +144,8 @@ public class PurchaseService {
             // Already completed by a concurrent webhook — stay idempotent
             return;
         }
-        purchase.setUnipayTransactionId(transactionId);
+        purchase.setBogIpayPaymentId(ipayPaymentId);
+        purchase.setBogTransactionId(transactionId);
 
         // Only the winning update increments creator stats and records earnings
         Guide guide = guideRepository.findById(purchase.getGuideId()).orElse(null);

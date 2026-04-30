@@ -32,7 +32,7 @@ public class Purchase {
     private int priceCentsPaid;
 
     @Column(name = "currency", nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "GEL";
 
     @Column(name = "platform_fee_cents", nullable = false)
     private int platformFeeCents = 0;
@@ -40,11 +40,17 @@ public class Purchase {
     @Column(name = "commission_rate_bps", nullable = false)
     private int commissionRateBps = 2000;
 
-    @Column(name = "unipay_order_id", nullable = false, unique = true)
-    private String unipayOrderId;
+    @Column(name = "bog_order_id", nullable = false, unique = true)
+    private String bogOrderId;
 
-    @Column(name = "unipay_transaction_id")
-    private String unipayTransactionId;
+    @Column(name = "bog_payment_hash", nullable = false)
+    private String bogPaymentHash;
+
+    @Column(name = "bog_ipay_payment_id")
+    private String bogIpayPaymentId;
+
+    @Column(name = "bog_transaction_id")
+    private String bogTransactionId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)

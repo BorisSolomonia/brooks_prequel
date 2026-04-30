@@ -33,7 +33,7 @@ public class MemoryService {
     private final MemoryShareRepository shareRepository;
     private final MemoryRevealRepository revealRepository;
     private final MemoryCreatorVisibilityPreferenceRepository visibilityPreferenceRepository;
-    private final ProductEventRepository productEventRepository;
+    private final ProductEventService productEventService;
     private final UserService userService;
     private final UserProfileRepository profileRepository;
 
@@ -63,7 +63,7 @@ public class MemoryService {
 
         replaceMedia(memory, request.getMedia(), creator.getId());
         memory = memoryRepository.save(memory);
-        productEventRepository.save(new ProductEvent("MEMORY_CREATED", creator.getId(), memory.getId(), null, null));
+        productEventService.record("MEMORY_CREATED", creator.getId(), memory.getId(), null, null);
         return toResponse(memory, creator.getId());
     }
 
@@ -108,16 +108,18 @@ public class MemoryService {
         Instant revokedAt = Instant.now();
         shareRepository.findByMemory_IdAndRevokedAtIsNull(memoryId)
                 .forEach(share -> share.setRevokedAt(revokedAt));
-        productEventRepository.save(new ProductEvent("MEMORY_DELETED", viewer.getId(), memoryId, null, null));
+        productEventService.record("MEMORY_DELETED", viewer.getId(), memoryId, null, null);
     }
 
-    @Transactional(readOnly = true)
     public MemoryMapResponse getMapMemories(String auth0Subject, double north, double south, double east, double west) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
         validateBounds(north, south, east, west);
         List<Memory> memories;
         try {
-            memories = memoryRepository.findVisibleMapMemories(viewer.getId(), north, south, east, west);
+            List<UUID> memoryIds = memoryRepository.findVisibleMapMemoryIds(viewer.getId(), north, south, east, west);
+            memories = memoryIds.isEmpty()
+                    ? List.of()
+                    : orderByIds(memoryRepository.findAllWithMediaByIdIn(memoryIds), memoryIds);
         } catch (RuntimeException ex) {
             log.error("Failed to load memory map pins for viewer {} and bounds north={}, south={}, east={}, west={}",
                     viewer.getId(), north, south, east, west, ex);
@@ -139,7 +141,7 @@ public class MemoryService {
 
         MemoryShare share = shareRepository.findFirstByMemory_IdAndRevokedAtIsNullOrderByCreatedAtDesc(memoryId)
                 .orElseGet(() -> shareRepository.save(new MemoryShare(memory, generateToken())));
-        productEventRepository.save(new ProductEvent("MEMORY_SHARED", viewer.getId(), memoryId, share.getToken(), null));
+        productEventService.record("MEMORY_SHARED", viewer.getId(), memoryId, share.getToken(), null);
         return MemoryShareResponse.builder()
                 .token(share.getToken())
                 .shareUrl(frontendBaseUrl + "/m/" + share.getToken())
@@ -155,7 +157,7 @@ public class MemoryService {
 
         MemoryShare share = optionalShare.get();
         Memory memory = share.getMemory();
-        productEventRepository.save(new ProductEvent("SHARE_OPENED", null, memory.getId(), token, null));
+        productEventService.record("SHARE_OPENED", null, memory.getId(), token, null);
         if (!isActive(memory)) {
             return unavailableTeaser(token, "Memory is unavailable");
         }
@@ -186,7 +188,7 @@ public class MemoryService {
         double distance = distanceMeters(request.getLatitude(), request.getLongitude(), memory.getLatitude(), memory.getLongitude());
         boolean revealed = distance <= unlockRadiusMeters;
         revealRepository.save(new MemoryReveal(memory.getId(), share.getId(), viewer.getId(), revealed, distanceBucket(distance)));
-        productEventRepository.save(new ProductEvent(revealed ? "MEMORY_REVEALED" : "REVEAL_ATTEMPTED", viewer.getId(), memory.getId(), token, null));
+        productEventService.record(revealed ? "MEMORY_REVEALED" : "REVEAL_ATTEMPTED", viewer.getId(), memory.getId(), token, null);
 
         return MemoryRevealResponse.builder()
                 .revealed(revealed)
@@ -301,6 +303,14 @@ public class MemoryService {
                             .createdAt(memory.getCreatedAt())
                             .build();
                 })
+                .toList();
+    }
+
+    private static List<Memory> orderByIds(List<Memory> memories, List<UUID> orderedIds) {
+        Map<UUID, Memory> byId = memories.stream().collect(Collectors.toMap(Memory::getId, memory -> memory));
+        return orderedIds.stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
                 .toList();
     }
 

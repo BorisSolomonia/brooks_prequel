@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,7 +14,7 @@ import java.util.UUID;
 public interface MemoryRepository extends JpaRepository<Memory, UUID> {
 
     @Query(value = """
-        SELECT m.*
+        SELECT m.id
         FROM memories m
         WHERE m.deleted_at IS NULL
           AND (m.expires_at IS NULL OR m.expires_at > NOW())
@@ -41,12 +42,20 @@ public interface MemoryRepository extends JpaRepository<Memory, UUID> {
         ORDER BY m.created_at DESC
         LIMIT 250
         """, nativeQuery = true)
-    List<Memory> findVisibleMapMemories(
+    List<UUID> findVisibleMapMemoryIds(
             @Param("viewerId") UUID viewerId,
             @Param("north") double north,
             @Param("south") double south,
             @Param("east") double east,
             @Param("west") double west);
+
+    @Query("""
+        SELECT DISTINCT m
+        FROM Memory m
+        LEFT JOIN FETCH m.media
+        WHERE m.id IN :ids
+        """)
+    List<Memory> findAllWithMediaByIdIn(@Param("ids") Collection<UUID> ids);
 
     long countByCreatorIdAndDeletedAtIsNullAndCreatedAtAfter(UUID creatorId, java.time.Instant createdAt);
 }
