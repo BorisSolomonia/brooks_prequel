@@ -11,9 +11,6 @@ const BLACK = '#050505';
 const YELLOW = '#ffd21a';
 const TEAL = '#12c7c9';
 
-const HERO_PLACEHOLDER =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900'%3E%3Crect width='1600' height='900' fill='%23ffd21a'/%3E%3Cpath d='M760 0h840v900H520z' fill='%23ef2f6d'/%3E%3Cpath d='M0 760c280-185 560-190 910-150 230 27 470 0 690-145v435H0z' fill='%23050505'/%3E%3Cpath d='M1010 360c155 115 300 260 410 540h-330c-45-170-100-320-190-470z' fill='%2312c7c9' opacity='.8'/%3E%3C/svg%3E\")";
-
 function PinIcon({ color = PINK, size = 22 }: { color?: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
@@ -171,8 +168,8 @@ export default function LandingPage() {
         className="relative isolate h-[100dvh] overflow-hidden"
         style={{
           backgroundColor: '#ffd21a',
-          backgroundImage: HERO_PLACEHOLDER,
-          backgroundPosition: 'center',
+          backgroundImage: 'url(/images/brooks-hero-bg.webp)',
+          backgroundPosition: '72% center',
           backgroundSize: 'cover',
         }}
       >
@@ -184,7 +181,7 @@ export default function LandingPage() {
           unoptimized
           fetchPriority="high"
           sizes="100vw"
-          className="-z-20 object-cover"
+          className="-z-20 object-cover object-[72%_center] lg:object-center"
         />
 
         <nav
@@ -221,46 +218,76 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div
-          className="hidden lg:grid absolute z-10 grid-cols-2"
-          style={{
-            top: 'clamp(94px, 12vh, 128px)',
-            right: 'clamp(28px, 5vw, 72px)',
-            width: 'clamp(330px, 32vw, 430px)',
-            gap: 'clamp(12px, 1.3vw, 18px)',
-          }}
-        >
-          <FloatingFeatureCard
-            icon={<PinIcon />}
-            title="LEAVE A MEMORY"
-            body={"Leave something meaningful.\nSomeone will find it someday."}
-            style={{ minHeight: 112 }}
-          />
-          <FloatingFeatureCard
-            icon={<CompassIcon />}
-            title="CURATED GUIDES"
-            body={"Guides around your interests.\nDifferent perspectives."}
-            bottomIcons={card2Icons}
-            style={{ minHeight: 126 }}
-          />
-          <FloatingFeatureCard
-            icon={<CalendarIcon />}
-            title={"FROM DISCOVERY\nTO PLAN"}
-            body={"Turn places into your\ncalendar, itinerary and maps."}
-            bottomIcons={card3Icons}
-            style={{ minHeight: 126 }}
-          />
-          <FloatingFeatureCard
-            icon={<EyeOffIcon />}
-            title="FOCUS YOUR SEARCH"
-            body={"Hide what is not useful.\nSee what matters."}
-            style={{ minHeight: 112 }}
-          />
-        </div>
+        <div className="pointer-events-none absolute inset-0 z-10 hidden lg:block">
+          <div
+            className="pointer-events-auto absolute"
+            style={{
+              top: 'clamp(86px, 10vh, 112px)',
+              right: 'clamp(30px, 4.5vw, 68px)',
+              width: 'clamp(142px, 11vw, 174px)',
+              transform: 'rotate(1.5deg)',
+            }}
+          >
+            <FloatingFeatureCard
+              icon={<PinIcon size={20} />}
+              title="LEAVE A MEMORY"
+              body="Leave something meaningful."
+              style={{ minHeight: 96, background: 'rgba(245,234,216,0.94)' }}
+            />
+          </div>
 
-        <div className="hidden sm:grid lg:hidden absolute bottom-[126px] left-5 right-5 z-10 grid-cols-2 gap-3">
-          <FloatingFeatureCard icon={<PinIcon />} title="LEAVE A MEMORY" body="Leave something meaningful." />
-          <FloatingFeatureCard icon={<CompassIcon />} title="CURATED GUIDES" body="Guides around your interests." />
+          <div
+            className="pointer-events-auto absolute"
+            style={{
+              top: 'clamp(146px, 18vh, 196px)',
+              right: 'clamp(246px, 20vw, 340px)',
+              width: 'clamp(196px, 15vw, 232px)',
+              transform: 'rotate(-1deg)',
+            }}
+          >
+            <FloatingFeatureCard
+              icon={<CompassIcon size={20} />}
+              title="CURATED GUIDES"
+              body={"Guides around your interests.\nDifferent perspectives."}
+              bottomIcons={card2Icons}
+              style={{ minHeight: 114, background: 'rgba(245,234,216,0.94)' }}
+            />
+          </div>
+
+          <div
+            className="pointer-events-auto absolute"
+            style={{
+              top: 'clamp(326px, 38vh, 382px)',
+              right: 'clamp(418px, 34vw, 560px)',
+              width: 'clamp(174px, 13vw, 206px)',
+              transform: 'rotate(1deg)',
+            }}
+          >
+            <FloatingFeatureCard
+              icon={<CalendarIcon color={BLACK} size={20} />}
+              title={"FROM DISCOVERY\nTO PLAN"}
+              body={"Turn places into your\ncalendar and map."}
+              bottomIcons={card3Icons}
+              style={{ minHeight: 116, background: 'rgba(245,234,216,0.94)' }}
+            />
+          </div>
+
+          <div
+            className="pointer-events-auto absolute"
+            style={{
+              top: 'clamp(236px, 28vh, 292px)',
+              right: 'clamp(40px, 5vw, 84px)',
+              width: 'clamp(136px, 10vw, 164px)',
+              transform: 'rotate(-1.5deg)',
+            }}
+          >
+            <FloatingFeatureCard
+              icon={<EyeOffIcon size={20} />}
+              title="FOCUS YOUR SEARCH"
+              body={"Hide what is not useful.\nSee what matters."}
+              style={{ minHeight: 102, background: 'rgba(245,234,216,0.94)' }}
+            />
+          </div>
         </div>
 
         <BottomFeatureStrip />

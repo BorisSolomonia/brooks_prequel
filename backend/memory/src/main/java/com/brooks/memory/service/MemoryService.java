@@ -10,6 +10,7 @@ import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MemoryService {
 
     private static final String TOKEN_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -113,7 +115,14 @@ public class MemoryService {
     public MemoryMapResponse getMapMemories(String auth0Subject, double north, double south, double east, double west) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
         validateBounds(north, south, east, west);
-        List<Memory> memories = memoryRepository.findVisibleMapMemories(viewer.getId(), north, south, east, west);
+        List<Memory> memories;
+        try {
+            memories = memoryRepository.findVisibleMapMemories(viewer.getId(), north, south, east, west);
+        } catch (RuntimeException ex) {
+            log.error("Failed to load memory map pins for viewer {} and bounds north={}, south={}, east={}, west={}",
+                    viewer.getId(), north, south, east, west, ex);
+            memories = List.of();
+        }
         return MemoryMapResponse.builder()
                 .memories(toMapPins(memories, viewer.getId()))
                 .build();
