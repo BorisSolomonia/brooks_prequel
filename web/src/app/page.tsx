@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Anton } from 'next/font/google';
 import FloatingFeatureCard from '@/components/landing/FloatingFeatureCard';
 import MemoryPreviewCard from '@/components/landing/MemoryPreviewCard';
@@ -183,21 +184,34 @@ export default function LandingPage() {
   return (
     <div className="fixed inset-0 z-[100] overflow-x-hidden overflow-y-auto">
       <section
-        className="relative overflow-hidden lg:pb-[180px]"
+        className="relative isolate overflow-hidden lg:pb-[180px]"
         style={{
           minHeight: 'max(100vh, 900px)',
           backgroundColor: '#ffd21a',
-          backgroundImage: [
-            'url(/images/brooks-hero-bg.webp)',
-            'radial-gradient(circle at 15% 8%, rgba(255, 210, 26, 0.45), transparent 24%)',
-            'radial-gradient(circle at 83% 18%, rgba(18, 199, 201, 0.38), transparent 24%)',
-            'linear-gradient(135deg, rgba(245, 234, 216, 0.88), rgba(239, 47, 109, 0.16) 48%, rgba(5, 5, 5, 0.08))',
-          ].join(', '),
-          backgroundSize: 'cover, auto, auto, auto',
-          backgroundPosition: 'center, center, center, center',
-          backgroundRepeat: 'no-repeat',
         }}
       >
+        <Image
+          src="/images/brooks-hero-bg.webp"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="-z-20 object-cover"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            backgroundImage: [
+              'radial-gradient(circle at 15% 8%, rgba(255, 210, 26, 0.45), transparent 24%)',
+              'radial-gradient(circle at 83% 18%, rgba(18, 199, 201, 0.38), transparent 24%)',
+              'linear-gradient(135deg, rgba(245, 234, 216, 0.88), rgba(239, 47, 109, 0.16) 48%, rgba(5, 5, 5, 0.08))',
+            ].join(', '),
+            backgroundSize: 'auto, auto, auto',
+            backgroundPosition: 'center, center, center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
         {/* ── Top Nav ── */}
         <nav
           className="absolute inset-x-0 top-0 z-10 flex items-start justify-between"
