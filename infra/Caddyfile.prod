@@ -16,6 +16,9 @@ http://127.0.0.1 {
   @auth path /api/auth/*
   reverse_proxy @auth {$WEB_HOST}:{$WEB_PORT}
 
+  @exchangeRates path /api/exchange-rates*
+  reverse_proxy @exchangeRates {$WEB_HOST}:{$WEB_PORT}
+
   @api path /api/*
   reverse_proxy @api {$BACKEND_HOST}:{$BACKEND_PORT}
 

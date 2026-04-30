@@ -1,4 +1,10 @@
 {$DOMAIN:localhost} {
+    handle /api/auth/* {
+        reverse_proxy web:3000
+    }
+    handle /api/exchange-rates* {
+        reverse_proxy web:3000
+    }
     handle /api/* {
         reverse_proxy backend:8080
     }

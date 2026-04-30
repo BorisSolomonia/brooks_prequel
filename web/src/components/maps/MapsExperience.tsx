@@ -948,7 +948,7 @@ export default function MapsExperience({
   }, [token]);
 
   const refreshMemories = () => {
-    if (!token || !currentBounds) {
+    if (!token || !currentBounds || !activeLayers.memories) {
       return;
     }
 
@@ -966,13 +966,18 @@ export default function MapsExperience({
         _memoriesCacheExpiry = Date.now() + MEMORIES_CACHE_TTL;
         setMemories(response.memories);
       })
-      .catch((error) => setPageError(error instanceof Error ? error.message : 'Failed to load memories'))
+      .catch((error) => {
+        console.warn('Memory map pins are unavailable', error);
+        _cachedMemories = [];
+        _memoriesCacheExpiry = Date.now() + MEMORIES_CACHE_TTL;
+        setMemories([]);
+      })
       .finally(() => setMemoriesLoading(false));
   };
 
   useEffect(() => {
     refreshMemories();
-  }, [token, currentBounds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, currentBounds, activeLayers.memories]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!fallbackCenter || typeof window === 'undefined' || !navigator.geolocation) {
