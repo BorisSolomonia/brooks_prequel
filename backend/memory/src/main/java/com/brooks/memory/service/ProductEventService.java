@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.UUID;
@@ -24,6 +26,19 @@ public class ProductEventService {
     }
 
     public void record(String eventName, UUID actorId, UUID memoryId, String shareToken, String source) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    recordImmediately(eventName, actorId, memoryId, shareToken, source);
+                }
+            });
+            return;
+        }
+        recordImmediately(eventName, actorId, memoryId, shareToken, source);
+    }
+
+    private void recordImmediately(String eventName, UUID actorId, UUID memoryId, String shareToken, String source) {
         try {
             transactionTemplate.executeWithoutResult(status ->
                     productEventRepository.save(new ProductEvent(eventName, actorId, memoryId, shareToken, source)));

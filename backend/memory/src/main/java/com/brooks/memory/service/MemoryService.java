@@ -52,23 +52,35 @@ public class MemoryService {
 
     @Transactional
     public MemoryResponse createMemory(String auth0Subject, MemoryCreateRequest request) {
-        User creator = userService.findByAuth0Subject(auth0Subject);
-        if (!memorySchemaHealthService.isMemorySchemaReady()) {
-            throw new BusinessException("Memory storage is not ready. Run database migrations and retry.");
+        try {
+            User creator = userService.findByAuth0Subject(auth0Subject);
+            if (!memorySchemaHealthService.isMemorySchemaReady()) {
+                throw new BusinessException("Memory storage is not ready. Run database migrations and retry.");
+            }
+            enforceDailyLimit(creator.getId());
+            validateText(request.getTextContent());
+            validateFutureExpiration(request.getExpiresAt());
+
+            Memory memory = new Memory(creator.getId(), request.getTextContent().trim(), request.getLatitude(), request.getLongitude());
+            memory.setPlaceLabel(blankToNull(request.getPlaceLabel()));
+            memory.setVisibility(request.getVisibility() != null ? request.getVisibility() : MemoryVisibility.PRIVATE);
+            memory.setExpiresAt(request.getExpiresAt());
+
+            replaceMedia(memory, request.getMedia(), creator.getId());
+            memory = memoryRepository.save(memory);
+            productEventService.record("MEMORY_CREATED", creator.getId(), memory.getId(), null, null);
+            return toResponse(memory, creator.getId());
+        } catch (BusinessException | ResourceNotFoundException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            log.error("Failed to create memory for auth0Subject={}, latitude={}, longitude={}, mediaCount={}",
+                    auth0Subject,
+                    request.getLatitude(),
+                    request.getLongitude(),
+                    request.getMedia() == null ? 0 : request.getMedia().size(),
+                    ex);
+            throw ex;
         }
-        enforceDailyLimit(creator.getId());
-        validateText(request.getTextContent());
-        validateFutureExpiration(request.getExpiresAt());
-
-        Memory memory = new Memory(creator.getId(), request.getTextContent().trim(), request.getLatitude(), request.getLongitude());
-        memory.setPlaceLabel(blankToNull(request.getPlaceLabel()));
-        memory.setVisibility(request.getVisibility() != null ? request.getVisibility() : MemoryVisibility.PRIVATE);
-        memory.setExpiresAt(request.getExpiresAt());
-
-        replaceMedia(memory, request.getMedia(), creator.getId());
-        memory = memoryRepository.save(memory);
-        productEventService.record("MEMORY_CREATED", creator.getId(), memory.getId(), null, null);
-        return toResponse(memory, creator.getId());
     }
 
     @Transactional(readOnly = true)
