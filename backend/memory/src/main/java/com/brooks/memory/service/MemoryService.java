@@ -41,7 +41,7 @@ public class MemoryService {
     @Value("${app.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
 
-    @Value("${app.memory.unlock-radius-meters:50}")
+    @Value("${app.memory.unlock-radius-meters:100}")
     private double unlockRadiusMeters;
 
     @Value("${app.memory.daily-create-limit:25}")

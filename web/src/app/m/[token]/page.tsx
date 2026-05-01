@@ -100,7 +100,7 @@ export default function SharedMemoryPage() {
 
         <div className="mt-6 rounded-3xl border border-ig-border bg-ig-primary p-4">
           <p className="text-sm text-ig-text-secondary">
-            The exact message is locked until you are close enough to the place.
+            The message unlocks after you allow location access and are within 100m of the place.
           </p>
           <p className="mt-2 text-sm font-semibold text-ig-text-primary">
             Memory location: {teaser.placeLabel || `${formatCoordinate(teaser.approximateLatitude)}, ${formatCoordinate(teaser.approximateLongitude)}`}
@@ -131,7 +131,7 @@ export default function SharedMemoryPage() {
             disabled={revealing}
             className="mt-5 min-h-12 w-full rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60"
           >
-            {revealing ? 'Checking location...' : 'Reveal when I am here'}
+            {revealing ? 'Checking location...' : 'Allow location and reveal memory'}
           </button>
         )}
 
