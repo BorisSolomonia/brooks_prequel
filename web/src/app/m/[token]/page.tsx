@@ -9,6 +9,30 @@ import type { MemoryRevealResponse, MemoryShareTeaser } from '@/types';
 
 const formatCoordinate = (value: number) => value.toFixed(6);
 
+type MobilePlatform = 'android' | 'ios' | 'other';
+
+const isMetaInAppBrowser = (userAgent: string) =>
+  /FBAN|FBAV|FB_IAB|FB4A|FBIOS|Messenger|Instagram/i.test(userAgent);
+
+const getMobilePlatform = (userAgent: string): MobilePlatform => {
+  if (/Android/i.test(userAgent)) {
+    return 'android';
+  }
+  if (/iPhone|iPad|iPod/i.test(userAgent)) {
+    return 'ios';
+  }
+  return 'other';
+};
+
+const buildChromeIntentUrl = (currentUrl: string) => {
+  try {
+    const url = new URL(currentUrl);
+    return `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(currentUrl)};end`;
+  } catch {
+    return currentUrl;
+  }
+};
+
 const locationErrorMessage = (error: GeolocationPositionError) => {
   if (error.code === error.PERMISSION_DENIED) {
     return 'Location access was denied. Enable location for Brooks in your browser settings, then try again.';
@@ -28,6 +52,10 @@ export default function SharedMemoryPage() {
   const [loading, setLoading] = useState(true);
   const [revealing, setRevealing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUrl, setCurrentUrl] = useState('');
+  const [isMetaBrowser, setIsMetaBrowser] = useState(false);
+  const [mobilePlatform, setMobilePlatform] = useState<MobilePlatform>('other');
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'manual'>('idle');
 
   useEffect(() => {
     api.get<MemoryShareTeaser>(`/api/memory-shares/${token}`)
@@ -36,8 +64,29 @@ export default function SharedMemoryPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
+  useEffect(() => {
+    const userAgent = navigator.userAgent || '';
+    setCurrentUrl(window.location.href);
+    setIsMetaBrowser(isMetaInAppBrowser(userAgent));
+    setMobilePlatform(getMobilePlatform(userAgent));
+  }, []);
+
+  const copyCurrentLink = async () => {
+    const linkToCopy = currentUrl || window.location.href;
+    try {
+      await navigator.clipboard.writeText(linkToCopy);
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('manual');
+    }
+  };
+
   const revealMemory = () => {
     if (!accessToken) {
+      return;
+    }
+    if (isMetaBrowser) {
+      setError('Open this link in Chrome or Safari so Brooks can verify your location.');
       return;
     }
     if (!window.isSecureContext) {
@@ -129,7 +178,45 @@ export default function SharedMemoryPage() {
           </div>
         </div>
 
-        {!tokenLoading && !accessToken && (
+        {isMetaBrowser && (
+          <div className="mt-5 rounded-3xl border border-brand-500/30 bg-brand-500/10 p-4">
+            <p className="text-sm font-semibold text-ig-text-primary">Open this memory in your browser</p>
+            <p className="mt-1 text-sm text-ig-text-secondary">
+              Facebook and Messenger cannot reliably share location with Brooks. Open this same link in Chrome or Safari, then sign in and allow location access there.
+            </p>
+
+            {mobilePlatform === 'android' && currentUrl && (
+              <a
+                href={buildChromeIntentUrl(currentUrl)}
+                className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600"
+              >
+                Open in Chrome
+              </a>
+            )}
+
+            {mobilePlatform === 'ios' && (
+              <div className="mt-4 rounded-2xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-secondary">
+                On iPhone, tap the Messenger menu and choose Open in browser, or copy this link and paste it into Safari.
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={copyCurrentLink}
+              className="mt-3 min-h-12 w-full rounded-2xl border border-ig-border px-5 text-sm font-semibold text-ig-text-primary transition hover:bg-ig-hover"
+            >
+              {copyStatus === 'copied' ? 'Link copied' : 'Copy link'}
+            </button>
+
+            {copyStatus === 'manual' && currentUrl && (
+              <p className="mt-3 break-all rounded-2xl border border-ig-border bg-ig-primary px-4 py-3 text-xs text-ig-text-secondary">
+                {currentUrl}
+              </p>
+            )}
+          </div>
+        )}
+
+        {!isMetaBrowser && !tokenLoading && !accessToken && (
           <Link
             href={`/api/auth/login?returnTo=/m/${encodeURIComponent(token)}`}
             className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white"
@@ -138,7 +225,7 @@ export default function SharedMemoryPage() {
           </Link>
         )}
 
-        {accessToken && (
+        {!isMetaBrowser && accessToken && (
           <div className="mt-5 rounded-3xl border border-brand-500/30 bg-brand-500/10 p-4">
             <p className="text-sm font-semibold text-ig-text-primary">Location permission is needed to unlock this memory.</p>
             <p className="mt-1 text-sm text-ig-text-secondary">
