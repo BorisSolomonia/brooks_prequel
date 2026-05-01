@@ -99,8 +99,8 @@ calendar:
     calendar-name: ${GOOGLE_CALENDAR_NAME:Brooks Trips}
 
 bog-ipay:
-  client-id: ${BOG_IPAY_CLIENT_ID}
-  secret-key: ${BOG_IPAY_SECRET_KEY}
+  client-id: ${BOG_IPAY_CLIENT_ID:}
+  secret-key: ${BOG_IPAY_SECRET_KEY:}
   base-url: ${BOG_IPAY_BASE_URL:https://ipay.ge/opay/api/v1}
   callback-path: ${BOG_IPAY_CALLBACK_PATH:/api/webhooks/bog-ipay}
   locale: ${BOG_IPAY_LOCALE:ka}

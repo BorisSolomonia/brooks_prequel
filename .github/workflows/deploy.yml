@@ -155,6 +155,11 @@ jobs:
         run: |
           set -euo pipefail
           cp .env.production .env.runtime
+          # Strip Windows CRLF line endings if Secret Manager stored them
+          sed -i 's/\r$//' .env.runtime
+          # Ensure file ends with a newline so the appended image vars don't merge
+          # onto the last value (root cause of "invalid reference format" image errors).
+          [ -n "$(tail -c 1 .env.runtime 2>/dev/null)" ] && printf '\n' >> .env.runtime
           {
             echo "BROOKS_BACKEND_IMAGE=${BROOKS_BACKEND_IMAGE}"
             echo "BROOKS_WEB_IMAGE=${BROOKS_WEB_IMAGE}"
