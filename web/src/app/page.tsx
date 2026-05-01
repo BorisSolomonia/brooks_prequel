@@ -222,7 +222,7 @@ export default function LandingPage() {
               top: 'clamp(32px, 42vh, 8px)',
               right: 'clamp(576px, 15.5vw, 268px)',
               width: 'clamp(138px, 10vw, 164px)',
-              transform: 'rotate(1.25deg)',
+              transform: 'rotate(3.25deg)',
             }}
           >
             <FloatingFeatureCard
@@ -244,7 +244,7 @@ export default function LandingPage() {
               top: 'clamp(78px, 8vh, 112px)',
               right: 'clamp(100px, 25vw, 4px)',
               width: 'clamp(156px, 12vw, 19px)',
-              transform: 'rotate(-1deg)',
+              transform: 'rotate(-5deg)',
             }}
           >
             <FloatingFeatureCard
