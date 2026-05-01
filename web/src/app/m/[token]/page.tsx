@@ -7,6 +7,8 @@ import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import type { MemoryRevealResponse, MemoryShareTeaser } from '@/types';
 
+const formatCoordinate = (value: number) => value.toFixed(6);
+
 export default function SharedMemoryPage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
@@ -101,7 +103,7 @@ export default function SharedMemoryPage() {
             The exact message is locked until you are close enough to the place.
           </p>
           <p className="mt-2 text-sm font-semibold text-ig-text-primary">
-            Approximate area: {teaser.placeLabel || `${teaser.approximateLatitude.toFixed(2)}, ${teaser.approximateLongitude.toFixed(2)}`}
+            Memory location: {teaser.placeLabel || `${formatCoordinate(teaser.approximateLatitude)}, ${formatCoordinate(teaser.approximateLongitude)}`}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="min-h-11 rounded-2xl border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary hover:text-ig-text-primary">

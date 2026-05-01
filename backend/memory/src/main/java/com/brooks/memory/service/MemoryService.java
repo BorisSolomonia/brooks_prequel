@@ -189,8 +189,8 @@ public class MemoryService {
                 .senderName(creator.displayName())
                 .senderAvatarUrl(creator.avatarUrl())
                 .placeLabel(memory.getPlaceLabel())
-                .approximateLatitude(round(memory.getLatitude(), 2))
-                .approximateLongitude(round(memory.getLongitude(), 2))
+                .approximateLatitude(memory.getLatitude())
+                .approximateLongitude(memory.getLongitude())
                 .available(true)
                 .createdAt(memory.getCreatedAt())
                 .build();
@@ -454,11 +454,6 @@ public class MemoryService {
             token.append(TOKEN_ALPHABET.charAt(SECURE_RANDOM.nextInt(TOKEN_ALPHABET.length())));
         }
         return token.toString();
-    }
-
-    private static double round(double value, int places) {
-        double factor = Math.pow(10, places);
-        return Math.round(value * factor) / factor;
     }
 
     private static double distanceMeters(double lat1, double lng1, double lat2, double lng2) {
