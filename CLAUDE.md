@@ -22,7 +22,7 @@ Brooks is a **creator-driven travel guide marketplace** combining social discove
 | Frontend | Next.js 14 App Router + TypeScript |
 | Styling | Tailwind CSS |
 | Auth | Auth0 — Regular Web App setup (`@auth0/nextjs-auth0` on web, Spring OAuth2 Resource Server on backend) |
-| Payments | UniPay (Georgian PSP) — redirect-based hosted checkout, REST API, HMAC-SHA256 webhooks |
+| Payments | Bank of Georgia iPay — redirect-based hosted checkout, OAuth2 REST API, GEL only. See `docs/BOG_IPAY_INTEGRATION.md` |
 | Media | Google Cloud Storage (`GCS_BUCKET`) |
 | Maps | Mapbox (web), Google Maps Places API (place validation) |
 | Infra | Docker Compose + Caddy |
@@ -72,9 +72,9 @@ Each module follows: `api/` → `service/` → `repository/` → `domain/` → `
 | POST | `/api/guides/{id}/publish` | guide | Publish + create version snapshot |
 | GET | `/api/search` | search | Full-text search |
 | GET | `/api/rankings` | search | Regional rankings |
-| POST | `/api/purchases/checkout` | purchase | Create UniPay order, return checkoutUrl |
+| POST | `/api/purchases/checkout` | purchase | Create BOG iPay order, return approveUrl |
 | GET | `/api/purchases/my` | purchase | Buyer's purchase history |
-| POST | `/api/webhooks/unipay` | purchase | UniPay webhook (HMAC-SHA256 verified) |
+| POST | `/api/webhooks/bog-ipay` | purchase | BOG iPay callback (verified via Payment Details API) |
 
 ---
 
@@ -122,12 +122,12 @@ Placeholder/incomplete routes:
 - `/profile`, `/profile/edit` — shell
 - `/saved`
 
-### ✅ Phase 6 — Purchases & Payments (UniPay)
-- `PurchaseService` — creates UniPay order, saves `unipay_order_id`
-- `UniPayService` — `createOrder()` via REST, `verifyWebhookSignature()` HMAC-SHA256
-- `WebhookController` — `POST /api/webhooks/unipay`, verifies signature, marks purchase COMPLETED
-- `PurchaseRepository` — `findByUnipayOrderId()`
-- Idempotent webhook handling
+### ✅ Phase 6 — Purchases & Payments (Bank of Georgia iPay)
+- `PurchaseService` — creates BOG iPay order, saves `bog_order_id` and `bog_payment_hash`
+- `BogIpayClient` — `createOrder()`, `getPaymentDetails()`, `refund()`, OAuth2 token cache
+- `WebhookController` — `POST /api/webhooks/bog-ipay`, verifies via Payment Details API (BOG callbacks are unsigned), marks purchase COMPLETED
+- `PurchaseRepository` — `findByBogOrderId()`
+- Idempotent webhook handling via atomic SQL update
 - Purchase COMPLETED increments creator `purchase_count`
 - Effective price respects active sale (sale price + optional end date)
 - Platform fee: ceiling division `(price × fee% + 99) / 100`
@@ -161,33 +161,44 @@ Flyway migrations at `backend/app/src/main/resources/db/migration/`
 | V7 | `add_search_indexes` | Full-text + geospatial indexes |
 | V8 | `add_guide_purchase_and_timing_support` | Timing fields, purchase-related guide columns |
 | V9 | `add_purchases_and_discounts` | `purchases` table (originally with stripe column names), discount fields on `guides` |
-| V10 | `rename_stripe_to_unipay` | Renamed `stripe_checkout_session_id` → `unipay_order_id`, `stripe_payment_intent_id` → `unipay_transaction_id` |
+| V10 | `rename_stripe_to_unipay` | (Historical) Renamed Stripe columns. Superseded by V32. |
+| V32 | `bog_ipay_purchase_columns` | Renames legacy payment columns to BOG-shaped (`bog_order_id`, `bog_payment_hash`, `bog_ipay_payment_id`, `bog_transaction_id`). Idempotent. |
+| V33 | `purchases_gel_default_and_wipe` | Wipes purchases + creator_earnings, sets currency default to GEL |
 
 ---
 
-## UniPay Integration
+## Bank of Georgia iPay Integration
 
-**Provider:** UniPay — Georgian PSP, redirect-based hosted checkout.
-**No SDK** — uses Spring `RestTemplate`.
+**Provider:** Bank of Georgia iPay — Georgian PSP, OAuth2 REST API, redirect-based hosted checkout. **GEL only.**
+**No SDK** — uses Spring `RestTemplate`. Full integration guide at `docs/BOG_IPAY_INTEGRATION.md`.
 
 ```
-UniPayService
-  createOrder(guideId, title, amountCents, currency, buyerEmail, metadata)
-    → POST https://checkout.unipay.com/api/v3/orders
-    → returns { checkoutUrl, orderId }
+BogIpayClient
+  createOrder(shopOrderId, amountMinorUnits, description, productId)
+    → POST https://ipay.ge/opay/api/v1/checkout/orders
+    → returns { orderId, paymentHash, approveUrl }
 
-  verifyWebhookSignature(payload, signature)
-    → HMAC-SHA256(secretKey, payload) == signature
+  getPaymentDetails(orderId)
+    → GET https://ipay.ge/opay/api/v1/checkout/payment/{order_id}
+    → returns { status, paymentHash, ipayPaymentId, transactionId, ... }
+
+  refund(orderId, amountMinorUnits)  // null amount = full refund
+    → POST https://ipay.ge/opay/api/v1/checkout/refund (form-urlencoded)
+
+  ensureToken()  // OAuth2 client_credentials, cached until 60s before expiry
+    → POST https://ipay.ge/opay/api/v1/oauth2/token
 ```
 
-**Webhook:** `POST /api/webhooks/unipay` with `X-UniPay-Signature` header.
-**Successful status values:** `COMPLETED` or `SUCCESS` in payload `status` field.
+**Callback:** `POST /api/webhooks/bog-ipay` (form-urlencoded). **No signature mechanism documented by BOG** — verification is done by re-fetching `getPaymentDetails(orderId)` and comparing `payment_hash` against the stored value.
+**Successful status:** `success` in Payment Details response.
 **Config:**
 ```yaml
-unipay:
-  merchant-id: ${UNIPAY_MERCHANT_ID:test_merchant}
-  secret-key: ${UNIPAY_SECRET_KEY:test_secret}
-  api-base-url: ${UNIPAY_API_BASE_URL:https://checkout.unipay.com}
+bog-ipay:
+  client-id: ${BOG_IPAY_CLIENT_ID}
+  secret-key: ${BOG_IPAY_SECRET_KEY}
+  base-url: ${BOG_IPAY_BASE_URL:https://ipay.ge/opay/api/v1}
+  callback-path: ${BOG_IPAY_CALLBACK_PATH:/api/webhooks/bog-ipay}
+  locale: ${BOG_IPAY_LOCALE:ka}
 ```
 
 ---
@@ -209,7 +220,7 @@ unipay:
 13. Guide structure is **Guide → Day → Block → Place** — always
 14. Rankings are **regional**, purchases weighted 2× over followers
 15. Deleted guides **remain accessible** to past purchasers
-16. **UniPay** (Georgian PSP) for payments — redirect-based hosted checkout, REST API, HMAC-SHA256 webhook verification
+16. **Bank of Georgia iPay** for payments — redirect-based hosted checkout, OAuth2 REST API, GEL only, callback verified via Payment Details API
 
 ---
 
@@ -282,7 +293,7 @@ DB_URL, DB_USERNAME, DB_PASSWORD
 AUTH0_DOMAIN, AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_SECRET
 GCP_PROJECT_ID, GCS_BUCKET, GCS_CREDENTIALS_JSON
 GOOGLE_MAPS_API_KEY
-UNIPAY_MERCHANT_ID, UNIPAY_SECRET_KEY, UNIPAY_API_BASE_URL
+BOG_IPAY_CLIENT_ID, BOG_IPAY_SECRET_KEY, BOG_IPAY_BASE_URL
 MAPBOX_PUBLIC_TOKEN, MAPBOX_STYLE
 MAP_DEFAULT_LAT, MAP_DEFAULT_LNG, MAP_DEFAULT_ZOOM
 APP_BASE_URL, FRONTEND_BASE_URL, CORS_ALLOWED_ORIGINS
@@ -309,9 +320,9 @@ SEED_EXAMPLE_* (example creator seed data)
 ```
 backend/                      Spring Boot modular monolith
   app/src/main/resources/
-    db/migration/             Flyway migrations V1–V10
+    db/migration/             Flyway migrations V1–V33
     application.yml           All app config
-  purchase/                   UniPay checkout + webhook module
+  purchase/                   BOG iPay checkout + callback module
   guide/                      Guide authoring + publishing
   search/                     Full-text search + rankings
   social/                     Follows + stories + feed

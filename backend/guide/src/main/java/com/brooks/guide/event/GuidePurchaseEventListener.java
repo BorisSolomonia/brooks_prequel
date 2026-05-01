@@ -24,7 +24,7 @@ public class GuidePurchaseEventListener {
                     event.guideVersionNumber(),
                     event.amountCents(),
                     event.currency(),
-                    "unipay"
+                    "bog_ipay"
             );
         } catch (Exception e) {
             log.error("Failed to materialize trip for purchase {}", event.purchaseId(), e);

@@ -125,9 +125,9 @@ Open `infra/.env.production` and replace every `replace-me` placeholder. The man
 | `MAP_DEFAULT_LAT` | `41.7151` |
 | `MAP_DEFAULT_LNG` | `44.8271` |
 | `MAP_DEFAULT_ZOOM` | `10` |
-| `UNIPAY_MERCHANT_ID` | From Unipay dashboard |
-| `UNIPAY_SECRET_KEY` | From Unipay dashboard |
-| `UNIPAY_API_BASE_URL` | `https://checkout.unipay.com` |
+| `BOG_IPAY_CLIENT_ID` | From Bank of Georgia businessonline.ge — see `docs/BOG_IPAY_INTEGRATION.md` |
+| `BOG_IPAY_SECRET_KEY` | From Bank of Georgia businessonline.ge |
+| `BOG_IPAY_BASE_URL` | `https://ipay.ge/opay/api/v1` |
 | `AI_KEY_ENCRYPTION_SECRET` | 64 hex chars — generate with `openssl rand -hex 32` |
 | `BACKEND_HOST` | `backend` (Docker service name) |
 | `BACKEND_PORT` | `8080` |

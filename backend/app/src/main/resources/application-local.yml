@@ -13,6 +13,7 @@ calendar:
     client-id:
     client-secret:
 
-unipay:
-  merchant-id: test_merchant
-  secret-key: test_secret
+bog-ipay:
+  client-id: ${BOG_IPAY_CLIENT_ID:test_client_id}
+  secret-key: ${BOG_IPAY_SECRET_KEY:test_secret_key}
+  base-url: ${BOG_IPAY_BASE_URL:https://ipay.ge/opay/api/v1}

@@ -217,8 +217,8 @@ Before uploading to Secret Manager, confirm every item:
 | `NEXT_PUBLIC_AUTH0_CLIENT_ID` | Same as `AUTH0_CLIENT_ID` |
 | `AUTH0_SECRET` | `openssl rand -hex 32` |
 | `AI_KEY_ENCRYPTION_SECRET` | `openssl rand -hex 32` |
-| `UNIPAY_MERCHANT_ID` | Unipay dashboard |
-| `UNIPAY_SECRET_KEY` | Unipay dashboard |
+| `BOG_IPAY_CLIENT_ID` | Bank of Georgia businessonline.ge → iPay merchant credentials (see `docs/BOG_IPAY_INTEGRATION.md`) |
+| `BOG_IPAY_SECRET_KEY` | Bank of Georgia businessonline.ge → iPay merchant credentials |
 | `ADMIN_EMAILS` | Your email address |
 
 ### Values pre-filled (verify they are correct)

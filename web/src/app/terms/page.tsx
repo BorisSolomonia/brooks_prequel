@@ -28,7 +28,7 @@ export default function TermsPage() {
         </section>
         <section>
           <h2 className="text-lg font-semibold text-ig-text-primary">Payment</h2>
-          <p>Payments are processed through UniPay or the active payment provider shown during checkout. A purchase is completed only after successful payment confirmation.</p>
+          <p>Payments are processed through Bank of Georgia iPay. Prices are charged in Georgian Lari (GEL). A purchase is completed only after successful payment confirmation.</p>
         </section>
         <section>
           <h2 className="text-lg font-semibold text-ig-text-primary">Support</h2>

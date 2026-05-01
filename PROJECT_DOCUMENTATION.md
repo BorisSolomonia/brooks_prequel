@@ -244,7 +244,7 @@ These routes intentionally display “partial / not fully implemented” messagi
 4. Any user can create/sell guides
 5. Stories are guide promotions, not random posts
 6. Commercial place handling remains a creator-commerce rule
-7. UniPay (Georgian PSP) for v1; PayPal later
+7. Bank of Georgia iPay (Georgian PSP) for v1, GEL only; multi-currency / additional providers later
 8. Audio is not in v1
 
 ### Current implementation status

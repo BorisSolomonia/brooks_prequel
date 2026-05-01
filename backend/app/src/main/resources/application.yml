@@ -98,10 +98,12 @@ calendar:
     client-secret: ${GOOGLE_CALENDAR_CLIENT_SECRET:}
     calendar-name: ${GOOGLE_CALENDAR_NAME:Brooks Trips}
 
-unipay:
-  merchant-id: ${UNIPAY_MERCHANT_ID}
-  secret-key: ${UNIPAY_SECRET_KEY}
-  api-base-url: ${UNIPAY_API_BASE_URL:https://checkout.unipay.com}
+bog-ipay:
+  client-id: ${BOG_IPAY_CLIENT_ID}
+  secret-key: ${BOG_IPAY_SECRET_KEY}
+  base-url: ${BOG_IPAY_BASE_URL:https://ipay.ge/opay/api/v1}
+  callback-path: ${BOG_IPAY_CALLBACK_PATH:/api/webhooks/bog-ipay}
+  locale: ${BOG_IPAY_LOCALE:ka}
 
 management:
   endpoints:
