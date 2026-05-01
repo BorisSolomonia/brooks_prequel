@@ -10,6 +10,10 @@ const PINK = '#ef2f6d';
 const BLACK = '#050505';
 const YELLOW = '#ffd21a';
 const TEAL = '#12c7c9';
+const CONTRAST_TEXT_STYLE = {
+  color: '#f5ead8',
+  textShadow: '2px 2px 0 #050505, -1px -1px 0 #050505, 1px -1px 0 #050505, -1px 1px 0 #050505',
+};
 
 function PinIcon({ color = PINK, size = 22 }: { color?: string; size?: number }) {
   return (
@@ -102,17 +106,10 @@ function HeroContent({ mobile = false }: { mobile?: boolean }) {
         <p style={{ fontSize: size, color: BLACK, margin: 0 }}>Every place</p>
         <p style={{ fontSize: size, color: BLACK, margin: 0 }}>could be hiding</p>
         <p style={{ fontSize: size, color: BLACK, margin: 0 }}>something.</p>
-        <p style={{ fontSize: size, color: PINK, margin: 0 }}>Most people</p>
+        <p style={{ fontSize: size, margin: 0, ...CONTRAST_TEXT_STYLE }}>Most people</p>
         <p style={{ fontSize: size, color: PINK, margin: 0 }}>
-          never{' '}
-          <span
-            style={{
-              color: '#f5ead8',
-              textShadow: '2px 2px 0 #050505, -1px -1px 0 #050505, 1px -1px 0 #050505, -1px 1px 0 #050505',
-            }}
-          >
-            check.
-          </span>
+          <span style={CONTRAST_TEXT_STYLE}>never</span>{' '}
+          <span style={CONTRAST_TEXT_STYLE}>check.</span>
         </p>
       </div>
 
@@ -222,8 +219,8 @@ export default function LandingPage() {
           <div
             className="pointer-events-auto absolute"
             style={{
-              top: 'clamp(332px, 42vh, 408px)',
-              right: 'clamp(176px, 15.5vw, 268px)',
+              top: 'clamp(32px, 42vh, 8px)',
+              right: 'clamp(576px, 15.5vw, 268px)',
               width: 'clamp(138px, 10vw, 164px)',
               transform: 'rotate(1.25deg)',
             }}
@@ -245,8 +242,8 @@ export default function LandingPage() {
             className="pointer-events-auto absolute"
             style={{
               top: 'clamp(78px, 8vh, 112px)',
-              right: 'clamp(292px, 25vw, 430px)',
-              width: 'clamp(156px, 12vw, 190px)',
+              right: 'clamp(100px, 25vw, 4px)',
+              width: 'clamp(156px, 12vw, 19px)',
               transform: 'rotate(-1deg)',
             }}
           >
@@ -262,10 +259,10 @@ export default function LandingPage() {
           <div
             className="pointer-events-auto absolute"
             style={{
-              top: 'clamp(258px, 31vh, 326px)',
-              right: 'clamp(312px, 27vw, 452px)',
+              top: 'clamp(458px, 31vh, 326px)',
+              right: 'clamp(712px, 27vw, 452px)',
               width: 'clamp(144px, 10.8vw, 176px)',
-              transform: 'rotate(0.75deg)',
+              transform: 'rotate(-5.55deg)',
             }}
           >
             <FloatingFeatureCard
@@ -280,8 +277,8 @@ export default function LandingPage() {
           <div
             className="pointer-events-auto absolute"
             style={{
-              top: 'clamp(218px, 25vh, 276px)',
-              right: 'clamp(54px, 7vw, 116px)',
+              top: 'clamp(418px, 25vh, 276px)',
+              right: 'clamp(54px, 7vw, 76px)',
               width: 'clamp(120px, 8.8vw, 148px)',
               transform: 'rotate(-1.5deg)',
             }}
