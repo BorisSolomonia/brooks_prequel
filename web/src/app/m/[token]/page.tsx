@@ -9,6 +9,16 @@ import type { MemoryRevealResponse, MemoryShareTeaser } from '@/types';
 
 const formatCoordinate = (value: number) => value.toFixed(6);
 
+const locationErrorMessage = (error: GeolocationPositionError) => {
+  if (error.code === error.PERMISSION_DENIED) {
+    return 'Location access was denied. Enable location for Brooks in your browser settings, then try again.';
+  }
+  if (error.code === error.TIMEOUT) {
+    return 'Could not detect your location. Move outside or check GPS, then try again.';
+  }
+  return 'Your browser could not detect your location. Check location services, then try again.';
+};
+
 export default function SharedMemoryPage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
@@ -30,8 +40,12 @@ export default function SharedMemoryPage() {
     if (!accessToken) {
       return;
     }
+    if (!window.isSecureContext) {
+      setError('Location detection requires a secure connection. Open this link on brooksweb.uk, then try again.');
+      return;
+    }
     if (!navigator.geolocation) {
-      setError('Location permission is required to reveal this memory.');
+      setError('This browser does not support location detection. Open the link in a browser with location services enabled.');
       return;
     }
     setRevealing(true);
@@ -46,8 +60,8 @@ export default function SharedMemoryPage() {
           .catch((err) => setError(err instanceof Error ? err.message : 'Could not reveal memory'))
           .finally(() => setRevealing(false));
       },
-      () => {
-        setError('Location permission is required. Open directions, go near the place, then try again.');
+      (geoError) => {
+        setError(locationErrorMessage(geoError));
         setRevealing(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
@@ -100,7 +114,7 @@ export default function SharedMemoryPage() {
 
         <div className="mt-6 rounded-3xl border border-ig-border bg-ig-primary p-4">
           <p className="text-sm text-ig-text-secondary">
-            The message unlocks after you allow location access and are within 100m of the place.
+            Register or sign in to reveal this memory at the location. After sign-in, Brooks will ask for location access and unlock it when you are within 100m.
           </p>
           <p className="mt-2 text-sm font-semibold text-ig-text-primary">
             Memory location: {teaser.placeLabel || `${formatCoordinate(teaser.approximateLatitude)}, ${formatCoordinate(teaser.approximateLongitude)}`}
@@ -120,19 +134,25 @@ export default function SharedMemoryPage() {
             href={`/api/auth/login?returnTo=/m/${encodeURIComponent(token)}`}
             className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white"
           >
-            Sign in to reveal
+            Register or sign in to reveal
           </Link>
         )}
 
         {accessToken && (
-          <button
-            type="button"
-            onClick={revealMemory}
-            disabled={revealing}
-            className="mt-5 min-h-12 w-full rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60"
-          >
-            {revealing ? 'Checking location...' : 'Allow location and reveal memory'}
-          </button>
+          <div className="mt-5 rounded-3xl border border-brand-500/30 bg-brand-500/10 p-4">
+            <p className="text-sm font-semibold text-ig-text-primary">Location permission is needed to unlock this memory.</p>
+            <p className="mt-1 text-sm text-ig-text-secondary">
+              Tap the button below, then choose Allow when your browser asks for location access.
+            </p>
+            <button
+              type="button"
+              onClick={revealMemory}
+              disabled={revealing}
+              className="mt-4 min-h-12 w-full rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60"
+            >
+              {revealing ? 'Checking location...' : 'Allow location to reveal memory'}
+            </button>
+          </div>
         )}
 
         {error && <p className="mt-4 rounded-2xl border border-ig-error/40 px-4 py-3 text-sm text-ig-error">{error}</p>}

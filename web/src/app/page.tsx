@@ -223,69 +223,74 @@ export default function LandingPage() {
             className="pointer-events-auto absolute"
             style={{
               top: 'clamp(86px, 10vh, 112px)',
-              right: 'clamp(30px, 4.5vw, 68px)',
-              width: 'clamp(142px, 11vw, 174px)',
-              transform: 'rotate(1.5deg)',
+              right: 'clamp(42px, 6vw, 96px)',
+              width: 'clamp(138px, 10vw, 164px)',
+              transform: 'rotate(1.25deg)',
             }}
           >
             <FloatingFeatureCard
-              icon={<PinIcon size={20} />}
+              icon={<PinIcon size={18} />}
               title="LEAVE A MEMORY"
               body="Leave something meaningful."
-              style={{ minHeight: 96, background: 'rgba(245,234,216,0.94)' }}
+              style={{
+                minHeight: 86,
+                background: 'rgba(245,234,216,0.96)',
+                border: '2px solid rgba(239,47,109,0.75)',
+                boxShadow: '0 12px 26px rgba(0,0,0,0.22)',
+              }}
             />
           </div>
 
           <div
             className="pointer-events-auto absolute"
             style={{
-              top: 'clamp(146px, 18vh, 196px)',
-              right: 'clamp(246px, 20vw, 340px)',
-              width: 'clamp(196px, 15vw, 232px)',
+              top: 'clamp(78px, 8vh, 112px)',
+              right: 'clamp(228px, 20vw, 350px)',
+              width: 'clamp(156px, 12vw, 190px)',
               transform: 'rotate(-1deg)',
             }}
           >
             <FloatingFeatureCard
-              icon={<CompassIcon size={20} />}
+              icon={<CompassIcon size={17} />}
               title="CURATED GUIDES"
               body={"Guides around your interests.\nDifferent perspectives."}
               bottomIcons={card2Icons}
-              style={{ minHeight: 114, background: 'rgba(245,234,216,0.94)' }}
+              style={{ minHeight: 88, background: 'rgba(245,234,216,0.92)' }}
             />
           </div>
 
           <div
             className="pointer-events-auto absolute"
             style={{
-              top: 'clamp(326px, 38vh, 382px)',
-              right: 'clamp(418px, 34vw, 560px)',
-              width: 'clamp(174px, 13vw, 206px)',
-              transform: 'rotate(1deg)',
+              top: 'clamp(258px, 31vh, 326px)',
+              right: 'clamp(312px, 27vw, 452px)',
+              width: 'clamp(144px, 10.8vw, 176px)',
+              transform: 'rotate(0.75deg)',
             }}
           >
             <FloatingFeatureCard
-              icon={<CalendarIcon color={BLACK} size={20} />}
+              icon={<CalendarIcon color={BLACK} size={17} />}
               title={"FROM DISCOVERY\nTO PLAN"}
               body={"Turn places into your\ncalendar and map."}
               bottomIcons={card3Icons}
-              style={{ minHeight: 116, background: 'rgba(245,234,216,0.94)' }}
+              style={{ minHeight: 90, background: 'rgba(245,234,216,0.92)' }}
             />
           </div>
 
           <div
             className="pointer-events-auto absolute"
             style={{
-              top: 'clamp(236px, 28vh, 292px)',
-              right: 'clamp(40px, 5vw, 84px)',
-              width: 'clamp(136px, 10vw, 164px)',
+              top: 'clamp(218px, 25vh, 276px)',
+              right: 'clamp(54px, 7vw, 116px)',
+              width: 'clamp(120px, 8.8vw, 148px)',
               transform: 'rotate(-1.5deg)',
             }}
           >
             <FloatingFeatureCard
-              icon={<EyeOffIcon size={20} />}
+              icon={<EyeOffIcon size={17} />}
               title="FOCUS YOUR SEARCH"
               body={"Hide what is not useful.\nSee what matters."}
-              style={{ minHeight: 102, background: 'rgba(245,234,216,0.94)' }}
+              style={{ minHeight: 82, background: 'rgba(245,234,216,0.9)' }}
             />
           </div>
         </div>
