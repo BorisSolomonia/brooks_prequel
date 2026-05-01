@@ -222,8 +222,8 @@ export default function LandingPage() {
           <div
             className="pointer-events-auto absolute"
             style={{
-              top: 'clamp(86px, 10vh, 112px)',
-              right: 'clamp(42px, 6vw, 96px)',
+              top: 'clamp(332px, 42vh, 408px)',
+              right: 'clamp(176px, 15.5vw, 268px)',
               width: 'clamp(138px, 10vw, 164px)',
               transform: 'rotate(1.25deg)',
             }}
@@ -245,7 +245,7 @@ export default function LandingPage() {
             className="pointer-events-auto absolute"
             style={{
               top: 'clamp(78px, 8vh, 112px)',
-              right: 'clamp(228px, 20vw, 350px)',
+              right: 'clamp(292px, 25vw, 430px)',
               width: 'clamp(156px, 12vw, 190px)',
               transform: 'rotate(-1deg)',
             }}
