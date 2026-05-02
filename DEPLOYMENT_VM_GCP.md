@@ -53,7 +53,7 @@ GitHub Actions
 
 ---
 
-## Step 1 — Provision GCP resources (one time)
+## Step 1 — Provision GCP resources (one time).
 
 Follow `GCP_SETUP_STEP_BY_STEP.md` in full. That document covers
 
