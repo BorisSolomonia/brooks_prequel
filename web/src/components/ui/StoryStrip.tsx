@@ -20,7 +20,7 @@ export default function StoryStrip({ strips }: StoryStripProps) {
           <button
             key={strip.creatorId}
             onClick={() => setActiveStory({ stripIndex, storyIndex: 0 })}
-            className="flex flex-col items-center gap-1 flex-shrink-0"
+            className="flex min-h-20 min-w-20 flex-shrink-0 flex-col items-center justify-center gap-1"
           >
             <div
               className={`w-16 h-16 rounded-full p-[3px] ${
@@ -57,12 +57,13 @@ export default function StoryStrip({ strips }: StoryStripProps) {
           onClick={() => setActiveStory(null)}
         >
           <div
-            className="relative max-w-lg w-full mx-4"
+            className="relative mx-4 max-h-[92dvh] w-full max-w-lg overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setActiveStory(null)}
-              className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl z-10 transition-colors"
+              className="absolute right-3 top-3 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full bg-black/35 text-2xl text-white/80 transition-colors hover:text-white"
+              aria-label="Close story"
             >
               &times;
             </button>
@@ -112,7 +113,7 @@ export default function StoryStrip({ strips }: StoryStripProps) {
                     )}
                     <Link
                       href={`/guides/${story.guideId}/view`}
-                      className="mt-3 inline-flex rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-black"
+                      className="mt-3 inline-flex min-h-11 items-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-black"
                     >
                       Open guide preview
                     </Link>

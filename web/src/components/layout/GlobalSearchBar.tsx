@@ -37,7 +37,7 @@ function SearchResultRow({ href, title, subtitle, meta, badge, icon, onSelect }:
     <Link
       href={href}
       onClick={onSelect}
-      className="flex min-h-12 items-start gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-ig-hover"
+      className="flex min-h-14 items-start gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-ig-hover"
     >
       <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-ig-border bg-ig-primary text-ig-text-secondary">
         {icon}
@@ -225,7 +225,7 @@ export default function GlobalSearchBar() {
             }
           }}
           placeholder="Search creators, guides, places..."
-          className="h-11 w-full rounded-full border border-ig-border bg-ig-elevated pl-10 pr-12 text-base text-ig-text-primary outline-none transition placeholder:text-sm focus:border-brand-500 focus:bg-ig-primary md:h-10 md:pr-20 md:text-sm"
+          className="h-12 w-full rounded-full border border-ig-border bg-ig-elevated pl-10 pr-12 text-base text-ig-text-primary outline-none transition placeholder:text-sm focus:border-brand-500 focus:bg-ig-primary md:h-10 md:pr-20 md:text-sm"
           aria-label="Search creators, guides, and places"
         />
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -236,7 +236,7 @@ export default function GlobalSearchBar() {
             <button
               type="button"
               onClick={clearSearch}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-ig-text-tertiary transition hover:bg-ig-hover hover:text-ig-text-primary md:h-7 md:w-7"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-ig-text-tertiary transition hover:bg-ig-hover hover:text-ig-text-primary lg:h-7 lg:w-7"
               aria-label="Clear search"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -248,7 +248,7 @@ export default function GlobalSearchBar() {
       </div>
 
       {open && inputValue.trim() && (
-        <div className="fixed inset-x-3 top-[76px] z-50 max-h-[calc(100vh-140px)] overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-3 shadow-2xl backdrop-blur md:absolute md:inset-x-0 md:top-[calc(100%+10px)] md:max-h-[70vh] md:rounded-[28px]">
+        <div className="fixed inset-x-3 top-[76px] z-50 max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-3 pb-4 shadow-2xl backdrop-blur md:absolute md:inset-x-0 md:top-[calc(100%+10px)] md:max-h-[70vh] md:rounded-[28px]">
           {error ? (
             <div className="rounded-2xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-secondary">
               {error}

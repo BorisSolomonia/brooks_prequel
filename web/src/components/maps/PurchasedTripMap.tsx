@@ -137,7 +137,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
             key={cat.value}
             type="button"
             onClick={() => setActiveCategory(cat.value)}
-            className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors md:min-h-0 md:px-3 md:py-1 md:text-xs ${
+            className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
               activeCategory === cat.value
                 ? 'border-ig-blue bg-ig-blue/10 text-ig-blue'
                 : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:border-ig-blue/40'

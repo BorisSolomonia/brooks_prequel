@@ -51,7 +51,7 @@ function NavigateMenu({ lat, lng }: { lat: number; lng: number }) {
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="min-h-11 rounded-full border border-ig-border px-4 py-2 text-sm text-ig-text-secondary transition-colors hover:border-brand-500/50 hover:text-brand-400 md:min-h-0 md:px-2.5 md:py-1 md:text-xs"
+        className="min-h-11 rounded-full border border-ig-border px-4 py-2 text-sm text-ig-text-secondary transition-colors hover:border-brand-500/50 hover:text-brand-400 lg:min-h-0 lg:px-2.5 lg:py-1 lg:text-xs"
       >
         Navigate
       </button>
@@ -274,18 +274,18 @@ export default function TripDetailPage() {
             </div>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-wrap gap-2 md:w-auto">
           <a
             href={buildGoogleMapsAllUrl(visibleItems)}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-11 items-center rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover"
+            className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover md:flex-none"
           >
             Open in Maps
           </a>
           <button
             onClick={() => setShowCalendarModal(true)}
-            className="inline-flex min-h-11 items-center rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+            className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 md:flex-none"
           >
             Add to Calendar
           </button>
@@ -314,7 +314,7 @@ export default function TripDetailPage() {
             value={review.reviewText}
             onChange={(e) => setReview((r) => ({ ...r, reviewText: e.target.value }))}
             rows={2}
-            className="mt-3 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-sm text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-brand-500 focus:outline-none resize-none"
+            className="mt-3 w-full resize-none rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-brand-500 focus:outline-none md:text-sm"
           />
           {review.error && <p className="mt-1 text-xs text-ig-error">{review.error}</p>}
           <button
@@ -336,7 +336,7 @@ export default function TripDetailPage() {
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
           <div className="rounded-2xl border border-ig-border bg-ig-elevated p-5">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-ig-text-primary">Trip setup</h2>
                 <p className="mt-1 text-sm text-ig-text-secondary">
@@ -346,7 +346,7 @@ export default function TripDetailPage() {
               <button
                 onClick={handleSaveSetup}
                 disabled={saving}
-                className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50"
+                className="min-h-11 w-full rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50 sm:w-auto"
               >
                 {saving ? 'Saving...' : 'Save setup'}
               </button>
@@ -423,7 +423,7 @@ export default function TripDetailPage() {
                               <button
                                 onClick={() => handleToggleVisited(item)}
                                 title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
-                                className={`mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-5 sm:w-5 ${
+                                className={`mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors lg:h-5 lg:w-5 ${
                                   isVisited
                                     ? 'border-brand-500 bg-brand-500 text-white'
                                     : 'border-ig-border hover:border-brand-500/50'
@@ -443,13 +443,13 @@ export default function TripDetailPage() {
                                   <h3 className={`text-sm font-semibold truncate ${isVisited ? 'text-ig-text-secondary line-through' : 'text-ig-text-primary'}`}>
                                     {item.placeName}
                                   </h3>
-                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                  <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1">
                                     {item.latitude !== null && item.longitude !== null && (
                                       <a
                                         href={`https://brooksweb.uk/maps?lat=${item.latitude}&lng=${item.longitude}`}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="flex h-7 w-7 items-center justify-center rounded-full text-brand-400 hover:bg-brand-500/10 hover:text-brand-300 transition-colors"
+                                        className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7"
                                         title="View on map"
                                       >
                                         📍
@@ -458,7 +458,7 @@ export default function TripDetailPage() {
                                     {item.latitude !== null && item.longitude !== null && (
                                       <NavigateMenu lat={item.latitude} lng={item.longitude} />
                                     )}
-                                    <label className="inline-flex min-h-9 items-center gap-1 text-xs text-ig-text-secondary cursor-pointer">
+                                    <label className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-ig-text-secondary cursor-pointer lg:min-h-9 lg:text-xs">
                                       <input
                                         type="checkbox"
                                         checked={edit.skipped}

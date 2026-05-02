@@ -220,7 +220,7 @@ export default function ViewGuidePage() {
           </div>
         )}
 
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
           <div className="min-w-0 flex-1">
             <h1 className="mb-1 text-2xl font-semibold text-ig-text-primary">
               {displayGuide?.title || displayPreview?.title}
@@ -243,7 +243,7 @@ export default function ViewGuidePage() {
           </div>
 
           {displayPreview && (
-            <div className="flex flex-col items-end gap-1 text-xs text-ig-text-tertiary">
+            <div className="flex flex-col items-start gap-1 text-xs text-ig-text-tertiary sm:items-end">
               {(displayPreview.purchaseCount ?? 0) > 0 && (
                 <span className="rounded-full border border-ig-border bg-ig-elevated px-2.5 py-1 font-medium">
                   {displayPreview.purchaseCount} travelers used this
@@ -270,13 +270,13 @@ export default function ViewGuidePage() {
         )}
 
         {mode === 'preview' && (
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3 [&>*]:w-full sm:[&>*]:w-auto">
             {token ? (
               <button
                 type="button"
                 onClick={handleSaveToggle}
                 disabled={saveLoading}
-                className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
+                className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
                   saved
                     ? 'border-ig-blue bg-ig-blue/10 text-ig-blue'
                     : 'border-ig-border bg-ig-elevated text-ig-text-primary hover:border-ig-blue/40'
@@ -290,7 +290,7 @@ export default function ViewGuidePage() {
             ) : (
               <Link
                 href="/api/auth/login"
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-ig-border bg-ig-elevated px-4 py-2.5 text-sm font-semibold text-ig-text-primary hover:border-ig-blue/40"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-ig-border bg-ig-elevated px-4 py-2.5 text-sm font-semibold text-ig-text-primary hover:border-ig-blue/40"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
                   <path d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75v18.114a.375.375 0 0 1-.614.291L12 17.72l-5.386 4.435A.375.375 0 0 1 6 21.864V3.75Z" />
@@ -312,7 +312,7 @@ export default function ViewGuidePage() {
             {displayPreview && !token && (
               <Link
                 href="/api/auth/login"
-                className="inline-flex min-h-11 items-center rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
               >
                 {displayPreview.priceCents === 0 ? 'Sign in to get guide' : 'Sign in to purchase'}
               </Link>
@@ -504,7 +504,7 @@ export default function ViewGuidePage() {
                     type="button"
                     disabled={!review.canVote}
                     onClick={() => handleVote(review.id, 'HELPFUL')}
-                    className={`min-h-9 rounded-full border px-3 py-1 transition ${
+                    className={`min-h-11 rounded-full border px-4 py-2 text-sm transition lg:min-h-9 lg:px-3 lg:py-1 lg:text-xs ${
                       review.viewerVote === 'HELPFUL'
                         ? 'border-brand-500/30 bg-brand-500/10 text-brand-500'
                         : 'border-ig-border text-ig-text-secondary'
@@ -516,7 +516,7 @@ export default function ViewGuidePage() {
                     type="button"
                     disabled={!review.canVote}
                     onClick={() => handleVote(review.id, 'NOT_HELPFUL')}
-                    className={`min-h-9 rounded-full border px-3 py-1 transition ${
+                    className={`min-h-11 rounded-full border px-4 py-2 text-sm transition lg:min-h-9 lg:px-3 lg:py-1 lg:text-xs ${
                       review.viewerVote === 'NOT_HELPFUL'
                         ? 'border-ig-error/30 bg-ig-error/10 text-ig-error'
                         : 'border-ig-border text-ig-text-secondary'

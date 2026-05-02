@@ -213,7 +213,7 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-3 sm:items-center" onClick={onClose}>
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-ig-border bg-ig-elevated p-5 shadow-xl sm:rounded-2xl" onClick={(event) => event.stopPropagation()}>
+      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-ig-border bg-ig-elevated p-5 pb-[calc(1.25rem_+_env(safe-area-inset-bottom))] shadow-xl sm:rounded-2xl sm:pb-5" onClick={(event) => event.stopPropagation()}>
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-ig-text-primary">Add to calendar</h2>
@@ -254,7 +254,7 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
                         type="datetime-local"
                         value={lateEdits[event.itemId] ?? toLocalInputValue(item?.scheduledStart ?? event.scheduledStart)}
                         onChange={(input) => setLateEdits((current) => ({ ...current, [event.itemId]: input.target.value }))}
-                        className="min-h-11 rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary"
+                        className="min-h-11 rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary md:text-sm"
                       />
                       <label className="inline-flex min-h-11 items-center gap-2 text-sm text-ig-text-secondary">
                         <input

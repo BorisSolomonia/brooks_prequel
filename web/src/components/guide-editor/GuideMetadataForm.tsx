@@ -263,7 +263,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
                   const current = (data as GuideUpdateRequest).personas ?? [];
                   update('personas', selected ? current.filter((p) => p !== persona) : [...current, persona]);
                 }}
-                className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors md:min-h-0 md:px-3 md:py-1.5 md:text-xs ${
+                className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1.5 lg:text-xs ${
                   selected
                     ? 'border-brand-500 bg-brand-500/15 text-brand-400'
                     : 'border-ig-border bg-ig-secondary text-ig-text-secondary hover:border-brand-500/40'
@@ -336,9 +336,9 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
         <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Tags</label>
         <div className="flex gap-2 mb-2 flex-wrap">
           {(data.tags || []).map((tag) => (
-            <span key={tag} className="inline-flex min-h-9 items-center gap-1 rounded-pill border border-ig-border bg-ig-elevated px-2 py-1 text-sm text-ig-text-primary">
+            <span key={tag} className="inline-flex min-h-11 items-center gap-1 rounded-pill border border-ig-border bg-ig-elevated px-3 py-1 text-sm text-ig-text-primary lg:min-h-9 lg:px-2">
               {tag}
-              <button onClick={() => onRemoveTag(tag)} className="text-ig-text-tertiary hover:text-ig-error ml-1">&times;</button>
+              <button onClick={() => onRemoveTag(tag)} className="ml-1 inline-flex min-h-9 min-w-9 items-center justify-center text-ig-text-tertiary hover:text-ig-error lg:min-h-0 lg:min-w-0">&times;</button>
             </span>
           ))}
         </div>

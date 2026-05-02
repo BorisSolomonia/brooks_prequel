@@ -81,7 +81,7 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 text-sm border border-[var(--border)] rounded-xl bg-[var(--bg-elevated)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+        className="flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-2 text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)]"
       >
         <span>✨</span>
         <span>Ask AI about this guide</span>
@@ -90,22 +90,22 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
   }
 
   return (
-    <div className="border border-[var(--border)] rounded-xl bg-[var(--bg-elevated)] flex flex-col" style={{ height: 420 }}>
+    <div className="flex h-[min(70dvh,420px)] min-h-[360px] flex-col rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-[var(--text-primary)]">✨ Ask AI</span>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as Provider)}
-            className="text-xs border border-[var(--border)] rounded px-2 py-0.5 bg-[var(--bg-primary)] text-[var(--text-secondary)]"
+            className="min-h-11 rounded border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-base text-[var(--text-secondary)] lg:min-h-0 lg:px-2 lg:py-0.5 lg:text-xs"
           >
             {availableProviders.map((p) => (
               <option key={p} value={p}>{PROVIDER_LABELS[p]}</option>
             ))}
           </select>
         </div>
-        <button onClick={() => setOpen(false)} className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+        <button onClick={() => setOpen(false)} className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" aria-label="Close AI chat">
           ✕
         </button>
       </div>
@@ -134,19 +134,19 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 border-t border-[var(--border)] flex gap-2">
+      <div className="flex flex-col gap-2 border-t border-[var(--border)] px-4 py-3 sm:flex-row">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
           placeholder="Ask about this guide…"
           disabled={streaming}
-          className="flex-1 text-sm px-3 py-1.5 border border-[var(--border)] rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)] disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-base text-[var(--text-primary)] disabled:opacity-50 md:text-sm"
         />
         <button
           onClick={send}
           disabled={streaming || !input.trim()}
-          className="px-4 py-1.5 text-sm rounded-lg bg-[var(--brand-primary)] text-white font-medium disabled:opacity-40"
+          className="min-h-11 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
         >
           {streaming ? '…' : 'Send'}
         </button>

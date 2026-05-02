@@ -347,7 +347,7 @@ function FilterChip({ label, activeCount, onClick, active }: FilterChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition md:min-h-0 md:px-3 md:py-1.5 md:text-xs ${
+      className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition lg:min-h-0 lg:px-3 lg:py-1.5 lg:text-xs ${
         active || activeCount > 0
           ? 'border-brand-500/30 bg-brand-500/10 text-brand-600'
           : 'border-ig-border bg-ig-primary/80 text-ig-text-secondary hover:border-brand-500/20 hover:text-ig-text-primary'
@@ -376,7 +376,7 @@ function FilterSection({ title, options, selected, onToggle, renderLabel }: Filt
               key={option}
               type="button"
               onClick={() => onToggle(option)}
-              className={`min-h-11 rounded-full border px-4 py-2 text-sm transition md:min-h-0 md:px-3 md:py-1.5 md:text-xs ${
+              className={`min-h-11 rounded-full border px-4 py-2 text-sm transition lg:min-h-0 lg:px-3 lg:py-1.5 lg:text-xs ${
                 isSelected
                   ? 'border-brand-500/30 bg-brand-500/10 text-brand-600'
                   : 'border-ig-border bg-ig-primary text-ig-text-secondary hover:text-ig-text-primary'
@@ -474,7 +474,7 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
 
 function SelectedMemoryCard({ memory, onClose, onShare, onDelete, busy }: SelectedMemoryCardProps) {
   return (
-    <div className="absolute inset-x-3 bottom-4 z-10 mx-auto max-w-md rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur">
+    <div className="absolute inset-x-3 bottom-3 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Memory pin</p>
@@ -522,7 +522,7 @@ function SelectedMemoryCard({ memory, onClose, onShare, onDelete, busy }: Select
 
 function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
   return (
-    <div className="absolute inset-x-3 bottom-4 z-10 mx-auto max-w-md rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur">
+    <div className="absolute inset-x-3 bottom-3 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-3">
           <div className="h-14 w-14 overflow-hidden rounded-full border border-white/90 bg-ig-secondary shadow-[0_0_0_2px_var(--brand-primary)]">
@@ -1428,27 +1428,35 @@ export default function MapsExperience({
   }
 
   return (
-    <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden bg-ig-primary md:h-[calc(100vh-60px)]">
+    <div className="relative h-[calc(100dvh_-_8rem_-_env(safe-area-inset-bottom))] min-h-[420px] w-full overflow-hidden bg-ig-primary md:h-[calc(100dvh_-_60px)] md:min-h-0">
       {(tokenLoading || !token) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-ig-primary">
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      <div className="absolute inset-x-3 bottom-4 z-10 max-h-[62vh] rounded-[28px] border border-ig-border bg-ig-elevated/95 p-4 shadow-xl backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:w-[min(380px,calc(100vw-2rem))] md:max-h-[calc(100vh-92px)]">
+      <div className="absolute inset-x-2 bottom-3 z-20 max-h-[72dvh] overflow-hidden rounded-[28px] border border-ig-border bg-ig-elevated/95 p-3 shadow-xl backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4">
+        <button
+          type="button"
+          onClick={() => setMobilePanelOpen((open) => !open)}
+          className="mx-auto mb-3 block h-8 w-20 rounded-full md:hidden"
+          aria-label={mobilePanelOpen ? 'Collapse map panel' : 'Expand map panel'}
+        >
+          <span className="mx-auto block h-1.5 w-12 rounded-full bg-ig-border" />
+        </button>
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Brooks Maps</p>
-            <h1 className="mt-1 text-xl font-semibold text-ig-text-primary md:text-2xl">{activeLayers.guides ? 'Guides in view' : 'Memories in view'}</h1>
+            <h1 className="mt-1 text-lg font-semibold text-ig-text-primary md:text-2xl">{activeLayers.guides ? 'Guides in view' : 'Memories in view'}</h1>
           </div>
           <button
             type="button"
             onClick={() => setMobilePanelOpen((open) => !open)}
-            className="min-h-11 rounded-full bg-brand-500/15 px-4 py-2 text-sm font-semibold text-brand-500 md:pointer-events-none md:min-h-0 md:px-3 md:py-1 md:text-xs"
+            className="min-h-11 rounded-full bg-brand-500/15 px-4 py-2 text-sm font-semibold text-brand-500 md:pointer-events-none lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs"
           >
             {activeLayers.guides ? viewportPins.length : viewportMemories.length} visible
           </button>
         </div>
-        <div className={`${mobilePanelOpen ? 'block' : 'hidden'} md:block`}>
+        <div className={`${mobilePanelOpen ? 'block' : 'hidden'} max-h-[calc(72dvh_-_6rem)] overflow-y-auto overscroll-contain pr-1 md:block md:max-h-[calc(100dvh_-_170px)]`}>
         <div className="mt-4 rounded-3xl border border-ig-border bg-ig-primary/80 p-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ig-text-tertiary">Map layers</p>
@@ -1551,7 +1559,7 @@ export default function MapsExperience({
             </button>
           </div>
         )}
-        <div className={`${activeLayers.guides ? 'flex' : 'hidden'} mt-4 max-h-28 flex-wrap gap-2 overflow-y-auto md:max-h-none`}>
+        <div className={`${activeLayers.guides ? 'flex' : 'hidden'} mt-4 max-h-32 flex-wrap gap-2 overflow-y-auto md:max-h-none`}>
           <FilterChip
             label="Country"
             activeCount={activeFilters.countries.length}
@@ -1604,7 +1612,7 @@ export default function MapsExperience({
             type="button"
             onClick={clearAllFilters}
             disabled={activeFilterCount === 0}
-            className="min-h-11 rounded-full border border-transparent px-4 py-2 text-sm font-medium text-ig-text-tertiary transition hover:text-ig-text-primary disabled:cursor-default disabled:opacity-50 md:min-h-0 md:px-3 md:py-1.5 md:text-xs"
+            className="min-h-11 rounded-full border border-transparent px-4 py-2 text-sm font-medium text-ig-text-tertiary transition hover:text-ig-text-primary disabled:cursor-default disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5 lg:text-xs"
           >
             Clear all
           </button>
@@ -1709,7 +1717,7 @@ export default function MapsExperience({
             <span className="rounded-pill border border-ig-border px-2 py-1">No memories in the current view</span>
           )}
         </div>
-        <div className="mt-4 max-h-[26vh] space-y-3 overflow-y-auto pr-1 md:max-h-[55vh]">
+        <div className="mt-4 max-h-[32dvh] space-y-3 overflow-y-auto pr-1 md:max-h-[55vh]">
           {activeLayers.guides
             ? viewportPins.map((pin) => (
                 <InfluencerViewportSlice

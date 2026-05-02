@@ -223,24 +223,24 @@ export default function MyGuidesPage() {
                 </div>
               </Link>
               {(activeTab === 'created' || activeTab === 'purchased') && (
-                <div className="flex justify-end border-t border-ig-border px-3 py-2">
+                <div className="flex justify-stretch border-t border-ig-border px-3 py-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => openCalendarForGuide(guide)}
                     disabled={calendarLoadingGuideId === guide.id}
-                    className="min-h-9 rounded-md border border-ig-border px-3 py-1.5 text-xs font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:cursor-not-allowed disabled:opacity-60"
+                    className="min-h-11 w-full rounded-md border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
                   >
                     {calendarLoadingGuideId === guide.id ? 'Preparing...' : 'Add to calendar'}
                   </button>
                 </div>
               )}
               {activeTab === 'created' && (
-                <div className="flex justify-end border-t border-ig-border px-3 py-2">
+                <div className="flex justify-stretch border-t border-ig-border px-3 py-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => handleDeleteGuide(guide)}
                     disabled={deletingGuideId === guide.id}
-                    className="min-h-9 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="min-h-11 w-full rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
                   >
                     {deletingGuideId === guide.id ? 'Deleting…' : 'Delete'}
                   </button>

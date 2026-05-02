@@ -96,7 +96,7 @@ export function AiKeysPanel() {
 
           return (
             <div key={id} className="border border-[var(--border)] rounded-xl p-4 bg-[var(--bg-elevated)]">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <span className="font-medium text-[var(--text-primary)]">{label}</span>
                   {saved && (
@@ -107,17 +107,17 @@ export function AiKeysPanel() {
                     </span>
                   )}
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => startEdit(id, saved?.selectedModel ?? null)}
-                    className="text-sm text-[var(--brand-primary)] hover:underline"
+                    className="min-h-11 rounded-md px-2 text-sm text-[var(--brand-primary)] hover:underline"
                   >
                     {saved ? 'Replace' : 'Add'}
                   </button>
                   {saved && (
                     <button
                       onClick={() => deleteKey(id)}
-                      className="text-sm text-red-500 hover:underline"
+                      className="min-h-11 rounded-md px-2 text-sm text-red-500 hover:underline"
                     >
                       Remove
                     </button>
@@ -133,14 +133,14 @@ export function AiKeysPanel() {
                       placeholder={placeholder}
                       value={rawKey}
                       onChange={(e) => setRawKey(e.target.value)}
-                      className="flex-1 px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                      className="min-h-11 flex-1 rounded border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-base text-[var(--text-primary)] md:text-sm"
                     />
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <select
                       value={selectedModel}
                       onChange={(e) => setSelectedModel(e.target.value)}
-                      className="flex-1 px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
+                      className="min-h-11 flex-1 rounded border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-base text-[var(--text-primary)] md:text-sm"
                     >
                       {models.map((m) => (
                         <option key={m.id} value={m.id}>{m.label}</option>
@@ -149,13 +149,13 @@ export function AiKeysPanel() {
                     <button
                       disabled={saving || !rawKey}
                       onClick={() => saveKey(id)}
-                      className="px-4 py-1.5 text-sm rounded-lg bg-[var(--brand-primary)] text-white font-medium disabled:opacity-40"
+                      className="min-h-11 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
                     >
                       {saving ? 'Saving…' : 'Save'}
                     </button>
                     <button
                       onClick={() => { setEditing(null); setRawKey(''); }}
-                      className="text-sm text-[var(--text-tertiary)] hover:underline"
+                      className="min-h-11 rounded-md px-2 text-sm text-[var(--text-tertiary)] hover:underline"
                     >
                       Cancel
                     </button>

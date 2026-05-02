@@ -160,9 +160,9 @@ const card3Icons = [<CalendarIcon key="cal" color={BLACK} size={13} />, <MapSmal
 
 export default function LandingPage() {
   return (
-    <div className="fixed inset-0 z-[100] overflow-hidden">
+    <div className="relative min-h-[100dvh] overflow-y-auto lg:fixed lg:inset-0 lg:z-[100] lg:overflow-hidden">
       <section
-        className="relative isolate h-[100dvh] overflow-hidden"
+        className="relative isolate min-h-[100dvh] overflow-hidden lg:h-[100dvh]"
         style={{
           backgroundColor: '#ffd21a',
           backgroundImage: 'url(/images/brooks-hero-bg.webp)',
@@ -207,11 +207,11 @@ export default function LandingPage() {
           <HeroContent />
         </div>
 
-        <div className="lg:hidden relative z-10" style={{ padding: '86px clamp(22px, 7vw, 44px) 0', maxWidth: 640 }}>
+        <div className="lg:hidden relative z-10" style={{ padding: '86px clamp(22px, 7vw, 44px) 140px', maxWidth: 640 }}>
           <HeroContent mobile />
           <div className="mt-5 flex gap-6">
-            <Link href="/guides" className="text-sm font-black uppercase tracking-wide text-black">Guides</Link>
-            <Link href="/about" className="text-sm font-black uppercase tracking-wide text-black">About</Link>
+            <Link href="/guides" className="inline-flex min-h-11 items-center text-sm font-black uppercase tracking-wide text-black">Guides</Link>
+            <Link href="/about" className="inline-flex min-h-11 items-center text-sm font-black uppercase tracking-wide text-black">About</Link>
           </div>
         </div>
 

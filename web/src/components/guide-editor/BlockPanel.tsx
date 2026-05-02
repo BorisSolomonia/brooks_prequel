@@ -104,7 +104,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
                   max={1439}
                   value={suggestedStartMinute}
                   onChange={(e) => setSuggestedStartMinute(e.target.value)}
-                  className="min-h-11 w-24 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none md:min-h-0 md:w-20 md:py-1 md:text-xs"
+                  className="min-h-11 w-24 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-0 lg:w-20 lg:py-1 lg:text-xs"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -114,7 +114,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
                   min={1}
                   value={suggestedDurationMinutes}
                   onChange={(e) => setSuggestedDurationMinutes(e.target.value)}
-                  className="min-h-11 w-24 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none md:min-h-0 md:w-20 md:py-1 md:text-xs"
+                  className="min-h-11 w-24 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-0 lg:w-20 lg:py-1 lg:text-xs"
                 />
               </div>
             </div>
@@ -126,7 +126,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
                     key={cat.value}
                     type="button"
                     onClick={() => handleCategoryChange(cat.value)}
-                    className={`flex min-h-11 items-center gap-1 rounded-lg border px-3 py-2 text-sm transition-colors md:min-h-0 md:px-2 md:py-1 md:text-xs ${
+                    className={`flex min-h-11 items-center gap-1 rounded-lg border px-3 py-2 text-sm transition-colors lg:min-h-0 lg:px-2 lg:py-1 lg:text-xs ${
                       category === cat.value
                         ? 'border-brand-500 bg-brand-500/15 text-brand-400'
                         : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
@@ -161,7 +161,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
             )}
           </div>
         )}
-        <button onClick={() => onDeleteBlock(block.id)} className="min-h-9 rounded-md px-2 text-xs text-ig-text-tertiary hover:text-ig-error sm:ml-2">Delete</button>
+        <button onClick={() => onDeleteBlock(block.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error sm:ml-2 lg:min-h-9 lg:px-2 lg:text-xs">Delete</button>
       </div>
 
       <div className="space-y-2">

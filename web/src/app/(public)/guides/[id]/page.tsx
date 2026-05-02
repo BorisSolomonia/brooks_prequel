@@ -68,7 +68,7 @@ export default function PublicGuidePreviewPage() {
           </div>
         )}
 
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-semibold text-ig-text-primary mb-1">{preview.title}</h1>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-ig-text-tertiary">
@@ -83,7 +83,7 @@ export default function PublicGuidePreviewPage() {
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-1 text-xs text-ig-text-tertiary">
+          <div className="flex flex-col items-start gap-1 text-xs text-ig-text-tertiary sm:items-end">
             {(preview.purchaseCount ?? 0) > 0 && (
               <span className="px-2.5 py-1 rounded-full bg-ig-elevated border border-ig-border font-medium">
                 {preview.purchaseCount} travelers used this
@@ -101,7 +101,7 @@ export default function PublicGuidePreviewPage() {
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Link
             href="/api/auth/login"
-            className="inline-flex min-h-11 items-center rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover sm:w-auto"
           >
             {preview.priceCents > 0 ? 'Sign in to purchase' : 'Sign in to save'}
           </Link>

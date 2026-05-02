@@ -341,7 +341,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
               {aiKeys.length > 0 && (
                 <button
                   onClick={() => setShowAiPanel((v) => !v)}
-                  className="flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] md:min-h-0 md:py-1 md:text-xs"
+                  className="flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] lg:min-h-0 lg:py-1 lg:text-xs"
                 >
                   <span>✨</span>
                   <span>{showAiPanel ? 'Hide AI' : 'Create with AI'}</span>

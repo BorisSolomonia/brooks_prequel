@@ -93,7 +93,7 @@ export default function ReviewComposer({
         maxLength={textLimit}
         rows={4}
         placeholder="Share what stood out. Line breaks and links are supported."
-        className="mt-4 w-full rounded-xl border border-ig-border bg-ig-primary px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500/40"
+        className="mt-4 w-full rounded-xl border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary outline-none transition focus:border-brand-500/40 md:text-sm"
       />
       <div className="mt-2 flex items-center justify-between gap-3 text-xs">
         <span className={reviewText.length > textLimit ? 'text-ig-error' : 'text-ig-text-tertiary'}>
@@ -102,11 +102,11 @@ export default function ReviewComposer({
         {error && <span className="text-ig-error">{error}</span>}
       </div>
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="submit"
           disabled={saving || deleting}
-          className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+          className="min-h-11 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
         >
           {saving ? savingLabel : submitLabel}
         </button>
@@ -115,7 +115,7 @@ export default function ReviewComposer({
             type="button"
             disabled={saving || deleting}
             onClick={handleDelete}
-            className="rounded-lg border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary disabled:opacity-50"
+            className="min-h-11 rounded-lg border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary disabled:opacity-50"
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </button>

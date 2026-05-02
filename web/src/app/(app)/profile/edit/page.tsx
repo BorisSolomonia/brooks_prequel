@@ -188,7 +188,7 @@ export default function EditProfilePage() {
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-ig-text-primary"
+            className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary"
             required
           />
         </div>
@@ -199,7 +199,7 @@ export default function EditProfilePage() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-ig-text-primary"
+            className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary"
             required
           />
         </div>
@@ -211,7 +211,7 @@ export default function EditProfilePage() {
             onChange={(e) => setBio(e.target.value)}
             rows={3}
             maxLength={500}
-            className="w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-ig-text-primary"
+            className="w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary"
           />
         </div>
 
@@ -230,7 +230,7 @@ export default function EditProfilePage() {
           <select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
-            className="w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-ig-text-primary"
+            className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary"
           >
             <option value="">Select your region</option>
             {REGIONS.map((item) => (
@@ -252,11 +252,11 @@ export default function EditProfilePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-ig-text-secondary mb-1">Latitude</label>
-                <input type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-ig-text-primary" />
+                <input type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-ig-text-secondary mb-1">Longitude</label>
-                <input type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-ig-text-primary" />
+                <input type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary" />
               </div>
             </div>
           )}
@@ -273,7 +273,7 @@ export default function EditProfilePage() {
                 key={interest}
                 type="button"
                 onClick={() => toggleInterest(interest)}
-                className={`rounded-pill px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`min-h-11 rounded-pill px-4 py-2 text-sm font-medium transition-colors ${
                   selectedInterests.includes(interest)
                     ? 'bg-brand-600 text-white'
                     : 'bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
@@ -288,7 +288,7 @@ export default function EditProfilePage() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-lg bg-brand-500 py-3 font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+          className="min-h-12 w-full rounded-lg bg-brand-500 py-3 font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
         >
           {saving ? 'Saving...' : 'Save Profile'}
         </button>

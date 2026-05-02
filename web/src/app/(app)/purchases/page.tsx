@@ -41,7 +41,7 @@ export default function MyPurchasesPage() {
           <p className="text-ig-text-secondary mb-4">You haven&apos;t purchased any guides yet.</p>
           <Link
             href="/search"
-            className="px-6 py-2.5 bg-ig-blue text-white rounded-lg text-sm font-semibold hover:bg-ig-blue-hover transition-colors inline-block"
+            className="inline-flex min-h-11 items-center rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
           >
             Explore Guides
           </Link>
@@ -79,21 +79,21 @@ export default function MyPurchasesPage() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-8">
+            <div className="mt-8 flex flex-wrap justify-center gap-2">
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="px-3 py-1.5 text-sm bg-ig-elevated border border-ig-border rounded-md text-ig-text-secondary disabled:opacity-50"
+                className="min-h-11 rounded-md border border-ig-border bg-ig-elevated px-4 py-2 text-sm text-ig-text-secondary disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5"
               >
                 Previous
               </button>
-              <span className="px-3 py-1.5 text-sm text-ig-text-tertiary">
+              <span className="inline-flex min-h-11 items-center px-3 py-1.5 text-sm text-ig-text-tertiary lg:min-h-0">
                 {page + 1} / {totalPages}
               </span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="px-3 py-1.5 text-sm bg-ig-elevated border border-ig-border rounded-md text-ig-text-secondary disabled:opacity-50"
+                className="min-h-11 rounded-md border border-ig-border bg-ig-elevated px-4 py-2 text-sm text-ig-text-secondary disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5"
               >
                 Next
               </button>

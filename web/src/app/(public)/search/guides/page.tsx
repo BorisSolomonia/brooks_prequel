@@ -89,7 +89,7 @@ function SearchGuidesPageContent() {
           <button
             key={s.value}
             onClick={() => setSelectedStage(s.value)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+            className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
               selectedStage === s.value
                 ? 'border-brand-500 bg-brand-500/15 text-brand-400'
                 : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
@@ -106,7 +106,7 @@ function SearchGuidesPageContent() {
           <button
             key={p.value}
             onClick={() => togglePersona(p.value)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+            className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
               selectedPersonas.includes(p.value)
                 ? 'border-brand-500 bg-brand-500/15 text-brand-400'
                 : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
@@ -134,7 +134,7 @@ function SearchGuidesPageContent() {
         <button
           onClick={() => fetchPage(page + 1, true)}
           disabled={loadingMore}
-          className="mt-6 w-full py-3 rounded-xl bg-ig-elevated text-ig-text-primary font-semibold hover:bg-ig-border transition-colors disabled:opacity-50"
+          className="mt-6 min-h-12 w-full rounded-xl bg-ig-elevated py-3 font-semibold text-ig-text-primary transition-colors hover:bg-ig-border disabled:opacity-50"
         >
           {loadingMore ? 'Loading...' : 'Load more'}
         </button>

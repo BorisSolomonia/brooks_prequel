@@ -80,7 +80,7 @@ export default function DayPanel({
         </div>
         <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <span className="text-xs text-ig-text-tertiary">{day.blocks.length} blocks</span>
-          <button onClick={() => onDeleteDay(day.id)} className="min-h-9 rounded-md px-2 text-xs text-ig-text-tertiary hover:text-ig-error">Delete</button>
+          <button onClick={() => onDeleteDay(day.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">Delete</button>
         </div>
       </div>
 
@@ -109,7 +109,7 @@ export default function DayPanel({
                     key={cat.value}
                     type="button"
                     onClick={() => setNewBlockCategory(cat.value)}
-                    className={`flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors md:min-h-0 md:px-2.5 md:py-1.5 md:text-xs ${
+                    className={`flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-2.5 lg:py-1.5 lg:text-xs ${
                       newBlockCategory === cat.value
                         ? cat.value === 'SECRET'
                           ? 'border-amber-500 bg-amber-500/15 text-amber-400'

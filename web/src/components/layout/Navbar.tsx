@@ -51,9 +51,9 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className="sticky top-0 z-50 border-b border-ig-border bg-ig-primary">
-      <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-3 px-3 md:h-[60px] md:gap-4 md:px-4">
-        <Link href="/" className="shrink-0 text-lg font-semibold text-ig-text-primary md:text-xl">
+    <nav className="sticky top-0 z-50 border-b border-ig-border bg-ig-primary/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-2 px-3 md:h-[60px] md:gap-4 md:px-4">
+        <Link href="/" className="shrink-0 text-base font-semibold text-ig-text-primary md:text-xl">
           Brooks
         </Link>
         <Suspense fallback={<SearchBarFallback />}>
@@ -99,10 +99,10 @@ export default function Navbar() {
 
         <div className="shrink-0 md:hidden">
           {isLoading ? (
-            <div className="h-11 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />
+            <div className="h-12 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />
           ) : user ? (
             <details className="group relative">
-              <summary className="flex h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-full border border-ig-border bg-ig-elevated px-3 text-sm font-semibold text-ig-text-primary [&::-webkit-details-marker]:hidden">
+              <summary className="flex h-12 min-w-12 cursor-pointer list-none items-center justify-center rounded-full border border-ig-border bg-ig-elevated px-3 text-sm font-semibold text-ig-text-primary [&::-webkit-details-marker]:hidden">
                 Menu
               </summary>
               <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-48 overflow-hidden rounded-2xl border border-ig-border bg-ig-elevated shadow-2xl">
@@ -113,7 +113,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/api/auth/login"
-              className="inline-flex h-11 items-center rounded-full bg-ig-blue px-4 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
+              className="inline-flex h-12 items-center rounded-full bg-ig-blue px-4 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
             >
               Sign In
             </Link>
@@ -122,14 +122,14 @@ export default function Navbar() {
       </div>
     </nav>
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-ig-border bg-ig-primary/95 backdrop-blur md:hidden" aria-label="Primary">
-      <div className="mx-auto flex max-w-lg justify-around px-1 pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto flex max-w-lg justify-around px-1 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
         {visibleMobileTabs.map((tab) => {
           const active = isActive(pathname, tab.href);
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex min-h-[56px] min-w-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition-colors ${
+              className={`flex min-h-[60px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition-colors ${
                 active ? 'text-ig-blue' : 'text-ig-text-tertiary hover:text-ig-text-primary'
               }`}
             >

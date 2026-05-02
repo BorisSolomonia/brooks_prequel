@@ -67,7 +67,7 @@ export function ImageUploadField({
           <button
             type="button"
             onClick={() => onChange('')}
-            className="text-xs font-semibold text-ig-text-tertiary transition-colors hover:text-ig-error"
+            className="min-h-11 rounded-md px-3 text-sm font-semibold text-ig-text-tertiary transition-colors hover:text-ig-error lg:min-h-0 lg:px-0 lg:text-xs"
           >
             Remove
           </button>
@@ -162,7 +162,7 @@ export function ImageUploadList({
               <button
                 type="button"
                 onClick={() => onChange(values.filter((item) => item !== url))}
-                className="absolute right-1 top-1 rounded bg-black/70 px-2 py-1 text-xs font-semibold text-white"
+                className="absolute right-1 top-1 min-h-10 rounded bg-black/70 px-3 py-1 text-xs font-semibold text-white lg:min-h-0 lg:px-2"
               >
                 Remove
               </button>

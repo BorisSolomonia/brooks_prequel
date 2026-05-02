@@ -55,10 +55,10 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={(e) => e.target === e.currentTarget && !result && onClose()}>
-      <div className="w-full max-w-md rounded-xl border border-ig-border bg-ig-primary shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-3 sm:items-center" onClick={(e) => e.target === e.currentTarget && !result && onClose()}>
+      <div className="max-h-[92dvh] w-full max-w-md overflow-hidden rounded-t-2xl border border-ig-border bg-ig-primary shadow-xl sm:rounded-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-ig-border px-5 py-4">
+        <div className="flex items-center justify-between border-b border-ig-border px-5 py-4 [&>button]:min-h-11 [&>button]:rounded-md [&>button]:px-3">
           <h2 className="text-base font-semibold text-ig-text-primary">Gift to a Follower</h2>
           <button type="button" onClick={onClose} className="text-ig-text-tertiary hover:text-ig-text-primary">✕</button>
         </div>
@@ -71,7 +71,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="mt-5 rounded-lg bg-ig-blue px-5 py-2 text-sm font-semibold text-white hover:bg-ig-blue-hover"
+              className="mt-5 min-h-11 rounded-lg bg-ig-blue px-5 py-2 text-sm font-semibold text-white hover:bg-ig-blue-hover"
             >
               Close
             </button>
@@ -85,12 +85,12 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
                 placeholder="Search followers…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-lg border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
+                className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none md:text-sm"
               />
             </div>
 
             {/* Follower list */}
-            <div className="max-h-64 overflow-y-auto px-2 py-2">
+            <div className="max-h-[48dvh] overflow-y-auto px-2 py-2 sm:max-h-64">
               {loading ? (
                 <p className="py-8 text-center text-sm text-ig-text-tertiary">Loading followers…</p>
               ) : filtered.length === 0 ? (
@@ -103,7 +103,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
                     key={f.userId}
                     type="button"
                     onClick={() => setSelected(f)}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    className={`flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                       selected?.userId === f.userId
                         ? 'bg-ig-blue/15 ring-1 ring-ig-blue/40'
                         : 'hover:bg-ig-hover'
@@ -145,7 +145,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
                 type="button"
                 onClick={handleGift}
                 disabled={!selected || gifting}
-                className="w-full rounded-lg bg-ig-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 w-full rounded-lg bg-ig-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {gifting ? 'Gifting…' : 'Confirm Gift'}
               </button>

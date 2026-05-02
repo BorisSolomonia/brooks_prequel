@@ -218,7 +218,7 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
                   href={mapsUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-brand-400 hover:bg-brand-500/10 hover:text-brand-300 transition-colors"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7"
                   title="View on map"
                 >
                   📍
@@ -226,15 +226,15 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
               ) : (
                 <button
                   onClick={() => setEditingLocation(true)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-ig-text-tertiary hover:bg-ig-hover hover:text-brand-400 transition-colors"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-brand-400 lg:h-7 lg:w-7"
                   title="Set location"
                 >
                   📍
                 </button>
               )}
-              <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setEditing(true)} className="min-h-9 rounded px-2 text-xs text-ig-text-tertiary hover:text-ig-text-primary">Edit</button>
-                <button onClick={() => onDelete(place.id)} className="min-h-9 rounded px-2 text-xs text-ig-text-tertiary hover:text-ig-error">✕</button>
+              <div className="flex opacity-100 transition-opacity [&>button]:min-h-11 [&>button]:px-3 [&>button]:text-sm lg:opacity-0 lg:group-hover:opacity-100 lg:[&>button]:min-h-9 lg:[&>button]:px-2 lg:[&>button]:text-xs">
+                <button onClick={() => setEditing(true)} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary lg:min-h-9 lg:px-2 lg:text-xs">Edit</button>
+                <button onClick={() => onDelete(place.id)} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">✕</button>
               </div>
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
               value={latStr}
               onChange={(e) => setLatStr(e.target.value)}
               placeholder="Latitude"
-              className="min-h-9 w-32 rounded border border-ig-border bg-ig-secondary px-2 py-1 text-xs text-ig-text-primary focus:border-ig-blue focus:outline-none"
+              className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-9 lg:w-32 lg:flex-none lg:px-2 lg:py-1 lg:text-xs"
             />
             <input
               type="number"
@@ -263,10 +263,10 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
               value={lngStr}
               onChange={(e) => setLngStr(e.target.value)}
               placeholder="Longitude"
-              className="min-h-9 w-32 rounded border border-ig-border bg-ig-secondary px-2 py-1 text-xs text-ig-text-primary focus:border-ig-blue focus:outline-none"
+              className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-9 lg:w-32 lg:flex-none lg:px-2 lg:py-1 lg:text-xs"
             />
-            <button onClick={handleSaveLocation} className="min-h-9 rounded bg-ig-blue px-3 text-xs font-semibold text-white">Set</button>
-            <button onClick={() => setEditingLocation(false)} className="min-h-9 rounded px-3 text-xs text-ig-text-secondary hover:text-ig-text-primary">Cancel</button>
+            <button onClick={handleSaveLocation} className="min-h-11 rounded bg-ig-blue px-4 text-sm font-semibold text-white lg:min-h-9 lg:px-3 lg:text-xs">Set</button>
+            <button onClick={() => setEditingLocation(false)} className="min-h-11 rounded px-4 text-sm text-ig-text-secondary hover:text-ig-text-primary lg:min-h-9 lg:px-3 lg:text-xs">Cancel</button>
           </div>
         </div>
       )}
