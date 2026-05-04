@@ -7,9 +7,9 @@ export const metadata = {
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <p className="text-sm font-semibold uppercase text-brand-500">Customer support</p>
-      <h1 className="mt-2 text-3xl font-semibold text-ig-text-primary">Contact information</h1>
-      <div className="mt-6 rounded-lg border border-ig-border bg-ig-elevated p-5">
+      <p className="mw-eyebrow">Customer support</p>
+      <h1 className="mw-section-title mt-2 text-3xl">Contact information</h1>
+      <div className="mw-card mt-6 p-5">
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-sm text-ig-text-tertiary">Company</dt>
@@ -22,7 +22,7 @@ export default function ContactPage() {
           <div>
             <dt className="text-sm text-ig-text-tertiary">Email</dt>
             <dd className="mt-1 text-ig-text-primary">
-              <a href={`mailto:${compliance.email}`} className="text-ig-blue hover:underline">{compliance.email}</a>
+              <a href={`mailto:${compliance.email}`} className="font-semibold text-brand-500 hover:text-brand-400">{compliance.email}</a>
             </dd>
           </div>
           <div>

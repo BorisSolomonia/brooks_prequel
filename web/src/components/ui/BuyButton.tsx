@@ -50,7 +50,7 @@ export default function BuyButton({ guideId, priceCents, salePriceCents, saleEnd
       <button
         onClick={handleBuy}
         disabled={loading}
-        className="min-h-11 flex-1 rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:opacity-50 sm:flex-none"
+        className="mw-button-primary min-h-11 flex-1 rounded-lg px-6 py-2.5 text-sm disabled:opacity-50 sm:flex-none"
       >
         {loading ? 'Processing...' : effectivePrice === 0 ? 'Get Guide Free' : `Buy for ${formatAmount(effectivePrice)}`}
       </button>

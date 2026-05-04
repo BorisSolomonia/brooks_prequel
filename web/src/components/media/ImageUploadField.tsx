@@ -92,7 +92,7 @@ export function ImageUploadField({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="min-h-11 rounded-md bg-ig-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:opacity-60"
+            className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-60"
           >
             {uploading ? 'Uploading...' : value ? 'Replace image' : 'Upload image'}
           </button>

@@ -37,16 +37,16 @@ function SearchResultRow({ href, title, subtitle, meta, badge, icon, onSelect }:
     <Link
       href={href}
       onClick={onSelect}
-      className="flex min-h-14 items-start gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-ig-hover"
+      className="flex min-h-14 items-start gap-3 rounded-xl border-2 border-transparent px-3 py-3 transition-colors hover:border-ig-border hover:bg-ig-hover"
     >
-      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-ig-border bg-ig-primary text-ig-text-secondary">
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-ig-border bg-ig-primary text-ig-text-secondary">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-semibold text-ig-text-primary">{title}</p>
           {badge && (
-            <span className="rounded-pill border border-ig-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-500">
+            <span className="mw-badge rounded-pill px-2 py-0.5 text-[10px]">
               {badge}
             </span>
           )}
@@ -72,7 +72,7 @@ function SearchSection({ title, count, children }: SearchSectionProps) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between px-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ig-text-tertiary">{title}</p>
+        <p className="mw-eyebrow">{title}</p>
         <span className="text-[11px] text-ig-text-tertiary">{count}</span>
       </div>
       <div className="space-y-1">{children}</div>
@@ -225,7 +225,7 @@ export default function GlobalSearchBar() {
             }
           }}
           placeholder="Search creators, guides, places..."
-          className="h-12 w-full rounded-full border border-ig-border bg-ig-elevated pl-10 pr-12 text-base text-ig-text-primary outline-none transition placeholder:text-sm focus:border-brand-500 focus:bg-ig-primary md:h-10 md:pr-20 md:text-sm"
+          className="h-12 w-full rounded-full border-2 border-ig-border bg-ig-elevated pl-10 pr-12 text-base text-ig-text-primary outline-none transition placeholder:text-sm focus:border-brand-500 focus:bg-ig-primary md:h-10 md:pr-20 md:text-sm"
           aria-label="Search creators, guides, and places"
         />
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -248,9 +248,9 @@ export default function GlobalSearchBar() {
       </div>
 
       {open && inputValue.trim() && (
-        <div className="fixed inset-x-3 top-[76px] z-50 max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-3 pb-4 shadow-2xl backdrop-blur md:absolute md:inset-x-0 md:top-[calc(100%+10px)] md:max-h-[70vh] md:rounded-[28px]">
+        <div className="mw-panel fixed inset-x-3 top-[76px] z-50 max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl p-3 pb-4 backdrop-blur md:absolute md:inset-x-0 md:top-[calc(100%+10px)] md:max-h-[70vh] md:rounded-[28px]">
           {error ? (
-            <div className="rounded-2xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-secondary">
+            <div className="rounded-2xl border-2 border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-secondary">
               {error}
             </div>
           ) : totalResults > 0 ? (
@@ -322,7 +322,7 @@ export default function GlobalSearchBar() {
               </SearchSection>
             </div>
           ) : (
-            <div className="rounded-2xl border border-ig-border bg-ig-primary px-4 py-4">
+            <div className="rounded-2xl border-2 border-ig-border bg-ig-primary px-4 py-4">
               <p className="text-sm font-medium text-ig-text-primary">No direct matches</p>
               <p className="mt-1 text-xs text-ig-text-secondary">
                 Press Enter to open Explore for &ldquo;{inputValue.trim()}&rdquo;.
@@ -330,11 +330,11 @@ export default function GlobalSearchBar() {
             </div>
           )}
 
-          <div className="mt-3 border-t border-ig-border pt-3">
+          <div className="mt-3 border-t-2 border-ig-border pt-3">
             <button
               type="button"
               onClick={handleSubmit}
-              className="min-h-12 w-full rounded-2xl border border-ig-border bg-ig-primary px-4 py-3 text-left text-sm font-semibold text-ig-text-primary transition hover:bg-ig-hover"
+              className="mw-button-secondary min-h-12 w-full rounded-2xl px-4 py-3 text-left text-sm transition hover:bg-ig-hover"
             >
               Search everything for &ldquo;{inputValue.trim()}&rdquo;
             </button>

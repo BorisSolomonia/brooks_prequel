@@ -21,15 +21,15 @@ export default function Avatar({ src, name, size = 'md', verified = false }: Ava
         <img
           src={src}
           alt={name || ''}
-          className={`${sizeClasses[size]} rounded-full object-cover border-2 border-ig-border`}
+          className={`${sizeClasses[size]} rounded-full border-2 border-ig-border object-cover saturate-[0.92] contrast-[1.04]`}
         />
       ) : (
-        <div className={`${sizeClasses[size]} rounded-full bg-ig-elevated text-ig-text-secondary flex items-center justify-center font-semibold`}>
+        <div className={`${sizeClasses[size]} flex items-center justify-center rounded-full border-2 border-ig-border bg-ig-elevated font-display font-black text-ig-text-secondary`}>
           {initial}
         </div>
       )}
       {verified && (
-        <div className="absolute -bottom-0.5 -right-0.5 bg-ig-blue text-white rounded-full p-0.5">
+        <div className="absolute -bottom-0.5 -right-0.5 rounded-full border border-ig-primary bg-brand-500 p-0.5 text-white">
           <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>

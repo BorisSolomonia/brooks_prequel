@@ -1416,7 +1416,7 @@ export default function MapsExperience({
   if (!mapConfigured) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12">
-        <div className="rounded-xl border border-ig-border bg-ig-elevated p-5">
+        <div className="mw-panel rounded-xl p-5">
           <h1 className="text-xl font-semibold text-ig-text-primary">Maps page needs runtime configuration</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
             Set `MAPBOX_PUBLIC_TOKEN`, `MAPBOX_STYLE`, `MAP_DEFAULT_LAT`, `MAP_DEFAULT_LNG`, and `MAP_DEFAULT_ZOOM`
@@ -1434,7 +1434,7 @@ export default function MapsExperience({
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      <div className="absolute inset-x-2 bottom-3 z-20 max-h-[72dvh] overflow-hidden rounded-[28px] border border-ig-border bg-ig-elevated/95 p-3 shadow-xl backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4">
+      <div className="mw-panel absolute inset-x-2 bottom-3 z-20 max-h-[72dvh] overflow-hidden rounded-[28px] p-3 backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4">
         <button
           type="button"
           onClick={() => setMobilePanelOpen((open) => !open)}
@@ -1445,21 +1445,21 @@ export default function MapsExperience({
         </button>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Brooks Maps</p>
-            <h1 className="mt-1 text-lg font-semibold text-ig-text-primary md:text-2xl">{activeLayers.guides ? 'Guides in view' : 'Memories in view'}</h1>
+            <p className="mw-eyebrow">Brooks Maps</p>
+            <h1 className="mw-section-title mt-1 text-lg text-ig-text-primary md:text-2xl">{activeLayers.guides ? 'Guides in view' : 'Memories in view'}</h1>
           </div>
           <button
             type="button"
             onClick={() => setMobilePanelOpen((open) => !open)}
-            className="min-h-11 rounded-full bg-brand-500/15 px-4 py-2 text-sm font-semibold text-brand-500 md:pointer-events-none lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs"
+            className="mw-badge min-h-11 rounded-full px-4 py-2 text-sm md:pointer-events-none lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs"
           >
             {activeLayers.guides ? viewportPins.length : viewportMemories.length} visible
           </button>
         </div>
         <div className={`${mobilePanelOpen ? 'block' : 'hidden'} max-h-[calc(72dvh_-_6rem)] overflow-y-auto overscroll-contain pr-1 md:block md:max-h-[calc(100dvh_-_170px)]`}>
-        <div className="mt-4 rounded-3xl border border-ig-border bg-ig-primary/80 p-3">
+        <div className="mt-4 rounded-3xl border-2 border-ig-border bg-ig-primary/80 p-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ig-text-tertiary">Map layers</p>
+            <p className="mw-eyebrow text-[11px]">Map layers</p>
             <span className="text-xs text-ig-text-tertiary">{layerLabel(activeLayers)}</span>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1468,7 +1468,7 @@ export default function MapsExperience({
               onClick={() => toggleLayer('memories')}
               className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
                 activeLayers.memories
-                  ? 'border-brand-500/30 bg-brand-500/10 text-brand-600'
+                  ? 'border-brand-500/50 bg-brand-500/15 text-brand-500'
                   : 'border-ig-border text-ig-text-secondary hover:text-ig-text-primary'
               }`}
             >
@@ -1479,7 +1479,7 @@ export default function MapsExperience({
               onClick={() => toggleLayer('guides')}
               className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
                 activeLayers.guides
-                  ? 'border-brand-500/30 bg-brand-500/10 text-brand-600'
+                  ? 'border-brand-500/50 bg-brand-500/15 text-brand-500'
                   : 'border-ig-border text-ig-text-secondary hover:text-ig-text-primary'
               }`}
             >
@@ -1489,14 +1489,14 @@ export default function MapsExperience({
           <button
             type="button"
             onClick={() => setCreateMemoryOpen((open) => !open)}
-            className="mt-3 min-h-11 w-full rounded-2xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600"
+            className="mw-button-primary mt-3 min-h-11 w-full rounded-2xl px-4 py-2 text-sm transition hover:bg-brand-600"
           >
             {createMemoryOpen ? 'Close memory creator' : 'Create hidden memory'}
           </button>
         </div>
         {createMemoryOpen && (
-          <div className="mt-3 rounded-3xl border border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ig-text-tertiary">New memory</p>
+          <div className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
+            <p className="mw-eyebrow text-[11px]">New memory</p>
             <textarea
               value={memoryText}
               onChange={(event) => setMemoryText(event.target.value.slice(0, 500))}
@@ -1553,7 +1553,7 @@ export default function MapsExperience({
               type="button"
               disabled={memoryBusy}
               onClick={handleCreateMemory}
-              className="mt-3 min-h-11 w-full rounded-2xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60"
+              className="mw-button-primary mt-3 min-h-11 w-full rounded-2xl px-4 py-2 text-sm transition hover:bg-brand-600 disabled:opacity-60"
             >
               {memoryBusy ? 'Saving...' : 'Save and share'}
             </button>
@@ -1618,7 +1618,7 @@ export default function MapsExperience({
           </button>
         </div>
         {activeLayers.guides && openFilterMenu && (
-          <div className="mt-3 rounded-3xl border border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
+          <div className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
             {openFilterMenu === 'countries' && (
               <FilterSection
                 title="Guide country"

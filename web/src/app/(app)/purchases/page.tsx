@@ -29,19 +29,19 @@ export default function MyPurchasesPage() {
   }, [token, tokenLoading, page]);
 
   if (tokenLoading || loading) {
-    return <div className="max-w-4xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-semibold text-ig-text-primary mb-6">My Purchases</h1>
+    <div className="mx-auto max-w-4xl px-4 py-6">
+      <h1 className="mw-section-title mb-6 text-xl">My Purchases</h1>
 
       {purchases.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="mw-card py-16 text-center">
           <p className="text-ig-text-secondary mb-4">You haven&apos;t purchased any guides yet.</p>
           <Link
             href="/search"
-            className="inline-flex min-h-11 items-center rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
+            className="mw-button-primary min-h-11 rounded-lg px-6 py-2.5 text-sm"
           >
             Explore Guides
           </Link>
@@ -53,7 +53,7 @@ export default function MyPurchasesPage() {
               <Link
                 key={purchase.id}
                 href={`/guides/${purchase.guideId}/view`}
-                className="block bg-ig-elevated border border-ig-border rounded-xl overflow-hidden hover:border-ig-text-tertiary transition-colors"
+                className="mw-card block overflow-hidden p-0 transition-colors hover:border-brand-500/60"
               >
                 {purchase.guideCoverImageUrl ? (
                   <div className="h-36 bg-ig-secondary">
@@ -83,7 +83,7 @@ export default function MyPurchasesPage() {
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="min-h-11 rounded-md border border-ig-border bg-ig-elevated px-4 py-2 text-sm text-ig-text-secondary disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5"
+                className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5"
               >
                 Previous
               </button>
@@ -93,7 +93,7 @@ export default function MyPurchasesPage() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="min-h-11 rounded-md border border-ig-border bg-ig-elevated px-4 py-2 text-sm text-ig-text-secondary disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5"
+                className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5"
               >
                 Next
               </button>

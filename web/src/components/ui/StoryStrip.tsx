@@ -15,7 +15,7 @@ export default function StoryStrip({ strips }: StoryStripProps) {
 
   return (
     <>
-      <div className="flex gap-4 overflow-x-auto py-4 px-4 scrollbar-hide">
+      <div className="scrollbar-hide flex gap-4 overflow-x-auto px-4 py-4">
         {strips.map((strip, stripIndex) => (
           <button
             key={strip.creatorId}
@@ -23,37 +23,36 @@ export default function StoryStrip({ strips }: StoryStripProps) {
             className="flex min-h-20 min-w-20 flex-shrink-0 flex-col items-center justify-center gap-1"
           >
             <div
-              className={`w-16 h-16 rounded-full p-[3px] ${
+              className={`h-16 w-16 rounded-full border-2 border-ig-border p-[3px] ${
                 strip.hasActiveStories
-                  ? 'bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]'
+                  ? 'bg-[conic-gradient(from_130deg,#D4AA3A,#C95A7D,#5098B3,#98B54A,#D4AA3A)]'
                   : 'bg-ig-border'
               }`}
             >
-              <div className="w-full h-full rounded-full bg-ig-primary p-[2px]">
+              <div className="h-full w-full rounded-full bg-ig-primary p-[2px]">
                 {strip.creatorAvatarUrl ? (
                   <img
                     src={strip.creatorAvatarUrl}
                     alt={strip.creatorUsername}
-                    className="w-full h-full rounded-full object-cover"
+                    className="h-full w-full rounded-full object-cover saturate-[0.92] contrast-[1.04]"
                   />
                 ) : (
-                  <div className="w-full h-full rounded-full bg-ig-elevated flex items-center justify-center text-ig-text-tertiary text-lg font-semibold">
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-ig-elevated font-display text-lg font-black text-ig-text-tertiary">
                     {strip.creatorUsername?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                 )}
               </div>
             </div>
-            <span className="text-xs text-ig-text-secondary truncate w-16 text-center">
+            <span className="w-16 truncate text-center text-xs font-semibold text-ig-text-secondary">
               {strip.creatorUsername}
             </span>
           </button>
         ))}
       </div>
 
-      {/* Story Viewer Modal */}
       {activeStory !== null && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95"
           onClick={() => setActiveStory(null)}
         >
           <div
@@ -62,7 +61,7 @@ export default function StoryStrip({ strips }: StoryStripProps) {
           >
             <button
               onClick={() => setActiveStory(null)}
-              className="absolute right-3 top-3 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full bg-black/35 text-2xl text-white/80 transition-colors hover:text-white"
+              className="absolute right-3 top-3 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 border-white/20 bg-black/45 text-2xl text-white/80 transition-colors hover:text-white"
               aria-label="Close story"
             >
               &times;
@@ -73,8 +72,7 @@ export default function StoryStrip({ strips }: StoryStripProps) {
               const story = strip.stories[activeStory.storyIndex];
               return (
                 <div className="relative">
-                  {/* Progress bars */}
-                  <div className="absolute top-2 left-2 right-2 flex gap-1 z-10">
+                  <div className="absolute left-2 right-2 top-2 z-10 flex gap-1">
                     {strip.stories.map((_, i) => (
                       <div
                         key={i}
@@ -85,24 +83,23 @@ export default function StoryStrip({ strips }: StoryStripProps) {
                     ))}
                   </div>
 
-                  {/* Creator info */}
-                  <div className="absolute top-6 left-4 flex items-center gap-2 z-10">
-                    <div className="w-8 h-8 rounded-full bg-ig-elevated overflow-hidden">
+                  <div className="absolute left-4 top-6 z-10 flex items-center gap-2">
+                    <div className="h-8 w-8 overflow-hidden rounded-full border-2 border-white/70 bg-ig-elevated">
                       {strip.creatorAvatarUrl && (
-                        <img src={strip.creatorAvatarUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={strip.creatorAvatarUrl} alt="" className="h-full w-full object-cover" />
                       )}
                     </div>
-                    <span className="text-white text-sm font-semibold">{strip.creatorUsername}</span>
+                    <span className="font-display text-sm font-black text-white">{strip.creatorUsername}</span>
                   </div>
 
                   <img
                     src={story.imageUrl}
                     alt={story.guideTitle}
-                    className="w-full aspect-[9/16] object-cover rounded-lg"
+                    className="aspect-[9/16] w-full rounded-lg border-2 border-white/30 object-cover saturate-[0.92] contrast-[1.04]"
                   />
 
-                  <div className="absolute bottom-4 left-4 right-4 rounded-lg bg-black/55 p-3 text-white">
-                    <p className="text-sm font-semibold">{story.guideTitle}</p>
+                  <div className="absolute bottom-4 left-4 right-4 rounded-lg border-2 border-white/25 bg-black/70 p-3 text-white backdrop-blur">
+                    <p className="font-display text-sm font-black">{story.guideTitle}</p>
                     {story.promotionText && (
                       <p className="mt-1 text-sm text-white/80">{story.promotionText}</p>
                     )}
@@ -113,16 +110,15 @@ export default function StoryStrip({ strips }: StoryStripProps) {
                     )}
                     <Link
                       href={`/guides/${story.guideId}/view`}
-                      className="mt-3 inline-flex min-h-11 items-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-black"
+                      className="mt-3 inline-flex min-h-11 items-center rounded-md border-2 border-white bg-white px-4 py-2 font-display text-sm font-black uppercase tracking-[0.06em] text-black transition hover:bg-accent-500"
                     >
                       Open guide preview
                     </Link>
                   </div>
 
-                  {/* Navigation */}
                   <div className="absolute inset-0 flex">
                     <button
-                      className="w-1/2 h-full"
+                      className="h-full w-1/2"
                       onClick={() => {
                         if (activeStory.storyIndex > 0) {
                           setActiveStory({ ...activeStory, storyIndex: activeStory.storyIndex - 1 });
@@ -135,7 +131,7 @@ export default function StoryStrip({ strips }: StoryStripProps) {
                       }}
                     />
                     <button
-                      className="w-1/2 h-full"
+                      className="h-full w-1/2"
                       onClick={() => {
                         if (activeStory.storyIndex < strip.stories.length - 1) {
                           setActiveStory({ ...activeStory, storyIndex: activeStory.storyIndex + 1 });

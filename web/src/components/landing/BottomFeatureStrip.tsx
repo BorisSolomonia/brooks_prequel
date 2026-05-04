@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
-const PINK = '#ef2f6d';
-const YELLOW = '#ffd21a';
-const TEAL = '#12c7c9';
+const PINK = '#C95A7D';
+const YELLOW = '#D4AA3A';
+const TEAL = '#5098B3';
 
 function SearchPinIcon() {
   return (
@@ -88,14 +88,14 @@ export default function BottomFeatureStrip() {
   return (
     <div
       className="absolute inset-x-0 bottom-0 z-20 grid grid-cols-5 overflow-hidden"
-      style={{ height: 'clamp(108px, 15vh, 140px)', background: 'rgba(5,5,5,0.92)' }}
+      style={{ height: 'clamp(108px, 15vh, 140px)', background: 'rgba(14,14,14,0.94)', borderTop: '2px solid rgba(229,229,229,0.18)' }}
     >
       {features.map((feature, index) => (
         <div
           key={feature.title}
           style={{
             minWidth: 0,
-            borderRight: index < features.length - 1 ? '1px solid rgba(255,255,255,0.22)' : 'none',
+            borderRight: index < features.length - 1 ? '2px solid rgba(255,255,255,0.16)' : 'none',
             padding: 'clamp(10px, 1.7vw, 20px) clamp(8px, 1.4vw, 18px)',
             display: 'flex',
             flexDirection: 'column',

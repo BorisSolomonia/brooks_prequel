@@ -298,7 +298,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
           <button
             onClick={handleSaveMetadata}
             disabled={saving || !metadata.title}
-            className="min-h-11 w-full rounded-lg bg-ig-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:opacity-50"
+            className="mw-button-primary min-h-11 w-full rounded-lg py-2.5 text-sm disabled:opacity-50"
           >
             {saving ? 'Saving…' : guide ? 'Save Changes' : 'Create Guide'}
           </button>
@@ -310,7 +310,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
         <div className="mb-6 p-4 bg-ig-elevated border border-ig-border rounded-lg">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-ig-text-primary">Guide completeness</h2>
-            <span className={`text-sm font-bold ${completedCount >= 9 ? 'text-green-400' : completedCount >= 6 ? 'text-yellow-400' : 'text-ig-text-tertiary'}`}>
+            <span className={`text-sm font-bold ${completedCount >= 9 ? 'text-ig-success' : completedCount >= 6 ? 'text-accent-500' : 'text-ig-text-tertiary'}`}>
               {completedCount}/11
             </span>
           </div>

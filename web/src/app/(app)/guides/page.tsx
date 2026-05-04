@@ -58,7 +58,7 @@ export default function MyGuidesPage() {
   }, [token, tokenLoading, router]);
 
   if (tokenLoading || loading) {
-    return <div className="max-w-4xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
   }
 
   const tabs: { key: LibraryTab; label: string; items: GuideLibraryItem[] }[] = [
@@ -128,18 +128,18 @@ export default function MyGuidesPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="mx-auto max-w-4xl px-4 py-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-ig-text-primary">My Guides</h1>
+        <h1 className="mw-section-title text-xl">My Guides</h1>
         <Link
           href="/guides/new"
-          className="inline-flex min-h-11 items-center rounded-md bg-ig-blue px-4 py-2 text-sm font-semibold text-white hover:bg-ig-blue-hover"
+          className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm"
         >
           + New Guide
         </Link>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2 border-b border-ig-border pb-3">
+      <div className="mb-6 flex flex-wrap gap-2 border-b-2 border-ig-border pb-3">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -147,8 +147,8 @@ export default function MyGuidesPage() {
             onClick={() => setActiveTab(tab.key)}
             className={`min-h-11 rounded-pill px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab.key
-                ? 'bg-ig-blue text-white'
-                : 'bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
+                ? 'border-2 border-brand-500 bg-brand-500/15 text-brand-500'
+                : 'border-2 border-ig-border bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
             }`}
           >
             {tab.label} ({tab.items.length})
@@ -157,7 +157,7 @@ export default function MyGuidesPage() {
       </div>
 
       {activeItems.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="mw-card py-12 text-center">
           <p className="text-ig-text-secondary mb-2">
             {activeTab === 'created' && "You haven't created any guides yet"}
             {activeTab === 'saved' && "You haven't saved any guides yet"}
@@ -174,7 +174,7 @@ export default function MyGuidesPage() {
           {activeItems.map((guide) => (
             <div
               key={guide.id}
-              className="border border-ig-border rounded-lg overflow-hidden hover:border-ig-blue/50 transition-colors bg-ig-elevated"
+              className="mw-card overflow-hidden p-0 transition-colors hover:border-brand-500/60"
             >
               <Link href={itemHref(guide)} className="block">
                 {guide.coverImageUrl ? (
@@ -190,7 +190,7 @@ export default function MyGuidesPage() {
                   <div className="flex items-start justify-between gap-3 mb-1">
                     <h3 className="text-sm font-semibold text-ig-text-primary truncate">{guide.title}</h3>
                     {activeTab === 'saved' && (
-                      <span className="shrink-0 rounded-pill bg-ig-blue/15 px-2 py-0.5 text-xs font-semibold text-ig-blue">
+                    <span className="mw-badge shrink-0">
                         Saved
                       </span>
                     )}
@@ -223,19 +223,19 @@ export default function MyGuidesPage() {
                 </div>
               </Link>
               {(activeTab === 'created' || activeTab === 'purchased') && (
-                <div className="flex justify-stretch border-t border-ig-border px-3 py-2 sm:justify-end">
+                <div className="flex justify-stretch border-t-2 border-ig-border px-3 py-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => openCalendarForGuide(guide)}
                     disabled={calendarLoadingGuideId === guide.id}
-                    className="min-h-11 w-full rounded-md border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
+                    className="mw-button-secondary min-h-11 w-full rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
                   >
                     {calendarLoadingGuideId === guide.id ? 'Preparing...' : 'Add to calendar'}
                   </button>
                 </div>
               )}
               {activeTab === 'created' && (
-                <div className="flex justify-stretch border-t border-ig-border px-3 py-2 sm:justify-end">
+                <div className="flex justify-stretch border-t-2 border-ig-border px-3 py-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => handleDeleteGuide(guide)}

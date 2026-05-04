@@ -12,12 +12,12 @@ export default function SearchSection({ title, totalCount, seeAllHref, children 
 
   return (
     <section className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-ig-text-primary">{title}</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-display text-lg font-black uppercase tracking-[0.08em] text-ig-text-primary">{title}</h2>
         {totalCount > 5 && (
           <Link
             href={seeAllHref}
-            className="inline-flex min-h-11 items-center text-sm font-medium text-ig-blue hover:underline lg:min-h-0"
+            className="inline-flex min-h-11 items-center font-display text-sm font-black uppercase tracking-[0.08em] text-brand-500 hover:text-brand-400 lg:min-h-0"
           >
             See all {totalCount} results
           </Link>

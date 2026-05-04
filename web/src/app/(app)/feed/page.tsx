@@ -33,46 +33,46 @@ export default function FeedPage() {
   }, [token, tokenLoading, router]);
 
   if (tokenLoading || loading) {
-    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-4">
+    <div className="mx-auto max-w-2xl px-4 py-4">
       {/* Story Strip */}
       <StoryStrip strips={storyStrips} />
 
       {/* Separator */}
-      {storyStrips.length > 0 && <hr className="border-ig-border my-2" />}
+      {storyStrips.length > 0 && <hr className="my-2 border-t-2 border-ig-border" />}
 
       {/* Feed */}
       <div className="space-y-4 mt-4">
         {feedItems.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-ig-text-secondary mb-2">Your feed is empty</p>
+          <div className="mw-card py-12 text-center">
+            <p className="mb-2 font-display text-lg font-black uppercase tracking-[0.08em] text-ig-text-primary">Your feed is empty</p>
             <p className="text-sm text-ig-text-tertiary">Follow some creators to see their guides and stories here.</p>
           </div>
         ) : (
           feedItems.map((item) => (
-            <div key={item.id} className="bg-ig-elevated rounded-xl border border-ig-border overflow-hidden">
+            <div key={item.id} className="mw-card overflow-hidden p-0">
               <div className="flex items-center gap-3 p-3">
-                <div className="w-8 h-8 rounded-full bg-ig-secondary overflow-hidden flex-shrink-0">
+                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border-2 border-ig-border bg-ig-secondary">
                   {item.creatorAvatarUrl && (
-                    <img src={item.creatorAvatarUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={item.creatorAvatarUrl} alt="" className="h-full w-full object-cover" />
                   )}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-ig-text-primary">{item.creatorDisplayName}</p>
+                  <p className="font-display text-sm font-black text-ig-text-primary">{item.creatorDisplayName}</p>
                   <p className="text-xs text-ig-text-tertiary">@{item.creatorUsername}</p>
                 </div>
               </div>
 
               {item.imageUrl && (
-                <img src={item.imageUrl} alt={item.title || ''} className="w-full aspect-video object-cover" />
+                <img src={item.imageUrl} alt={item.title || ''} className="aspect-video w-full border-y-2 border-ig-border object-cover saturate-[0.92] contrast-[1.04]" />
               )}
 
               {(item.title || item.caption) && (
                 <div className="p-3">
-                  {item.title && <p className="font-medium text-ig-text-primary">{item.title}</p>}
+                  {item.title && <p className="font-display font-black text-ig-text-primary">{item.title}</p>}
                   {item.caption && <p className="text-sm text-ig-text-secondary mt-1">{item.caption}</p>}
                 </div>
               )}

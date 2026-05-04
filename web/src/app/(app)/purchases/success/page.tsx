@@ -17,7 +17,7 @@ export default function PurchaseSuccessPage() {
       <div className="flex flex-col gap-3">
         <Link
           href="/purchases"
-          className="px-6 py-2.5 bg-ig-blue text-white rounded-lg text-sm font-semibold hover:bg-ig-blue-hover transition-colors inline-block"
+          className="mw-button-primary inline-block rounded-lg px-6 py-2.5 text-sm"
         >
           View My Purchases
         </Link>

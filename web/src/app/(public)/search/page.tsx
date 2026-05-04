@@ -17,8 +17,8 @@ export default function SearchPage() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-ig-text-primary mb-6">Explore</h1>
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="mw-section-title mb-6 text-2xl">Explore</h1>
 
       <div className="relative mb-8">
         <input
@@ -26,7 +26,7 @@ export default function SearchPage() {
           placeholder="Search guides, creators, places..."
           value={query}
           onChange={(e) => search(e.target.value)}
-          className="min-h-12 w-full rounded-xl border border-ig-border bg-ig-elevated px-4 py-3 pl-10 text-base text-ig-text-primary placeholder-ig-text-tertiary outline-none focus:border-transparent focus:ring-2 focus:ring-ig-blue"
+          className="min-h-12 w-full rounded-xl border-2 border-ig-border bg-ig-elevated px-4 py-3 pl-10 text-base text-ig-text-primary placeholder-ig-text-tertiary outline-none transition focus:border-brand-500"
         />
         <svg className="absolute left-3 top-3.5 h-5 w-5 text-ig-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -34,7 +34,7 @@ export default function SearchPage() {
       </div>
 
       {!query.trim() && (
-        <p className="text-ig-text-secondary text-center mt-16">
+        <p className="mt-16 text-center text-ig-text-secondary">
           Search for creators, travel guides, or places to explore.
         </p>
       )}
@@ -42,11 +42,11 @@ export default function SearchPage() {
       {loading && <SearchSkeleton />}
 
       {error && (
-        <p className="text-red-400 text-center mt-8">{error}</p>
+        <p className="mt-8 text-center text-ig-error">{error}</p>
       )}
 
       {!loading && results && !hasResults && (
-        <p className="text-ig-text-secondary text-center mt-16">
+        <p className="mt-16 text-center text-ig-text-secondary">
           No results found for &ldquo;{results.query}&rdquo;
         </p>
       )}

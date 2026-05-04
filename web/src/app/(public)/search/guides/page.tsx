@@ -74,11 +74,11 @@ function SearchGuidesPageContent() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <Link href={`/search?q=${encodeURIComponent(q)}`} className="text-sm text-ig-action-blue hover:underline mb-4 inline-block">
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <Link href={`/search?q=${encodeURIComponent(q)}`} className="mb-4 inline-block font-display text-sm font-black uppercase tracking-[0.06em] text-brand-500 hover:text-brand-400">
         &larr; Back to search
       </Link>
-      <h1 className="text-xl font-bold text-ig-text-primary mb-1">Guides</h1>
+      <h1 className="mw-section-title mb-1 text-xl">Guides</h1>
       {total > 0 && (
         <p className="text-sm text-ig-text-secondary mb-4">{total} results for &ldquo;{q}&rdquo;</p>
       )}
@@ -118,7 +118,7 @@ function SearchGuidesPageContent() {
       </div>
 
       {loading && <SearchSkeleton />}
-      {error && <p className="text-red-400 text-center mt-8">{error}</p>}
+      {error && <p className="mt-8 text-center text-ig-error">{error}</p>}
 
       {!loading && results.length === 0 && (
         <p className="text-ig-text-secondary text-center mt-16">No guides found.</p>
@@ -134,7 +134,7 @@ function SearchGuidesPageContent() {
         <button
           onClick={() => fetchPage(page + 1, true)}
           disabled={loadingMore}
-          className="mt-6 min-h-12 w-full rounded-xl bg-ig-elevated py-3 font-semibold text-ig-text-primary transition-colors hover:bg-ig-border disabled:opacity-50"
+          className="mw-button-secondary mt-6 min-h-12 w-full rounded-xl py-3 disabled:opacity-50"
         >
           {loadingMore ? 'Loading...' : 'Load more'}
         </button>

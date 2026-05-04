@@ -6,10 +6,10 @@ import BottomFeatureStrip from '@/components/landing/BottomFeatureStrip';
 
 const anton = Anton({ weight: '400', subsets: ['latin'] });
 
-const PINK = '#ef2f6d';
+const PINK = '#C95A7D';
 const BLACK = '#050505';
-const YELLOW = '#ffd21a';
-const TEAL = '#12c7c9';
+const YELLOW = '#D4AA3A';
+const TEAL = '#5098B3';
 const CONTRAST_TEXT_STYLE = {
   color: '#f5ead8',
   textShadow: '2px 2px 0 #050505, -1px -1px 0 #050505, 1px -1px 0 #050505, -1px 1px 0 #050505',
@@ -164,7 +164,7 @@ export default function LandingPage() {
       <section
         className="relative isolate min-h-[100dvh] overflow-hidden lg:h-[100dvh]"
         style={{
-          backgroundColor: '#ffd21a',
+          backgroundColor: '#D4AA3A',
           backgroundImage: 'url(/images/brooks-hero-bg.webp)',
           backgroundPosition: '72% center',
           backgroundSize: 'cover',
@@ -232,8 +232,8 @@ export default function LandingPage() {
               style={{
                 minHeight: 86,
                 background: 'rgba(245,234,216,0.96)',
-                border: '2px solid rgba(239,47,109,0.75)',
-                boxShadow: '0 12px 26px rgba(0,0,0,0.22)',
+                border: '2px solid rgba(201,90,125,0.85)',
+                boxShadow: '7px 7px 0 rgba(5,5,5,0.32)',
               }}
             />
           </div>
@@ -252,7 +252,7 @@ export default function LandingPage() {
               title="CURATED GUIDES"
               body={"Guides around your interests.\nDifferent perspectives."}
               bottomIcons={card2Icons}
-              style={{ minHeight: 88, background: 'rgba(245,234,216,0.92)' }}
+              style={{ minHeight: 88, background: 'rgba(245,234,216,0.92)', border: '2px solid rgba(46,46,46,0.72)', boxShadow: '7px 7px 0 rgba(80,152,179,0.2)' }}
             />
           </div>
 
@@ -270,7 +270,7 @@ export default function LandingPage() {
               title={"FROM DISCOVERY\nTO PLAN"}
               body={"Turn places into your\ncalendar and map."}
               bottomIcons={card3Icons}
-              style={{ minHeight: 90, background: 'rgba(245,234,216,0.92)' }}
+              style={{ minHeight: 90, background: 'rgba(245,234,216,0.92)', border: '2px solid rgba(46,46,46,0.72)', boxShadow: '7px 7px 0 rgba(212,170,58,0.26)' }}
             />
           </div>
 
@@ -287,7 +287,7 @@ export default function LandingPage() {
               icon={<EyeOffIcon size={17} />}
               title="FOCUS YOUR SEARCH"
               body={"Hide what is not useful.\nSee what matters."}
-              style={{ minHeight: 82, background: 'rgba(245,234,216,0.9)' }}
+              style={{ minHeight: 82, background: 'rgba(245,234,216,0.9)', border: '2px solid rgba(46,46,46,0.72)', boxShadow: '7px 7px 0 rgba(201,90,125,0.2)' }}
             />
           </div>
         </div>

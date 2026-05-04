@@ -29,11 +29,11 @@ export default function PublishButton({ onPublish, disabled, label = 'Publish' }
         <button
           onClick={handlePublish}
           disabled={publishing}
-          className="px-4 py-2 bg-ig-success text-white rounded-md text-sm font-semibold disabled:opacity-50"
+          className="mw-button-primary px-4 py-2 text-sm disabled:opacity-50"
         >
           {publishing ? 'Publishing...' : 'Confirm'}
         </button>
-        <button onClick={() => setConfirming(false)} className="px-3 py-2 text-ig-text-secondary text-sm">Cancel</button>
+        <button onClick={() => setConfirming(false)} className="px-3 py-2 text-sm font-semibold text-ig-text-secondary hover:text-ig-text-primary">Cancel</button>
       </div>
     );
   }
@@ -42,7 +42,7 @@ export default function PublishButton({ onPublish, disabled, label = 'Publish' }
     <button
       onClick={() => setConfirming(true)}
       disabled={disabled}
-      className="min-h-11 rounded-md bg-ig-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+      className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-50"
     >
       {label}
     </button>

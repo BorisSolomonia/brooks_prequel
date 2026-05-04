@@ -47,16 +47,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-56 border-r border-[var(--border)] bg-[var(--bg-secondary)] px-4 py-6 shrink-0">
-        <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-widest mb-4">Admin</p>
+      <aside className="w-56 shrink-0 border-r-2 border-[var(--border)] bg-[var(--bg-secondary)] px-4 py-6">
+        <p className="mw-eyebrow mb-4">Admin</p>
         <nav className="space-y-1">
           {navLinks.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`font-display block rounded-lg px-3 py-2 text-sm font-bold transition-colors ${
                 pathname.startsWith(href)
-                  ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] font-medium'
+                  ? 'border border-[var(--brand-primary)] bg-[var(--bg-hover)] text-[var(--text-primary)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
       </aside>
-      <div className="flex-1 p-8 overflow-auto">{children}</div>
+      <div className="flex-1 overflow-auto p-8">{children}</div>
     </div>
   );
 }

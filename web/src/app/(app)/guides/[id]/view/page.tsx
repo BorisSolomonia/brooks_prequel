@@ -187,9 +187,9 @@ export default function ViewGuidePage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       {mode === 'owner' && (
-        <div className="mb-4 rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-secondary">
+        <div className="mw-card mb-4 px-3 py-2 text-sm text-ig-text-secondary">
           You own this guide.{' '}
-          <Link href={`/guides/${guideId}/edit`} className="text-ig-blue hover:underline">Edit</Link>
+          <Link href={`/guides/${guideId}/edit`} className="font-semibold text-brand-500 hover:text-brand-400">Edit</Link>
         </div>
       )}
       {mode === 'buyer' && (
@@ -198,7 +198,7 @@ export default function ViewGuidePage() {
           {tripId && (
             <button
               onClick={() => router.push(`/trips/${tripId}`)}
-            className="min-h-11 rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-600"
+            className="mw-button-primary min-h-11 rounded-lg px-4 py-2 text-sm"
             >
               Go to your trip
             </button>
@@ -208,8 +208,8 @@ export default function ViewGuidePage() {
 
       <div className="mb-6">
         {(displayGuide?.coverImageUrl || displayPreview?.coverImageUrl) && (
-          <div className="relative mb-4 h-52 overflow-hidden rounded-xl bg-ig-secondary">
-            <img src={displayGuide?.coverImageUrl || displayPreview?.coverImageUrl || ''} alt="" className="h-full w-full object-cover" />
+          <div className="mw-photo-frame relative mb-4 h-52 overflow-hidden rounded-xl bg-ig-secondary">
+            <img src={displayGuide?.coverImageUrl || displayPreview?.coverImageUrl || ''} alt="" className="h-full w-full object-cover saturate-[0.92] contrast-[1.04]" />
             {displayPreview?.bestSeasonLabel && (
               <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${
                 inSeason ? 'bg-green-500/90 text-white' : 'bg-black/60 text-white/80'
@@ -222,7 +222,7 @@ export default function ViewGuidePage() {
 
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
           <div className="min-w-0 flex-1">
-            <h1 className="mb-1 text-2xl font-semibold text-ig-text-primary">
+            <h1 className="mw-section-title mb-1 text-2xl">
               {displayGuide?.title || displayPreview?.title}
             </h1>
             {displayGuide?.description && (
@@ -245,7 +245,7 @@ export default function ViewGuidePage() {
           {displayPreview && (
             <div className="flex flex-col items-start gap-1 text-xs text-ig-text-tertiary sm:items-end">
               {(displayPreview.purchaseCount ?? 0) > 0 && (
-                <span className="rounded-full border border-ig-border bg-ig-elevated px-2.5 py-1 font-medium">
+                <span className="mw-badge">
                   {displayPreview.purchaseCount} travelers used this
                 </span>
               )}
@@ -262,7 +262,7 @@ export default function ViewGuidePage() {
         {displayGuide?.tags && displayGuide.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
             {displayGuide.tags.map((tag) => (
-              <span key={tag} className="rounded-full border border-ig-border bg-ig-elevated px-2 py-0.5 text-xs text-ig-text-secondary">
+              <span key={tag} className="mw-badge">
                 {tag}
               </span>
             ))}
@@ -278,8 +278,8 @@ export default function ViewGuidePage() {
                 disabled={saveLoading}
                 className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
                   saved
-                    ? 'border-ig-blue bg-ig-blue/10 text-ig-blue'
-                    : 'border-ig-border bg-ig-elevated text-ig-text-primary hover:border-ig-blue/40'
+                    ? 'border-brand-500 bg-brand-500/15 text-brand-500'
+                    : 'border-ig-border bg-ig-elevated text-ig-text-primary hover:border-brand-500/60'
                 }`}
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
@@ -290,7 +290,7 @@ export default function ViewGuidePage() {
             ) : (
               <Link
                 href="/api/auth/login"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-ig-border bg-ig-elevated px-4 py-2.5 text-sm font-semibold text-ig-text-primary hover:border-ig-blue/40"
+                className="mw-button-secondary min-h-11 rounded-lg px-4 py-2.5 text-sm"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
                   <path d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75v18.114a.375.375 0 0 1-.614.291L12 17.72l-5.386 4.435A.375.375 0 0 1 6 21.864V3.75Z" />
@@ -312,7 +312,7 @@ export default function ViewGuidePage() {
             {displayPreview && !token && (
               <Link
                 href="/api/auth/login"
-                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-ig-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
+                className="mw-button-primary min-h-11 rounded-lg px-6 py-2.5 text-sm"
               >
                 {displayPreview.priceCents === 0 ? 'Sign in to get guide' : 'Sign in to purchase'}
               </Link>
@@ -326,7 +326,7 @@ export default function ViewGuidePage() {
           {displayGuide.days.map((day) => (
             <div key={day.id}>
               <div className="mb-3 flex items-center gap-2">
-                <span className="text-sm font-semibold text-ig-blue">Day {day.dayNumber}</span>
+                <span className="mw-badge">Day {day.dayNumber}</span>
                 {day.title && <span className="text-sm text-ig-text-primary">{day.title}</span>}
               </div>
               {day.description && <p className="mb-3 text-sm text-ig-text-secondary">{day.description}</p>}

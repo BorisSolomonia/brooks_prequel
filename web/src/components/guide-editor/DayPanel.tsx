@@ -113,7 +113,7 @@ export default function DayPanel({
                       newBlockCategory === cat.value
                         ? cat.value === 'SECRET'
                           ? 'border-amber-500 bg-amber-500/15 text-amber-400'
-                          : 'border-ig-blue bg-ig-blue/10 text-ig-blue'
+                          : 'border-brand-500 bg-brand-500/15 text-brand-500'
                         : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:border-ig-blue/40'
                     }`}
                   >
@@ -125,7 +125,7 @@ export default function DayPanel({
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleAddBlock}
-                  className="min-h-11 rounded-lg bg-ig-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover"
+                  className="mw-button-primary min-h-11 rounded-lg px-4 py-2 text-sm"
                 >
                   Add Block
                 </button>

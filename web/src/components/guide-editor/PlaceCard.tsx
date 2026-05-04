@@ -182,7 +182,7 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
           maxImages={4}
         />
         <div className="flex flex-wrap gap-2">
-          <button onClick={handleSave} className="min-h-11 rounded bg-ig-blue px-4 py-2 text-sm font-semibold text-white">Save</button>
+          <button onClick={handleSave} className="mw-button-primary min-h-11 rounded px-4 py-2 text-sm">Save</button>
           <button onClick={() => setEditing(false)} className="min-h-11 rounded px-4 py-2 text-sm text-ig-text-secondary">Cancel</button>
         </div>
       </div>
@@ -265,7 +265,7 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
               placeholder="Longitude"
               className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-9 lg:w-32 lg:flex-none lg:px-2 lg:py-1 lg:text-xs"
             />
-            <button onClick={handleSaveLocation} className="min-h-11 rounded bg-ig-blue px-4 text-sm font-semibold text-white lg:min-h-9 lg:px-3 lg:text-xs">Set</button>
+            <button onClick={handleSaveLocation} className="mw-button-primary min-h-11 rounded px-4 text-sm lg:min-h-9 lg:px-3 lg:text-xs">Set</button>
             <button onClick={() => setEditingLocation(false)} className="min-h-11 rounded px-4 text-sm text-ig-text-secondary hover:text-ig-text-primary lg:min-h-9 lg:px-3 lg:text-xs">Cancel</button>
           </div>
         </div>

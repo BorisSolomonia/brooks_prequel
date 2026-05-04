@@ -30,22 +30,22 @@ export default function MyTripsPage() {
   }, [router, token, tokenLoading]);
 
   if (tokenLoading || loading) {
-    return <div className="max-w-5xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">Loading trips...</div>;
+    return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-ig-text-tertiary">Loading trips...</div>;
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Buyer Library</p>
-          <h1 className="mt-2 text-3xl font-semibold text-ig-text-primary">My Trips</h1>
+          <p className="mw-eyebrow">Buyer Library</p>
+          <h1 className="mw-section-title mt-2 text-3xl">My Trips</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
             Purchased guide versions live here. Open a trip to set dates, review the map, and export it to your calendar.
           </p>
         </div>
         <Link
           href="/search"
-          className="inline-flex min-h-11 items-center rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover"
+          className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm"
         >
           Find guides
         </Link>
@@ -54,8 +54,8 @@ export default function MyTripsPage() {
       {error && <p className="mb-4 text-sm text-ig-error">{error}</p>}
 
       {trips.length === 0 ? (
-        <div className="rounded-2xl border border-ig-border bg-ig-elevated p-8 text-center">
-          <p className="text-lg font-semibold text-ig-text-primary">No purchased trips yet</p>
+        <div className="mw-card p-8 text-center">
+          <p className="font-display text-lg font-black text-ig-text-primary">No purchased trips yet</p>
           <p className="mt-2 text-sm text-ig-text-secondary">
             Buy a guide from a creator to move it into your map and calendar workflow.
           </p>
@@ -66,7 +66,7 @@ export default function MyTripsPage() {
             <Link
               key={trip.id}
               href={`/trips/${trip.id}`}
-              className="overflow-hidden rounded-2xl border border-ig-border bg-ig-elevated transition-colors hover:border-brand-500/60"
+              className="mw-card overflow-hidden p-0 transition-colors hover:border-brand-500/60"
             >
               {trip.coverImageUrl ? (
                 <div className="h-44 bg-ig-secondary">
@@ -77,7 +77,7 @@ export default function MyTripsPage() {
               )}
               <div className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold text-ig-text-primary">{trip.title}</h2>
+                  <h2 className="font-display text-lg font-black text-ig-text-primary">{trip.title}</h2>
                   <span className="rounded-pill bg-brand-500/15 px-3 py-1 text-xs font-semibold text-brand-500">
                     v{trip.guideVersionNumber}
                   </span>

@@ -236,7 +236,7 @@ export default function TripDetailPage() {
   };
 
   if (tokenLoading || !trip) {
-    return <div className="max-w-5xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">{error || 'Loading trip...'}</div>;
+    return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-ig-text-tertiary">{error || 'Loading trip...'}</div>;
   }
 
   const dayGroups = groupByDay(trip.items);
@@ -244,13 +244,13 @@ export default function TripDetailPage() {
 
   return (
     <>
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Link href="/trips" className="text-sm text-brand-500 hover:text-brand-400">
             ← Back to My Trips
           </Link>
-          <h1 className="mt-3 text-3xl font-semibold text-ig-text-primary">{trip.guide.title}</h1>
+          <h1 className="mw-section-title mt-3 text-3xl">{trip.guide.title}</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
             Purchased version {trip.guideVersionNumber}. Set your dates, track your visits, and export the itinerary.
           </p>
@@ -279,13 +279,13 @@ export default function TripDetailPage() {
             href={buildGoogleMapsAllUrl(visibleItems)}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover md:flex-none"
+            className="mw-button-secondary min-h-11 flex-1 rounded-md px-4 py-2 text-sm md:flex-none"
           >
             Open in Maps
           </a>
           <button
             onClick={() => setShowCalendarModal(true)}
-            className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 md:flex-none"
+            className="mw-button-primary min-h-11 flex-1 rounded-md px-4 py-2 text-sm md:flex-none"
           >
             Add to Calendar
           </button>
@@ -295,15 +295,15 @@ export default function TripDetailPage() {
       {error && <p className="mb-4 text-sm text-ig-error">{error}</p>}
 
       {showReviewPrompt && (
-        <div className="mb-6 rounded-2xl border border-brand-500/30 bg-brand-500/5 p-5">
-          <h2 className="text-base font-semibold text-ig-text-primary">How was your trip?</h2>
+        <div className="mw-card mb-6 p-5">
+          <h2 className="font-display text-base font-black text-ig-text-primary">How was your trip?</h2>
           <p className="mt-1 text-sm text-ig-text-secondary">You&rsquo;ve visited more than half the places. Leave a quick review to help other travelers.</p>
           <div className="mt-3 flex gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
                 onClick={() => setReview((r) => ({ ...r, rating: star }))}
-              className={`min-h-11 min-w-11 rounded-full text-2xl transition-colors ${star <= review.rating ? 'text-yellow-400' : 'text-ig-border hover:text-yellow-300'}`}
+              className={`min-h-11 min-w-11 rounded-full text-2xl transition-colors ${star <= review.rating ? 'text-accent-500' : 'text-ig-border hover:text-accent-400'}`}
               >
                 ★
               </button>
@@ -314,13 +314,13 @@ export default function TripDetailPage() {
             value={review.reviewText}
             onChange={(e) => setReview((r) => ({ ...r, reviewText: e.target.value }))}
             rows={2}
-            className="mt-3 w-full resize-none rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-brand-500 focus:outline-none md:text-sm"
+            className="mt-3 w-full resize-none rounded-md border-2 border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-brand-500 focus:outline-none md:text-sm"
           />
           {review.error && <p className="mt-1 text-xs text-ig-error">{review.error}</p>}
           <button
             onClick={handleSubmitReview}
             disabled={review.rating === 0 || review.submitting}
-            className="mt-3 min-h-11 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+            className="mw-button-primary mt-3 min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-50"
           >
             {review.submitting ? 'Submitting...' : 'Submit review'}
           </button>
@@ -335,10 +335,10 @@ export default function TripDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-5">
+          <div className="mw-card p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-ig-text-primary">Trip setup</h2>
+                <h2 className="font-display text-lg font-black text-ig-text-primary">Trip setup</h2>
                 <p className="mt-1 text-sm text-ig-text-secondary">
                   Choose when the itinerary starts. The app will prefill timings from creator hints.
                 </p>

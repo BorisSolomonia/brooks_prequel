@@ -351,7 +351,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
             placeholder="Add a tag..."
             className="min-h-11 min-w-0 flex-1 rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
-          <button onClick={onAddTag} className="min-h-11 rounded-md bg-ig-blue px-4 py-2 text-sm font-semibold text-white hover:bg-ig-blue-hover">Add</button>
+          <button onClick={onAddTag} className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm">Add</button>
         </div>
       </div>
     </div>

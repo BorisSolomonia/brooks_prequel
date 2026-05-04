@@ -3,8 +3,8 @@ import Link from 'next/link';
 export default function AboutPage() {
   return (
     <main className="mx-auto flex min-h-[calc(100vh-140px)] max-w-4xl flex-col justify-center px-5 py-14">
-      <p className="text-sm font-semibold uppercase tracking-[0.28em] text-ig-text-tertiary">About Brooks Prequel</p>
-      <h1 className="mt-5 text-4xl font-semibold tracking-tight text-ig-text-primary md:text-6xl">
+      <p className="mw-eyebrow">About Brooks Prequel</p>
+      <h1 className="mw-section-title mt-5 text-4xl md:text-6xl">
         Travel guides built around people, not lists.
       </h1>
       <div className="mt-7 space-y-5 text-base leading-7 text-ig-text-secondary md:text-lg">
@@ -18,10 +18,10 @@ export default function AboutPage() {
         </p>
       </div>
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link href="/guides" className="rounded-md bg-ig-blue px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover">
+        <Link href="/guides" className="mw-button-primary rounded-md px-5 py-3 text-sm">
           Browse guides
         </Link>
-        <Link href="/contact" className="rounded-md border border-ig-border px-5 py-3 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover">
+        <Link href="/contact" className="mw-button-secondary rounded-md px-5 py-3 text-sm">
           Contact
         </Link>
       </div>

@@ -10,31 +10,31 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-ig-primary">
-      <div className="w-full max-w-md p-8 bg-ig-elevated rounded-xl">
-        <h1 className="text-2xl font-bold text-center mb-2 text-ig-text-primary">Welcome to Brooks</h1>
-        <p className="text-ig-text-secondary text-center mb-8">Sign in to start your journey</p>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-ig-primary px-4">
+      <div className="mw-card w-full max-w-md p-8">
+        <h1 className="mw-section-title mb-2 text-center text-2xl">Welcome to Brooks</h1>
+        <p className="mb-8 text-center text-ig-text-secondary">Sign in to start your journey</p>
 
         <div className="space-y-4">
           <button
             onClick={handleLogin}
-            className="w-full py-3 bg-ig-blue text-white rounded-lg font-medium hover:bg-ig-blue-hover transition-colors"
+            className="mw-button-primary w-full rounded-lg py-3"
           >
             Sign in with Email
           </button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-ig-border" />
+              <div className="w-full border-t-2 border-ig-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-ig-elevated text-ig-text-secondary">or</span>
+              <span className="bg-ig-elevated px-2 text-ig-text-secondary">or</span>
             </div>
           </div>
 
           <button
             onClick={handleGoogleLogin}
-            className="w-full py-3 border border-ig-border text-ig-text-primary rounded-lg font-medium hover:bg-ig-hover transition-colors flex items-center justify-center gap-2"
+            className="mw-button-secondary flex w-full items-center justify-center gap-2 rounded-lg py-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>

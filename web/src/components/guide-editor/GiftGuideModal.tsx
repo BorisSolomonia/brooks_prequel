@@ -71,7 +71,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="mt-5 min-h-11 rounded-lg bg-ig-blue px-5 py-2 text-sm font-semibold text-white hover:bg-ig-blue-hover"
+              className="mw-button-primary mt-5 min-h-11 rounded-lg px-5 py-2 text-sm"
             >
               Close
             </button>
@@ -105,7 +105,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
                     onClick={() => setSelected(f)}
                     className={`flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                       selected?.userId === f.userId
-                        ? 'bg-ig-blue/15 ring-1 ring-ig-blue/40'
+                        ? 'bg-brand-500/15 ring-1 ring-brand-500/40'
                         : 'hover:bg-ig-hover'
                     }`}
                   >
@@ -145,7 +145,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
                 type="button"
                 onClick={handleGift}
                 disabled={!selected || gifting}
-                className="min-h-11 w-full rounded-lg bg-ig-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ig-blue-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="mw-button-primary min-h-11 w-full rounded-lg py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {gifting ? 'Gifting…' : 'Confirm Gift'}
               </button>

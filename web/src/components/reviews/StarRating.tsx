@@ -14,8 +14,8 @@ export default function StarRating({ rating, size = 'md' }: StarRatingProps) {
   return (
     <span className={`inline-flex items-center gap-0.5 ${STAR_SIZE[size]}`}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <span key={star} className={star <= Math.round(rating) ? 'text-yellow-400' : 'text-ig-border'}>
-          ★
+        <span key={star} className={star <= Math.round(rating) ? 'text-accent-500' : 'text-ig-border'}>
+          &#9733;
         </span>
       ))}
     </span>

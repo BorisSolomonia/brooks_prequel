@@ -78,10 +78,10 @@ export default function ReviewComposer({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-ig-border bg-ig-elevated p-4">
+    <form onSubmit={handleSubmit} className="mw-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-ig-text-primary">{title}</h3>
+          <h3 className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-primary">{title}</h3>
           <p className="mt-1 text-xs text-ig-text-tertiary">Rating is required. Text review is optional.</p>
         </div>
         <StarInput value={rating} onChange={setRating} />
@@ -93,7 +93,7 @@ export default function ReviewComposer({
         maxLength={textLimit}
         rows={4}
         placeholder="Share what stood out. Line breaks and links are supported."
-        className="mt-4 w-full rounded-xl border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary outline-none transition focus:border-brand-500/40 md:text-sm"
+        className="mt-4 w-full rounded-xl border-2 border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary outline-none transition focus:border-brand-500 md:text-sm"
       />
       <div className="mt-2 flex items-center justify-between gap-3 text-xs">
         <span className={reviewText.length > textLimit ? 'text-ig-error' : 'text-ig-text-tertiary'}>
@@ -106,7 +106,7 @@ export default function ReviewComposer({
         <button
           type="submit"
           disabled={saving || deleting}
-          className="min-h-11 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+          className="mw-button-primary min-h-11 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
           {saving ? savingLabel : submitLabel}
         </button>
@@ -115,7 +115,7 @@ export default function ReviewComposer({
             type="button"
             disabled={saving || deleting}
             onClick={handleDelete}
-            className="min-h-11 rounded-lg border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary disabled:opacity-50"
+            className="mw-button-secondary min-h-11 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </button>

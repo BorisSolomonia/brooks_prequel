@@ -62,20 +62,20 @@ export default function GuideCard({
   const cardPrice = effectivePriceCents ?? priceCents ?? 0;
 
   return (
-    <article className={`overflow-hidden rounded-lg border border-ig-border bg-ig-elevated transition hover:border-brand-500/50 ${className}`}>
-      <div className="relative aspect-[4/3] bg-ig-secondary">
+    <article className={`mw-card overflow-hidden rounded-xl transition duration-200 hover:-translate-y-0.5 hover:border-brand-500/60 ${className}`}>
+      <div className="mw-photo-frame relative aspect-[4/3] bg-ig-secondary">
         <Link href={href} className="block h-full w-full" aria-label={title}>
           {coverImageUrl ? (
-            <img src={coverImageUrl} alt={title} className="h-full w-full object-cover" loading="lazy" />
+            <img src={coverImageUrl} alt={title} className="h-full w-full object-cover saturate-[0.92] contrast-[1.04]" loading="lazy" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-ig-secondary text-sm text-ig-text-tertiary">
+            <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-ig-text-primary">
               Add cover image
             </div>
           )}
         </Link>
 
         {statusBadge && (
-          <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold text-white">
+          <span className="mw-badge absolute left-3 top-3 rounded-md px-2.5 py-1 text-xs">
             {statusBadge}
           </span>
         )}
@@ -84,7 +84,7 @@ export default function GuideCard({
           <button
             type="button"
             onClick={onSaveClick}
-            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-black/75"
+            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full border-2 border-ig-border bg-black/60 text-white shadow-lg backdrop-blur transition hover:bg-black/80"
             aria-label={saveLabel ?? (savedByViewer ? 'Saved guide' : 'Save guide')}
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill={savedByViewer ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8}>
@@ -95,7 +95,7 @@ export default function GuideCard({
       </div>
 
       <Link href={href} className="block p-4">
-        <h3 className="line-clamp-2 text-base font-semibold leading-5 text-ig-text-primary">
+        <h3 className="font-display line-clamp-2 text-base font-black leading-5 text-ig-text-primary">
           {title}
         </h3>
         <p className="mt-2 text-sm text-ig-text-secondary">
@@ -107,7 +107,7 @@ export default function GuideCard({
 
         <div className="mt-3 min-h-6">
           {popularThisWeek && (
-            <span className="inline-flex rounded-full bg-brand-500/15 px-3 py-1 text-xs font-semibold text-brand-500">
+            <span className="mw-badge inline-flex rounded-full px-3 py-1 text-xs">
               Popular this week
             </span>
           )}
@@ -116,12 +116,12 @@ export default function GuideCard({
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="min-w-0 text-sm text-ig-text-secondary">
             {reviewCount > 0 ? (
-              <span className="font-medium text-ig-text-primary">&#9733; {averageRating.toFixed(1)} <span className="text-ig-text-tertiary">({reviewCount})</span></span>
+              <span className="font-medium text-ig-text-primary"><span className="text-accent-500">&#9733;</span> {averageRating.toFixed(1)} <span className="text-ig-text-tertiary">({reviewCount})</span></span>
             ) : (
               <span>No reviews yet</span>
             )}
           </div>
-          <p className="shrink-0 text-sm font-semibold text-ig-text-primary">
+          <p className="font-display shrink-0 text-sm font-black text-accent-500">
             {cardPrice <= 0 ? 'Free' : `From ${formatAmount(cardPrice, 0)}`}
           </p>
         </div>

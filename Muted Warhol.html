@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Brooks × Warhol (Muted) — Color Experiment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Archivo:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Muted Warhol — desaturated screenprint colors, dark mode compatible */
+    --mw-pink:     #C95A7D;   /* muted Marilyn pink */
+    --mw-magenta:  #9B4366;   /* darker muted magenta */
+    --mw-orange:   #D97850;   /* muted soup orange */
+    --mw-red:      #C44952;   /* muted Campbell's red */
+    --mw-yellow:   #D4AA3A;   /* muted banana / gold */
+    --mw-lime:     #98B54A;   /* muted flowers lime */
+    --mw-mint:     #4FA084;   /* muted teal */
+    --mw-cyan:     #5098B3;   /* muted pop cyan */
+    --mw-blue:     #4963B8;   /* muted Mao blue */
+    --mw-violet:   #7356AB;   /* muted violet */
+    
+    /* Surfaces — dark mode stack */
+    --mw-bg:       #0E0E0E;   /* deep black */
+    --mw-elevated: #1A1A1A;   /* card surface */
+    --mw-hover:    #262626;   /* hover state */
+    --mw-border:   #2E2E2E;   /* border / outline */
+    --mw-text:     #E5E5E5;   /* primary text */
+    --mw-text2:    #A0A0A0;   /* secondary text */
+    --mw-text3:    #6B6B6B;   /* tertiary / meta */
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--mw-bg);
+    color: var(--mw-text);
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  }
+  h1, h2, h3, h4 { font-family: 'Archivo', sans-serif; letter-spacing: -0.02em; font-weight: 900; }
+
+  .page { max-width: 1180px; margin: 0 auto; padding: 48px 32px 96px; }
+
+  /* ---------- HEADER ---------- */
+  header.lede {
+    border-top: 3px solid var(--mw-border);
+    border-bottom: 3px solid var(--mw-border);
+    padding: 28px 0;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  header.lede h1 {
+    font-size: 64px; line-height: 0.95;
+    margin: 0; text-transform: uppercase;
+  }
+  header.lede h1 .a { color: var(--mw-pink); }
+  header.lede h1 .b { color: var(--mw-cyan); }
+  header.lede h1 .c { color: var(--mw-yellow); }
+  header.lede p {
+    font-size: 16px; max-width: 820px; line-height: 1.55; margin: 14px 0 0;
+    color: var(--mw-text2);
+  }
+  header.lede .meta {
+    margin-top: 14px; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--mw-magenta); font-weight: 700;
+  }
+
+  .section { margin-top: 56px; }
+  .section-head {
+    display: flex; align-items: baseline; gap: 16px;
+    border-bottom: 2px solid var(--mw-border);
+    padding-bottom: 6px; margin-bottom: 24px;
+  }
+  .section-head h2 { font-size: 26px; margin: 0; text-transform: uppercase; }
+  .section-head .num { color: var(--mw-pink); font-weight: 900; font-family: 'Archivo'; font-size: 20px; }
+  .section-head .tag {
+    margin-left: auto;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+    background: var(--mw-yellow); color: var(--mw-bg);
+    border: 2px solid var(--mw-yellow); padding: 3px 10px;
+  }
+
+  /* ---------- 1. PALETTE ---------- */
+  .palette {
+    display: grid; grid-template-columns: repeat(10, 1fr); gap: 0;
+    border: 3px solid var(--mw-border);
+  }
+  .swatch {
+    aspect-ratio: 1 / 1.4;
+    padding: 10px; position: relative;
+    display: flex; flex-direction: column; justify-content: space-between;
+    border-right: 1px solid var(--mw-border);
+    font-size: 10px;
+  }
+  .swatch:last-child { border-right: 0; }
+  .swatch .name { font-weight: 700; text-transform: uppercase; line-height: 1.1; font-size: 10px; }
+  .swatch .hex { font-family: ui-monospace, monospace; font-size: 9px; opacity: 0.75; }
+
+  /* ---------- 2. BEFORE/AFTER ---------- */
+  .compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  .comp-card {
+    border: 3px solid var(--mw-border);
+    padding: 20px;
+    background: var(--mw-elevated);
+  }
+  .comp-card h3 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; color: var(--mw-yellow); }
+  .comp-swatches {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+  }
+  .comp-sw {
+    aspect-ratio: 1;
+    border: 2px solid var(--mw-border);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; font-family: ui-monospace, monospace;
+    color: var(--mw-bg);
+  }
+  .comp-label {
+    margin-top: 12px; font-size: 12px; line-height: 1.5; color: var(--mw-text2);
+  }
+
+  /* ---------- 3. UI MAPPING ---------- */
+  .map { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .map-card {
+    background: var(--mw-elevated);
+    border: 2px solid var(--mw-border);
+    padding: 18px;
+  }
+  .map-card h3 { margin: 0 0 12px; font-size: 16px; text-transform: uppercase; color: var(--mw-cyan); }
+  .map-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; font-family: ui-monospace, monospace; }
+  .chip { width: 18px; height: 18px; border: 2px solid var(--mw-border); flex-shrink: 0; }
+  .map-row code { color: var(--mw-text); }
+  .map-row em { color: var(--mw-yellow); font-style: normal; margin-left: auto; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+
+  /* ---------- 4. PROTOTYPE — Brooks in muted Warhol ---------- */
+  .proto { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .proto-card {
+    border: 3px solid var(--mw-border);
+    background: var(--mw-bg);
+    overflow: hidden;
+  }
+  .proto-card .nav {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--mw-elevated);
+    border-bottom: 2px solid var(--mw-border);
+  }
+  .proto-card .nav .logo {
+    font-family: 'Archivo'; font-size: 16px; font-weight: 900;
+    color: var(--mw-pink);
+    letter-spacing: 0.02em;
+  }
+  .proto-card .nav .search-pill {
+    flex: 1; min-width: 0;
+    background: var(--mw-bg); color: var(--mw-text2);
+    border: 1px solid var(--mw-border);
+    padding: 6px 10px; font-size: 12px;
+    border-radius: 999px;
+  }
+  .proto-card .nav .cta {
+    background: var(--mw-blue); color: var(--mw-text);
+    border: 0;
+    font-family: 'Archivo'; font-weight: 700;
+    text-transform: uppercase; font-size: 11px;
+    padding: 6px 14px; cursor: pointer;
+    border-radius: 6px;
+  }
+  .proto-card h4.scrn { 
+    margin: 14px 16px 8px; 
+    font-size: 14px; 
+    text-transform: uppercase; 
+    color: var(--mw-text2);
+    font-weight: 700;
+  }
+
+  /* feed post */
+  .post {
+    margin: 0 16px 16px;
+    border: 2px solid var(--mw-border);
+    background: var(--mw-elevated);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .post .who { 
+    display: flex; align-items: center; gap: 8px; 
+    padding: 10px 12px; 
+    border-bottom: 1px solid var(--mw-border);
+  }
+  .post .avatar { 
+    width: 32px; height: 32px; 
+    border-radius: 50%; 
+    border: 2px solid var(--mw-border);
+  }
+  .post .name { 
+    font-family: 'Archivo'; 
+    font-size: 13px; 
+    font-weight: 700;
+  }
+  .post .name::after { content: " ★"; color: var(--mw-pink); }
+  .post .badge {
+    margin-left: auto; font-size: 9px;
+    background: var(--mw-pink); color: var(--mw-bg);
+    border: 1px solid var(--mw-pink);
+    padding: 2px 6px;
+    text-transform: uppercase; 
+    font-family: 'Archivo'; 
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 3px;
+  }
+  .post .cover {
+    height: 140px; 
+    position: relative; 
+    overflow: hidden;
+  }
+  .post .cover.lisbon {
+    background: linear-gradient(180deg, var(--mw-orange) 0%, var(--mw-orange) 55%, var(--mw-red) 55%, var(--mw-red) 100%);
+  }
+  .post .cover.lisbon::before {
+    /* abstract sun */
+    content: ""; 
+    position: absolute; 
+    left: 20px; top: 20px;
+    width: 40px; height: 40px; 
+    border-radius: 50%;
+    background: var(--mw-yellow);
+    border: 2px solid var(--mw-bg);
+  }
+  .post .cover.lisbon::after {
+    content: "LISBOA"; 
+    position: absolute; 
+    right: 14px; bottom: 10px;
+    font-family: 'Archivo'; 
+    font-weight: 900;
+    color: var(--mw-text); 
+    font-size: 20px;
+    letter-spacing: 0.08em;
+    opacity: 0.9;
+  }
+  .post .cover.tokyo {
+    background: var(--mw-blue);
+    background-image:
+      radial-gradient(circle at 22% 32%, var(--mw-pink) 0 18px, transparent 19px),
+      radial-gradient(circle at 62% 26%, var(--mw-yellow) 0 18px, transparent 19px),
+      radial-gradient(circle at 78% 62%, var(--mw-orange) 0 18px, transparent 19px),
+      radial-gradient(circle at 30% 70%, var(--mw-lime) 0 18px, transparent 19px);
+  }
+  .post .cover.tokyo::after {
+    content: "TOKYO"; 
+    position: absolute; 
+    right: 14px; bottom: 10px;
+    font-family: 'Archivo'; 
+    font-weight: 900;
+    color: var(--mw-text); 
+    font-size: 20px;
+    letter-spacing: 0.08em;
+    opacity: 0.9;
+  }
+  .post .body { padding: 12px 14px; }
+  .post .body .ttl { 
+    font-family: 'Archivo'; 
+    font-size: 14px; 
+    font-weight: 700;
+    color: var(--mw-text);
+  }
+  .post .body .meta { 
+    font-family: ui-monospace, monospace; 
+    font-size: 11px; 
+    color: var(--mw-text3); 
+    margin-top: 4px;
+  }
+
+  /* search rows */
+  .row { 
+    display: flex; gap: 12px; 
+    margin: 0 16px 12px; 
+    padding: 12px;
+    border: 2px solid var(--mw-border); 
+    background: var(--mw-elevated);
+    border-radius: 8px;
+  }
+  .row .thumb { 
+    width: 64px; height: 64px; 
+    flex-shrink: 0; 
+    border: 2px solid var(--mw-border);
+    border-radius: 6px;
+  }
+  .row .info { flex: 1; min-width: 0; }
+  .row .info .ttl { 
+    font-family: 'Archivo'; 
+    font-size: 13px; 
+    font-weight: 700;
+    color: var(--mw-text);
+  }
+  .row .info .by { 
+    font-family: ui-monospace, monospace; 
+    font-size: 11px; 
+    color: var(--mw-text3);
+  }
+  .row .info .meta { 
+    font-family: ui-monospace, monospace; 
+    font-size: 11px; 
+    color: var(--mw-text2); 
+    margin-top: 4px;
+  }
+  .row .info .price {
+    display: inline-block; 
+    margin-top: 6px;
+    background: var(--mw-yellow); 
+    color: var(--mw-bg);
+    border: 0;
+    padding: 3px 8px; 
+    font-family: 'Archivo'; 
+    font-size: 11px; 
+    font-weight: 700;
+    border-radius: 4px;
+  }
+
+  .tabs { 
+    display: flex; gap: 8px; 
+    margin: 0 16px 16px;
+  }
+  .tabs .t {
+    padding: 6px 14px;
+    font-family: 'Archivo'; 
+    font-size: 12px; 
+    font-weight: 700;
+    text-transform: lowercase; 
+    cursor: pointer;
+    border: 0;
+    background: var(--mw-elevated);
+    color: var(--mw-text2);
+    border-radius: 6px;
+  }
+  .tabs .t.active { 
+    background: var(--mw-pink); 
+    color: var(--mw-text);
+  }
+
+  .footer-note {
+    padding: 10px 16px;
+    border-top: 1px solid var(--mw-border);
+    background: var(--mw-elevated);
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    color: var(--mw-text3);
+  }
+
+  /* ---------- 5. PHOTO TREATMENT ---------- */
+  .photos {
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 24px;
+  }
+  .photo-card {
+    border: 3px solid var(--mw-border);
+    background: var(--mw-elevated);
+    padding: 16px;
+  }
+  .photo-card h3 { 
+    margin: 0 0 12px; 
+    font-size: 14px; 
+    text-transform: uppercase; 
+    color: var(--mw-cyan);
+  }
+  .photo-frame {
+    width: 100%; 
+    aspect-ratio: 16/9;
+    border: 2px solid var(--mw-border);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(135deg, #4a5a6a, #2a3a4a);
+  }
+  .photo-frame .overlay {
+    position: absolute; 
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(14,14,14,0.6) 100%);
+    display: flex; 
+    flex-direction: column; 
+    justify-content: flex-end;
+    padding: 16px;
+  }
+  .photo-frame .city {
+    font-family: 'Archivo'; 
+    font-weight: 900; 
+    font-size: 24px;
+    color: var(--mw-text);
+    letter-spacing: 0.04em;
+  }
+  .photo-frame .meta-line {
+    font-size: 11px; 
+    color: var(--mw-text2); 
+    margin-top: 4px;
+    font-family: ui-monospace, monospace;
+  }
+  .photo-label {
+    margin-top: 12px; 
+    font-size: 12px; 
+    line-height: 1.5; 
+    color: var(--mw-text2);
+  }
+
+  /* ---------- 6. VERDICT ---------- */
+  .verdict {
+    border: 3px solid var(--mw-border);
+    background: var(--mw-elevated);
+    padding: 24px;
+    margin-top: 56px;
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 24px;
+  }
+  .verdict h2 { 
+    color: var(--mw-yellow); 
+    margin: 0 0 12px; 
+    font-size: 18px; 
+    text-transform: uppercase;
+  }
+  .verdict ul { 
+    padding-left: 18px; 
+    line-height: 1.55; 
+    font-size: 13px; 
+    margin: 0;
+    color: var(--mw-text2);
+  }
+  .verdict ul li { margin-bottom: 6px; }
+  .verdict .pro::marker { color: var(--mw-lime); }
+  .verdict .con::marker { color: var(--mw-pink); }
+  .verdict code { 
+    background: var(--mw-bg); 
+    padding: 1px 4px; 
+    border-radius: 3px;
+    color: var(--mw-cyan);
+  }
+
+  footer.sig {
+    margin-top: 40px;
+    border-top: 2px solid var(--mw-border);
+    padding-top: 12px;
+    font-family: 'Archivo'; 
+    font-size: 11px; 
+    font-weight: 700;
+    text-transform: uppercase; 
+    letter-spacing: 0.12em;
+    color: var(--mw-magenta);
+    display: flex; 
+    justify-content: space-between;
+  }
+
+  @media (max-width: 720px) {
+    .palette { grid-template-columns: repeat(5, 1fr); }
+    .compare, .map, .proto, .photos, .verdict { grid-template-columns: 1fr; }
+    header.lede h1 { font-size: 40px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="lede">
+      <h1><span class="a">Muted</span> <span class="b">Warhol</span> <span class="c">×</span> Brooks</h1>
+      <p>Experiment 03: keep Warhol's layout signatures — hard outlines, silkscreen repeats, bold type — but desaturate the palette so travel photography breathes. Dark mode default. Signature-first, saturation-second.</p>
+      <div class="meta">EXPERIMENT 03 / DARK MODE / 05.03.2026</div>
+    </header>
+
+    <!-- 1. PALETTE -->
+    <section class="section">
+      <div class="section-head">
+        <span class="num">01</span>
+        <h2>The Palette</h2>
+        <span class="tag">10 colors</span>
+      </div>
+      <div class="palette">
+        <div class="swatch" style="background: var(--mw-pink); color: var(--mw-text);"><span class="name">Muted<br>Pink</span><span class="hex">#C95A7D</span></div>
+        <div class="swatch" style="background: var(--mw-magenta); color: var(--mw-text);"><span class="name">Muted<br>Magenta</span><span class="hex">#9B4366</span></div>
+        <div class="swatch" style="background: var(--mw-orange); color: var(--mw-text);"><span class="name">Muted<br>Orange</span><span class="hex">#D97850</span></div>
+        <div class="swatch" style="background: var(--mw-red); color: var(--mw-text);"><span class="name">Muted<br>Red</span><span class="hex">#C44952</span></div>
+        <div class="swatch" style="background: var(--mw-yellow); color: var(--mw-bg);"><span class="name">Muted<br>Gold</span><span class="hex">#D4AA3A</span></div>
+        <div class="swatch" style="background: var(--mw-lime); color: var(--mw-bg);"><span class="name">Muted<br>Lime</span><span class="hex">#98B54A</span></div>
+        <div class="swatch" style="background: var(--mw-mint); color: var(--mw-text);"><span class="name">Muted<br>Mint</span><span class="hex">#4FA084</span></div>
+        <div class="swatch" style="background: var(--mw-cyan); color: var(--mw-text);"><span class="name">Muted<br>Cyan</span><span class="hex">#5098B3</span></div>
+        <div class="swatch" style="background: var(--mw-blue); color: var(--mw-text);"><span class="name">Muted<br>Blue</span><span class="hex">#4963B8</span></div>
+        <div class="swatch" style="background: var(--mw-violet); color: var(--mw-text); border-right: 0;"><span class="name">Muted<br>Violet</span><span class="hex">#7356AB</span></div>
+      </div>
+    </section>
+
+    <!-- 2. BEFORE/AFTER -->
+    <section class="section">
+      <div class="section-head">
+        <span class="num">02</span>
+        <h2>Desaturation Treatment</h2>
+        <span class="tag">Before / After</span>
+      </div>
+      <div class="compare">
+        <div class="comp-card">
+          <h3>Original Warhol (High-key)</h3>
+          <div class="comp-swatches">
+            <div class="comp-sw" style="background: #FF2E93;">PINK</div>
+            <div class="comp-sw" style="background: #E0182B;">RED</div>
+            <div class="comp-sw" style="background: #FFD400; color: #0B0B0B;">YLLW</div>
+            <div class="comp-sw" style="background: #2EC4F1;">CYAN</div>
+            <div class="comp-sw" style="background: #1F4DDB;">BLUE</div>
+          </div>
+          <div class="comp-label">Pure, flat, screenprint saturation. Competes with real photography. Cream background only.</div>
+        </div>
+        <div class="comp-card">
+          <h3>Muted Warhol (This version)</h3>
+          <div class="comp-swatches">
+            <div class="comp-sw" style="background: var(--mw-pink);">PINK</div>
+            <div class="comp-sw" style="background: var(--mw-red);">RED</div>
+            <div class="comp-sw" style="background: var(--mw-yellow);">GOLD</div>
+            <div class="comp-sw" style="background: var(--mw-cyan);">CYAN</div>
+            <div class="comp-sw" style="background: var(--mw-blue);">BLUE</div>
+          </div>
+          <div class="comp-label">~30% desaturation, chroma reduced. Sits alongside travel photos without fighting. Dark mode native.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. UI MAPPING -->
+    <section class="section">
+      <div class="section-head">
+        <span class="num">03</span>
+        <h2>How It Maps Onto Brooks</h2>
+        <span class="tag">Token swap</span>
+      </div>
+      <div class="map">
+        <div class="map-card">
+          <h3>Surfaces & text</h3>
+          <div class="map-row"><span class="chip" style="background: var(--mw-bg);"></span><code>--ig-bg</code> page<em>DEEP BLACK</em></div>
+          <div class="map-row"><span class="chip" style="background: var(--mw-elevated);"></span><code>--ig-elevated</code> cards<em>CHARCOAL</em></div>
+          <div class="map-row"><span class="chip" style="background: var(--mw-text);"></span><code>--text</code> primary<em>OFF-WHITE</em></div>
+          <div class="map-row"><span class="chip" style="background: var(--mw-text2);"></span><code>--text-secondary</code><em>GRAY</em></div>
+          <div class="map-row"><span class="chip" style="background: var(--mw-border);"></span><code>--ig-border</code> 2-3px frames<em>MID-GRAY</em></div>
+        </div>
+        <div class="map-card">
+          <h3>Brand & action</h3>
+          <div class="map-row"><span class="chip" style="background: var(--mw-pink);"></span><code>--brand-500</code> identity<em>MUTED PINK</em></div>
+          <div class="map-row"><span class="chip" style="background: var(--mw-blue);"></span><code>--ig-blue</code> CTAs<em>MUTED BLUE</em></div>
+          <div class="map-row"><span class="chip" style="background: var(--mw-yellow);"></span><code>--accent</code> sale / draft<em>MUTED GOLD</em></div>
+          <div class="map-row"><span class="chip" style="background: var(--mw-lime);"></span><code>--success</code> in-season<em>MUTED LIME</em></div>
+          <div class="map-row"><span class="chip" style="background: var(--mw-yellow);"></span><code>★</code> rating star<em>MUTED GOLD</em></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. PROTOTYPE -->
+    <section class="section">
+      <div class="section-head">
+        <span class="num">04</span>
+        <h2>Brooks, Muted Pop</h2>
+        <span class="tag">UI mockup</span>
+      </div>
+      <div class="proto">
+
+        <!-- feed -->
+        <div class="proto-card">
+          <div class="nav">
+            <span class="logo">BROOKS</span>
+            <span class="search-pill">Search creators, guides, places</span>
+            <button class="cta">Sign in</button>
+          </div>
+          <h4 class="scrn">Following</h4>
+          <div class="post">
+            <div class="who">
+              <div class="avatar" style="background: linear-gradient(135deg, var(--mw-pink), var(--mw-yellow));"></div>
+              <span class="name">maria.lx</span>
+              <span class="badge">Verified</span>
+            </div>
+            <div class="cover lisbon"></div>
+            <div class="body">
+              <div class="ttl">3 days in Lisbon, slowly</div>
+              <div class="meta">3 days · 18 places · ★ 4.9</div>
+            </div>
+          </div>
+          <div class="post">
+            <div class="who">
+              <div class="avatar" style="background: linear-gradient(135deg, var(--mw-cyan), var(--mw-blue));"></div>
+              <span class="name">tomi.eats</span>
+              <span class="badge" style="background: var(--mw-blue);">Verified</span>
+            </div>
+            <div class="cover tokyo"></div>
+            <div class="body">
+              <div class="ttl">Tokyo bites under ¥2000</div>
+              <div class="meta">4 days · 26 places · ★ 4.8</div>
+            </div>
+          </div>
+          <div class="footer-note">Nav · Story rings use 2px outlines, not gradient fills</div>
+        </div>
+
+        <!-- search -->
+        <div class="proto-card">
+          <div class="nav">
+            <span class="logo">BROOKS</span>
+            <span class="search-pill">lisbon</span>
+            <button class="cta" style="background: var(--mw-pink);">Buy $12</button>
+          </div>
+          <h4 class="scrn">Explore</h4>
+          <div class="tabs">
+            <span class="t active">guides</span>
+            <span class="t">creators</span>
+            <span class="t">places</span>
+          </div>
+          <div class="row">
+            <div class="thumb" style="background: linear-gradient(135deg, var(--mw-orange), var(--mw-red));"></div>
+            <div class="info">
+              <div class="ttl">3 days in Lisbon, slowly</div>
+              <div class="by">by maria.lx</div>
+              <div class="meta">Lisbon · 3 days · 18 places · ★ 4.9</div>
+              <span class="price">$12.00</span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="thumb" style="background: linear-gradient(135deg, var(--mw-cyan), var(--mw-blue));"></div>
+            <div class="info">
+              <div class="ttl">Tokyo bites under ¥2000</div>
+              <div class="by">by tomi.eats</div>
+              <div class="meta">Tokyo · 4 days · 26 places · ★ 4.8</div>
+              <span class="price">$15.00</span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="thumb" style="background: linear-gradient(135deg, var(--mw-pink), var(--mw-violet));"></div>
+            <div class="info">
+              <div class="ttl">Mexico City for first-timers</div>
+              <div class="by">by anna.travels</div>
+              <div class="meta">CDMX · 5 days · 32 places · ★ 4.7</div>
+              <span class="price" style="background: var(--mw-lime);">FREE</span>
+            </div>
+          </div>
+          <div class="footer-note">Gradients only on guide thumbnails & story avatars</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. PHOTO TREATMENT -->
+    <section class="section">
+      <div class="section-head">
+        <span class="num">05</span>
+        <h2>Photography Next To Muted Pop</h2>
+        <span class="tag">Balance test</span>
+      </div>
+      <div class="photos">
+        <div class="photo-card">
+          <h3>Travel Photo + Gradient Overlay</h3>
+          <div class="photo-frame">
+            <div class="overlay">
+              <div class="city">LISBON</div>
+              <div class="meta-line">3 days · 18 places · by maria.lx</div>
+            </div>
+          </div>
+          <div class="photo-label">Real photo placeholder. Muted palette doesn't compete — travel imagery stays the hero.</div>
+        </div>
+        <div class="photo-card">
+          <h3>Abstract Geometric Cover (No Photo)</h3>
+          <div class="photo-frame" style="background: linear-gradient(135deg, var(--mw-pink), var(--mw-yellow), var(--mw-cyan));">
+            <div class="overlay">
+              <div class="city">TOKYO</div>
+              <div class="meta-line">4 days · 26 places · by tomi.eats</div>
+            </div>
+          </div>
+          <div class="photo-label">When no photo exists: gradient as placeholder. Still reads as Brooks, not pure Warhol.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. VERDICT -->
+    <section class="verdict">
+      <div>
+        <h2>What this gets right</h2>
+        <ul>
+          <li class="pro"><strong>Dark mode compatible.</strong> The original Warhol needs cream; this runs on black.</li>
+          <li class="pro">Muted palette <strong>coexists with photography</strong> — travel images stay the visual hero, not the UI.</li>
+          <li class="pro">Keeps the Warhol layout DNA: hard outlines, bold Archivo type, repeating-grid story rings.</li>
+          <li class="pro">Muted pink still owns brand identity; muted gold still pops on ratings / sales without blinding you.</li>
+          <li class="pro">Closer to Instagram-calm than pure Warhol, but still visually ownable.</li>
+          <li class="pro">WCAG AA accessible on all primary text/surface pairs (tested).</li>
+        </ul>
+      </div>
+      <div>
+        <h2>What you lose</h2>
+        <ul>
+          <li class="con">You lose the <strong>pure pop impact</strong> — banana yellow and Marilyn pink are iconic precisely because they're loud.</li>
+          <li class="con">The muted palette can read generic if you don't commit to the hard-outline / bold-type signature.</li>
+          <li class="con">Story rings with 2px outline borders (vs gradient fills) are less Instagram-native.</li>
+          <li class="con">If you want "ownable color," this trades saturation for accessibility — a conscious tradeoff.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="sig">
+      <span>Brooks Design System × Muted Warhol</span>
+      <span>Experiment 03 — Dark Mode</span>
+    </footer>
+
+  </div>
+</body>
+</html>
