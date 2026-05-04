@@ -147,7 +147,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
           </button>
         ))}
       </div>
-      <div ref={mapContainerRef} className="h-[60vh] max-h-96 min-h-72 w-full overflow-hidden rounded-2xl border border-ig-border md:h-80" />
+      <div ref={mapContainerRef} className="h-[40vh] max-h-72 min-h-56 w-full overflow-hidden rounded-2xl border border-ig-border md:h-80 md:max-h-96 md:min-h-72" />
     </div>
   );
 }

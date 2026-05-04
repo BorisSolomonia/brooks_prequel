@@ -334,8 +334,8 @@ export default function TripDetailPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-6">
-          <div className="mw-card p-5">
+        <div className="order-2 space-y-6 lg:order-1">
+          <div className="mw-card p-4 md:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="font-display text-lg font-black text-ig-text-primary">Trip setup</h2>
@@ -382,8 +382,8 @@ export default function TripDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-5">
-            <h2 className="text-lg font-semibold text-ig-text-primary">Itinerary</h2>
+          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Itinerary</h2>
             <div className="mt-4 space-y-6">
               {sortedDays.map((dayNumber) => {
                 const dayItems = dayGroups.get(dayNumber) ?? [];
@@ -423,7 +423,7 @@ export default function TripDetailPage() {
                               <button
                                 onClick={() => handleToggleVisited(item)}
                                 title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
-                                className={`mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors lg:h-5 lg:w-5 ${
+                                className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors md:h-7 md:w-7 lg:h-5 lg:w-5 ${
                                   isVisited
                                     ? 'border-brand-500 bg-brand-500 text-white'
                                     : 'border-ig-border hover:border-brand-500/50'
@@ -435,15 +435,15 @@ export default function TripDetailPage() {
                                   </svg>
                                 )}
                               </button>
-                              <div className="h-16 w-16 flex-shrink-0 rounded-lg border border-ig-border bg-ig-elevated overflow-hidden">
+                              <div className="h-14 w-14 flex-shrink-0 rounded-lg border border-ig-border bg-ig-elevated overflow-hidden md:h-16 md:w-16">
                                 {firstImage && <img src={firstImage} alt="" className="h-full w-full object-cover" />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <h3 className={`text-sm font-semibold truncate ${isVisited ? 'text-ig-text-secondary line-through' : 'text-ig-text-primary'}`}>
+                                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                  <h3 className={`text-sm font-semibold ${isVisited ? 'text-ig-text-secondary line-through' : 'text-ig-text-primary'}`}>
                                     {item.placeName}
                                   </h3>
-                                  <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1">
+                                  <div className="flex flex-wrap items-center justify-start gap-1 md:flex-shrink-0 md:justify-end">
                                     {item.latitude !== null && item.longitude !== null && (
                                       <a
                                         href={`https://brooksweb.uk/maps?lat=${item.latitude}&lng=${item.longitude}`}
@@ -511,9 +511,9 @@ export default function TripDetailPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-5">
-            <h2 className="text-lg font-semibold text-ig-text-primary">Trip map</h2>
+        <div className="order-1 space-y-6 lg:order-2">
+          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Trip map</h2>
             <p className="mt-1 text-sm text-ig-text-secondary">
               Skipped places are hidden from the map.
             </p>
@@ -533,8 +533,8 @@ export default function TripDetailPage() {
             />
           )}
 
-          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-5">
-            <h2 className="text-lg font-semibold text-ig-text-primary">Quick links</h2>
+          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Quick links</h2>
             <div className="mt-4 space-y-3">
               {visibleItems.map((item) => (
                 <a
