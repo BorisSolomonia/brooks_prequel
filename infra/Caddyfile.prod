@@ -19,6 +19,12 @@ http://127.0.0.1 {
   @exchangeRates path /api/exchange-rates*
   reverse_proxy @exchangeRates {$WEB_HOST}:{$WEB_PORT}
 
+  @calendar path /api/calendar/*
+  reverse_proxy @calendar {$WEB_HOST}:{$WEB_PORT}
+
+  @tripCalendar path /api/trips/*
+  reverse_proxy @tripCalendar {$WEB_HOST}:{$WEB_PORT}
+
   @api path /api/*
   reverse_proxy @api {$BACKEND_HOST}:{$BACKEND_PORT}
 

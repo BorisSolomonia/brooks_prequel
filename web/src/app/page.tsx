@@ -165,9 +165,6 @@ export default function LandingPage() {
         className="relative isolate min-h-[100dvh] overflow-hidden lg:h-[100dvh]"
         style={{
           backgroundColor: '#D4AA3A',
-          backgroundImage: 'url(/images/brooks-hero-bg.webp)',
-          backgroundPosition: '72% center',
-          backgroundSize: 'cover',
         }}
       >
         <Image
@@ -175,7 +172,6 @@ export default function LandingPage() {
           alt=""
           fill
           priority
-          unoptimized
           fetchPriority="high"
           sizes="100vw"
           className="-z-20 object-cover object-[72%_center] lg:object-center"

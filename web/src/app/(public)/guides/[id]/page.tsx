@@ -1,13 +1,11 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import StarRating from '@/components/reviews/StarRating';
-import { api } from '@/lib/api';
 import type { GuidePreview } from '@/types';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const API_INTERNAL = process.env.API_INTERNAL_BASE_URL ?? 'http://backend:8080';
 
 function seasonIsNow(start: number | null | undefined, end: number | null | undefined): boolean {
   if (!start || !end) return false;
@@ -16,29 +14,21 @@ function seasonIsNow(start: number | null | undefined, end: number | null | unde
   return month >= start || month <= end;
 }
 
-export default function PublicGuidePreviewPage() {
-  const params = useParams();
-  const guideId = params.id as string;
-  const [preview, setPreview] = useState<GuidePreview | null>(null);
-  const [loading, setLoading] = useState(true);
+async function getPreview(guideId: string): Promise<GuidePreview | null> {
+  const res = await fetch(`${API_INTERNAL}/api/guides/${guideId}/preview`, {
+    headers: { 'Content-Type': 'application/json' },
+    next: { revalidate: 60 },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) return null;
+  return res.json();
+}
 
-  useEffect(() => {
-    api.get<GuidePreview>(`/api/guides/${guideId}/preview`)
-      .then((response) => setPreview(response))
-      .catch(() => setPreview(null))
-      .finally(() => setLoading(false));
-  }, [guideId]);
-
-  if (loading) {
-    return <div className="mx-auto max-w-3xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
-  }
+export default async function PublicGuidePreviewPage({ params }: { params: { id: string } }) {
+  const preview = await getPreview(params.id);
 
   if (!preview) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-12 text-center">
-        <p className="text-ig-error">Guide not found</p>
-      </div>
-    );
+    notFound();
   }
 
   const inSeason = seasonIsNow(preview.bestSeasonStartMonth, preview.bestSeasonEndMonth);
