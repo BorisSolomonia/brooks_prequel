@@ -306,8 +306,10 @@ public class CalendarService {
                 throw new IllegalArgumentException("Unsupported method " + method);
             }
             return send(builder.build(), true);
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
-            throw new BusinessException("Failed to call Google Calendar");
+            throw new BusinessException("Failed to call Google Calendar (" + method + " " + url + "): " + e.getClass().getSimpleName() + " " + e.getMessage());
         }
     }
 
@@ -318,7 +320,9 @@ public class CalendarService {
                 if (request.method().equals("DELETE") && response.statusCode() == 404) {
                     return Map.of();
                 }
-                throw new BusinessException("Google Calendar request failed");
+                String responseBody = response.body();
+                String snippet = responseBody == null ? "" : responseBody.substring(0, Math.min(500, responseBody.length()));
+                throw new BusinessException("Google Calendar " + request.method() + " " + request.uri() + " -> " + response.statusCode() + " " + snippet);
             }
             if (!expectJson || response.body() == null || response.body().isBlank()) {
                 return Map.of();
@@ -327,7 +331,7 @@ public class CalendarService {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            throw new BusinessException("Google Calendar request failed");
+            throw new BusinessException("Google Calendar request failed: " + e.getClass().getSimpleName() + " " + e.getMessage());
         }
     }
 
