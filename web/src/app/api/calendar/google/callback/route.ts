@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { accessToken } = await getAccessToken();
-    const redirectUri = new URL('/api/calendar/google/callback', request.url).toString();
+    const redirectUri = new URL('/api/calendar/google/callback', process.env.AUTH0_BASE_URL ?? request.url).toString();
     const backendResponse = await fetch(`${API_BASE_URL}/api/me/calendar/google/connect`, {
       method: 'POST',
       headers: {
