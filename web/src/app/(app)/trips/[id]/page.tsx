@@ -56,7 +56,7 @@ function NavigateMenu({ lat, lng }: { lat: number; lng: number }) {
         Navigate
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-10 w-44 rounded-xl border border-ig-border bg-ig-elevated shadow-lg py-1">
+        <div className="absolute left-0 top-full mt-1 z-10 w-44 rounded-xl border border-ig-border bg-ig-elevated shadow-lg py-1 md:left-auto md:right-0">
           <a href={buildMapsUrl(lat, lng)} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}
             className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Google Maps</a>
           <a href={buildAppleMapsUrl(lat, lng)} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}
@@ -250,19 +250,23 @@ export default function TripDetailPage() {
           <Link href="/trips" className="text-sm text-brand-500 hover:text-brand-400">
             ← Back to My Trips
           </Link>
-          <h1 className="mw-section-title mt-3 text-3xl">{trip.guide.title}</h1>
+          <h1 className="mw-section-title mt-3 text-2xl md:text-3xl">{trip.guide.title}</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
             Purchased version {trip.guideVersionNumber}. Set your dates, track your visits, and export the itinerary.
           </p>
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-ig-text-tertiary">
-            {trip.guide.region && <span>{trip.guide.region}</span>}
-            <span>{trip.guide.dayCount} days</span>
-            <span>{trip.guide.placeCount} places</span>
-            <span>{formatAmount(trip.guide.priceCents)}</span>
+          <div className="mt-3 text-xs text-ig-text-tertiary">
+            <p>
+              {[
+                trip.guide.region,
+                `${trip.guide.dayCount} days`,
+                `${trip.guide.placeCount} places`,
+                formatAmount(trip.guide.priceCents),
+              ].filter(Boolean).join(' • ')}
+            </p>
             {totalPlaces > 0 && (
-              <span className="font-medium text-brand-400">
+              <p className="mt-1 font-medium text-brand-400">
                 {visitedCount} of {totalPlaces} places visited
-              </span>
+              </p>
             )}
           </div>
           {totalPlaces > 0 && (
@@ -338,8 +342,8 @@ export default function TripDetailPage() {
           <div className="mw-card p-4 md:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="font-display text-lg font-black text-ig-text-primary">Trip setup</h2>
-                <p className="mt-1 text-sm text-ig-text-secondary">
+                <h2 className="font-display text-base font-black text-ig-text-primary md:text-lg">Trip setup</h2>
+                <p className="mt-1 hidden text-sm text-ig-text-secondary md:block">
                   Choose when the itinerary starts. The app will prefill timings from creator hints.
                 </p>
               </div>
@@ -440,7 +444,7 @@ export default function TripDetailPage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                                  <h3 className={`text-sm font-semibold ${isVisited ? 'text-ig-text-secondary line-through' : 'text-ig-text-primary'}`}>
+                                  <h3 className={`text-sm font-semibold break-words ${isVisited ? 'text-ig-text-secondary line-through' : 'text-ig-text-primary'}`}>
                                     {item.placeName}
                                   </h3>
                                   <div className="flex flex-wrap items-center justify-start gap-1 md:flex-shrink-0 md:justify-end">
@@ -471,8 +475,8 @@ export default function TripDetailPage() {
                                     </label>
                                   </div>
                                 </div>
-                                {tagLine && <p className="mt-0.5 text-xs text-ig-text-secondary">{tagLine}</p>}
-                                {item.placeAddress && <p className="mt-0.5 text-xs text-ig-text-tertiary truncate">{item.placeAddress}</p>}
+                                {tagLine && <p className="mt-0.5 text-xs text-ig-text-secondary truncate">{tagLine}</p>}
+                                {item.placeAddress && <p className="mt-0.5 text-xs text-ig-text-tertiary line-clamp-2">{item.placeAddress}</p>}
                                 {placeData?.description && <p className="mt-1 text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
                               </div>
                             </div>
@@ -484,7 +488,7 @@ export default function TripDetailPage() {
                                   ...current,
                                   [item.placeId]: { ...edit, scheduledStart: e.target.value },
                                 }))}
-                                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none md:text-sm"
+                                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-brand-500 focus:outline-none"
                               />
                               <input
                                 type="datetime-local"
@@ -493,10 +497,10 @@ export default function TripDetailPage() {
                                   ...current,
                                   [item.placeId]: { ...edit, scheduledEnd: e.target.value },
                                 }))}
-                                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none md:text-sm"
+                                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-brand-500 focus:outline-none"
                               />
                             </div>
-                            <p className="px-3 pb-3 text-xs text-ig-text-tertiary">
+                            <p className="hidden px-3 pb-3 text-xs text-ig-text-tertiary md:block">
                               {item.suggestedStartMinute !== null ? `Creator start hint: +${item.suggestedStartMinute} min.` : 'No creator start hint.'}
                               {item.suggestedDurationMinutes !== null ? ` Suggested: ${item.suggestedDurationMinutes} min.` : ''}
                             </p>
