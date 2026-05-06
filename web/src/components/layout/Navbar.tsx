@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
@@ -44,8 +44,15 @@ function MobileTabIcon({ path }: { path: string }) {
 export default function Navbar() {
   const { user, isLoading } = useUser();
   const pathname = usePathname();
+  const mobileMenuRef = useRef<HTMLDetailsElement>(null);
   const visibleDesktopLinks = desktopLinks.filter((link) => !link.auth || user);
   const visibleMobileTabs = mobileTabs.filter((tab) => !tab.auth || user);
+
+  useEffect(() => {
+    if (mobileMenuRef.current?.open) {
+      mobileMenuRef.current.removeAttribute('open');
+    }
+  }, [pathname]);
 
   return (
     <>
@@ -99,7 +106,7 @@ export default function Navbar() {
           {isLoading ? (
             <div className="h-12 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />
           ) : user ? (
-            <details className="group relative">
+            <details ref={mobileMenuRef} className="group relative">
               <summary className="flex h-12 min-w-12 cursor-pointer list-none items-center justify-center rounded-full border-2 border-ig-border bg-ig-elevated px-3 text-sm font-semibold text-ig-text-primary [&::-webkit-details-marker]:hidden">
                 Menu
               </summary>
