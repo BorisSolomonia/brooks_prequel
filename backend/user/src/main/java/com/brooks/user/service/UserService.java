@@ -29,7 +29,15 @@ public class UserService {
     public User findOrCreateUser(String auth0Subject, String email) {
         return userRepository.findByAuth0Subject(auth0Subject)
                 .map(user -> syncAdminRole(user, email))
-                .orElseGet(() -> userRepository.save(syncAdminRole(new User(auth0Subject, email), email)));
+                .orElseGet(() -> {
+                    // The users.email column is UNIQUE NOT NULL, so a blank fallback collides as
+                    // soon as a second emailless user signs in. Derive a deterministic per-subject
+                    // synthetic so no two emailless users ever share the same slot.
+                    String safeEmail = (email == null || email.isBlank())
+                            ? auth0Subject.replace("|", "_") + "@noemail.brooks.local"
+                            : email;
+                    return userRepository.save(syncAdminRole(new User(auth0Subject, safeEmail), safeEmail));
+                });
     }
 
     @Transactional(readOnly = true)
