@@ -109,7 +109,7 @@ Status legend: `[ ]` open · `[x]` done · `[~]` partial / in progress
 
 ---
 
-## ✨ New features.
+## ✨ New features
 
 ### F1. Place-level reviews (buyer-only authoring, buyer-only audience)
 
