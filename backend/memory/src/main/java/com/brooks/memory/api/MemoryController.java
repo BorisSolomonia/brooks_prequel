@@ -2,6 +2,7 @@ package com.brooks.memory.api;
 
 import com.brooks.memory.dto.*;
 import com.brooks.memory.service.MemoryService;
+import com.brooks.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class MemoryController {
 
     private final MemoryService memoryService;
+    private final UserService userService;
 
     @PostMapping("/memories")
     public ResponseEntity<MemoryResponse> createMemory(
@@ -77,7 +79,13 @@ public class MemoryController {
             Authentication authentication,
             @PathVariable String token,
             @Valid @RequestBody MemoryRevealRequest request) {
-        return ResponseEntity.ok(memoryService.revealShare(subject(authentication), token, request));
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        String subject = jwt.getSubject();
+        // Provision the recipient on first reveal — Auth0 afterCallback may have failed silently
+        // if the backend was unhealthy when they signed in, leaving a valid JWT with no users row.
+        String email = jwt.getClaimAsString("email");
+        userService.findOrCreateUser(subject, email == null ? "" : email);
+        return ResponseEntity.ok(memoryService.revealShare(subject, token, request));
     }
 
     @PostMapping("/memory-creators/{creatorId}/hide-public-memories")
