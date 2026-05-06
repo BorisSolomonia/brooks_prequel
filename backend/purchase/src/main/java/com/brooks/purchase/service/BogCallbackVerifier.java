@@ -42,8 +42,9 @@ public class BogCallbackVerifier {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             this.publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(keyBytes));
         } catch (IOException | RuntimeException | java.security.GeneralSecurityException e) {
-            log.error("Failed to load BOG callback public key from classpath {}", PEM_RESOURCE, e);
-            throw new IllegalStateException("BOG callback public key initialization failed", e);
+            log.error("Failed to load BOG callback public key from classpath {} — signed callbacks will be rejected. "
+                    + "Restore the PEM file and redeploy.", PEM_RESOURCE, e);
+            this.publicKey = null;
         }
     }
 
@@ -57,6 +58,10 @@ public class BogCallbackVerifier {
         if (base64Signature == null || base64Signature.isBlank()) {
             log.warn("BOG callback missing Callback-Signature header — accepting unsigned callback");
             return true;
+        }
+        if (publicKey == null) {
+            log.warn("BOG callback public key not loaded; rejecting signed callback");
+            return false;
         }
         try {
             byte[] signature = Base64.getDecoder().decode(base64Signature.trim());

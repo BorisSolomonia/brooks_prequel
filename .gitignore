@@ -35,6 +35,9 @@ dist/
 !.env.template
 gcp-credentials.json
 *.pem
+# BOG iPay callback verification key is a PUBLIC key shipped with the backend —
+# the entire signed-webhook flow depends on it being on the classpath at runtime.
+!backend/purchase/src/main/resources/bog/callback-public-key.pem
 
 # =========================
 # IDE / Editor
