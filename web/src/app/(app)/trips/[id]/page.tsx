@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PurchasedTripMap from '@/components/maps/PurchasedTripMap';
+import PlaceCarousel from '@/components/places/PlaceCarousel';
+import PlaceReviewPanel from '@/components/reviews/PlaceReviewPanel';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -252,7 +254,7 @@ export default function TripDetailPage() {
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Link href="/trips" className="text-sm text-brand-500 hover:text-brand-400">
-            ← Back to My Trips
+            ← Back to Purchased guides
           </Link>
           <h1 className="mw-section-title mt-3 text-2xl md:text-3xl">{trip.guide.title}</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
@@ -418,7 +420,6 @@ export default function TripDetailPage() {
                         };
                         const isVisited = visitedMap[item.id] ?? item.visited;
                         const placeData = placeLookup.get(item.placeId);
-                        const firstImage = placeData?.images[0]?.imageUrl;
                         const placeTags = placeData?.tags ?? [];
                         const displayTags = placeTags.slice(0, 2);
                         const extraTags = placeTags.length > 2 ? placeTags.length - 2 : 0;
@@ -428,23 +429,41 @@ export default function TripDetailPage() {
                         return (
                           <div key={item.placeId} className={`rounded-xl border bg-ig-primary transition-colors ${isVisited ? 'border-brand-500/30' : 'border-ig-border'}`}>
                             <div className="flex gap-3 p-3">
-                              <button
-                                onClick={() => handleToggleVisited(item)}
-                                title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
-                                className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors md:h-7 md:w-7 lg:h-5 lg:w-5 ${
-                                  isVisited
-                                    ? 'border-brand-500 bg-brand-500 text-white'
-                                    : 'border-ig-border hover:border-brand-500/50'
-                                }`}
-                              >
-                                {isVisited && (
-                                  <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
-                                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
+                              <div className="flex flex-col items-center gap-2 md:gap-0">
+                                <button
+                                  onClick={() => handleToggleVisited(item)}
+                                  title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
+                                  className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors md:h-7 md:w-7 lg:h-5 lg:w-5 ${
+                                    isVisited
+                                      ? 'border-brand-500 bg-brand-500 text-white'
+                                      : 'border-ig-border hover:border-brand-500/50'
+                                  }`}
+                                >
+                                  {isVisited && (
+                                    <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+                                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                  )}
+                                </button>
+                                <label className="flex flex-col items-center gap-0.5 cursor-pointer md:hidden">
+                                  <input
+                                    type="checkbox"
+                                    checked={edit.skipped}
+                                    onChange={(e) => setItemEdits((current) => ({
+                                      ...current,
+                                      [item.placeId]: { ...edit, skipped: e.target.checked },
+                                    }))}
+                                    className="h-4 w-4 cursor-pointer"
+                                  />
+                                  <span className="text-[10px] font-medium text-ig-text-secondary">Skip</span>
+                                </label>
+                              </div>
+                              <div className="w-14 flex-shrink-0 md:w-16">
+                                {placeData && placeData.images.length > 0 ? (
+                                  <PlaceCarousel images={placeData.images} altPrefix={item.placeName} />
+                                ) : (
+                                  <div className="h-14 w-14 rounded-lg border border-ig-border bg-ig-elevated md:h-16 md:w-16" />
                                 )}
-                              </button>
-                              <div className="h-14 w-14 flex-shrink-0 rounded-lg border border-ig-border bg-ig-elevated overflow-hidden md:h-16 md:w-16">
-                                {firstImage && <img src={firstImage} alt="" className="h-full w-full object-cover" />}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -466,7 +485,7 @@ export default function TripDetailPage() {
                                     {item.latitude !== null && item.longitude !== null && (
                                       <NavigateMenu lat={item.latitude} lng={item.longitude} />
                                     )}
-                                    <label className="inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-ig-text-secondary cursor-pointer lg:min-h-9 lg:text-xs">
+                                    <label className="hidden md:inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-ig-text-secondary cursor-pointer lg:min-h-9 lg:text-xs">
                                       <input
                                         type="checkbox"
                                         checked={edit.skipped}
@@ -479,9 +498,9 @@ export default function TripDetailPage() {
                                     </label>
                                   </div>
                                 </div>
-                                {tagLine && <p className="mt-0.5 text-xs text-ig-text-secondary truncate">{tagLine}</p>}
-                                {item.placeAddress && <p className="mt-0.5 text-xs text-ig-text-tertiary line-clamp-2">{item.placeAddress}</p>}
-                                {placeData?.description && <p className="mt-1 text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
+                                {tagLine && <p className="mt-0.5 text-left text-xs text-ig-text-secondary truncate">{tagLine}</p>}
+                                {item.placeAddress && <p className="mt-0.5 text-left text-xs text-ig-text-tertiary line-clamp-2">{item.placeAddress}</p>}
+                                {placeData?.description && <p className="mt-1 text-left text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
                               </div>
                             </div>
                             <div className="grid gap-3 px-3 pb-3 sm:grid-cols-2">
@@ -508,6 +527,9 @@ export default function TripDetailPage() {
                               {item.suggestedStartMinute !== null ? `Creator start hint: +${item.suggestedStartMinute} min.` : 'No creator start hint.'}
                               {item.suggestedDurationMinutes !== null ? ` Suggested: ${item.suggestedDurationMinutes} min.` : ''}
                             </p>
+                            <div className="px-3 pb-3">
+                              <PlaceReviewPanel placeId={item.placeId} placeName={item.placeName} token={token} />
+                            </div>
                           </div>
                         );
                       })}

@@ -2,6 +2,8 @@ package com.brooks.guide.repository;
 
 import com.brooks.guide.domain.GuidePlace;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,4 +20,7 @@ public interface GuidePlaceRepository extends JpaRepository<GuidePlace, UUID> {
     Optional<GuidePlace> findByIdAndBlockDayGuideId(UUID id, UUID guideId);
 
     Optional<GuidePlace> findByIdAndBlockId(UUID id, UUID blockId);
+
+    @Query("SELECT p.block.day.guide.id FROM GuidePlace p WHERE p.id = :placeId")
+    Optional<UUID> findGuideIdByPlaceId(@Param("placeId") UUID placeId);
 }

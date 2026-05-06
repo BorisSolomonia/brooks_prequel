@@ -5,8 +5,9 @@ const links = [
   { href: '/pricing', label: 'Products & prices' },
   { href: '/contact', label: 'Contact' },
   { href: '/terms', label: 'Terms' },
-  { href: '/delivery', label: 'Delivery' },
+  { href: '/privacy', label: 'Privacy' },
   { href: '/refund', label: 'Refunds' },
+  { href: '/delivery', label: 'Delivery' },
 ];
 
 export default function Footer() {

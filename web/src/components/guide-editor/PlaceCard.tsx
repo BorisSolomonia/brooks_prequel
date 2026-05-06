@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ImageUploadList } from '@/components/media/ImageUploadField';
+import { PLACE_IMAGE_MAX_COUNT } from '@/lib/config';
 import type { GuidePlace, GuidePlaceRequest } from '@/types';
 
 const SUGGESTED_TAGS = [
@@ -179,7 +180,7 @@ export default function PlaceCard({ token, place, onUpdate, onDelete }: Props) {
           label="Photos"
           values={imageUrls}
           onChange={setImageUrls}
-          maxImages={4}
+          maxImages={PLACE_IMAGE_MAX_COUNT}
         />
         <div className="flex flex-wrap gap-2">
           <button onClick={handleSave} className="mw-button-primary min-h-11 rounded px-4 py-2 text-sm">Save</button>

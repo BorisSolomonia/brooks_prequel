@@ -15,11 +15,9 @@ function SearchBarFallback() {
 const desktopLinks = [
   { href: '/search', label: 'Explore' },
   { href: '/maps', label: 'Maps', auth: true },
-  { href: '/purchases', label: 'Purchases', auth: true },
   { href: '/guides', label: 'My Guides', auth: true },
-  { href: '/trips', label: 'My Trips', auth: true },
+  { href: '/trips', label: 'Purchased guides', auth: true },
   { href: '/contact', label: 'Contact' },
-  { href: '/pricing', label: 'Pricing' },
   { href: '/profile', label: 'Profile', auth: true },
 ];
 
@@ -27,7 +25,7 @@ const mobileTabs = [
   { href: '/search', label: 'Explore', icon: 'M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Zm5.3-2.2L21 21' },
   { href: '/maps', label: 'Maps', auth: true, icon: 'M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Zm0 0V3m6 18V6' },
   { href: '/guides', label: 'Guides', auth: true, icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15Z' },
-  { href: '/trips', label: 'Trips', auth: true, icon: 'M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11Zm0-8.5A2.5 2.5 0 1 0 12 7a2.5 2.5 0 0 0 0 5.5Z' },
+  { href: '/trips', label: 'Purchased guides', auth: true, icon: 'M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11Zm0-8.5A2.5 2.5 0 1 0 12 7a2.5 2.5 0 0 0 0 5.5Z' },
   { href: '/profile', label: 'Profile', auth: true, icon: 'M20 21a8 8 0 1 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z' },
 ];
 
@@ -106,7 +104,6 @@ export default function Navbar() {
                 Menu
               </summary>
               <div className="mw-panel absolute right-0 top-[calc(100%+8px)] z-50 w-48 overflow-hidden rounded-2xl">
-                <Link href="/purchases" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Purchases</Link>
                 <a href="/api/auth/logout" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
               </div>
             </details>

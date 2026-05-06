@@ -112,6 +112,22 @@ function ProfilePageInner() {
                   <p>Add your creator coordinates in profile edit to appear on the maps page.</p>
                 )}
               </div>
+
+              <div className="mt-6 border-t border-ig-border pt-6">
+                <h2 className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-tertiary">Account</h2>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <Link
+                    href="/purchases"
+                    className="group flex items-center justify-between rounded-xl border border-ig-border bg-ig-primary p-4 transition-colors hover:border-brand-500/50"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-ig-text-primary">Purchases</p>
+                      <p className="mt-0.5 text-xs text-ig-text-tertiary">Order history and receipts</p>
+                    </div>
+                    <span aria-hidden className="text-ig-text-tertiary transition-colors group-hover:text-brand-500">→</span>
+                  </Link>
+                </div>
+              </div>
             </div>
           ) : (
             !error && <p className="text-sm text-ig-text-tertiary">No profile data loaded.</p>

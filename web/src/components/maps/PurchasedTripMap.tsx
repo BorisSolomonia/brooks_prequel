@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
+import type { GeoJSONSource, Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
 import type { MyTripItem } from '@/types';
 
 const CATEGORY_FILTERS = [
@@ -13,10 +13,19 @@ const CATEGORY_FILTERS = [
   { value: 'SHOPPING', label: 'Shopping' },
 ];
 
+const TRIP_ROUTE_SOURCE_ID = 'trip-route';
+const TRIP_ROUTE_LAYER_ID = 'trip-route-line';
+
 interface Props {
   items: MyTripItem[];
   mapboxToken: string;
   mapStyle: string;
+}
+
+function chronologicalSort(a: MyTripItem, b: MyTripItem): number {
+  const aTime = a.scheduledStart ? new Date(a.scheduledStart).getTime() : 0;
+  const bTime = b.scheduledStart ? new Date(b.scheduledStart).getTime() : 0;
+  return aTime - bTime;
 }
 
 export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props) {
@@ -25,6 +34,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
   const markersRef = useRef<MapboxMarker[]>([]);
   const mapboxModuleRef = useRef<typeof import('mapbox-gl') | null>(null);
   const [activeCategory, setActiveCategory] = useState('ALL');
+  const [mapReady, setMapReady] = useState(false);
 
   const filteredItems = activeCategory === 'ALL'
     ? items
@@ -59,6 +69,27 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
+
+      map.on('load', () => {
+        if (cancelled) return;
+        map.addSource(TRIP_ROUTE_SOURCE_ID, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+        map.addLayer({
+          id: TRIP_ROUTE_LAYER_ID,
+          type: 'line',
+          source: TRIP_ROUTE_SOURCE_ID,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#ef2f6d',
+            'line-width': 3,
+            'line-dasharray': [2, 2],
+            'line-opacity': 0.85,
+          },
+        });
+        setMapReady(true);
+      });
     };
 
     initialize().catch(() => {});
@@ -70,44 +101,62 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
       mapRef.current?.remove();
       mapRef.current = null;
       mapboxModuleRef.current = null;
+      setMapReady(false);
     };
   }, [items, mapStyle, mapboxToken]);
 
   useEffect(() => {
     const map = mapRef.current;
     const mapboxglModule = mapboxModuleRef.current;
-    if (!map || !mapboxglModule) {
+    if (!map || !mapboxglModule || !mapReady) {
       return;
     }
 
     const mapboxgl = mapboxglModule.default;
-    const validItems = filteredItems.filter((item) => item.latitude !== null && item.longitude !== null && !item.skipped);
+    const validItems = filteredItems
+      .filter((item) => item.latitude !== null && item.longitude !== null && !item.skipped)
+      .slice()
+      .sort(chronologicalSort);
 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
     validItems.forEach((item, index) => {
       const markerElement = document.createElement('div');
-      markerElement.style.width = '28px';
-      markerElement.style.height = '28px';
+      markerElement.style.width = '32px';
+      markerElement.style.height = '32px';
       markerElement.style.borderRadius = '9999px';
       markerElement.style.background = 'var(--brand-primary)';
       markerElement.style.color = '#ffffff';
       markerElement.style.display = 'flex';
       markerElement.style.alignItems = 'center';
       markerElement.style.justifyContent = 'center';
-      markerElement.style.fontSize = '12px';
-      markerElement.style.fontWeight = '700';
-      markerElement.style.border = '2px solid rgba(255,255,255,0.92)';
+      markerElement.style.fontSize = '13px';
+      markerElement.style.fontWeight = '800';
+      markerElement.style.border = '2px solid rgba(255,255,255,0.95)';
+      markerElement.style.boxShadow = '0 6px 14px rgba(0,0,0,0.25)';
       markerElement.textContent = String(index + 1);
 
       const marker = new mapboxgl.Marker({ element: markerElement })
         .setLngLat([item.longitude as number, item.latitude as number])
-        .setPopup(new mapboxgl.Popup({ offset: 12 }).setHTML(`<strong>${item.placeName}</strong>`))
+        .setPopup(new mapboxgl.Popup({ offset: 14 }).setHTML(`<strong>${index + 1}. ${item.placeName}</strong>`))
         .addTo(map);
 
       markersRef.current.push(marker);
     });
+
+    const source = map.getSource(TRIP_ROUTE_SOURCE_ID) as GeoJSONSource | undefined;
+    if (source) {
+      const coordinates = validItems.map((item) => [item.longitude as number, item.latitude as number]);
+      const features = coordinates.length >= 2
+        ? [{
+            type: 'Feature' as const,
+            geometry: { type: 'LineString' as const, coordinates },
+            properties: {},
+          }]
+        : [];
+      source.setData({ type: 'FeatureCollection', features });
+    }
 
     if (validItems.length > 1) {
       const bounds = new mapboxgl.LngLatBounds();
@@ -119,7 +168,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
         zoom: 12,
       });
     }
-  }, [filteredItems]);
+  }, [filteredItems, mapReady]);
 
   if (!mapboxToken || !mapStyle) {
     return (

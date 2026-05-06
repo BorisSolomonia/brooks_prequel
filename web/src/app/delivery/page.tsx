@@ -13,7 +13,7 @@ export default function DeliveryPage() {
         <p>{compliance.serviceDescription}</p>
         <section>
           <h2 className="font-display text-lg font-black text-ig-text-primary">Delivery method</h2>
-          <p>Paid guides are delivered digitally inside the customer account immediately after payment confirmation. Customers can access purchased guides from the Purchases and My Trips sections.</p>
+          <p>Paid guides are delivered digitally inside the customer account immediately after payment confirmation. Customers can access purchased guides from the Purchases and Purchased guides sections.</p>
         </section>
         <section>
           <h2 className="font-display text-lg font-black text-ig-text-primary">Delivery time</h2>

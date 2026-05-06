@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,6 +49,9 @@ public class GuideService {
     private final UserService userService;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+
+    @Value("${app.place-image-max-count}")
+    private int placeImageMaxCount;
 
     // ── Guide CRUD ──────────────────────────────────────────────
 
@@ -239,7 +243,7 @@ public class GuideService {
         place = placeRepository.save(place);
 
         if (request.getImageUrls() != null) {
-            int maxImages = Math.min(request.getImageUrls().size(), 4);
+            int maxImages = Math.min(request.getImageUrls().size(), placeImageMaxCount);
             for (int i = 0; i < maxImages; i++) {
                 place.getImages().add(new GuidePlaceImage(place, request.getImageUrls().get(i), i));
             }
@@ -274,7 +278,7 @@ public class GuideService {
 
         if (request.getImageUrls() != null) {
             place.getImages().clear();
-            int maxImages = Math.min(request.getImageUrls().size(), 4);
+            int maxImages = Math.min(request.getImageUrls().size(), placeImageMaxCount);
             for (int i = 0; i < maxImages; i++) {
                 place.getImages().add(new GuidePlaceImage(place, request.getImageUrls().get(i), i));
             }
