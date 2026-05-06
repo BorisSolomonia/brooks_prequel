@@ -191,6 +191,8 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden items-center lg:flex" style={{ gap: 'clamp(24px, 3vw, 40px)', paddingTop: 4 }}>
+            <Link href="/terms" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>TERMS</Link>
+            <Link href="/privacy" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>PRIVACY</Link>
             <Link href="/guides" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>GUIDES</Link>
             <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <Link href="/about" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>ABOUT</Link>

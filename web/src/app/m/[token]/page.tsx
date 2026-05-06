@@ -99,8 +99,23 @@ export default function SharedMemoryPage() {
     }
     setRevealing(true);
     setError(null);
+
+    // iOS Safari sometimes never invokes either callback when location permission
+    // was previously denied or Location Services are off for Safari, ignoring the
+    // built-in `timeout` option. This hard JS guard guarantees the UI unfreezes.
+    let settled = false;
+    const hardTimeoutId = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      setError('We could not get your location. On iPhone open Settings → Privacy & Security → Location Services → Safari and choose Ask or Allow, then reload this page. Make sure you are outdoors or near a window for GPS.');
+      setRevealing(false);
+    }, 15000);
+
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(hardTimeoutId);
         api.post<MemoryRevealResponse>(`/api/memory-shares/${token}/reveal`, {
           latitude: coords.latitude,
           longitude: coords.longitude,
@@ -110,6 +125,9 @@ export default function SharedMemoryPage() {
           .finally(() => setRevealing(false));
       },
       (geoError) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(hardTimeoutId);
         setError(locationErrorMessage(geoError));
         setRevealing(false);
       },
