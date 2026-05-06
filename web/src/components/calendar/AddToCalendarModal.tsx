@@ -103,15 +103,13 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
     if (!trip) return [];
     return trip.items.map((item) => {
       const overrideStart = overrides[item.id];
-      const currentStart = toLocalInputValue(item.scheduledStart);
-      const currentEnd = toLocalInputValue(item.scheduledEnd);
       const duration = item.scheduledStart && item.scheduledEnd
         ? Math.max(15, Math.round((new Date(item.scheduledEnd).getTime() - new Date(item.scheduledStart).getTime()) / 60000))
         : item.suggestedDurationMinutes || 90;
       return {
         placeId: item.placeId,
-        scheduledStart: overrideStart ? fromLocalInputValue(overrideStart) : fromLocalInputValue(currentStart),
-        scheduledEnd: overrideStart ? addMinutes(overrideStart, duration) : fromLocalInputValue(currentEnd),
+        scheduledStart: overrideStart ? fromLocalInputValue(overrideStart) : undefined,
+        scheduledEnd: overrideStart ? addMinutes(overrideStart, duration) : undefined,
         skipped: item.skipped,
       };
     });

@@ -184,10 +184,14 @@ export default function TripDetailPage() {
 
     const items: MyTripItemUpdateRequest[] = trip.items.map((item) => {
       const edit = itemEdits[item.placeId];
+      const originalStart = toLocalInputValue(item.scheduledStart);
+      const originalEnd = toLocalInputValue(item.scheduledEnd);
+      const editedStart = edit?.scheduledStart ?? '';
+      const editedEnd = edit?.scheduledEnd ?? '';
       return {
         placeId: item.placeId,
-        scheduledStart: fromLocalInputValue(edit?.scheduledStart ?? ''),
-        scheduledEnd: fromLocalInputValue(edit?.scheduledEnd ?? ''),
+        scheduledStart: editedStart && editedStart !== originalStart ? fromLocalInputValue(editedStart) : undefined,
+        scheduledEnd: editedEnd && editedEnd !== originalEnd ? fromLocalInputValue(editedEnd) : undefined,
         skipped: edit?.skipped ?? item.skipped,
       };
     });

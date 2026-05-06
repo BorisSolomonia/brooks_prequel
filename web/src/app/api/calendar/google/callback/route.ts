@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const state = request.nextUrl.searchParams.get('state');
   const code = request.nextUrl.searchParams.get('code');
   const error = request.nextUrl.searchParams.get('error');
-  const destination = new URL(returnTo, request.url);
+  const destination = new URL(returnTo, process.env.AUTH0_BASE_URL ?? request.url);
 
   const redirect = () => {
     const response = NextResponse.redirect(destination);

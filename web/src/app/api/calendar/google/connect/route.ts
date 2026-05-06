@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     await getAccessToken();
   } catch {
-    return NextResponse.redirect(new URL('/api/auth/login', request.url));
+    return NextResponse.redirect(new URL('/api/auth/login', process.env.AUTH0_BASE_URL ?? request.url));
   }
 
   const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
