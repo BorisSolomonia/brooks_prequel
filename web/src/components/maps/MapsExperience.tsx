@@ -1282,14 +1282,7 @@ export default function MapsExperience({
         markerElement.style.fontWeight = '900';
         markerElement.style.boxShadow = '0 12px 24px rgba(0,0,0,0.24)';
         markerElement.style.cursor = 'pointer';
-        markerElement.style.transition = 'transform 140ms ease';
         markerElement.textContent = 'M';
-        markerElement.addEventListener('mouseenter', () => {
-          markerElement.style.transform = 'translateY(-4px) scale(1.05)';
-        });
-        markerElement.addEventListener('mouseleave', () => {
-          markerElement.style.transform = 'translateY(0) scale(1)';
-        });
         markerElement.addEventListener('click', () => {
           setSelectedMemory(memory);
           setSelectedPin(null);

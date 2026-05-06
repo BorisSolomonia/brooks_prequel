@@ -498,10 +498,17 @@ export default function TripDetailPage() {
                                     </label>
                                   </div>
                                 </div>
-                                {tagLine && <p className="mt-0.5 text-left text-xs text-ig-text-secondary truncate">{tagLine}</p>}
-                                {item.placeAddress && <p className="mt-0.5 text-left text-xs text-ig-text-tertiary line-clamp-2">{item.placeAddress}</p>}
-                                {placeData?.description && <p className="mt-1 text-left text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
+                                <div className="hidden md:block">
+                                  {tagLine && <p className="mt-0.5 text-left text-xs text-ig-text-secondary truncate">{tagLine}</p>}
+                                  {item.placeAddress && <p className="mt-0.5 text-left text-xs text-ig-text-tertiary line-clamp-2">{item.placeAddress}</p>}
+                                  {placeData?.description && <p className="mt-1 text-left text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
+                                </div>
                               </div>
+                            </div>
+                            <div className="block md:hidden px-3 pb-2 space-y-0.5">
+                              {tagLine && <p className="text-left text-xs text-ig-text-secondary truncate">{tagLine}</p>}
+                              {item.placeAddress && <p className="text-left text-xs text-ig-text-tertiary line-clamp-2">{item.placeAddress}</p>}
+                              {placeData?.description && <p className="text-left text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
                             </div>
                             <div className="grid gap-3 px-3 pb-3 sm:grid-cols-2">
                               <input
@@ -562,26 +569,26 @@ export default function TripDetailPage() {
               availableProviders={aiKeys.map((k) => k.provider)}
             />
           )}
+        </div>
+      </div>
 
-          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
-            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Quick links</h2>
-            <div className="mt-4 space-y-3">
-              {visibleItems.map((item) => (
-                <a
-                  key={item.placeId}
-                  href={item.latitude !== null && item.longitude !== null
-                    ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
-                    : '#'}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block min-h-14 rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-primary hover:border-brand-500/50"
-                >
-                  <div className="font-semibold">{item.placeName}</div>
-                  {item.placeAddress && <div className="mt-1 text-xs text-ig-text-tertiary">{item.placeAddress}</div>}
-                </a>
-              ))}
-            </div>
-          </div>
+      <div className="mt-6 rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+        <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Quick links</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {visibleItems.map((item) => (
+            <a
+              key={item.placeId}
+              href={item.latitude !== null && item.longitude !== null
+                ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
+                : '#'}
+              target="_blank"
+              rel="noreferrer"
+              className="block min-h-14 rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-primary hover:border-brand-500/50"
+            >
+              <div className="font-semibold">{item.placeName}</div>
+              {item.placeAddress && <div className="mt-1 text-xs text-ig-text-tertiary">{item.placeAddress}</div>}
+            </a>
+          ))}
         </div>
       </div>
     </div>

@@ -15,11 +15,15 @@ public class BogIpayProperties {
 
     private String secretKey;
 
-    private String baseUrl = "https://ipay.ge/opay/api/v1";
+    private String oauthBaseUrl = "https://oauth2.bog.ge";
+
+    private String apiBaseUrl = "https://api.bog.ge";
 
     private String callbackPath = "/api/webhooks/bog-ipay";
 
     private String locale = "ka";
+
+    private int orderTtlMinutes = 30;
 
     private int connectTimeoutMs = 10_000;
 

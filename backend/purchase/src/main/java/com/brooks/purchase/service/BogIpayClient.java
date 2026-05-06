@@ -16,16 +16,21 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.UUID;
 
 /**
- * HTTP client for Bank of Georgia iPay (https://api.bog.ge/docs/en/ipay/).
+ * HTTP client for Bank of Georgia iPay (https://api.bog.ge/docs/en/payments/).
  *
- * Auth: OAuth 2.0 client_credentials (Bearer JWT), token cached until expiry.
- * Order lifecycle: createOrder -> user redirected to approve link -> callback hits webhook
- * -> getPaymentDetails verifies status server-side (BOG callbacks are unsigned).
+ * Auth: OAuth 2.0 client_credentials against
+ *   {@code https://oauth2.bog.ge/auth/realms/bog/protocol/openid-connect/token}.
+ * Bearer JWT, cached until expires_in - 60s.
+ *
+ * Order lifecycle: createOrder -> user redirected to _links.redirect.href ->
+ * BOG callback hits {@code WebhookController} (RSA-signed) -> getPaymentDetails
+ * verifies status server-side as a fallback.
  */
 @Component
 @Slf4j
@@ -35,7 +40,10 @@ public class BogIpayClient {
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
 
-    @Value("${app.frontend-base-url:http://localhost:3000}")
+    @Value("${app.base-url:${APP_BASE_URL:http://localhost:8080}}")
+    private String appBaseUrl;
+
+    @Value("${app.frontend-base-url:${FRONTEND_BASE_URL:http://localhost:3000}}")
     private String frontendBaseUrl;
 
     private volatile String cachedToken;
@@ -50,19 +58,31 @@ public class BogIpayClient {
         this.restTemplate = new RestTemplate(factory);
     }
 
-    public record CreatedOrder(String orderId, String paymentHash, String approveUrl) {}
+    /**
+     * Result of POST /payments/v1/ecommerce/orders.
+     * {@code orderId} is the BOG-issued identifier (response field {@code id}).
+     * {@code redirectUrl} is the URL the customer must be sent to (from {@code _links.redirect.href}).
+     */
+    public record CreatedOrder(String orderId, String redirectUrl) {}
 
+    /**
+     * Subset of GET /payments/v1/receipt/{order_id} response that we care about.
+     * {@code status} is {@code order_status.key} (created/processing/completed/refunded/...).
+     */
     public record PaymentDetails(
             String status,
             String orderId,
-            String paymentHash,
-            String ipayPaymentId,
-            String shopOrderId,
+            String externalOrderId,
             String paymentMethod,
             String cardType,
-            String pan,
-            String transactionId
+            String maskedPan,
+            String authCode,
+            String transactionId,
+            String responseCode,
+            String responseDescription
     ) {}
+
+    public record RefundResult(String key, String message, String actionId) {}
 
     public CreatedOrder createOrder(
             String shopOrderId,
@@ -74,45 +94,51 @@ public class BogIpayClient {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
+        headers.set("Accept-Language", properties.getLocale());
+        headers.set("Idempotency-Key", UUID.randomUUID().toString());
 
         String amount = formatGel(amountMinorUnits);
 
-        Map<String, Object> item = new HashMap<>();
-        item.put("amount", amount);
-        item.put("description", truncate(description, 150));
-        item.put("quantity", "1");
-        item.put("product_id", productId);
+        Map<String, Object> basketItem = new LinkedHashMap<>();
+        basketItem.put("product_id", productId);
+        basketItem.put("quantity", 1);
+        basketItem.put("unit_price", amount);
+        basketItem.put("description", truncate(description, 150));
 
-        Map<String, Object> purchaseUnit = new HashMap<>();
-        Map<String, Object> amountObj = new HashMap<>();
-        amountObj.put("currency_code", "GEL");
-        amountObj.put("value", amount);
-        purchaseUnit.put("amount", amountObj);
+        Map<String, Object> purchaseUnits = new LinkedHashMap<>();
+        purchaseUnits.put("currency", "GEL");
+        purchaseUnits.put("total_amount", amount);
+        purchaseUnits.put("basket", List.of(basketItem));
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("intent", "CAPTURE");
-        body.put("items", List.of(item));
-        body.put("locale", properties.getLocale());
-        body.put("shop_order_id", shopOrderId);
-        body.put("redirect_url", frontendBaseUrl + "/purchases/return?shop_order_id=" + shopOrderId);
-        body.put("show_shop_order_id_on_extract", false);
-        body.put("capture_method", "AUTOMATIC");
-        body.put("purchase_units", List.of(purchaseUnit));
+        Map<String, Object> redirectUrls = new LinkedHashMap<>();
+        redirectUrls.put("success", frontendBaseUrl + "/purchases/success?shop_order_id=" + shopOrderId);
+        redirectUrls.put("fail", frontendBaseUrl + "/purchases/failed?shop_order_id=" + shopOrderId);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("callback_url", appBaseUrl + properties.getCallbackPath());
+        body.put("external_order_id", shopOrderId);
+        body.put("application_type", "web");
+        body.put("capture", "automatic");
+        body.put("purchase_units", purchaseUnits);
+        body.put("redirect_urls", redirectUrls);
+        body.put("ttl", properties.getOrderTtlMinutes());
 
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(
-                    properties.getBaseUrl() + "/checkout/orders",
+                    properties.getApiBaseUrl() + "/payments/v1/ecommerce/orders",
                     new HttpEntity<>(body, headers),
                     String.class
             );
             JsonNode json = objectMapper.readTree(response.getBody());
-            String orderId = json.get("order_id").asText();
-            String paymentHash = json.get("payment_hash").asText();
-            String approveUrl = extractRel(json, "approve");
-            if (approveUrl == null) {
-                throw new IllegalStateException("BOG iPay create order response missing 'approve' link");
+            String orderId = text(json, "id");
+            if (orderId == null) {
+                throw new IllegalStateException("BOG iPay create order response missing 'id'");
             }
-            return new CreatedOrder(orderId, paymentHash, approveUrl);
+            String redirectUrl = textPath(json, "_links", "redirect", "href");
+            if (redirectUrl == null) {
+                throw new IllegalStateException("BOG iPay create order response missing _links.redirect.href");
+            }
+            return new CreatedOrder(orderId, redirectUrl);
         } catch (Exception e) {
             log.error("BOG iPay create order failed for shop_order_id={}", shopOrderId, e);
             throw new RuntimeException("Failed to create BOG iPay order", e);
@@ -122,27 +148,27 @@ public class BogIpayClient {
     public PaymentDetails getPaymentDetails(String orderId) {
         String token = ensureToken();
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
 
         try {
             ResponseEntity<String> response = restTemplate.exchange(
-                    properties.getBaseUrl() + "/checkout/payment/" + orderId,
+                    properties.getApiBaseUrl() + "/payments/v1/receipt/" + orderId,
                     HttpMethod.GET,
                     new HttpEntity<>(headers),
                     String.class
             );
             JsonNode json = objectMapper.readTree(response.getBody());
             return new PaymentDetails(
-                    text(json, "status"),
+                    textPath(json, "order_status", "key"),
                     text(json, "order_id"),
-                    text(json, "payment_hash"),
-                    text(json, "ipay_payment_id"),
-                    text(json, "shop_order_id"),
-                    text(json, "payment_method"),
-                    text(json, "card_type"),
-                    text(json, "pan"),
-                    text(json, "transaction_id")
+                    text(json, "external_order_id"),
+                    textPath(json, "payment_detail", "transfer_method", "key"),
+                    textPath(json, "payment_detail", "card_type"),
+                    textPath(json, "payment_detail", "payer_identifier"),
+                    textPath(json, "payment_detail", "auth_code"),
+                    textPath(json, "payment_detail", "transaction_id"),
+                    textPath(json, "payment_detail", "code"),
+                    textPath(json, "payment_detail", "code_description")
             );
         } catch (Exception e) {
             log.error("BOG iPay get payment details failed for order_id={}", orderId, e);
@@ -151,25 +177,31 @@ public class BogIpayClient {
     }
 
     /**
-     * Issues a refund. Pass null amount for full refund, or minor units for partial.
+     * Issues a refund. Pass {@code null} amount for full refund, or minor units for partial.
      */
-    public void refund(String orderId, Long amountMinorUnits) {
+    public RefundResult refund(String orderId, Long amountMinorUnits) {
         String token = ensureToken();
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
+        headers.set("Idempotency-Key", UUID.randomUUID().toString());
 
-        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("order_id", orderId);
+        Map<String, Object> body = new HashMap<>();
         if (amountMinorUnits != null) {
-            form.add("amount", formatGel(amountMinorUnits));
+            body.put("amount", formatGel(amountMinorUnits));
         }
 
         try {
-            restTemplate.postForEntity(
-                    properties.getBaseUrl() + "/checkout/refund",
-                    new HttpEntity<>(form, headers),
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    properties.getApiBaseUrl() + "/payments/v1/payment/refund/" + orderId,
+                    new HttpEntity<>(body, headers),
                     String.class
+            );
+            JsonNode json = objectMapper.readTree(response.getBody());
+            return new RefundResult(
+                    text(json, "key"),
+                    text(json, "message"),
+                    text(json, "action_id")
             );
         } catch (Exception e) {
             log.error("BOG iPay refund failed for order_id={}", orderId, e);
@@ -197,7 +229,7 @@ public class BogIpayClient {
 
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(
-                    properties.getBaseUrl() + "/oauth2/token",
+                    properties.getOauthBaseUrl() + "/auth/realms/bog/protocol/openid-connect/token",
                     new HttpEntity<>(form, headers),
                     String.class
             );
@@ -205,7 +237,6 @@ public class BogIpayClient {
             String accessToken = json.get("access_token").asText();
             int expiresInSeconds = json.has("expires_in") ? json.get("expires_in").asInt(3600) : 3600;
             this.cachedToken = accessToken;
-            // Refresh 60s before BOG-reported expiry
             this.cachedTokenExpiresAt = Instant.now().plusSeconds(Math.max(60, expiresInSeconds - 60));
             return accessToken;
         } catch (RestClientException e) {
@@ -233,14 +264,12 @@ public class BogIpayClient {
         return node.get(field).asText();
     }
 
-    private static String extractRel(JsonNode response, String rel) {
-        JsonNode links = response.get("links");
-        if (links == null || !links.isArray()) return null;
-        for (JsonNode link : links) {
-            if (Objects.equals(text(link, "rel"), rel)) {
-                return text(link, "href");
-            }
+    private static String textPath(JsonNode root, String... path) {
+        JsonNode cursor = root;
+        for (String segment : path) {
+            if (cursor == null || !cursor.has(segment) || cursor.get(segment).isNull()) return null;
+            cursor = cursor.get(segment);
         }
-        return null;
+        return cursor == null || cursor.isNull() ? null : cursor.asText();
     }
 }

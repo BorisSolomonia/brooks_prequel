@@ -37,6 +37,13 @@ public class PurchaseController {
         return ResponseEntity.ok(purchaseService.getMyPurchases(subject(authentication), page, size));
     }
 
+    @GetMapping("/me/purchases/by-bog-order/{bogOrderId}")
+    public ResponseEntity<PurchaseResponse> getMyPurchaseByBogOrderId(
+            Authentication authentication,
+            @PathVariable(name = "bogOrderId") String bogOrderId) {
+        return ResponseEntity.ok(purchaseService.getMyPurchaseByBogOrderId(subject(authentication), bogOrderId));
+    }
+
     @GetMapping(value = "/purchases/{guideId}/content", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getPurchasedGuideContent(
             Authentication authentication,

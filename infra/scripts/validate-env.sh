@@ -103,9 +103,12 @@ require_url NEXT_PUBLIC_API_BASE_URL
 require_url AUTH0_AUDIENCE
 
 # BOG iPay credentials are optional at deploy time — required only when payments are attempted.
-# If BOG_IPAY_BASE_URL is set, it must be a valid https URL.
-if [ -n "$(get_env BOG_IPAY_BASE_URL 2>/dev/null || true)" ]; then
-  require_url BOG_IPAY_BASE_URL
+# If either BOG_IPAY_OAUTH_URL or BOG_IPAY_API_URL is set, it must be a valid https URL.
+if [ -n "$(get_env BOG_IPAY_OAUTH_URL 2>/dev/null || true)" ]; then
+  require_url BOG_IPAY_OAUTH_URL
+fi
+if [ -n "$(get_env BOG_IPAY_API_URL 2>/dev/null || true)" ]; then
+  require_url BOG_IPAY_API_URL
 fi
 
 for key in DOMAIN LETSENCRYPT_EMAIL DB_NAME DB_USERNAME DB_PASSWORD AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_SECRET AUTH0_CLIENT_ID AUTH0_CLIENT_SECRET NEXT_PUBLIC_AUTH0_DOMAIN NEXT_PUBLIC_AUTH0_CLIENT_ID NEXT_PUBLIC_AUTH0_AUDIENCE NEXT_PUBLIC_API_BASE_URL AI_KEY_ENCRYPTION_SECRET ADMIN_EMAILS; do

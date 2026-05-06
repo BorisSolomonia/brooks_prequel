@@ -758,6 +758,7 @@ export interface PurchaseResponse {
   guideTitle: string | null;
   guideCoverImageUrl: string | null;
   guideRegion: string | null;
+  bogOrderId: string | null;
 }
 
 export type AiProvider = 'OPENAI' | 'GEMINI' | 'ANTHROPIC';

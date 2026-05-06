@@ -15,6 +15,14 @@ export default function TermsPage() {
           <p>{compliance.legalEntity} provides the Brooks marketplace at {compliance.domain}. Legal identifier: {compliance.legalIdentifier}.</p>
         </section>
         <section>
+          <h2 className="font-display text-lg font-black text-ig-text-primary">Governing law and jurisdiction</h2>
+          <p>These Terms and any non-contractual obligations arising out of or in connection with them are governed by the laws of Georgia. Disputes that cannot be resolved bilaterally are subject to the exclusive jurisdiction of the competent courts of Tbilisi, Georgia. The customer&rsquo;s mandatory consumer-protection rights under their country of residence remain unaffected.</p>
+        </section>
+        <section>
+          <h2 className="font-display text-lg font-black text-ig-text-primary">Nature of the digital licence</h2>
+          <p>Each purchase grants the customer a non-exclusive, non-transferable, revocable personal licence to access and use the purchased digital travel guide for their own personal travel planning. The customer does not acquire ownership of the guide content, may not resell, sublicense, or commercially redistribute it, and may not republish substantial portions of the content outside the Brooks application without prior written permission. The licence remains valid for as long as the customer&rsquo;s account is in good standing, subject to the refund policy.</p>
+        </section>
+        <section>
           <h2 className="font-display text-lg font-black text-ig-text-primary">Products and prices</h2>
           <p>Products are digital travel guides. Each guide page and the products and prices page show the guide title, delivery format, currency, full price, and active sale price when applicable.</p>
         </section>

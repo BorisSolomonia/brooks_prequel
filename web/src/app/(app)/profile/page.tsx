@@ -117,12 +117,12 @@ function ProfilePageInner() {
                 <h2 className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-tertiary">Account</h2>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <Link
-                    href="/purchases"
+                    href="/trips"
                     className="group flex items-center justify-between rounded-xl border border-ig-border bg-ig-primary p-4 transition-colors hover:border-brand-500/50"
                   >
                     <div>
                       <p className="text-sm font-semibold text-ig-text-primary">Purchases</p>
-                      <p className="mt-0.5 text-xs text-ig-text-tertiary">Order history and receipts</p>
+                      <p className="mt-0.5 text-xs text-ig-text-tertiary">Open the guides you have bought</p>
                     </div>
                     <span aria-hidden className="text-ig-text-tertiary transition-colors group-hover:text-brand-500">→</span>
                   </Link>

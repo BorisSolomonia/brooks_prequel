@@ -101,9 +101,11 @@ calendar:
 bog-ipay:
   client-id: ${BOG_IPAY_CLIENT_ID:}
   secret-key: ${BOG_IPAY_SECRET_KEY:}
-  base-url: ${BOG_IPAY_BASE_URL:https://ipay.ge/opay/api/v1}
+  oauth-base-url: ${BOG_IPAY_OAUTH_URL:https://oauth2.bog.ge}
+  api-base-url: ${BOG_IPAY_API_URL:https://api.bog.ge}
   callback-path: ${BOG_IPAY_CALLBACK_PATH:/api/webhooks/bog-ipay}
   locale: ${BOG_IPAY_LOCALE:ka}
+  order-ttl-minutes: ${BOG_IPAY_ORDER_TTL_MINUTES:30}
 
 management:
   endpoints:

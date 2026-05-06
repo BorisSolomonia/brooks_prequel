@@ -16,4 +16,5 @@ calendar:
 bog-ipay:
   client-id: ${BOG_IPAY_CLIENT_ID:test_client_id}
   secret-key: ${BOG_IPAY_SECRET_KEY:test_secret_key}
-  base-url: ${BOG_IPAY_BASE_URL:https://ipay.ge/opay/api/v1}
+  oauth-base-url: ${BOG_IPAY_OAUTH_URL:https://oauth2.bog.ge}
+  api-base-url: ${BOG_IPAY_API_URL:https://api.bog.ge}

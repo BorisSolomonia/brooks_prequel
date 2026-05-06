@@ -12,11 +12,13 @@ import com.brooks.guide.repository.GuideVersionRepository;
 import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.purchase.domain.CreatorEarning;
 import com.brooks.purchase.domain.Purchase;
+import com.brooks.purchase.domain.PurchaseAuditEvent;
 import com.brooks.purchase.domain.PurchaseStatus;
 import com.brooks.purchase.dto.CheckoutRequest;
 import com.brooks.purchase.dto.CheckoutResponse;
 import com.brooks.purchase.dto.PurchaseResponse;
 import com.brooks.purchase.repository.CreatorEarningRepository;
+import com.brooks.purchase.repository.PurchaseAuditEventRepository;
 import com.brooks.purchase.repository.PurchaseRepository;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
@@ -48,6 +50,7 @@ public class PurchaseService {
     private final BogIpayClient bogIpayClient;
     private final CommissionRateResolver commissionRateResolver;
     private final CreatorEarningRepository creatorEarningRepository;
+    private final PurchaseAuditEventRepository auditEventRepository;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -111,11 +114,15 @@ public class PurchaseService {
             purchase.setPlatformFeeCents(platformFee);
             purchase.setCommissionRateBps(resolution.rateBps());
             purchase.setBogOrderId(order.orderId());
-            purchase.setBogPaymentHash(order.paymentHash());
             purchase.setStatus(PurchaseStatus.PENDING);
+            purchase.setTermsAcceptedAt(Instant.now());
             purchaseRepository.save(purchase);
 
-            return new CheckoutResponse(order.approveUrl(), order.orderId());
+            recordAuditEvent(purchase.getId(), "CHECKOUT_CREATED", String.format(
+                    "{\"bogOrderId\":\"%s\",\"amountCents\":%d,\"currency\":\"%s\",\"guideId\":\"%s\"}",
+                    order.orderId(), effectivePrice, "GEL", guide.getId()));
+
+            return new CheckoutResponse(order.redirectUrl(), order.orderId());
         } catch (Exception e) {
             log.error("Failed to create BOG iPay checkout order", e);
             throw new BusinessException("Failed to initiate checkout");
@@ -126,6 +133,22 @@ public class PurchaseService {
      * Called by the BOG iPay webhook AFTER server-side verification (Payment Details API
      * confirmed the order is in 'success' state and payment_hash matches the stored value).
      */
+    @Transactional
+    public void handleCheckoutRefunded(String bogOrderId, String refundAmount, boolean partial) {
+        Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId).orElse(null);
+        if (purchase == null) {
+            log.warn("BOG iPay refund callback for unknown order: {}", bogOrderId);
+            return;
+        }
+        if (!partial) {
+            purchase.setStatus(PurchaseStatus.REFUNDED);
+        }
+        recordAuditEvent(purchase.getId(),
+                partial ? "CHECKOUT_REFUNDED_PARTIALLY" : "CHECKOUT_REFUNDED",
+                String.format("{\"bogOrderId\":\"%s\",\"refundAmount\":\"%s\"}",
+                        bogOrderId, refundAmount == null ? "" : refundAmount));
+    }
+
     @Transactional
     public void handleCheckoutCompleted(String bogOrderId, String ipayPaymentId, String transactionId) {
         Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId)
@@ -144,6 +167,11 @@ public class PurchaseService {
         }
         purchase.setBogIpayPaymentId(ipayPaymentId);
         purchase.setBogTransactionId(transactionId);
+
+        recordAuditEvent(purchase.getId(), "CHECKOUT_COMPLETED", String.format(
+                "{\"bogOrderId\":\"%s\",\"ipayPaymentId\":\"%s\",\"transactionId\":\"%s\"}",
+                bogOrderId, ipayPaymentId == null ? "" : ipayPaymentId,
+                transactionId == null ? "" : transactionId));
 
         // Only the winning update increments creator stats and records earnings
         Guide guide = guideRepository.findById(purchase.getGuideId()).orElse(null);
@@ -242,6 +270,27 @@ public class PurchaseService {
                 .guideTitle(guideTitle)
                 .guideCoverImageUrl(guideCoverImageUrl)
                 .guideRegion(guideRegion)
+                .bogOrderId(purchase.getBogOrderId())
                 .build();
+    }
+
+    private void recordAuditEvent(UUID purchaseId, String eventType, String payload) {
+        try {
+            String snippet = payload == null ? null : payload.substring(0, Math.min(1000, payload.length()));
+            auditEventRepository.save(new PurchaseAuditEvent(purchaseId, eventType, snippet));
+        } catch (Exception e) {
+            log.warn("Failed to record purchase audit event purchase_id={} event_type={}", purchaseId, eventType, e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public PurchaseResponse getMyPurchaseByBogOrderId(String auth0Subject, String bogOrderId) {
+        User buyer = userService.findByAuth0Subject(auth0Subject);
+        Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase", bogOrderId));
+        if (!purchase.getBuyerId().equals(buyer.getId())) {
+            throw new BusinessException("Purchase does not belong to this buyer");
+        }
+        return toResponse(purchase);
     }
 }

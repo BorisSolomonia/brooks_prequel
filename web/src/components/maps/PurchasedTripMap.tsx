@@ -139,7 +139,9 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
 
       const marker = new mapboxgl.Marker({ element: markerElement })
         .setLngLat([item.longitude as number, item.latitude as number])
-        .setPopup(new mapboxgl.Popup({ offset: 14 }).setHTML(`<strong>${index + 1}. ${item.placeName}</strong>`))
+        .setPopup(new mapboxgl.Popup({ offset: 14 }).setHTML(
+          `<div style="color:#111827;font-weight:700;font-size:13px;line-height:1.3;padding:2px 0;">${index + 1}. ${item.placeName.replace(/</g, '&lt;')}</div>`
+        ))
         .addTo(map);
 
       markersRef.current.push(marker);

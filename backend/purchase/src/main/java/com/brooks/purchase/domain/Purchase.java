@@ -43,7 +43,7 @@ public class Purchase {
     @Column(name = "bog_order_id", nullable = false, unique = true)
     private String bogOrderId;
 
-    @Column(name = "bog_payment_hash", nullable = false)
+    @Column(name = "bog_payment_hash")
     private String bogPaymentHash;
 
     @Column(name = "bog_ipay_payment_id")
@@ -61,4 +61,7 @@ public class Purchase {
 
     @Column(name = "completed_at")
     private Instant completedAt;
+
+    @Column(name = "terms_accepted_at")
+    private Instant termsAcceptedAt;
 }

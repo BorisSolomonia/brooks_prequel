@@ -103,8 +103,14 @@ export default function Navbar() {
               <summary className="flex h-12 min-w-12 cursor-pointer list-none items-center justify-center rounded-full border-2 border-ig-border bg-ig-elevated px-3 text-sm font-semibold text-ig-text-primary [&::-webkit-details-marker]:hidden">
                 Menu
               </summary>
-              <div className="mw-panel absolute right-0 top-[calc(100%+8px)] z-50 w-48 overflow-hidden rounded-2xl">
-                <a href="/api/auth/logout" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
+              <div className="mw-panel absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-2xl">
+                <Link href="/search" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Explore</Link>
+                <Link href="/maps" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Maps</Link>
+                <Link href="/guides" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">My Guides</Link>
+                <Link href="/trips" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Purchased guides</Link>
+                <Link href="/profile" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Profile</Link>
+                <Link href="/contact" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Contact</Link>
+                <a href="/api/auth/logout" className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
               </div>
             </details>
           ) : (

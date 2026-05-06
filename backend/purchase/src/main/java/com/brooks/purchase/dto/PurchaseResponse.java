@@ -20,4 +20,5 @@ public class PurchaseResponse {
     private String guideTitle;
     private String guideCoverImageUrl;
     private String guideRegion;
+    private String bogOrderId;
 }
