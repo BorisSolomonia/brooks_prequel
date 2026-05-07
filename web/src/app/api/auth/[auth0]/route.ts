@@ -20,13 +20,28 @@ const afterCallback: AfterCallbackAppRoute = async (_req, session) => {
 
 export const GET = handleAuth({
   login: handleLogin((req) => {
+    const baseUrl = process.env.AUTH0_BASE_URL ?? 'http://localhost:3000';
     const url = 'nextUrl' in req
       ? req.nextUrl
-      : new URL(req.url ?? '/', process.env.AUTH0_BASE_URL ?? 'http://localhost:3000');
+      : new URL(req.url ?? '/', baseUrl);
     const requestedReturnTo = url.searchParams.get('returnTo');
-    const returnTo = requestedReturnTo?.startsWith('/') && !requestedReturnTo.startsWith('//')
-      ? requestedReturnTo
-      : '/maps';
+    // Open-redirect guard. Rejects:
+    //   - protocol-relative URLs (//evil.com)
+    //   - URLs with backslashes (/\evil.com — some browsers normalize \ to / and treat
+    //     the result as protocol-relative)
+    //   - any path that resolves to a different origin
+    const returnTo = (() => {
+      if (!requestedReturnTo) return '/maps';
+      if (!requestedReturnTo.startsWith('/')) return '/maps';
+      if (requestedReturnTo.startsWith('//')) return '/maps';
+      if (requestedReturnTo.includes('\\')) return '/maps';
+      try {
+        const resolved = new URL(requestedReturnTo, baseUrl);
+        return resolved.origin === new URL(baseUrl).origin ? requestedReturnTo : '/maps';
+      } catch {
+        return '/maps';
+      }
+    })();
 
     return {
       returnTo,

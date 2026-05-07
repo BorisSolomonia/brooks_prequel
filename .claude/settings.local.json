@@ -45,7 +45,17 @@
       "WebFetch(domain:ns2.unipay.com)",
       "WebFetch(domain:v1.unipay.com)",
       "WebFetch(domain:en-gb.wordpress.org)",
-      "WebFetch(domain:wphive.com)"
+      "WebFetch(domain:wphive.com)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\" -Recurse -Directory -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\backend\" -Directory | ForEach-Object { $_.FullName })",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem -Recurse -Depth 2)",
+      "Bash(xargs grep *)",
+      "Bash(grep -E \"tsx$\")",
+      "Bash(npm run *)",
+      "Bash(echo \"EXIT=$?\")"
     ]
   }
 }

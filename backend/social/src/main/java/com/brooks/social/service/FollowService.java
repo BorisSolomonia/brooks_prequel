@@ -45,7 +45,10 @@ public class FollowService {
         }
 
         followRepository.save(new Follow(follower.getId(), targetUserId));
-        updateCounts(follower.getId(), targetUserId);
+        // Atomic +1 on each side avoids the read-modify-write race that drifted
+        // counts under concurrent follow/unfollow operations.
+        profileRepository.adjustFollowingCount(follower.getId(), 1);
+        profileRepository.adjustFollowerCount(targetUserId, 1);
         eventPublisher.publishEvent(new FollowEvent(follower.getId(), targetUserId, true));
 
         return buildFollowResponse(follower.getId(), targetUserId, true);
@@ -59,7 +62,8 @@ public class FollowService {
                 .orElseThrow(() -> new BusinessException("Not following this user"));
 
         followRepository.delete(follow);
-        updateCounts(follower.getId(), targetUserId);
+        profileRepository.adjustFollowingCount(follower.getId(), -1);
+        profileRepository.adjustFollowerCount(targetUserId, -1);
         eventPublisher.publishEvent(new FollowEvent(follower.getId(), targetUserId, false));
 
         return buildFollowResponse(follower.getId(), targetUserId, false);
@@ -106,16 +110,6 @@ public class FollowService {
                             .build();
                 })
                 .collect(Collectors.toList());
-    }
-
-    private void updateCounts(UUID followerId, UUID followingId) {
-        long followingCount = followRepository.countByFollowerId(followerId);
-        long followerCount = followRepository.countByFollowingId(followingId);
-
-        profileRepository.findByUserId(followerId)
-                .ifPresent(p -> { p.setFollowingCount((int) followingCount); profileRepository.save(p); });
-        profileRepository.findByUserId(followingId)
-                .ifPresent(p -> { p.setFollowerCount((int) followerCount); profileRepository.save(p); });
     }
 
     private FollowResponse buildFollowResponse(UUID followerId, UUID targetUserId, boolean isFollowing) {

@@ -47,40 +47,48 @@ public class WebhookController {
         String signature = request.getHeader(SIGNATURE_HEADER);
 
         if (!verifier.verify(rawBody, signature)) {
-            log.warn("Rejecting BOG iPay callback with invalid signature; payload size={}B", rawBody.length);
+            log.warn("Rejecting BOG iPay callback with invalid or missing signature; payload size={}B", rawBody.length);
+            return ResponseEntity.status(401).body("invalid signature");
+        }
+
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(new String(rawBody, StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            log.warn("BOG iPay callback body is not valid JSON", e);
+            // Malformed payload won't get any better on retry; ack with 200 so BOG stops resending.
             return ResponseEntity.ok("OK");
         }
 
+        String event = textOrNull(root, "event");
+        if (!EVENT_ORDER_PAYMENT.equals(event)) {
+            log.info("BOG iPay callback ignored: unsupported event={}", event);
+            return ResponseEntity.ok("OK");
+        }
+
+        JsonNode body = root.get("body");
+        if (body == null || body.isNull()) {
+            log.warn("BOG iPay callback missing 'body' field");
+            return ResponseEntity.ok("OK");
+        }
+
+        String orderId = textOrNull(body, "order_id");
+        if (orderId == null || orderId.isBlank()) {
+            log.warn("BOG iPay callback missing body.order_id");
+            return ResponseEntity.ok("OK");
+        }
+
+        String statusKey = pathTextOrNull(body, "order_status", "key");
+        if (statusKey == null) {
+            log.warn("BOG iPay callback missing body.order_status.key for order_id={}", orderId);
+            return ResponseEntity.ok("OK");
+        }
+
+        String authCode = pathTextOrNull(body, "payment_detail", "auth_code");
+        String transactionId = pathTextOrNull(body, "payment_detail", "transaction_id");
+        String refundAmount = pathTextOrNull(body, "purchase_units", "refund_amount");
+
         try {
-            JsonNode root = objectMapper.readTree(new String(rawBody, StandardCharsets.UTF_8));
-            String event = textOrNull(root, "event");
-            if (!EVENT_ORDER_PAYMENT.equals(event)) {
-                log.info("BOG iPay callback ignored: unsupported event={}", event);
-                return ResponseEntity.ok("OK");
-            }
-
-            JsonNode body = root.get("body");
-            if (body == null || body.isNull()) {
-                log.warn("BOG iPay callback missing 'body' field");
-                return ResponseEntity.ok("OK");
-            }
-
-            String orderId = textOrNull(body, "order_id");
-            if (orderId == null || orderId.isBlank()) {
-                log.warn("BOG iPay callback missing body.order_id");
-                return ResponseEntity.ok("OK");
-            }
-
-            String statusKey = pathTextOrNull(body, "order_status", "key");
-            if (statusKey == null) {
-                log.warn("BOG iPay callback missing body.order_status.key for order_id={}", orderId);
-                return ResponseEntity.ok("OK");
-            }
-
-            String authCode = pathTextOrNull(body, "payment_detail", "auth_code");
-            String transactionId = pathTextOrNull(body, "payment_detail", "transaction_id");
-            String refundAmount = pathTextOrNull(body, "purchase_units", "refund_amount");
-
             switch (statusKey) {
                 case "completed" -> purchaseService.handleCheckoutCompleted(orderId, authCode, transactionId);
                 case "refunded" -> purchaseService.handleCheckoutRefunded(orderId, refundAmount, false);
@@ -88,7 +96,9 @@ public class WebhookController {
                 default -> log.info("BOG iPay callback for order_id={} status={} — no action", orderId, statusKey);
             }
         } catch (Exception e) {
-            log.error("Failed to process BOG iPay callback", e);
+            // Return 5xx so BOG retries per their contract; service layer is idempotent.
+            log.error("Failed to process BOG iPay callback for order_id={}", orderId, e);
+            return ResponseEntity.status(500).body("processing_failed");
         }
         return ResponseEntity.ok("OK");
     }

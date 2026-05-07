@@ -30,7 +30,12 @@ public interface PurchaseRepository extends JpaRepository<Purchase, UUID> {
 
     @Modifying
     @Query("UPDATE Purchase p SET p.status = com.brooks.purchase.domain.PurchaseStatus.COMPLETED, " +
-           "p.completedAt = :completedAt " +
+           "p.completedAt = :completedAt, " +
+           "p.bogIpayPaymentId = :ipayPaymentId, " +
+           "p.bogTransactionId = :transactionId " +
            "WHERE p.id = :id AND p.status = com.brooks.purchase.domain.PurchaseStatus.PENDING")
-    int markCompletedIfPending(@Param("id") UUID id, @Param("completedAt") Instant completedAt);
+    int markCompletedIfPending(@Param("id") UUID id,
+                               @Param("completedAt") Instant completedAt,
+                               @Param("ipayPaymentId") String ipayPaymentId,
+                               @Param("transactionId") String transactionId);
 }

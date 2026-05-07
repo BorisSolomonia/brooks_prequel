@@ -68,6 +68,9 @@ public class BogIpayClient {
     /**
      * Subset of GET /payments/v1/receipt/{order_id} response that we care about.
      * {@code status} is {@code order_status.key} (created/processing/completed/refunded/...).
+     * {@code totalAmountMinorUnits} is parsed from {@code purchase_units.transfer_amount}
+     * (or {@code request_amount} fallback) — used for amount reconciliation against the
+     * stored purchase price.
      */
     public record PaymentDetails(
             String status,
@@ -79,7 +82,9 @@ public class BogIpayClient {
             String authCode,
             String transactionId,
             String responseCode,
-            String responseDescription
+            String responseDescription,
+            Long totalAmountMinorUnits,
+            String currency
     ) {}
 
     public record RefundResult(String key, String message, String actionId) {}
@@ -158,6 +163,12 @@ public class BogIpayClient {
                     String.class
             );
             JsonNode json = objectMapper.readTree(response.getBody());
+            String amountStr = textPath(json, "purchase_units", "transfer_amount");
+            if (amountStr == null) {
+                amountStr = textPath(json, "purchase_units", "request_amount");
+            }
+            Long amountMinor = parseGelMinorUnits(amountStr);
+            String currency = textPath(json, "purchase_units", "currency_code");
             return new PaymentDetails(
                     textPath(json, "order_status", "key"),
                     text(json, "order_id"),
@@ -168,7 +179,9 @@ public class BogIpayClient {
                     textPath(json, "payment_detail", "auth_code"),
                     textPath(json, "payment_detail", "transaction_id"),
                     textPath(json, "payment_detail", "code"),
-                    textPath(json, "payment_detail", "code_description")
+                    textPath(json, "payment_detail", "code_description"),
+                    amountMinor,
+                    currency
             );
         } catch (Exception e) {
             log.error("BOG iPay get payment details failed for order_id={}", orderId, e);
@@ -252,6 +265,20 @@ public class BogIpayClient {
         long whole = minorUnits / 100;
         long fraction = Math.abs(minorUnits % 100);
         return String.format("%d.%02d", whole, fraction);
+    }
+
+    /**
+     * Parse a BOG-formatted decimal amount string ("12.34") into minor units (1234).
+     * Returns null if the input is null/blank/unparseable so callers can treat it as
+     * "unknown" rather than zero — important for amount reconciliation.
+     */
+    static Long parseGelMinorUnits(String amount) {
+        if (amount == null || amount.isBlank()) return null;
+        try {
+            return new java.math.BigDecimal(amount.trim()).movePointRight(2).longValueExact();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static String truncate(String value, int max) {

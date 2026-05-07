@@ -42,25 +42,24 @@ public class BogCallbackVerifier {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             this.publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(keyBytes));
         } catch (IOException | RuntimeException | java.security.GeneralSecurityException e) {
-            log.error("Failed to load BOG callback public key from classpath {} — signed callbacks will be rejected. "
-                    + "Restore the PEM file and redeploy.", PEM_RESOURCE, e);
-            this.publicKey = null;
+            // Fail-fast: refuse to start with broken signature verification — silent acceptance
+            // of unsigned/forged callbacks would let attackers complete arbitrary purchases.
+            throw new IllegalStateException(
+                    "Failed to load BOG callback public key from classpath " + PEM_RESOURCE
+                            + " — refusing to start without signature verification.", e);
         }
     }
 
     /**
      * @param rawBody the exact bytes of the callback request body, before any deserialization
      * @param base64Signature the value of the Callback-Signature header
-     * @return true if the signature is valid OR header is missing (BOG documents Callback-Signature
-     *         as optional; an unsigned callback still has to be processed but we log it)
+     * @return true only if a Callback-Signature header is present and verifies against the
+     *         published BOG public key. Unsigned callbacks are rejected — payment completion
+     *         must always be cryptographically attested.
      */
     public boolean verify(byte[] rawBody, String base64Signature) {
         if (base64Signature == null || base64Signature.isBlank()) {
-            log.warn("BOG callback missing Callback-Signature header — accepting unsigned callback");
-            return true;
-        }
-        if (publicKey == null) {
-            log.warn("BOG callback public key not loaded; rejecting signed callback");
+            log.warn("BOG callback missing Callback-Signature header — rejecting unsigned callback");
             return false;
         }
         try {

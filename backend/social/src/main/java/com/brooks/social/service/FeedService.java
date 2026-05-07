@@ -10,6 +10,7 @@ import com.brooks.social.repository.GuideStoryRepository;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,23 +38,33 @@ public class FeedService {
         }
 
         Instant now = Instant.now();
-        List<GuideStory> stories = storyRepository.findActiveStoriesByCreatorIds(followingIds, now);
+        // Sort + LIMIT/OFFSET pushed into SQL — query already orders by createdAt DESC.
+        List<GuideStory> stories = storyRepository.findActiveStoriesByCreatorIds(
+                followingIds, now, PageRequest.of(page, size));
 
-        // Batch-load creators and profiles to avoid N+1 queries
+        // Batch-load creators, profiles, AND linked guides to avoid N+1.
         Set<UUID> creatorIds = stories.stream()
                 .map(GuideStory::getCreatorId)
+                .collect(Collectors.toSet());
+        Set<UUID> guideIds = stories.stream()
+                .map(GuideStory::getLinkGuideId)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<UUID, User> creatorsById = userService.findAllByIds(creatorIds);
         Map<UUID, UserProfile> profilesByUserId = profileRepository.findAllByUserIdIn(creatorIds)
                 .stream()
                 .collect(Collectors.toMap(UserProfile::getUserId, p -> p));
+        Map<UUID, Guide> guidesById = guideIds.isEmpty()
+                ? Collections.emptyMap()
+                : guideRepository.findAllById(guideIds).stream()
+                        .collect(Collectors.toMap(Guide::getId, g -> g));
 
         return stories.stream()
                 .map(story -> {
                     User creator = creatorsById.get(story.getCreatorId());
                     UserProfile profile = profilesByUserId.get(story.getCreatorId());
                     Guide guide = story.getLinkGuideId() != null
-                            ? guideRepository.findById(story.getLinkGuideId()).orElse(null)
+                            ? guidesById.get(story.getLinkGuideId())
                             : null;
                     String displayName = (profile != null && profile.getDisplayName() != null)
                             ? profile.getDisplayName()
@@ -75,9 +86,6 @@ public class FeedService {
                             .createdAt(story.getCreatedAt())
                             .build();
                 })
-                .sorted(Comparator.comparing(FeedItemResponse::getCreatedAt).reversed())
-                .skip((long) page * size)
-                .limit(size)
                 .collect(Collectors.toList());
     }
 }

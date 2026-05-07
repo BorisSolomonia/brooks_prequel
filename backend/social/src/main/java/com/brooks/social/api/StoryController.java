@@ -7,8 +7,8 @@ import com.brooks.social.service.StoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import com.brooks.auth.util.AuthPrincipal;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -26,7 +26,7 @@ public class StoryController {
     public ResponseEntity<StoryResponse> createStory(
             Authentication authentication,
             @Valid @RequestBody StoryCreateRequest request) {
-        String subject = ((Jwt) authentication.getPrincipal()).getSubject();
+        String subject = AuthPrincipal.subject(authentication);
         StoryResponse story = storyService.createStory(subject, request);
         return ResponseEntity.created(URI.create("/api/stories/" + story.getId())).body(story);
     }
@@ -35,14 +35,14 @@ public class StoryController {
     public ResponseEntity<Void> deleteStory(
             Authentication authentication,
             @PathVariable(name = "storyId") UUID storyId) {
-        String subject = ((Jwt) authentication.getPrincipal()).getSubject();
+        String subject = AuthPrincipal.subject(authentication);
         storyService.deleteStory(subject, storyId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/feed")
     public ResponseEntity<List<CreatorStoryStrip>> getFeedStories(Authentication authentication) {
-        String subject = ((Jwt) authentication.getPrincipal()).getSubject();
+        String subject = AuthPrincipal.subject(authentication);
         return ResponseEntity.ok(storyService.getFeedStoryStrips(subject));
     }
 

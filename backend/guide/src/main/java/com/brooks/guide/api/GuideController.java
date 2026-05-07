@@ -6,9 +6,9 @@ import com.brooks.guide.service.GuideService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import com.brooks.auth.util.AuthPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -223,6 +223,6 @@ public class GuideController {
     // ── Util ────────────────────────────────────────────────────
 
     private String subject(Authentication authentication) {
-        return ((Jwt) authentication.getPrincipal()).getSubject();
+        return AuthPrincipal.subject(authentication);
     }
 }

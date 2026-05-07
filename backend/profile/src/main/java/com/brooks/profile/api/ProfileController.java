@@ -7,8 +7,8 @@ import com.brooks.profile.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import com.brooks.auth.util.AuthPrincipal;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,7 +20,7 @@ public class ProfileController {
 
     @GetMapping("/me")
     public ResponseEntity<ProfileResponse> getMyProfile(Authentication authentication) {
-        String subject = ((Jwt) authentication.getPrincipal()).getSubject();
+        String subject = AuthPrincipal.subject(authentication);
         return ResponseEntity.ok(profileService.getOrCreateProfile(subject));
     }
 
@@ -28,7 +28,7 @@ public class ProfileController {
     public ResponseEntity<ProfileResponse> updateMyProfile(
             Authentication authentication,
             @Valid @RequestBody ProfileUpdateRequest request) {
-        String subject = ((Jwt) authentication.getPrincipal()).getSubject();
+        String subject = AuthPrincipal.subject(authentication);
         return ResponseEntity.ok(profileService.updateProfile(subject, request));
     }
 

@@ -4,8 +4,8 @@ import com.brooks.social.dto.FollowResponse;
 import com.brooks.social.service.FollowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import com.brooks.auth.util.AuthPrincipal;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -21,7 +21,7 @@ public class FollowController {
     public ResponseEntity<FollowResponse> follow(
             Authentication authentication,
             @PathVariable(name = "userId") UUID userId) {
-        String subject = ((Jwt) authentication.getPrincipal()).getSubject();
+        String subject = AuthPrincipal.subject(authentication);
         return ResponseEntity.ok(followService.follow(subject, userId));
     }
 
@@ -29,7 +29,7 @@ public class FollowController {
     public ResponseEntity<FollowResponse> unfollow(
             Authentication authentication,
             @PathVariable(name = "userId") UUID userId) {
-        String subject = ((Jwt) authentication.getPrincipal()).getSubject();
+        String subject = AuthPrincipal.subject(authentication);
         return ResponseEntity.ok(followService.unfollow(subject, userId));
     }
 
@@ -37,7 +37,7 @@ public class FollowController {
     public ResponseEntity<FollowResponse> getFollowStatus(
             Authentication authentication,
             @PathVariable(name = "userId") UUID userId) {
-        String subject = ((Jwt) authentication.getPrincipal()).getSubject();
+        String subject = AuthPrincipal.subject(authentication);
         return ResponseEntity.ok(followService.getFollowStatus(subject, userId));
     }
 }

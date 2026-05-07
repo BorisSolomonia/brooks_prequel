@@ -169,34 +169,46 @@ Flyway migrations at `backend/app/src/main/resources/db/migration/`
 
 ## Bank of Georgia iPay Integration
 
-**Provider:** Bank of Georgia iPay — Georgian PSP, OAuth2 REST API, redirect-based hosted checkout. **GEL only.**
-**No SDK** — uses Spring `RestTemplate`. Full integration guide at `docs/BOG_IPAY_INTEGRATION.md`.
+**Provider:** Bank of Georgia iPay (E-commerce v1 REST API), OAuth2 client_credentials,
+redirect-based hosted checkout. **GEL only.** No SDK — uses Spring `RestTemplate`.
+Full integration guide at `docs/BOG_IPAY_INTEGRATION.md`.
 
 ```
-BogIpayClient
-  createOrder(shopOrderId, amountMinorUnits, description, productId)
-    → POST https://ipay.ge/opay/api/v1/checkout/orders
-    → returns { orderId, paymentHash, approveUrl }
-
-  getPaymentDetails(orderId)
-    → GET https://ipay.ge/opay/api/v1/checkout/payment/{order_id}
-    → returns { status, paymentHash, ipayPaymentId, transactionId, ... }
-
-  refund(orderId, amountMinorUnits)  // null amount = full refund
-    → POST https://ipay.ge/opay/api/v1/checkout/refund (form-urlencoded)
+BogIpayClient (backend/purchase/src/main/java/com/brooks/purchase/service/BogIpayClient.java)
 
   ensureToken()  // OAuth2 client_credentials, cached until 60s before expiry
-    → POST https://ipay.ge/opay/api/v1/oauth2/token
+    → POST https://oauth2.bog.ge/auth/realms/bog/protocol/openid-connect/token
+
+  createOrder(shopOrderId, amountMinorUnits, description, productId)
+    → POST https://api.bog.ge/payments/v1/ecommerce/orders
+    → returns CreatedOrder { orderId, redirectUrl }
+
+  getPaymentDetails(orderId)
+    → GET https://api.bog.ge/payments/v1/receipt/{order_id}
+    → returns PaymentDetails { status, orderId, externalOrderId, totalAmountMinorUnits,
+                                currency, authCode, transactionId, ... }
+
+  refund(orderId, amountMinorUnits)  // null amount = full refund
+    → POST https://api.bog.ge/payments/v1/payment/refund/{order_id}
 ```
 
-**Callback:** `POST /api/webhooks/bog-ipay` (form-urlencoded). **No signature mechanism documented by BOG** — verification is done by re-fetching `getPaymentDetails(orderId)` and comparing `payment_hash` against the stored value.
-**Successful status:** `success` in Payment Details response.
+**Callback:** `POST /api/webhooks/bog-ipay` (JSON body). Signature in `Callback-Signature`
+header — SHA256withRSA over the raw body, verified with the BOG public key bundled at
+`backend/purchase/src/main/resources/bog/callback-public-key.pem`. **Unsigned callbacks
+are rejected** (`BogCallbackVerifier`). **Defense in depth**: even after signature passes,
+`PurchaseService.handleCheckoutCompleted` re-fetches `getPaymentDetails(orderId)` and
+verifies `status="completed"`, amount matches `priceCentsPaid`, and currency is `GEL`
+before flipping the purchase to COMPLETED.
+
+**Successful status:** `completed` in Payment Details response (`order_status.key`).
+
 **Config:**
 ```yaml
 bog-ipay:
   client-id: ${BOG_IPAY_CLIENT_ID}
   secret-key: ${BOG_IPAY_SECRET_KEY}
-  base-url: ${BOG_IPAY_BASE_URL:https://ipay.ge/opay/api/v1}
+  oauth-base-url: ${BOG_IPAY_OAUTH_URL:https://oauth2.bog.ge}
+  api-base-url: ${BOG_IPAY_API_URL:https://api.bog.ge}
   callback-path: ${BOG_IPAY_CALLBACK_PATH:/api/webhooks/bog-ipay}
   locale: ${BOG_IPAY_LOCALE:ka}
 ```

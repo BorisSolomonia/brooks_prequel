@@ -62,6 +62,18 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, UUID> 
                                     @Param("averageRating") double averageRating,
                                     @Param("reviewCount") int reviewCount);
 
+    @Modifying
+    @Query("UPDATE UserProfile p SET p.purchaseCount = p.purchaseCount + 1 WHERE p.userId = :userId")
+    int incrementPurchaseCount(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("UPDATE UserProfile p SET p.followerCount = p.followerCount + :delta WHERE p.userId = :userId")
+    int adjustFollowerCount(@Param("userId") UUID userId, @Param("delta") int delta);
+
+    @Modifying
+    @Query("UPDATE UserProfile p SET p.followingCount = p.followingCount + :delta WHERE p.userId = :userId")
+    int adjustFollowingCount(@Param("userId") UUID userId, @Param("delta") int delta);
+
     interface InfluencerMapProjection {
         UUID getUserId();
         String getUsername();

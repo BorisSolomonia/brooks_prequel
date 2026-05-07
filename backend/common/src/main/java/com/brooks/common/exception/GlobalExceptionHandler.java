@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -31,11 +33,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
-        String errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> e.getField() + ": " + e.getDefaultMessage())
-                .collect(Collectors.joining(", "));
-        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, errors);
+        List<Map<String, String>> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> Map.of(
+                        "field", e.getField(),
+                        "code", e.getCode() == null ? "Invalid" : e.getCode()))
+                .collect(Collectors.toList());
+        log.info("Validation failed: {}", ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + " " + e.getDefaultMessage())
+                .collect(Collectors.joining("; ")));
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
         detail.setType(URI.create("about:blank"));
+        detail.setProperty("errors", errors);
         return detail;
     }
 

@@ -1,7 +1,6 @@
 package com.brooks.social.service;
 
 import com.brooks.common.exception.ResourceNotFoundException;
-import com.brooks.common.util.BusinessConstants;
 import com.brooks.guide.domain.Guide;
 import com.brooks.guide.domain.GuideStatus;
 import com.brooks.guide.repository.GuideRepository;
@@ -15,6 +14,7 @@ import com.brooks.social.repository.GuideStoryRepository;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +33,9 @@ public class StoryService {
     private final UserService userService;
     private final FollowService followService;
 
+    @Value("${app.social.story-expiry-hours:24}")
+    private long storyExpiryHours;
+
     @Transactional
     public StoryResponse createStory(String auth0Subject, StoryCreateRequest request) {
         User user = userService.findByAuth0Subject(auth0Subject);
@@ -43,7 +46,7 @@ public class StoryService {
         story.setImageUrl(resolvePromotionImage(guide));
         story.setCaption(buildPromotionText(guide));
         story.setLinkGuideId(guide.getId());
-        story.setExpiresAt(Instant.now().plus(BusinessConstants.STORY_EXPIRY_HOURS, ChronoUnit.HOURS));
+        story.setExpiresAt(Instant.now().plus(storyExpiryHours, ChronoUnit.HOURS));
 
         story = storyRepository.save(story);
         return toResponse(story, guide, user.getUsername(), getAvatarUrl(user.getId()));
@@ -72,7 +75,8 @@ public class StoryService {
         }
 
         Instant now = Instant.now();
-        List<GuideStory> stories = storyRepository.findActiveStoriesByCreatorIds(followingIds, now);
+        List<GuideStory> stories = storyRepository.findActiveStoriesByCreatorIds(
+                followingIds, now, org.springframework.data.domain.Pageable.unpaged());
 
         Map<UUID, List<GuideStory>> grouped = stories.stream()
                 .collect(Collectors.groupingBy(GuideStory::getCreatorId, LinkedHashMap::new, Collectors.toList()));
@@ -84,6 +88,8 @@ public class StoryService {
                 .stream()
                 .collect(Collectors.toMap(UserProfile::getUserId, p -> p));
 
+        Map<UUID, Guide> guidesById = batchLoadGuidesForStories(stories);
+
         List<CreatorStoryStrip> strips = new ArrayList<>();
         for (Map.Entry<UUID, List<GuideStory>> entry : grouped.entrySet()) {
             UUID creatorId = entry.getKey();
@@ -93,7 +99,7 @@ public class StoryService {
 
             String username = creator != null ? creator.getUsername() : null;
             List<StoryResponse> storyResponses = entry.getValue().stream()
-                    .map(s -> toResponse(s, username, avatarUrl))
+                    .map(s -> toResponse(s, guidesById.get(s.getLinkGuideId()), username, avatarUrl))
                     .collect(Collectors.toList());
 
             strips.add(CreatorStoryStrip.builder()
@@ -114,9 +120,10 @@ public class StoryService {
         User creator = userService.findById(creatorId);
         String avatarUrl = getAvatarUrl(creatorId);
 
-        return storyRepository.findByCreatorIdAndExpiresAtAfterOrderByCreatedAtDesc(creatorId, now)
-                .stream()
-                .map(s -> toResponse(s, creator.getUsername(), avatarUrl))
+        List<GuideStory> stories = storyRepository.findByCreatorIdAndExpiresAtAfterOrderByCreatedAtDesc(creatorId, now);
+        Map<UUID, Guide> guidesById = batchLoadGuidesForStories(stories);
+        return stories.stream()
+                .map(s -> toResponse(s, guidesById.get(s.getLinkGuideId()), creator.getUsername(), avatarUrl))
                 .collect(Collectors.toList());
     }
 
@@ -126,11 +133,14 @@ public class StoryService {
                 .orElse(null);
     }
 
-    private StoryResponse toResponse(GuideStory story, String username, String avatarUrl) {
-        Guide guide = story.getLinkGuideId() != null
-                ? guideRepository.findById(story.getLinkGuideId()).orElse(null)
-                : null;
-        return toResponse(story, guide, username, avatarUrl);
+    private Map<UUID, Guide> batchLoadGuidesForStories(Collection<GuideStory> stories) {
+        Set<UUID> guideIds = stories.stream()
+                .map(GuideStory::getLinkGuideId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (guideIds.isEmpty()) return Map.of();
+        return guideRepository.findAllById(guideIds).stream()
+                .collect(Collectors.toMap(Guide::getId, g -> g));
     }
 
     private StoryResponse toResponse(GuideStory story, Guide guide, String username, String avatarUrl) {

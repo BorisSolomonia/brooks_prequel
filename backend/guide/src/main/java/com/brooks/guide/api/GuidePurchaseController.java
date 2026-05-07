@@ -92,7 +92,7 @@ public class GuidePurchaseController {
     }
 
     private String subject(Authentication authentication) {
-        return ((Jwt) authentication.getPrincipal()).getSubject();
+        return com.brooks.auth.util.AuthPrincipal.subject(authentication);
     }
 
     private String email(Authentication authentication) {

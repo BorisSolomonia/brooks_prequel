@@ -41,12 +41,11 @@ public class SearchService {
     public PageResponse<CreatorSearchResult> searchCreators(String query, int page, int size) {
         String sanitized = sanitizeQuery(query);
         if (sanitized.isBlank()) {
-            return new PageResponse<>(List.of(), page, size, 0, 0, true);
+            return PageResponse.empty(page, size);
         }
         long total = searchRepository.countCreators(sanitized);
         List<CreatorSearchResult> content = searchRepository.searchCreators(sanitized, size, page * size);
-        int totalPages = (int) Math.ceil((double) total / size);
-        return new PageResponse<>(content, page, size, total, totalPages, page >= totalPages - 1);
+        return PageResponse.of(content, page, size, total);
     }
 
     public PageResponse<GuideSearchResult> searchGuides(String query, int page, int size) {
@@ -56,31 +55,28 @@ public class SearchService {
     public PageResponse<GuideSearchResult> searchGuides(String query, int page, int size, String stage, List<String> personas) {
         String sanitized = sanitizeQuery(query);
         if (sanitized.isBlank()) {
-            return new PageResponse<>(List.of(), page, size, 0, 0, true);
+            return PageResponse.empty(page, size);
         }
         List<String> safePersonas = (personas == null) ? Collections.emptyList() : personas;
         long total = searchRepository.countGuides(sanitized, stage, safePersonas);
         List<GuideSearchResult> content = searchRepository.searchGuides(sanitized, size, page * size, stage, safePersonas);
-        int totalPages = (int) Math.ceil((double) total / size);
-        return new PageResponse<>(content, page, size, total, totalPages, page >= totalPages - 1);
+        return PageResponse.of(content, page, size, total);
     }
 
     public PageResponse<GuideSearchResult> catalogGuides(int page, int size) {
         long total = searchRepository.countPublishedGuides();
         List<GuideSearchResult> content = searchRepository.listPublishedGuides(size, page * size);
-        int totalPages = (int) Math.ceil((double) total / size);
-        return new PageResponse<>(content, page, size, total, totalPages, page >= totalPages - 1);
+        return PageResponse.of(content, page, size, total);
     }
 
     public PageResponse<PlaceSearchResult> searchPlaces(String query, int page, int size) {
         String sanitized = sanitizeQuery(query);
         if (sanitized.isBlank()) {
-            return new PageResponse<>(List.of(), page, size, 0, 0, true);
+            return PageResponse.empty(page, size);
         }
         long total = searchRepository.countPlaces(sanitized);
         List<PlaceSearchResult> content = searchRepository.searchPlaces(sanitized, size, page * size);
-        int totalPages = (int) Math.ceil((double) total / size);
-        return new PageResponse<>(content, page, size, total, totalPages, page >= totalPages - 1);
+        return PageResponse.of(content, page, size, total);
     }
 
     String sanitizeQuery(String query) {
