@@ -50,6 +50,6 @@ http://127.0.0.1 {
     # requires nonce-injection middleware (https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy)
     # which we have not wired up yet. Until then 'unsafe-inline' on script-src is the
     # documented Next.js fallback. Remove it once a nonce middleware ships.
-    Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://storage.googleapis.com https://api.mapbox.com https://*.tiles.mapbox.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://api.mapbox.com; style-src 'self' 'unsafe-inline' https://api.mapbox.com; font-src 'self' data:; connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com https://*.auth0.com; worker-src 'self' blob:; frame-ancestors 'self'"
+    Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://storage.googleapis.com https://images.unsplash.com https://api.mapbox.com https://*.tiles.mapbox.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://api.mapbox.com; style-src 'self' 'unsafe-inline' https://api.mapbox.com; font-src 'self' data:; connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com https://*.auth0.com; worker-src 'self' blob:; frame-ancestors 'self'"
   }
 }

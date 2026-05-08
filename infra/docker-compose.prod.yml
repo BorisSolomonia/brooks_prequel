@@ -37,6 +37,9 @@ services:
       # Default JAVA_OPTS to the heap-tuning flags from the Dockerfile so that an unset
       # host env var doesn't blank them. Setting JAVA_OPTS in the host shell still wins.
       JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp}
+      # Local media (profile pics, guide covers) lives here when GCS isn't configured.
+      # Mounted to a named volume so uploads survive container recreation.
+      LOCAL_MEDIA_DIR: /var/lib/brooks/media
     expose:
       - "8080"
     mem_limit: 1g
@@ -47,6 +50,8 @@ services:
     networks:
       - internal
       - proxy
+    volumes:
+      - brooks-media:/var/lib/brooks/media
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]
       interval: 30s
@@ -127,6 +132,7 @@ volumes:
   brooks-postgres-data:
   brooks-caddy-data:
   brooks-caddy-config:
+  brooks-media:
 
 networks:
   internal:

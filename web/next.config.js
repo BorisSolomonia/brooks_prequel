@@ -15,6 +15,12 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
       },
+      // Seed data (V22, V35) references unsplash for mock creator avatars and guide
+      // cover images. Drop this entry once seed data is replaced with real uploads.
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
   },
 };

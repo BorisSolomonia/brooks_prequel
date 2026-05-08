@@ -25,6 +25,11 @@ services:
   backend:
     image: ${DOCKER_REGISTRY:-localhost}/brooks/backend:${IMAGE_TAG:-latest}
     env_file: .env
+    environment:
+      # Local media (profile pics, guide covers) lives here. Mounted to a named volume so
+      # uploads survive container recreation. When GCS_CREDENTIALS_JSON is configured,
+      # MediaStorageService writes to GCS instead and this directory stays unused.
+      LOCAL_MEDIA_DIR: /var/lib/brooks/media
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,6 +39,8 @@ services:
     restart: unless-stopped
     mem_limit: 1g
     cpus: 1.0
+    volumes:
+      - brooks_media:/var/lib/brooks/media
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -85,6 +92,7 @@ volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  brooks_media:
 
 networks:
   internal:
