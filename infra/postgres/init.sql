@@ -8,9 +8,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Enable trigram extension for future full-text search
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
--- Per-query timing + plan stats. Read with:
---   SELECT query, mean_exec_time, calls
---   FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 20;
--- shared_preload_libraries='pg_stat_statements' must be set in postgresql.conf for this
--- extension to load — see infra/postgres/postgresql.conf.
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+-- Per-query timing + plan stats. Re-enable AFTER:
+--   1. infra/postgres/postgresql.conf is mounted again in docker-compose.yml
+--      (postgres restart-loop bug got it disabled — see docs/INFRA.md).
+--   2. shared_preload_libraries='pg_stat_statements' is confirmed loading cleanly.
+-- Without (1) and (2), this CREATE EXTENSION fails on fresh-volume init.
+-- CREATE EXTENSION IF NOT EXISTS pg_stat_statements;

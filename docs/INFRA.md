@@ -72,21 +72,44 @@ PostgreSQL 16. Migrations live in `backend/app/src/main/resources/db/migration/`
 managed by Flyway. See `docs/MIGRATIONS.md` for migration history (especially the
 historical-destructive V33).
 
-### Postgres tuning
+### Postgres tuning — DISABLED pending diagnosis
 
-A custom `infra/postgres/postgresql.conf` is mounted into the container with values sized
-for our 1 GB Postgres container on a single-VM deploy:
+A custom `infra/postgres/postgresql.conf` was added with `shared_buffers=256MB`,
+`effective_cache_size=768MB`, `work_mem=16MB`, `random_page_cost=1.1`,
+`pg_stat_statements` preload, and `effective_io_concurrency=200`.
 
-- `shared_buffers = 256MB` — ~25% of container memory, the standard rule.
-- `effective_cache_size = 768MB` — what the planner assumes the OS page cache can hold.
-- `work_mem = 16MB` — per sort/hash op; with `maximumPoolSize=20` Hikari and ~3 ops per
-  query, peak ≈ 1 GB total work_mem usage in worst case (acceptable).
-- `random_page_cost = 1.1` — SSD on GCP `pd-balanced`; default `4.0` is for spinning rust.
-- `pg_stat_statements` extension is enabled — query top-N by mean exec time with:
-  `SELECT query, mean_exec_time, calls FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 20;`
+**It caused a Postgres restart loop in production** and has been disabled by removing
+the `command:` and `postgresql.conf` volume mount from both compose files. The
+`pg_stat_statements` line in `init.sql` has likewise been commented out (it requires
+`shared_preload_libraries='pg_stat_statements'`, which the conf is no longer providing).
 
-If you bump the Postgres `mem_limit` in compose, scale `shared_buffers`/`effective_cache_size`
-proportionally.
+Suspect causes (most likely first):
+
+1. **`effective_io_concurrency = 200`** — requires `posix_fadvise()` on the host. Alpine
+   musl historically had quirks here. If diagnostic logs show `unrecognized parameter`
+   or `permission denied`, this is the culprit.
+2. **Path resolution** — `./postgres/postgresql.conf` is relative to the compose file's
+   working directory. If `docker compose up` is invoked from a different cwd than
+   `infra/`, the file isn't found and Postgres exits.
+3. **File permissions** — file owned by root with mode <644 means the postgres user
+   inside the container can't read it.
+
+**To re-enable safely:**
+
+1. SSH onto the host. Run:
+   ```bash
+   docker logs brooks-postgres --tail 200
+   ```
+   Find the actual error.
+2. Remove the offending parameter from `infra/postgres/postgresql.conf`. Start with the
+   smallest possible config — just `shared_buffers` and `log_min_duration_statement`.
+3. Test locally first: `docker compose -f infra/docker-compose.local.yml up postgres`.
+   Confirm clean startup before pushing to prod.
+4. Restore the `command:` and conf mount in both compose files and the `CREATE
+   EXTENSION` line in `init.sql`.
+
+If you bump the Postgres `mem_limit` in compose, scale `shared_buffers` /
+`effective_cache_size` proportionally.
 
 ## Redis
 

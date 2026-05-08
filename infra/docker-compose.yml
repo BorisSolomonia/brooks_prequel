@@ -59,11 +59,14 @@ services:
   postgres:
     image: postgres:16-alpine
     env_file: .env.db
-    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    # Postgres tuning via mounted postgresql.conf was disabled after a restart-loop
+    # incident (likely path-resolution or `effective_io_concurrency` on Alpine).
+    # The conf file at infra/postgres/postgresql.conf is preserved as a reference;
+    # re-enable only after diagnosing with `docker logs brooks-postgres` and
+    # confirming each setting is supported. See docs/INFRA.md.
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     networks:
       - internal
     restart: unless-stopped
