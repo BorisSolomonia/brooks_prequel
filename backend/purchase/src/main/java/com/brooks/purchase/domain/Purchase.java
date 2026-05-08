@@ -64,4 +64,16 @@ public class Purchase {
 
     @Column(name = "terms_accepted_at")
     private Instant termsAcceptedAt;
+
+    // Denormalised display fields — populated on checkout creation so the purchase list
+    // view doesn't have to fetch + parse the full guide_versions.snapshot JSON per row.
+    // The snapshot remains authoritative for full-detail buyer view.
+    @Column(name = "guide_title_at_purchase")
+    private String guideTitleAtPurchase;
+
+    @Column(name = "cover_image_url_at_purchase")
+    private String coverImageUrlAtPurchase;
+
+    @Column(name = "region_at_purchase")
+    private String regionAtPurchase;
 }

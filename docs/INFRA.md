@@ -71,3 +71,27 @@ run heavy load tests locally.
 PostgreSQL 16. Migrations live in `backend/app/src/main/resources/db/migration/` and are
 managed by Flyway. See `docs/MIGRATIONS.md` for migration history (especially the
 historical-destructive V33).
+
+### Postgres tuning
+
+A custom `infra/postgres/postgresql.conf` is mounted into the container with values sized
+for our 1 GB Postgres container on a single-VM deploy:
+
+- `shared_buffers = 256MB` — ~25% of container memory, the standard rule.
+- `effective_cache_size = 768MB` — what the planner assumes the OS page cache can hold.
+- `work_mem = 16MB` — per sort/hash op; with `maximumPoolSize=20` Hikari and ~3 ops per
+  query, peak ≈ 1 GB total work_mem usage in worst case (acceptable).
+- `random_page_cost = 1.1` — SSD on GCP `pd-balanced`; default `4.0` is for spinning rust.
+- `pg_stat_statements` extension is enabled — query top-N by mean exec time with:
+  `SELECT query, mean_exec_time, calls FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 20;`
+
+If you bump the Postgres `mem_limit` in compose, scale `shared_buffers`/`effective_cache_size`
+proportionally.
+
+## Redis
+
+**Removed from compose** — was provisioned but never used in application logic. Re-add when
+we actually adopt it for one of: rate-limit (see "Rate limiting" above), distributed cache
+(when going multi-replica — currently we use Caffeine in-process), or session store. The
+disk-volume-less compose service definition is small enough that re-adding it later is a
+one-paragraph change.

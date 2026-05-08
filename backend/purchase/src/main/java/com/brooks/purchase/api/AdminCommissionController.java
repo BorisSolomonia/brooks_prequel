@@ -22,6 +22,9 @@ import com.brooks.purchase.service.CommissionRateResolver;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -140,8 +143,15 @@ public class AdminCommissionController {
     // ── Creators ─────────────────────────────────────────────────────────────
 
     @GetMapping("/creators")
-    public List<CreatorRateResponse> listCreators() {
-        List<UserProfile> profiles = profileRepository.findAll();
+    public List<CreatorRateResponse> listCreators(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "50") int size) {
+        // Cap page size so a single admin call can't pull every profile into memory.
+        int safeSize = Math.min(Math.max(size, 1), 200);
+        int safePage = Math.max(page, 0);
+        Page<UserProfile> profilePage = profileRepository.findAll(
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "followerCount")));
+        List<UserProfile> profiles = profilePage.getContent();
         Map<UUID, User> usersById = userService.findAllByIds(
                 profiles.stream().map(UserProfile::getUserId).toList());
 

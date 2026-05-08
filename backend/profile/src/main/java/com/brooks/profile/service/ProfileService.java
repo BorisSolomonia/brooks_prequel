@@ -11,6 +11,7 @@ import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,7 +70,11 @@ public class ProfileService {
         return toResponse(user, profile);
     }
 
+    // Heavy native query with window functions + LATERAL joins. Cached for 5 min via the
+    // "rankings" Caffeine cache (see CacheConfig). Key uses "global" sentinel for null
+    // region so the regionless variant doesn't collide with a real region named "".
     @Transactional(readOnly = true)
+    @Cacheable(value = "rankings", key = "'pins:' + (#region == null || #region.isBlank() ? 'global' : #region)")
     public InfluencerMapResponse getInfluencerMap(String region) {
         String regionParam = (region != null && !region.isBlank()) ? region : null;
         List<InfluencerMapPinResponse> pins = profileRepository.findInfluencerPins(regionParam).stream()

@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 interface AvatarProps {
   src?: string | null;
   name?: string;
@@ -12,15 +14,19 @@ const sizeClasses = {
   xl: 'w-24 h-24 text-3xl',
 };
 
+const sizePx = { sm: 32, md: 40, lg: 64, xl: 96 } as const;
+
 export default function Avatar({ src, name, size = 'md', verified = false }: AvatarProps) {
   const initial = name?.charAt(0)?.toUpperCase() || '?';
 
   return (
     <div className="relative inline-block">
       {src ? (
-        <img
+        <Image
           src={src}
           alt={name || ''}
+          width={sizePx[size]}
+          height={sizePx[size]}
           className={`${sizeClasses[size]} rounded-full border-2 border-ig-border object-cover saturate-[0.92] contrast-[1.04]`}
         />
       ) : (

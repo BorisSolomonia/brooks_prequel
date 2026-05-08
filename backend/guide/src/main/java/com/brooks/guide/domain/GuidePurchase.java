@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -70,6 +71,7 @@ public class GuidePurchase extends BaseEntity {
 
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("dayNumber ASC, blockPosition ASC, placePosition ASC")
+    @BatchSize(size = 50)
     private List<GuideTripItem> items = new ArrayList<>();
 
     public GuidePurchase(UUID buyerId, UUID guideId, UUID guideVersionId, int guideVersionNumber, String provider, int amountCents, String currency) {

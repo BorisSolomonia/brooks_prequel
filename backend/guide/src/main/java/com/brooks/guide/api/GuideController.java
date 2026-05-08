@@ -1,6 +1,7 @@
 package com.brooks.guide.api;
 
 import com.brooks.common.dto.PageResponse;
+import com.brooks.common.util.Pagination;
 import com.brooks.guide.dto.*;
 import com.brooks.guide.service.GuideService;
 import jakarta.validation.Valid;
@@ -181,7 +182,8 @@ public class GuideController {
             Authentication authentication,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
-        return ResponseEntity.ok(guideService.getMyGuides(subject(authentication), page, size));
+        return ResponseEntity.ok(guideService.getMyGuides(
+                subject(authentication), Pagination.clampPage(page), Pagination.clampSize(size)));
     }
 
     @GetMapping("/me/guides/library")
@@ -217,7 +219,8 @@ public class GuideController {
             @PathVariable(name = "username") String username,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
-        return ResponseEntity.ok(guideService.getCreatorPublishedGuides(username, page, size));
+        return ResponseEntity.ok(guideService.getCreatorPublishedGuides(
+                username, Pagination.clampPage(page), Pagination.clampSize(size)));
     }
 
     // ── Util ────────────────────────────────────────────────────

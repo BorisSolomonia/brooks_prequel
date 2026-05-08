@@ -1,5 +1,6 @@
 package com.brooks.guide.api;
 
+import com.brooks.common.util.Pagination;
 import com.brooks.guide.dto.CreatorReviewListResponse;
 import com.brooks.guide.dto.CreatorReviewRequest;
 import com.brooks.guide.dto.CreatorReviewResponse;
@@ -30,8 +31,8 @@ public class CreatorReviewController {
         return ResponseEntity.ok(creatorReviewService.getReviews(
                 username,
                 authentication != null ? subject(authentication) : null,
-                page,
-                size
+                Pagination.clampPage(page),
+                Pagination.clampSize(size)
         ));
     }
 

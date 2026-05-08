@@ -3,6 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: brooks-postgres
     restart: unless-stopped
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     environment:
       POSTGRES_DB: ${DB_NAME?DB_NAME must be set}
       POSTGRES_USER: ${DB_USERNAME?DB_USERNAME must be set}
@@ -10,11 +11,12 @@ services:
     volumes:
       - brooks-postgres-data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     networks:
       - internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME?DB_USERNAME must be set} -d ${DB_NAME?DB_NAME must be set}"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 12
       start_period: 20s
@@ -44,7 +46,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 6
-      start_period: 45s
+      start_period: 90s
 
   web:
     image: ${BROOKS_WEB_IMAGE?BROOKS_WEB_IMAGE must be set}

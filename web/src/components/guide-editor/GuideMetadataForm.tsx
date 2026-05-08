@@ -2,6 +2,7 @@
 
 import { useMemo, useEffect, useRef } from 'react';
 import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
 import type { GuideCreateRequest, GuideUpdateRequest } from '@/types';
 

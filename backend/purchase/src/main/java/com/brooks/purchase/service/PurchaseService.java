@@ -114,6 +114,8 @@ public class PurchaseService {
             UUID buyerId,
             UUID guideId,
             String guideTitle,
+            String guideCoverImageUrl,
+            String guideRegion,
             int guideVersionNumber,
             int effectivePrice,
             int platformFee,
@@ -169,6 +171,8 @@ public class PurchaseService {
                 buyer.getId(),
                 guide.getId(),
                 guide.getTitle(),
+                guide.getCoverImageUrl(),
+                guide.getRegion(),
                 guide.getVersionNumber(),
                 effectivePrice,
                 platformFee,
@@ -189,6 +193,11 @@ public class PurchaseService {
         purchase.setBogOrderId(order.orderId());
         purchase.setStatus(PurchaseStatus.PENDING);
         purchase.setTermsAcceptedAt(Instant.now());
+        // Snapshot the guide's display fields so the purchase list view can render without
+        // touching the guide_versions JSON snapshot.
+        purchase.setGuideTitleAtPurchase(pre.guideTitle);
+        purchase.setCoverImageUrlAtPurchase(pre.guideCoverImageUrl);
+        purchase.setRegionAtPurchase(pre.guideRegion);
         purchaseRepository.save(purchase);
 
         recordAuditEvent(purchase.getId(), "CHECKOUT_CREATED", String.format(
@@ -358,23 +367,28 @@ public class PurchaseService {
     }
 
     private PurchaseResponse toResponse(Purchase purchase) {
-        String guideTitle = null;
-        String guideCoverImageUrl = null;
-        String guideRegion = null;
+        // Display fields are denormalised onto purchases (V40), so we don't need to fetch
+        // and parse the guide_versions JSON snapshot for the list view. Falls back to
+        // re-parsing the snapshot only if the denormalised columns are NULL (legacy rows
+        // backfilled from `guides` may diverge from the actual purchased version).
+        String guideTitle = purchase.getGuideTitleAtPurchase();
+        String guideCoverImageUrl = purchase.getCoverImageUrlAtPurchase();
+        String guideRegion = purchase.getRegionAtPurchase();
 
-        // Try to extract metadata from the version snapshot
-        GuideVersion version = versionRepository.findByGuideIdAndVersionNumber(
-                purchase.getGuideId(), purchase.getGuideVersionNumber()).orElse(null);
-        if (version != null) {
-            try {
-                JsonNode node = objectMapper.readTree(version.getSnapshot());
-                guideTitle = node.has("title") ? node.get("title").asText() : null;
-                guideCoverImageUrl = node.has("coverImageUrl") && !node.get("coverImageUrl").isNull()
-                        ? node.get("coverImageUrl").asText() : null;
-                guideRegion = node.has("region") && !node.get("region").isNull()
-                        ? node.get("region").asText() : null;
-            } catch (Exception e) {
-                log.warn("Failed to parse guide version snapshot for purchase {}", purchase.getId());
+        if (guideTitle == null) {
+            GuideVersion version = versionRepository.findByGuideIdAndVersionNumber(
+                    purchase.getGuideId(), purchase.getGuideVersionNumber()).orElse(null);
+            if (version != null) {
+                try {
+                    JsonNode node = objectMapper.readTree(version.getSnapshot());
+                    guideTitle = node.has("title") ? node.get("title").asText() : null;
+                    guideCoverImageUrl = node.has("coverImageUrl") && !node.get("coverImageUrl").isNull()
+                            ? node.get("coverImageUrl").asText() : null;
+                    guideRegion = node.has("region") && !node.get("region").isNull()
+                            ? node.get("region").asText() : null;
+                } catch (Exception e) {
+                    log.warn("Failed to parse guide version snapshot for purchase {}", purchase.getId());
+                }
             }
         }
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import Avatar from '@/components/ui/Avatar';
 import FollowButton from '@/components/ui/FollowButton';
 import GuideCard from '@/components/ui/GuideCard';

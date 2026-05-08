@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { GeoJSONSource, Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import type { MyTripItem } from '@/types';
 
 const CATEGORY_FILTERS = [

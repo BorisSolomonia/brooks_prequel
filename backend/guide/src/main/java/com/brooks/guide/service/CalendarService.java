@@ -66,7 +66,11 @@ public class CalendarService {
                 .build();
     }
 
-    @Transactional
+    // Intentionally NOT @Transactional. The Google token exchange + userinfo fetch dominate
+    // this method's runtime; holding a DB transaction across them would pin a connection +
+    // any row locks for hundreds of milliseconds per call. Each connectionRepository.save()
+    // below gets its own auto-commit transaction via Spring Data — that's fine because there
+    // is no multi-step write we'd want to roll back atomically.
     public CalendarConnectionStatusResponse connectGoogle(String auth0Subject, String email, GoogleCalendarConnectRequest request) {
         requireGoogleConfig();
         User user = resolveUser(auth0Subject, email);
@@ -106,13 +110,21 @@ public class CalendarService {
         return status(auth0Subject, email);
     }
 
-    @Transactional
+    // disconnectGoogle is a single delete — Spring Data wraps it implicitly. Keeping
+    // the explicit @Transactional would still be fine, but consistency with connect/sync
+    // (no long-lived TX) is clearer.
     public void disconnectGoogle(String auth0Subject, String email) {
         User user = resolveUser(auth0Subject, email);
         connectionRepository.deleteByUserIdAndProvider(user.getId(), GOOGLE);
     }
 
-    @Transactional
+    // Intentionally NOT @Transactional. The for-loop below makes one Google Calendar HTTP
+    // call per trip item; pinning a DB connection + row locks across those calls (potentially
+    // dozens) would drain the Hikari pool under any concurrent sync load. Per-row event
+    // saves/deletes each get their own auto-commit transaction. A mid-loop network failure
+    // already leaves Google and our DB out of sync (you can't make a remote API call atomic
+    // with a local commit), so we don't lose any rollback guarantee that the @Transactional
+    // here was actually providing.
     public GoogleCalendarSyncResponse syncGoogle(String auth0Subject, String email, UUID tripId, GoogleCalendarSyncRequest request) {
         requireGoogleConfig();
         User user = resolveUser(auth0Subject, email);

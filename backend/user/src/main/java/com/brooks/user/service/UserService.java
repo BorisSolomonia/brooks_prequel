@@ -6,6 +6,8 @@ import com.brooks.user.domain.UserRole;
 import com.brooks.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +27,10 @@ public class UserService {
     @Value("${app.admin-emails:}")
     private List<String> adminEmails;
 
+    // Evict the cached lookup on the find-or-create path because the user's role/email may
+    // have just changed (admin email syncing, first-time creation).
     @Transactional
+    @CacheEvict(value = "usersBySubject", key = "#auth0Subject")
     public User findOrCreateUser(String auth0Subject, String email) {
         return userRepository.findByAuth0Subject(auth0Subject)
                 .map(user -> syncAdminRole(user, email))
@@ -40,7 +45,10 @@ public class UserService {
                 });
     }
 
+    // Hit on every authenticated request — cache aggressively. Eviction happens via
+    // findOrCreateUser (above) and any future role-update path.
     @Transactional(readOnly = true)
+    @Cacheable(value = "usersBySubject", key = "#auth0Subject")
     public User findByAuth0Subject(String auth0Subject) {
         return userRepository.findByAuth0Subject(auth0Subject)
                 .orElseThrow(() -> new ResourceNotFoundException("User", auth0Subject));

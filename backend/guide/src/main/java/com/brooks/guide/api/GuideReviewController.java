@@ -1,5 +1,6 @@
 package com.brooks.guide.api;
 
+import com.brooks.common.util.Pagination;
 import com.brooks.guide.dto.GuideReviewRequest;
 import com.brooks.guide.dto.GuideReviewListResponse;
 import com.brooks.guide.dto.GuideReviewResponse;
@@ -54,8 +55,8 @@ public class GuideReviewController {
         return ResponseEntity.ok(guideReviewService.getReviews(
                 guideId,
                 authentication != null ? subject(authentication) : null,
-                page,
-                size
+                Pagination.clampPage(page),
+                Pagination.clampSize(size)
         ));
     }
 

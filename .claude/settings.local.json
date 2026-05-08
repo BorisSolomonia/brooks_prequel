@@ -55,7 +55,8 @@
       "Bash(xargs grep *)",
       "Bash(grep -E \"tsx$\")",
       "Bash(npm run *)",
-      "Bash(echo \"EXIT=$?\")"
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(grep -r \"hibernate\\\\\\\\.jdbc\\\\\\\\.batch\\\\|hibernate\\\\\\\\.order_inserts\" --include=\"*.yml\" .)"
     ]
   }
 }

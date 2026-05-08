@@ -1,5 +1,8 @@
 import MapsExperience from '@/components/maps/MapsExperience';
 
+// Maps is fully interactive (Mapbox GL on the client) and reads its initial state from
+// useSearchParams in the imported component tree. Marking it dynamic avoids the
+// "useSearchParams() should be wrapped in a suspense boundary" prerender error.
 export const dynamic = 'force-dynamic';
 
 function parseNumber(value: string | undefined): number | null {

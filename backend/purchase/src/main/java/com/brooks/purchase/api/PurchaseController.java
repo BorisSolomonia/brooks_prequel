@@ -1,6 +1,7 @@
 package com.brooks.purchase.api;
 
 import com.brooks.common.dto.PageResponse;
+import com.brooks.common.util.Pagination;
 import com.brooks.purchase.dto.CheckoutRequest;
 import com.brooks.purchase.dto.CheckoutResponse;
 import com.brooks.purchase.dto.PurchaseResponse;
@@ -34,7 +35,8 @@ public class PurchaseController {
             Authentication authentication,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
-        return ResponseEntity.ok(purchaseService.getMyPurchases(subject(authentication), page, size));
+        return ResponseEntity.ok(purchaseService.getMyPurchases(
+                subject(authentication), Pagination.clampPage(page), Pagination.clampSize(size)));
     }
 
     @GetMapping("/me/purchases/by-bog-order/{bogOrderId}")

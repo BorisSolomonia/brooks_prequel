@@ -18,12 +18,8 @@ import type {
   MemoryShareResponse,
   MemoryVisibility,
 } from '@/types';
-
-// Kick off the mapbox-gl download immediately when this module loads in the browser,
-// before any useEffect fires. The awaits inside effects then resolve from cache.
-if (typeof window !== 'undefined') {
-  void import('mapbox-gl');
-}
+// CSS scoped to the map components so non-map pages don't pay for it.
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Module-level pins cache — survives navigation (component unmount/remount).
 let _cachedPins: InfluencerMapPin[] | null = null;

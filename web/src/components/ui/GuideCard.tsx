@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useCurrency } from '@/hooks/useCurrency';
 
@@ -66,7 +67,13 @@ export default function GuideCard({
       <div className="mw-photo-frame relative aspect-[4/3] bg-ig-secondary">
         <Link href={href} className="block h-full w-full" aria-label={title}>
           {coverImageUrl ? (
-            <img src={coverImageUrl} alt={title} className="h-full w-full object-cover saturate-[0.92] contrast-[1.04]" loading="lazy" />
+            <Image
+              src={coverImageUrl}
+              alt={title}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover saturate-[0.92] contrast-[1.04]"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-ig-text-primary">
               Add cover image

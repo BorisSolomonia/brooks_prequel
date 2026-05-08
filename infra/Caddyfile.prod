@@ -13,6 +13,14 @@ http://127.0.0.1 {
   @health path /health
   respond @health "OK" 200
 
+  # Next.js fingerprints filenames under /_next/static, so they're safe to cache forever.
+  @nextStatic path /_next/static/*
+  header @nextStatic Cache-Control "public, max-age=31536000, immutable"
+
+  # The image-optimization endpoint (/_next/image?url=...) caches keyed by query string.
+  @nextImage path /_next/image*
+  header @nextImage Cache-Control "public, max-age=86400"
+
   @auth path /api/auth/*
   reverse_proxy @auth {$WEB_HOST}:{$WEB_PORT}
 

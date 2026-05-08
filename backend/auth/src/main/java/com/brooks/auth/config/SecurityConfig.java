@@ -77,6 +77,9 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
+        // Nimbus's RemoteJWKSet caches keys internally (default 5 min). Spring Security's
+        // builder doesn't expose a duration setter; if we ever need to extend the TTL we can
+        // pass a custom RestOperations or a Spring Cache via the builder's `cache(Cache)`.
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(
                 "https://" + auth0Domain + "/.well-known/jwks.json").build();
 

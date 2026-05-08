@@ -1,6 +1,7 @@
 package com.brooks.social.api;
 
 import com.brooks.common.util.BusinessConstants;
+import com.brooks.common.util.Pagination;
 import com.brooks.social.dto.FeedItemResponse;
 import com.brooks.social.service.FeedService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class FeedController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "" + BusinessConstants.DEFAULT_PAGE_SIZE) int size) {
         String subject = ((Jwt) authentication.getPrincipal()).getSubject();
-        return ResponseEntity.ok(feedService.getFeed(subject, page, size));
+        return ResponseEntity.ok(feedService.getFeed(
+                subject, Pagination.clampPage(page), Pagination.clampSize(size)));
     }
 }

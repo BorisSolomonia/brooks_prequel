@@ -9,11 +9,28 @@ interface UseAccessTokenResult {
 }
 
 // Module-level cache — shared across all components for the page session.
-// Token is valid for ~1 hour (Auth0 default); 5-minute TTL ensures we
-// never serve a stale token after a session expiry edge case.
 let cachedToken: string | null = null;
 let cacheExpiry = 0;
 let inFlight: Promise<string | null> | null = null;
+
+// Read the JWT `exp` claim and use it for cache expiry. This avoids the previous 5-minute
+// fixed TTL, which forced every component to re-fetch /api/auth/token 12 times per hour.
+// Refresh 60s before actual expiry to absorb clock skew.
+function expiryFromJwt(token: string): number {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return Date.now() + 50 * 60 * 1000;
+    const decoded = JSON.parse(
+      atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    );
+    if (typeof decoded?.exp === 'number') {
+      return decoded.exp * 1000 - 60_000;
+    }
+  } catch {
+    // Fall through to default below.
+  }
+  return Date.now() + 50 * 60 * 1000;
+}
 
 function getToken(): Promise<string | null> {
   if (cachedToken && Date.now() < cacheExpiry) {
@@ -24,7 +41,7 @@ function getToken(): Promise<string | null> {
       .then((res) => res.json())
       .then((data) => {
         cachedToken = data.accessToken ?? null;
-        cacheExpiry = Date.now() + 5 * 60 * 1000;
+        cacheExpiry = cachedToken ? expiryFromJwt(cachedToken) : 0;
         inFlight = null;
         return cachedToken;
       })
