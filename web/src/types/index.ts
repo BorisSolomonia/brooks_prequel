@@ -106,6 +106,7 @@ export interface MemoryMapPin {
   placeLabel: string | null;
   visibility: MemoryVisibility;
   ownedByViewer: boolean;
+  sharedWithViewer: boolean;
   hasImage: boolean;
   hasAudio: boolean;
   createdAt: string;

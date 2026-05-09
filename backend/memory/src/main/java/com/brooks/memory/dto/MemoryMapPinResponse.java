@@ -21,6 +21,7 @@ public class MemoryMapPinResponse {
     private String placeLabel;
     private MemoryVisibility visibility;
     private boolean ownedByViewer;
+    private boolean sharedWithViewer;
     private boolean hasImage;
     private boolean hasAudio;
     private Instant createdAt;

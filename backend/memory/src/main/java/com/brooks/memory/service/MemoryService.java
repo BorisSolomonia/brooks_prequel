@@ -37,6 +37,8 @@ public class MemoryService {
     private final MemorySchemaHealthService memorySchemaHealthService;
     private final UserService userService;
     private final UserProfileRepository profileRepository;
+    private final MemoryGrantService memoryGrantService;
+    private final MemoryGrantRepository memoryGrantRepository;
 
     @Value("${app.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -209,6 +211,9 @@ public class MemoryService {
         double distance = distanceMeters(request.getLatitude(), request.getLongitude(), memory.getLatitude(), memory.getLongitude());
         boolean revealed = distance <= unlockRadiusMeters;
         revealRepository.save(new MemoryReveal(memory.getId(), share.getId(), viewer.getId(), revealed, distanceBucket(distance)));
+        if (revealed) {
+            memoryGrantService.grantOnReveal(memory.getId(), viewer.getId(), share.getId());
+        }
         productEventService.record(revealed ? "MEMORY_REVEALED" : "REVEAL_ATTEMPTED", viewer.getId(), memory.getId(), token, null);
 
         return MemoryRevealResponse.builder()
@@ -297,6 +302,8 @@ public class MemoryService {
         if (memories.isEmpty()) {
             return List.of();
         }
+        List<UUID> memoryIds = memories.stream().map(Memory::getId).toList();
+        Set<UUID> grantedIds = new HashSet<>(memoryGrantRepository.findActiveGrantedMemoryIdsForBeneficiary(viewerId, memoryIds));
         Set<UUID> creatorIds = memories.stream().map(Memory::getCreatorId).collect(Collectors.toSet());
         Map<UUID, User> users = userService.findAllByIds(creatorIds);
         Map<UUID, UserProfile> profiles = profileRepository.findAllByUserIdIn(creatorIds).stream()
@@ -319,6 +326,7 @@ public class MemoryService {
                             .placeLabel(memory.getPlaceLabel())
                             .visibility(memory.getVisibility())
                             .ownedByViewer(memory.getCreatorId().equals(viewerId))
+                            .sharedWithViewer(grantedIds.contains(memory.getId()))
                             .hasImage(hasImage)
                             .hasAudio(hasAudio)
                             .createdAt(memory.getCreatedAt())

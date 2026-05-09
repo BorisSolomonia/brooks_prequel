@@ -94,6 +94,7 @@ type SelectedMemoryCardProps = {
   onClose: () => void;
   onShare: (memoryId: string) => void;
   onDelete: (memoryId: string) => void;
+  onRemove: (memoryId: string) => void;
   busy: boolean;
 };
 
@@ -177,6 +178,16 @@ function isPinWithinBounds(pin: InfluencerMapPin, bounds: MapBoundsState | null)
     : pin.longitude >= bounds.west || pin.longitude <= bounds.east;
 
   return withinLatitude && withinLongitude;
+}
+
+function getMemoryPinAppearance(memory: MemoryMapPin): { background: string; glyph: string; ariaLabel: string } {
+  if (memory.ownedByViewer) {
+    return { background: '#ef2f6d', glyph: 'M', ariaLabel: 'Your memory' };
+  }
+  if (memory.sharedWithViewer) {
+    return { background: '#b45309', glyph: '✦', ariaLabel: 'Memory shared with you' };
+  }
+  return { background: '#12c7c9', glyph: 'M', ariaLabel: 'Memory pin' };
 }
 
 function isMemoryWithinBounds(memory: MemoryMapPin, bounds: MapBoundsState | null): boolean {
@@ -468,12 +479,14 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
   );
 }
 
-function SelectedMemoryCard({ memory, onClose, onShare, onDelete, busy }: SelectedMemoryCardProps) {
+function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy }: SelectedMemoryCardProps) {
   return (
     <div className="absolute inset-x-3 bottom-3 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Memory pin</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
+            {memory.sharedWithViewer ? 'Shared with you' : 'Memory pin'}
+          </p>
           <h2 className="mt-1 text-base font-semibold text-ig-text-primary">{memory.textPreview}</h2>
           <p className="mt-2 text-sm text-ig-text-secondary">
             {memory.placeLabel || 'Hidden at this location'} · by {memory.creatorDisplayName}
@@ -509,6 +522,18 @@ function SelectedMemoryCard({ memory, onClose, onShare, onDelete, busy }: Select
             className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary disabled:opacity-60"
           >
             Delete
+          </button>
+        </div>
+      )}
+      {memory.sharedWithViewer && !memory.ownedByViewer && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onRemove(memory.id)}
+            className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary disabled:opacity-60"
+          >
+            Remove from my map
           </button>
         </div>
       )}
@@ -913,19 +938,25 @@ export default function MapsExperience({
     }
   };
 
-  const handleDeleteMemory = async (memoryId: string) => {
+  const runMemoryDeletion = async (path: string, errorMsg: string) => {
     if (!token) return;
     setMemoryBusy(true);
     try {
-      await api.delete(`/api/memories/${memoryId}`, token);
+      await api.delete(path, token);
       setSelectedMemory(null);
       refreshMemories();
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : 'Could not delete memory');
+      setPageError(error instanceof Error ? error.message : errorMsg);
     } finally {
       setMemoryBusy(false);
     }
   };
+
+  const handleDeleteMemory = (memoryId: string) =>
+    runMemoryDeletion(`/api/memories/${memoryId}`, 'Could not delete memory');
+
+  const handleRemoveSharedMemory = (memoryId: string) =>
+    runMemoryDeletion(`/api/memory-grants/${memoryId}`, 'Could not remove shared memory');
 
   useEffect(() => {
     if (!token) {
@@ -1268,17 +1299,18 @@ export default function MapsExperience({
       visibleMemories.forEach((memory) => {
         const markerElement = document.createElement('button');
         markerElement.type = 'button';
-        markerElement.setAttribute('aria-label', 'Memory pin');
+        const appearance = getMemoryPinAppearance(memory);
+        markerElement.setAttribute('aria-label', appearance.ariaLabel);
         markerElement.style.width = '38px';
         markerElement.style.height = '38px';
         markerElement.style.borderRadius = '9999px';
         markerElement.style.border = '2px solid #ffffff';
-        markerElement.style.background = memory.ownedByViewer ? '#ef2f6d' : '#12c7c9';
+        markerElement.style.background = appearance.background;
         markerElement.style.color = '#ffffff';
         markerElement.style.fontWeight = '900';
         markerElement.style.boxShadow = '0 12px 24px rgba(0,0,0,0.24)';
         markerElement.style.cursor = 'pointer';
-        markerElement.textContent = 'M';
+        markerElement.textContent = appearance.glyph;
         markerElement.addEventListener('click', () => {
           setSelectedMemory(memory);
           setSelectedPin(null);
@@ -1745,6 +1777,7 @@ export default function MapsExperience({
           onClose={() => setSelectedMemory(null)}
           onShare={handleShareMemory}
           onDelete={handleDeleteMemory}
+          onRemove={handleRemoveSharedMemory}
           busy={memoryBusy}
         />
       )}

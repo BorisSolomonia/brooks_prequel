@@ -16,27 +16,23 @@ public interface MemoryRepository extends JpaRepository<Memory, UUID> {
     @Query(value = """
         SELECT m.id
         FROM memories m
-        WHERE m.deleted_at IS NULL
-          AND (m.expires_at IS NULL OR m.expires_at > NOW())
+        WHERE (m.expires_at IS NULL OR m.expires_at > NOW())
           AND m.latitude BETWEEN :south AND :north
+          AND ((:west <= :east AND m.longitude BETWEEN :west AND :east)
+               OR (:west > :east AND (m.longitude >= :west OR m.longitude <= :east)))
           AND (
-            (:west <= :east AND m.longitude BETWEEN :west AND :east)
-            OR (:west > :east AND (m.longitude >= :west OR m.longitude <= :east))
-          )
-          AND (
-            m.creator_id = :viewerId
-            OR (
-              m.visibility = 'FOLLOWERS_PUBLIC'
-              AND EXISTS (
-                SELECT 1 FROM follows f
-                WHERE f.follower_id = :viewerId AND f.following_id = m.creator_id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM memory_creator_visibility_preferences p
-                WHERE p.viewer_id = :viewerId
-                  AND p.creator_id = m.creator_id
-                  AND p.hide_public_memories = TRUE
-              )
+            (m.deleted_at IS NULL AND (
+                m.creator_id = :viewerId
+                OR (m.visibility = 'FOLLOWERS_PUBLIC'
+                    AND EXISTS (SELECT 1 FROM follows f WHERE f.follower_id = :viewerId AND f.following_id = m.creator_id)
+                    AND NOT EXISTS (SELECT 1 FROM memory_creator_visibility_preferences p
+                                    WHERE p.viewer_id = :viewerId AND p.creator_id = m.creator_id AND p.hide_public_memories = TRUE))
+            ))
+            OR EXISTS (
+                SELECT 1 FROM memory_grants g
+                WHERE g.memory_id = m.id
+                  AND g.beneficiary_user_id = :viewerId
+                  AND g.removed_at IS NULL
             )
           )
         ORDER BY m.created_at DESC
