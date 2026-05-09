@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -32,7 +33,7 @@ public class Purchase {
     private int priceCentsPaid;
 
     @Column(name = "currency", nullable = false, length = 3)
-    private String currency = "GEL";
+    private String currency = com.brooks.common.util.BusinessConstants.CURRENCY_GEL;
 
     @Column(name = "platform_fee_cents", nullable = false)
     private int platformFeeCents = 0;
@@ -56,8 +57,9 @@ public class Purchase {
     @Column(name = "status", nullable = false, length = 20)
     private PurchaseStatus status = PurchaseStatus.PENDING;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
 
     @Column(name = "completed_at")
     private Instant completedAt;

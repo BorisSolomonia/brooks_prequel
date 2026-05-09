@@ -4,6 +4,8 @@ import com.brooks.purchase.service.BogCallbackVerifier;
 import com.brooks.purchase.service.PurchaseService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,9 +39,17 @@ public class WebhookController {
     private static final String SIGNATURE_HEADER = "Callback-Signature";
     private static final String EVENT_ORDER_PAYMENT = "order_payment";
 
+    private static final String METRIC_NAME = "brooks.bog_ipay.webhook";
+
     private final BogCallbackVerifier verifier;
     private final PurchaseService purchaseService;
     private final ObjectMapper objectMapper;
+    private final MeterRegistry meterRegistry;
+
+    private void recordOutcome(String outcome, String statusKey) {
+        meterRegistry.counter(METRIC_NAME,
+                Tags.of("outcome", outcome, "status", statusKey == null ? "unknown" : statusKey)).increment();
+    }
 
     @PostMapping(value = "/bog-ipay", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> handleBogIpayCallback(HttpServletRequest request) throws IOException {
@@ -48,7 +58,10 @@ public class WebhookController {
 
         if (!verifier.verify(rawBody, signature)) {
             log.warn("Rejecting BOG iPay callback with invalid or missing signature; payload size={}B", rawBody.length);
-            return ResponseEntity.status(401).body("invalid signature");
+            recordOutcome("rejected_signature", null);
+            // 400 (not 401): there is no WWW-Authenticate realm here; this is a malformed/forged
+            // callback rather than a missing-credentials situation.
+            return ResponseEntity.status(400).body("invalid signature");
         }
 
         JsonNode root;
@@ -98,8 +111,10 @@ public class WebhookController {
         } catch (Exception e) {
             // Return 5xx so BOG retries per their contract; service layer is idempotent.
             log.error("Failed to process BOG iPay callback for order_id={}", orderId, e);
+            recordOutcome("error", statusKey);
             return ResponseEntity.status(500).body("processing_failed");
         }
+        recordOutcome("processed", statusKey);
         return ResponseEntity.ok("OK");
     }
 

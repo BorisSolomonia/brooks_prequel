@@ -56,7 +56,18 @@
       "Bash(grep -E \"tsx$\")",
       "Bash(npm run *)",
       "Bash(echo \"EXIT=$?\")",
-      "Bash(grep -r \"hibernate\\\\\\\\.jdbc\\\\\\\\.batch\\\\|hibernate\\\\\\\\.order_inserts\" --include=\"*.yml\" .)"
+      "Bash(grep -r \"hibernate\\\\\\\\.jdbc\\\\\\\\.batch\\\\|hibernate\\\\\\\\.order_inserts\" --include=\"*.yml\" .)",
+      "PowerShell(Get-Command *)",
+      "Bash(grep -E \"^\\\\+.*\\(SECRET_KEY|CLIENT_SECRET|API_KEY|PASSWORD|JWT_SECRET|ENCRYPTION_SECRET|PRIVATE_KEY\\)\\\\s*[:=]\\\\s*['\\\\\"]?[A-Za-z0-9_+/=-]{12,}\")",
+      "Bash(grep -v -E \"\\\\\\\\\\\\$\\\\{|process\\\\.env\\\\.|PLACEHOLDER|change[-_]?me|your[-_]|brooks_local|example|seed_|<.*>\")",
+      "Bash(grep -E \"credential|sa-key|gcp.*key|service.account|\\\\.pem$|\\\\.p12$|\\\\.key$|\\\\.crt$|\\\\.pfx$|id_rsa|id_ed25519\")",
+      "Bash(grep -E \"^\\\\+[^+#].*\\(password|secret|key|token\\).*[a-zA-Z0-9]{12,}\")",
+      "Bash(grep -v -E \"\\\\\\\\\\\\$\\\\{|placeholder|example|encryption-secret\\\\}|description\")",
+      "Bash(grep -E \"^\\\\+.*[\\\\\"'][A-Fa-f0-9]{32,}[\\\\\"']\")",
+      "Bash(grep -v -E \"\\\\\\\\\\\\$\\\\{|secrets\\\\.|env\\\\.|description|comment|example|trigger\")",
+      "Bash(Get-ChildItem -Path 'C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\backend' -Directory)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\web\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

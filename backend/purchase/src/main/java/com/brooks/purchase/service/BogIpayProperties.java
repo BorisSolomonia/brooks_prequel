@@ -1,5 +1,6 @@
 package com.brooks.purchase.service;
 
+import com.brooks.common.util.BusinessConstants;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -21,7 +22,7 @@ public class BogIpayProperties {
 
     private String callbackPath = "/api/webhooks/bog-ipay";
 
-    private String locale = "ka";
+    private String locale = BusinessConstants.BOG_IPAY_LOCALE_KA;
 
     private int orderTtlMinutes = 30;
 

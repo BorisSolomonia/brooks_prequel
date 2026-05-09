@@ -4,6 +4,8 @@ import com.brooks.common.dto.PageResponse;
 import com.brooks.search.dto.*;
 import com.brooks.search.service.SearchService;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -20,13 +22,14 @@ public class SearchController {
     private final SearchService searchService;
 
     @GetMapping
-    public ResponseEntity<UnifiedSearchResponse> unifiedSearch(@RequestParam("q") String query) {
+    public ResponseEntity<UnifiedSearchResponse> unifiedSearch(
+            @RequestParam("q") @NotBlank @Size(max = 200) String query) {
         return ResponseEntity.ok(searchService.unifiedSearch(query));
     }
 
     @GetMapping("/creators")
     public ResponseEntity<PageResponse<CreatorSearchResult>> searchCreators(
-            @RequestParam("q") String query,
+            @RequestParam("q") @NotBlank @Size(max = 200) String query,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) int size) {
         return ResponseEntity.ok(searchService.searchCreators(query, page, Math.min(size, 50)));
@@ -34,7 +37,7 @@ public class SearchController {
 
     @GetMapping("/guides")
     public ResponseEntity<PageResponse<GuideSearchResult>> searchGuides(
-            @RequestParam("q") String query,
+            @RequestParam("q") @NotBlank @Size(max = 200) String query,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) int size,
             @RequestParam(name = "stage", required = false) String stage,
@@ -51,7 +54,7 @@ public class SearchController {
 
     @GetMapping("/places")
     public ResponseEntity<PageResponse<PlaceSearchResult>> searchPlaces(
-            @RequestParam("q") String query,
+            @RequestParam("q") @NotBlank @Size(max = 200) String query,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) int size) {
         return ResponseEntity.ok(searchService.searchPlaces(query, page, Math.min(size, 50)));

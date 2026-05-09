@@ -5,6 +5,7 @@ import com.brooks.common.util.Pagination;
 import com.brooks.purchase.dto.CheckoutRequest;
 import com.brooks.purchase.dto.CheckoutResponse;
 import com.brooks.purchase.dto.PurchaseResponse;
+import com.brooks.purchase.service.PurchaseQueryService;
 import com.brooks.purchase.service.PurchaseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class PurchaseController {
 
     private final PurchaseService purchaseService;
+    private final PurchaseQueryService purchaseQueryService;
 
     @PostMapping("/purchases/checkout")
     public ResponseEntity<CheckoutResponse> createCheckout(
@@ -35,7 +37,7 @@ public class PurchaseController {
             Authentication authentication,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
-        return ResponseEntity.ok(purchaseService.getMyPurchases(
+        return ResponseEntity.ok(purchaseQueryService.getMyPurchases(
                 subject(authentication), Pagination.clampPage(page), Pagination.clampSize(size)));
     }
 
@@ -43,14 +45,14 @@ public class PurchaseController {
     public ResponseEntity<PurchaseResponse> getMyPurchaseByBogOrderId(
             Authentication authentication,
             @PathVariable(name = "bogOrderId") String bogOrderId) {
-        return ResponseEntity.ok(purchaseService.getMyPurchaseByBogOrderId(subject(authentication), bogOrderId));
+        return ResponseEntity.ok(purchaseQueryService.getMyPurchaseByBogOrderId(subject(authentication), bogOrderId));
     }
 
     @GetMapping(value = "/purchases/{guideId}/content", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getPurchasedGuideContent(
             Authentication authentication,
             @PathVariable(name = "guideId") UUID guideId) {
-        String snapshot = purchaseService.getPurchasedGuideSnapshot(subject(authentication), guideId);
+        String snapshot = purchaseQueryService.getPurchasedGuideSnapshot(subject(authentication), guideId);
         return ResponseEntity.ok(snapshot);
     }
 

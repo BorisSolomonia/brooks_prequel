@@ -33,9 +33,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GuideService {
 
-    private static final int WEEKLY_PURCHASE_WEIGHT = 2;
-    private static final int POPULAR_THIS_WEEK_THRESHOLD = 5;
-
     private final GuideRepository guideRepository;
     private final GuideDayRepository dayRepository;
     private final GuideBlockRepository blockRepository;
@@ -52,6 +49,12 @@ public class GuideService {
 
     @Value("${app.place-image-max-count}")
     private int placeImageMaxCount;
+
+    @Value("${app.ranking.weekly-purchase-weight:2}")
+    private int weeklyPurchaseWeight;
+
+    @Value("${app.ranking.popular-this-week-threshold:5}")
+    private int popularThisWeekThreshold;
 
     // ── Guide CRUD ──────────────────────────────────────────────
 
@@ -429,7 +432,7 @@ public class GuideService {
                 .priceCents(guide.getPriceCents())
                 .salePriceCents(guide.getSalePriceCents())
                 .saleEndsAt(guide.getSaleEndsAt())
-                .effectivePriceCents(effectivePrice(guide))
+                .effectivePriceCents(guide.effectivePrice())
                 .currency(guide.getCurrency())
                 .creatorId(guide.getCreatorId())
                 .region(guide.getRegion())
@@ -536,7 +539,7 @@ public class GuideService {
                             .priceCents(guide.getPriceCents())
                             .salePriceCents(guide.getSalePriceCents())
                             .saleEndsAt(guide.getSaleEndsAt())
-                            .effectivePriceCents(effectivePrice(guide))
+                            .effectivePriceCents(guide.effectivePrice())
                             .currency(guide.getCurrency())
                             .versionNumber(guide.getVersionNumber())
                             .savedAt(savedEntry.getCreatedAt())
@@ -684,7 +687,7 @@ public class GuideService {
                 .priceCents(guide.getPriceCents())
                 .salePriceCents(guide.getSalePriceCents())
                 .saleEndsAt(guide.getSaleEndsAt())
-                .effectivePriceCents(effectivePrice(guide))
+                .effectivePriceCents(guide.effectivePrice())
                 .currency(guide.getCurrency())
                 .status(guide.getStatus().name())
                 .versionNumber(guide.getVersionNumber())
@@ -784,7 +787,7 @@ public class GuideService {
                 .priceCents(guide.getPriceCents())
                 .salePriceCents(guide.getSalePriceCents())
                 .saleEndsAt(guide.getSaleEndsAt())
-                .effectivePriceCents(effectivePrice(guide))
+                .effectivePriceCents(guide.effectivePrice())
                 .currency(guide.getCurrency())
                 .versionNumber(guide.getVersionNumber())
                 .displayLocation(displayLocation(guide))
@@ -809,7 +812,7 @@ public class GuideService {
                 .priceCents(guide.getPriceCents())
                 .salePriceCents(guide.getSalePriceCents())
                 .saleEndsAt(guide.getSaleEndsAt())
-                .effectivePriceCents(effectivePrice(guide))
+                .effectivePriceCents(guide.effectivePrice())
                 .currency(guide.getCurrency())
                 .versionNumber(guide.getVersionNumber())
                 .creatorUsername(userService.findById(guide.getCreatorId()).getUsername())
@@ -838,19 +841,11 @@ public class GuideService {
         long weeklyPurchases = purchaseRepository.countByGuideIdAndStatusAndCreatedAtAfter(
                 guideId, GuidePurchaseStatus.COMPLETED, since);
         long weeklySaves = savedGuideRepository.countByGuideIdAndCreatedAtAfter(guideId, since);
-        return Math.toIntExact(Math.min(Integer.MAX_VALUE, weeklyPurchases * WEEKLY_PURCHASE_WEIGHT + weeklySaves));
+        return Math.toIntExact(Math.min(Integer.MAX_VALUE, weeklyPurchases * weeklyPurchaseWeight + weeklySaves));
     }
 
     private boolean isPopularThisWeek(UUID guideId) {
-        return weeklyPopularityScore(guideId) >= POPULAR_THIS_WEEK_THRESHOLD;
-    }
-
-    private int effectivePrice(Guide guide) {
-        if (guide.getSalePriceCents() != null
-                && (guide.getSaleEndsAt() == null || guide.getSaleEndsAt().isAfter(Instant.now()))) {
-            return guide.getSalePriceCents();
-        }
-        return guide.getPriceCents();
+        return weeklyPopularityScore(guideId) >= popularThisWeekThreshold;
     }
 
     private GuideResponse parseGuideSnapshot(GuideVersion version) {

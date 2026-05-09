@@ -55,7 +55,7 @@ public class GuidePurchaseService {
             throw new BusinessException("Creators cannot purchase their own guides");
         }
 
-        int effectivePrice = effectivePrice(guide);
+        int effectivePrice = guide.effectivePrice();
         if (effectivePrice > 0) {
             throw new BusinessException("Payment provider not configured — this guide requires payment");
         }
@@ -669,14 +669,6 @@ public class GuidePurchaseService {
             }
         }
         return lateEvents;
-    }
-
-    private int effectivePrice(Guide guide) {
-        if (guide.getSalePriceCents() != null &&
-                (guide.getSaleEndsAt() == null || guide.getSaleEndsAt().isAfter(Instant.now()))) {
-            return guide.getSalePriceCents();
-        }
-        return guide.getPriceCents();
     }
 
     public record CalendarExport(GuidePurchase purchase, GuideResponse guide, List<GuideTripItem> items, String timezone) {

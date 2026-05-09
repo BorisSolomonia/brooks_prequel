@@ -1,39 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import type { GuideDay, GuideDayRequest, GuideBlockRequest, GuidePlaceRequest } from '@/types';
+import type { GuideDay } from '@/types';
+import { BLOCK_CATEGORIES } from '@/lib/guideEditorConstants';
 import BlockPanel from './BlockPanel';
-
-const BLOCK_CATEGORIES = [
-  { value: 'ACTIVITY', label: 'Activity', icon: '🎯' },
-  { value: 'SAFETY', label: 'Safety', icon: '🛡️' },
-  { value: 'TRANSPORT', label: 'Transport', icon: '🚌' },
-  { value: 'ACCOMMODATION', label: 'Stay', icon: '🏨' },
-  { value: 'SHOPPING', label: 'Shopping', icon: '🛍️' },
-  { value: 'SEASONAL', label: 'Seasonal', icon: '📅' },
-  { value: 'EMERGENCY', label: 'Emergency', icon: '🚨' },
-  { value: 'SECRET', label: 'Secret', icon: '🔑' },
-];
+import { useGuideEdit } from './GuideEditContext';
 
 interface Props {
-  guideId: string;
-  token: string;
   day: GuideDay;
-  onUpdateDay: (dayId: string, data: GuideDayRequest) => void;
-  onDeleteDay: (dayId: string) => void;
-  onAddBlock: (dayId: string, data: GuideBlockRequest) => void;
-  onUpdateBlock: (blockId: string, data: GuideBlockRequest) => void;
-  onDeleteBlock: (dayId: string, blockId: string) => void;
-  onAddPlace: (blockId: string, data: GuidePlaceRequest) => void;
-  onUpdatePlace: (placeId: string, data: GuidePlaceRequest) => void;
-  onDeletePlace: (blockId: string, placeId: string) => void;
 }
 
-export default function DayPanel({
-  guideId, token, day, onUpdateDay, onDeleteDay,
-  onAddBlock, onUpdateBlock, onDeleteBlock,
-  onAddPlace, onUpdatePlace, onDeletePlace,
-}: Props) {
+export default function DayPanel({ day }: Props) {
+  const { updateDay, deleteDay, addBlock } = useGuideEdit();
   const [collapsed, setCollapsed] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(day.title || '');
@@ -41,12 +19,12 @@ export default function DayPanel({
   const [newBlockCategory, setNewBlockCategory] = useState('ACTIVITY');
 
   const handleSaveTitle = () => {
-    onUpdateDay(day.id, { title });
+    updateDay(day.id, { title });
     setEditingTitle(false);
   };
 
   const handleAddBlock = () => {
-    onAddBlock(day.id, { blockType: 'ACTIVITY', blockCategory: newBlockCategory });
+    addBlock(day.id, { blockType: 'ACTIVITY', blockCategory: newBlockCategory });
     setAddingBlock(false);
     setNewBlockCategory('ACTIVITY');
   };
@@ -80,24 +58,14 @@ export default function DayPanel({
         </div>
         <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <span className="text-xs text-ig-text-tertiary">{day.blocks.length} blocks</span>
-          <button onClick={() => onDeleteDay(day.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">Delete</button>
+          <button onClick={() => deleteDay(day.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">Delete</button>
         </div>
       </div>
 
       {!collapsed && (
         <div className="p-4 space-y-3">
           {day.blocks.map((block) => (
-            <BlockPanel
-              key={block.id}
-              guideId={guideId}
-              token={token}
-              block={block}
-              onUpdateBlock={onUpdateBlock}
-              onDeleteBlock={(blockId) => onDeleteBlock(day.id, blockId)}
-              onAddPlace={onAddPlace}
-              onUpdatePlace={onUpdatePlace}
-              onDeletePlace={onDeletePlace}
-            />
+            <BlockPanel key={block.id} dayId={day.id} block={block} />
           ))}
 
           {addingBlock ? (

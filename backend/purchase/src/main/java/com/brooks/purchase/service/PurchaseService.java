@@ -1,86 +1,78 @@
 package com.brooks.purchase.service;
 
-import com.brooks.common.dto.PageResponse;
 import com.brooks.common.event.PurchaseCompletedEvent;
 import com.brooks.common.exception.BusinessException;
 import com.brooks.common.exception.ResourceNotFoundException;
+import com.brooks.common.util.BusinessConstants;
 import com.brooks.guide.domain.Guide;
 import com.brooks.guide.domain.GuideStatus;
-import com.brooks.guide.domain.GuideVersion;
 import com.brooks.guide.repository.GuideRepository;
-import com.brooks.guide.repository.GuideVersionRepository;
 import com.brooks.profile.repository.UserProfileRepository;
-import com.brooks.purchase.domain.CreatorEarning;
 import com.brooks.purchase.domain.Purchase;
-import com.brooks.purchase.domain.PurchaseAuditEvent;
 import com.brooks.purchase.domain.PurchaseStatus;
 import com.brooks.purchase.dto.CheckoutRequest;
 import com.brooks.purchase.dto.CheckoutResponse;
-import com.brooks.purchase.dto.PurchaseResponse;
-import com.brooks.purchase.repository.CreatorEarningRepository;
-import com.brooks.purchase.repository.PurchaseAuditEventRepository;
 import com.brooks.purchase.repository.PurchaseRepository;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
+import static com.brooks.purchase.service.PurchaseAuditWriter.payload;
+
+/**
+ * Write-side of the purchase aggregate: create checkouts and process BOG iPay
+ * webhook callbacks. Read-side queries live in {@link PurchaseQueryService}.
+ *
+ * Cross-cutting concerns are delegated to focused collaborators:
+ *  - audit logging  → {@link PurchaseAuditWriter}
+ *  - earnings + creator counter → {@link CreatorEarningsRecorder}
+ *  - trip materialisation → {@code GuidePurchaseEventListener} (via PurchaseCompletedEvent)
+ */
 @Service
 @Slf4j
 public class PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
     private final GuideRepository guideRepository;
-    private final GuideVersionRepository versionRepository;
     private final UserProfileRepository profileRepository;
     private final UserService userService;
     private final BogIpayClient bogIpayClient;
     private final CommissionRateResolver commissionRateResolver;
-    private final CreatorEarningRepository creatorEarningRepository;
-    private final PurchaseAuditEventRepository auditEventRepository;
-    private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final TransactionTemplate transactionTemplate;
+    private final PurchaseAuditWriter auditWriter;
+    private final CreatorEarningsRecorder earningsRecorder;
 
     public PurchaseService(
             PurchaseRepository purchaseRepository,
             GuideRepository guideRepository,
-            GuideVersionRepository versionRepository,
             UserProfileRepository profileRepository,
             UserService userService,
             BogIpayClient bogIpayClient,
             CommissionRateResolver commissionRateResolver,
-            CreatorEarningRepository creatorEarningRepository,
-            PurchaseAuditEventRepository auditEventRepository,
-            ObjectMapper objectMapper,
             ApplicationEventPublisher eventPublisher,
-            PlatformTransactionManager transactionManager
+            PlatformTransactionManager transactionManager,
+            PurchaseAuditWriter auditWriter,
+            CreatorEarningsRecorder earningsRecorder
     ) {
         this.purchaseRepository = purchaseRepository;
         this.guideRepository = guideRepository;
-        this.versionRepository = versionRepository;
         this.profileRepository = profileRepository;
         this.userService = userService;
         this.bogIpayClient = bogIpayClient;
         this.commissionRateResolver = commissionRateResolver;
-        this.creatorEarningRepository = creatorEarningRepository;
-        this.auditEventRepository = auditEventRepository;
-        this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.auditWriter = auditWriter;
+        this.earningsRecorder = earningsRecorder;
     }
 
     /**
@@ -143,22 +135,18 @@ public class PurchaseService {
         }
 
         // BOG iPay supports GEL only — verify guide is priced in GEL
-        if (!"GEL".equalsIgnoreCase(guide.getCurrency())) {
+        if (!BusinessConstants.CURRENCY_GEL.equalsIgnoreCase(guide.getCurrency())) {
             throw new BusinessException("This guide is not priced in GEL and cannot be purchased through BOG iPay");
         }
 
-        // Resolve effective price (sale if active). A sale price equal to or above the regular
-        // price would mean the customer pays the same or more — refuse to honor that as a "sale".
-        int effectivePrice = guide.getPriceCents();
-        if (guide.getSalePriceCents() != null && guide.getSalePriceCents() > 0) {
-            if (guide.getSalePriceCents() >= guide.getPriceCents()) {
-                throw new BusinessException("Sale price must be lower than the regular price");
-            }
-            boolean saleActive = guide.getSaleEndsAt() == null || guide.getSaleEndsAt().isAfter(Instant.now());
-            if (saleActive) {
-                effectivePrice = guide.getSalePriceCents();
-            }
+        // A sale price equal to or above the regular price would mean the customer pays the
+        // same or more — refuse to honor that as a "sale". Charging the effective price
+        // (sale-if-active else regular) is delegated to the entity.
+        if (guide.getSalePriceCents() != null && guide.getSalePriceCents() > 0
+                && guide.getSalePriceCents() >= guide.getPriceCents()) {
+            throw new BusinessException("Sale price must be lower than the regular price");
         }
+        int effectivePrice = guide.effectivePrice();
 
         String creatorRegion = profileRepository.findByUserId(guide.getCreatorId())
                 .map(p -> p.getRegion())
@@ -187,33 +175,26 @@ public class PurchaseService {
         purchase.setGuideId(pre.guideId);
         purchase.setGuideVersionNumber(pre.guideVersionNumber);
         purchase.setPriceCentsPaid(pre.effectivePrice);
-        purchase.setCurrency("GEL");
+        purchase.setCurrency(BusinessConstants.CURRENCY_GEL);
         purchase.setPlatformFeeCents(pre.platformFee);
         purchase.setCommissionRateBps(pre.commissionRateBps);
         purchase.setBogOrderId(order.orderId());
         purchase.setStatus(PurchaseStatus.PENDING);
         purchase.setTermsAcceptedAt(Instant.now());
-        // Snapshot the guide's display fields so the purchase list view can render without
-        // touching the guide_versions JSON snapshot.
         purchase.setGuideTitleAtPurchase(pre.guideTitle);
         purchase.setCoverImageUrlAtPurchase(pre.guideCoverImageUrl);
         purchase.setRegionAtPurchase(pre.guideRegion);
         purchaseRepository.save(purchase);
 
-        recordAuditEvent(purchase.getId(), "CHECKOUT_CREATED", String.format(
-                "{\"bogOrderId\":\"%s\",\"amountCents\":%d,\"currency\":\"%s\",\"guideId\":\"%s\"}",
-                order.orderId(), pre.effectivePrice, "GEL", pre.guideId));
+        auditWriter.record(purchase.getId(), "CHECKOUT_CREATED", payload(
+                "bogOrderId", order.orderId(),
+                "amountCents", pre.effectivePrice,
+                "currency", BusinessConstants.CURRENCY_GEL,
+                "guideId", pre.guideId.toString()));
 
         return new CheckoutResponse(order.redirectUrl(), order.orderId());
     }
 
-    /**
-     * Called by the BOG iPay webhook. Defense in depth: the webhook layer first verifies the
-     * Callback-Signature (BogCallbackVerifier), then this method re-fetches the order via the
-     * Payment Details API to confirm status/amount/currency before marking the purchase
-     * COMPLETED. A signed-but-tampered or replayed callback that lies about the order_status
-     * will be caught here.
-     */
     @Transactional
     public void handleCheckoutRefunded(String bogOrderId, String refundAmount, boolean partial) {
         Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId).orElse(null);
@@ -224,16 +205,21 @@ public class PurchaseService {
         if (!partial) {
             purchase.setStatus(PurchaseStatus.REFUNDED);
         }
-        recordAuditEvent(purchase.getId(),
+        auditWriter.record(purchase.getId(),
                 partial ? "CHECKOUT_REFUNDED_PARTIALLY" : "CHECKOUT_REFUNDED",
-                String.format("{\"bogOrderId\":\"%s\",\"refundAmount\":\"%s\"}",
-                        bogOrderId, refundAmount == null ? "" : refundAmount));
+                payload("bogOrderId", bogOrderId,
+                        "refundAmount", refundAmount == null ? "" : refundAmount));
     }
 
+    /**
+     * Called by the BOG iPay webhook. Defense in depth: the webhook layer first verifies the
+     * Callback-Signature, then this method re-fetches the order via the Payment Details API
+     * to confirm status/amount/currency before marking the purchase COMPLETED. A signed-but-
+     * tampered or replayed callback that lies about order_status will be caught here.
+     */
     @Transactional
     public void handleCheckoutCompleted(String bogOrderId, String ipayPaymentId, String transactionId) {
-        Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId)
-                .orElse(null);
+        Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId).orElse(null);
 
         if (purchase == null) {
             log.warn("No purchase found for BOG iPay order: {}", bogOrderId);
@@ -245,43 +231,11 @@ public class PurchaseService {
             return;
         }
 
-        // Defense in depth: verify the order with BOG before trusting the callback's claim of
-        // 'completed'. A signed-but-replayed or tampered payload can claim any state; the
-        // Payment Details API is the authoritative source.
-        BogIpayClient.PaymentDetails details;
-        try {
-            details = bogIpayClient.getPaymentDetails(bogOrderId);
-        } catch (Exception e) {
-            log.error("BOG Payment Details lookup failed for order_id={} — refusing to complete", bogOrderId, e);
-            recordAuditEvent(purchase.getId(), "WEBHOOK_VERIFY_FAILED",
-                    String.format("{\"bogOrderId\":\"%s\",\"reason\":\"payment_details_lookup_failed\"}", bogOrderId));
-            throw new BusinessException("Payment verification failed");
-        }
-        if (details == null || !"completed".equalsIgnoreCase(details.status())) {
-            log.warn("BOG callback completion rejected — Payment Details status={} for order_id={}",
-                    details == null ? "null" : details.status(), bogOrderId);
-            recordAuditEvent(purchase.getId(), "WEBHOOK_STATUS_MISMATCH", String.format(
-                    "{\"bogOrderId\":\"%s\",\"reportedStatus\":\"%s\"}",
-                    bogOrderId, details == null ? "null" : details.status()));
+        BogIpayClient.PaymentDetails details = verifyPaymentDetails(purchase, bogOrderId);
+        if (details == null) {
+            // Status mismatch — already audited inside verifyPaymentDetails. Stay silent so
+            // BOG doesn't retry; we'll reconcile from the buyer's return-from-redirect path.
             return;
-        }
-        if (details.totalAmountMinorUnits() == null
-                || details.totalAmountMinorUnits().longValue() != purchase.getPriceCentsPaid()) {
-            log.warn("BOG callback completion rejected — amount mismatch for order_id={} expected={} actual={}",
-                    bogOrderId, purchase.getPriceCentsPaid(), details.totalAmountMinorUnits());
-            recordAuditEvent(purchase.getId(), "WEBHOOK_AMOUNT_MISMATCH", String.format(
-                    "{\"bogOrderId\":\"%s\",\"expectedCents\":%d,\"actualCents\":%s}",
-                    bogOrderId, purchase.getPriceCentsPaid(),
-                    details.totalAmountMinorUnits() == null ? "null" : details.totalAmountMinorUnits().toString()));
-            throw new BusinessException("Payment amount mismatch");
-        }
-        if (details.currency() == null || !details.currency().equalsIgnoreCase(purchase.getCurrency())) {
-            log.warn("BOG callback completion rejected — currency mismatch for order_id={} expected={} actual={}",
-                    bogOrderId, purchase.getCurrency(), details.currency());
-            recordAuditEvent(purchase.getId(), "WEBHOOK_CURRENCY_MISMATCH", String.format(
-                    "{\"bogOrderId\":\"%s\",\"expected\":\"%s\",\"actual\":\"%s\"}",
-                    bogOrderId, purchase.getCurrency(), details.currency() == null ? "null" : details.currency()));
-            throw new BusinessException("Payment currency mismatch");
         }
 
         // Prefer authoritative IDs from the receipt over whatever the callback body claimed.
@@ -298,28 +252,14 @@ public class PurchaseService {
             return;
         }
 
-        recordAuditEvent(purchase.getId(), "CHECKOUT_COMPLETED", String.format(
-                "{\"bogOrderId\":\"%s\",\"ipayPaymentId\":\"%s\",\"transactionId\":\"%s\"}",
-                bogOrderId, resolvedPaymentId == null ? "" : resolvedPaymentId,
-                resolvedTransactionId == null ? "" : resolvedTransactionId));
+        auditWriter.record(purchase.getId(), "CHECKOUT_COMPLETED", payload(
+                "bogOrderId", bogOrderId,
+                "ipayPaymentId", resolvedPaymentId == null ? "" : resolvedPaymentId,
+                "transactionId", resolvedTransactionId == null ? "" : resolvedTransactionId));
 
         // Only the winning update increments creator stats and records earnings
         Guide guide = guideRepository.findById(purchase.getGuideId()).orElse(null);
-        if (guide != null) {
-            profileRepository.incrementPurchaseCount(guide.getCreatorId());
-
-            if (!creatorEarningRepository.existsByPurchaseId(purchase.getId())) {
-                CreatorEarning earning = new CreatorEarning();
-                earning.setPurchaseId(purchase.getId());
-                earning.setCreatorId(guide.getCreatorId());
-                earning.setGrossAmountCents(purchase.getPriceCentsPaid());
-                earning.setRateBps(purchase.getCommissionRateBps());
-                earning.setCommissionCents(purchase.getPlatformFeeCents());
-                earning.setNetAmountCents(purchase.getPriceCentsPaid() - purchase.getPlatformFeeCents());
-                earning.setRuleSource("STORED");
-                creatorEarningRepository.save(earning);
-            }
-        }
+        earningsRecorder.recordForCompletedPurchase(purchase, guide);
 
         eventPublisher.publishEvent(new PurchaseCompletedEvent(
                 purchase.getId(),
@@ -331,100 +271,56 @@ public class PurchaseService {
         ));
     }
 
+    /**
+     * Re-fetches the Payment Details from BOG and validates status / amount / currency
+     * against what we wrote on checkout. Throws on lookup failure so BOG retries; logs
+     * an audit event and throws BusinessException on a mismatch.
+     */
+    private BogIpayClient.PaymentDetails verifyPaymentDetails(Purchase purchase, String bogOrderId) {
+        BogIpayClient.PaymentDetails details;
+        try {
+            details = bogIpayClient.getPaymentDetails(bogOrderId);
+        } catch (Exception e) {
+            log.error("BOG Payment Details lookup failed for order_id={} — refusing to complete", bogOrderId, e);
+            auditWriter.record(purchase.getId(), "WEBHOOK_VERIFY_FAILED",
+                    payload("bogOrderId", bogOrderId, "reason", "payment_details_lookup_failed"));
+            throw new BusinessException("Payment verification failed");
+        }
+        if (details == null || !"completed".equalsIgnoreCase(details.status())) {
+            log.warn("BOG callback completion rejected — Payment Details status={} for order_id={}",
+                    details == null ? "null" : details.status(), bogOrderId);
+            auditWriter.record(purchase.getId(), "WEBHOOK_STATUS_MISMATCH",
+                    payload("bogOrderId", bogOrderId,
+                            "reportedStatus", details == null ? "null" : details.status()));
+            // Match the original semantics — return null to signal "no-op, ack 200".
+            return null;
+        }
+        if (details.totalAmountMinorUnits() == null
+                || details.totalAmountMinorUnits().longValue() != purchase.getPriceCentsPaid()) {
+            log.warn("BOG callback completion rejected — amount mismatch for order_id={} expected={} actual={}",
+                    bogOrderId, purchase.getPriceCentsPaid(), details.totalAmountMinorUnits());
+            auditWriter.record(purchase.getId(), "WEBHOOK_AMOUNT_MISMATCH",
+                    payload("bogOrderId", bogOrderId,
+                            "expectedCents", purchase.getPriceCentsPaid(),
+                            "actualCents", details.totalAmountMinorUnits() == null
+                                    ? "null" : details.totalAmountMinorUnits().toString()));
+            throw new BusinessException("Payment amount mismatch");
+        }
+        if (details.currency() == null || !details.currency().equalsIgnoreCase(purchase.getCurrency())) {
+            log.warn("BOG callback completion rejected — currency mismatch for order_id={} expected={} actual={}",
+                    bogOrderId, purchase.getCurrency(), details.currency());
+            auditWriter.record(purchase.getId(), "WEBHOOK_CURRENCY_MISMATCH",
+                    payload("bogOrderId", bogOrderId,
+                            "expected", purchase.getCurrency(),
+                            "actual", details.currency() == null ? "null" : details.currency()));
+            throw new BusinessException("Payment currency mismatch");
+        }
+        return details;
+    }
+
     @Transactional(readOnly = true)
     public boolean hasPurchasedGuide(UUID buyerId, UUID guideId) {
         return purchaseRepository.existsByBuyerIdAndGuideIdAndStatus(
                 buyerId, guideId, PurchaseStatus.COMPLETED);
-    }
-
-    @Transactional(readOnly = true)
-    public String getPurchasedGuideSnapshot(String auth0Subject, UUID guideId) {
-        User buyer = userService.findByAuth0Subject(auth0Subject);
-        Purchase purchase = purchaseRepository.findByBuyerIdAndGuideIdAndStatus(
-                        buyer.getId(), guideId, PurchaseStatus.COMPLETED)
-                .orElseThrow(() -> new BusinessException("You have not purchased this guide"));
-
-        GuideVersion version = versionRepository.findByGuideIdAndVersionNumber(
-                        guideId, purchase.getGuideVersionNumber())
-                .orElseThrow(() -> new ResourceNotFoundException("GuideVersion", guideId));
-
-        return version.getSnapshot();
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<PurchaseResponse> getMyPurchases(String auth0Subject, int page, int size) {
-        User buyer = userService.findByAuth0Subject(auth0Subject);
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Purchase> purchases = purchaseRepository.findByBuyerIdAndStatus(
-                buyer.getId(), PurchaseStatus.COMPLETED, pageRequest);
-
-        List<PurchaseResponse> items = purchases.getContent().stream()
-                .map(this::toResponse)
-                .toList();
-
-        return new PageResponse<>(items, purchases.getNumber(), purchases.getSize(),
-                purchases.getTotalElements(), purchases.getTotalPages(), purchases.isLast());
-    }
-
-    private PurchaseResponse toResponse(Purchase purchase) {
-        // Display fields are denormalised onto purchases (V40), so we don't need to fetch
-        // and parse the guide_versions JSON snapshot for the list view. Falls back to
-        // re-parsing the snapshot only if the denormalised columns are NULL (legacy rows
-        // backfilled from `guides` may diverge from the actual purchased version).
-        String guideTitle = purchase.getGuideTitleAtPurchase();
-        String guideCoverImageUrl = purchase.getCoverImageUrlAtPurchase();
-        String guideRegion = purchase.getRegionAtPurchase();
-
-        if (guideTitle == null) {
-            GuideVersion version = versionRepository.findByGuideIdAndVersionNumber(
-                    purchase.getGuideId(), purchase.getGuideVersionNumber()).orElse(null);
-            if (version != null) {
-                try {
-                    JsonNode node = objectMapper.readTree(version.getSnapshot());
-                    guideTitle = node.has("title") ? node.get("title").asText() : null;
-                    guideCoverImageUrl = node.has("coverImageUrl") && !node.get("coverImageUrl").isNull()
-                            ? node.get("coverImageUrl").asText() : null;
-                    guideRegion = node.has("region") && !node.get("region").isNull()
-                            ? node.get("region").asText() : null;
-                } catch (Exception e) {
-                    log.warn("Failed to parse guide version snapshot for purchase {}", purchase.getId());
-                }
-            }
-        }
-
-        return PurchaseResponse.builder()
-                .id(purchase.getId())
-                .guideId(purchase.getGuideId())
-                .guideVersionNumber(purchase.getGuideVersionNumber())
-                .priceCentsPaid(purchase.getPriceCentsPaid())
-                .currency(purchase.getCurrency())
-                .status(purchase.getStatus().name())
-                .createdAt(purchase.getCreatedAt())
-                .completedAt(purchase.getCompletedAt())
-                .guideTitle(guideTitle)
-                .guideCoverImageUrl(guideCoverImageUrl)
-                .guideRegion(guideRegion)
-                .bogOrderId(purchase.getBogOrderId())
-                .build();
-    }
-
-    private void recordAuditEvent(UUID purchaseId, String eventType, String payload) {
-        try {
-            String snippet = payload == null ? null : payload.substring(0, Math.min(1000, payload.length()));
-            auditEventRepository.save(new PurchaseAuditEvent(purchaseId, eventType, snippet));
-        } catch (Exception e) {
-            log.warn("Failed to record purchase audit event purchase_id={} event_type={}", purchaseId, eventType, e);
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public PurchaseResponse getMyPurchaseByBogOrderId(String auth0Subject, String bogOrderId) {
-        User buyer = userService.findByAuth0Subject(auth0Subject);
-        Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Purchase", bogOrderId));
-        if (!purchase.getBuyerId().equals(buyer.getId())) {
-            throw new BusinessException("Purchase does not belong to this buyer");
-        }
-        return toResponse(purchase);
     }
 }

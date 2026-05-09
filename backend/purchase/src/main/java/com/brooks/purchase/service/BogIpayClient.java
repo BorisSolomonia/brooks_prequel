@@ -1,7 +1,11 @@
 package com.brooks.purchase.service;
 
+import com.brooks.common.util.BusinessConstants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -36,9 +40,12 @@ import java.util.UUID;
 @Slf4j
 public class BogIpayClient {
 
+    private static final String METRIC_NAME = "brooks.bog_ipay.call";
+
     private final BogIpayProperties properties;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
+    private final MeterRegistry meterRegistry;
 
     @Value("${app.base-url:${APP_BASE_URL:http://localhost:8080}}")
     private String appBaseUrl;
@@ -49,13 +56,28 @@ public class BogIpayClient {
     private volatile String cachedToken;
     private volatile Instant cachedTokenExpiresAt = Instant.EPOCH;
 
-    public BogIpayClient(BogIpayProperties properties, ObjectMapper objectMapper) {
+    public BogIpayClient(BogIpayProperties properties, ObjectMapper objectMapper, MeterRegistry meterRegistry) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.meterRegistry = meterRegistry;
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(properties.getConnectTimeoutMs());
         factory.setReadTimeout(properties.getReadTimeoutMs());
         this.restTemplate = new RestTemplate(factory);
+    }
+
+    private <T> T timed(String operation, java.util.function.Supplier<T> action) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        String outcome = "success";
+        try {
+            return action.get();
+        } catch (RuntimeException e) {
+            outcome = "failure";
+            throw e;
+        } finally {
+            sample.stop(meterRegistry.timer(METRIC_NAME,
+                    Tags.of("operation", operation, "outcome", outcome)));
+        }
     }
 
     /**
@@ -95,6 +117,15 @@ public class BogIpayClient {
             String description,
             String productId
     ) {
+        return timed("createOrder", () -> doCreateOrder(shopOrderId, amountMinorUnits, description, productId));
+    }
+
+    private CreatedOrder doCreateOrder(
+            String shopOrderId,
+            long amountMinorUnits,
+            String description,
+            String productId
+    ) {
         String token = ensureToken();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -111,7 +142,7 @@ public class BogIpayClient {
         basketItem.put("description", truncate(description, 150));
 
         Map<String, Object> purchaseUnits = new LinkedHashMap<>();
-        purchaseUnits.put("currency", "GEL");
+        purchaseUnits.put("currency", BusinessConstants.CURRENCY_GEL);
         purchaseUnits.put("total_amount", amount);
         purchaseUnits.put("basket", List.of(basketItem));
 
@@ -151,6 +182,10 @@ public class BogIpayClient {
     }
 
     public PaymentDetails getPaymentDetails(String orderId) {
+        return timed("getPaymentDetails", () -> doGetPaymentDetails(orderId));
+    }
+
+    private PaymentDetails doGetPaymentDetails(String orderId) {
         String token = ensureToken();
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
@@ -193,6 +228,10 @@ public class BogIpayClient {
      * Issues a refund. Pass {@code null} amount for full refund, or minor units for partial.
      */
     public RefundResult refund(String orderId, Long amountMinorUnits) {
+        return timed("refund", () -> doRefund(orderId, amountMinorUnits));
+    }
+
+    private RefundResult doRefund(String orderId, Long amountMinorUnits) {
         String token = ensureToken();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

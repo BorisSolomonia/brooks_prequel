@@ -9,5 +9,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
-
+    // Compile-time access to MeterRegistry/Counter/Timer for instrumentation.
+    // The actual implementation comes from :app via spring-boot-starter-actuator.
+    compileOnly("io.micrometer:micrometer-core")
+    testImplementation("io.micrometer:micrometer-core")
 }

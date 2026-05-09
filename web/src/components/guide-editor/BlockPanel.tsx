@@ -1,30 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import type { GuideBlock, GuideBlockRequest, GuidePlaceRequest } from '@/types';
+import type { GuideBlock } from '@/types';
+import { BLOCK_CATEGORIES, findBlockCategory } from '@/lib/guideEditorConstants';
 import PlaceCard from './PlaceCard';
+import { useGuideEdit } from './GuideEditContext';
 
 interface Props {
-  guideId: string;
-  token: string;
+  dayId: string;
   block: GuideBlock;
-  onUpdateBlock: (blockId: string, data: GuideBlockRequest) => void;
-  onDeleteBlock: (blockId: string) => void;
-  onAddPlace: (blockId: string, data: GuidePlaceRequest) => void;
-  onUpdatePlace: (placeId: string, data: GuidePlaceRequest) => void;
-  onDeletePlace: (blockId: string, placeId: string) => void;
 }
-
-const BLOCK_CATEGORIES: { value: string; icon: string; label: string }[] = [
-  { value: 'ACTIVITY', icon: '🗺️', label: 'Activity' },
-  { value: 'SAFETY', icon: '🛡️', label: 'Safety' },
-  { value: 'TRANSPORT', icon: '🚌', label: 'Transport' },
-  { value: 'ACCOMMODATION', icon: '🏨', label: 'Accom.' },
-  { value: 'SHOPPING', icon: '🛍️', label: 'Shopping' },
-  { value: 'SEASONAL', icon: '📅', label: 'Seasonal' },
-  { value: 'EMERGENCY', icon: '🚨', label: 'Emergency' },
-  { value: 'SECRET', icon: '🔑', label: 'Secret' },
-];
 
 function minutesToTime(minutes: number): string {
   const h = Math.floor(minutes / 60).toString().padStart(2, '0');
@@ -40,7 +25,8 @@ function minutesToDuration(minutes: number): string {
   return `${m}m`;
 }
 
-export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock, onAddPlace, onUpdatePlace, onDeletePlace }: Props) {
+export default function BlockPanel({ dayId, block }: Props) {
+  const { updateBlock, deleteBlock, addPlace } = useGuideEdit();
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(block.title || '');
   const [suggestedStartMinute, setSuggestedStartMinute] = useState(block.suggestedStartMinute?.toString() || '');
@@ -50,10 +36,10 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
 
   const category = block.blockCategory || 'ACTIVITY';
   const isSecret = category === 'SECRET';
-  const catMeta = BLOCK_CATEGORIES.find((c) => c.value === category);
+  const catMeta = findBlockCategory(category);
 
   const handleSaveTitle = () => {
-    onUpdateBlock(block.id, {
+    updateBlock(block.id, {
       title,
       blockType: block.blockType,
       blockCategory: block.blockCategory,
@@ -64,7 +50,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
   };
 
   const handleCategoryChange = (newCategory: string) => {
-    onUpdateBlock(block.id, {
+    updateBlock(block.id, {
       title: block.title ?? undefined,
       blockType: block.blockType,
       blockCategory: newCategory,
@@ -74,7 +60,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
 
   const handleAddPlace = () => {
     if (!newPlaceName.trim()) return;
-    onAddPlace(block.id, { name: newPlaceName.trim() });
+    addPlace(block.id, { name: newPlaceName.trim() });
     setNewPlaceName('');
     setAddingPlace(false);
   };
@@ -133,7 +119,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
                     }`}
                   >
                     <span>{cat.icon}</span>
-                    <span>{cat.label}</span>
+                    <span>{cat.shortLabel ?? cat.label}</span>
                   </button>
                 ))}
               </div>
@@ -147,7 +133,7 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
               </span>
             ) : (
               <span className="text-xs px-2 py-0.5 bg-ig-elevated border border-ig-border rounded-pill text-ig-text-secondary">
-                {catMeta?.icon} {catMeta?.label ?? block.blockType}
+                {catMeta?.icon} {catMeta?.shortLabel ?? catMeta?.label ?? block.blockType}
               </span>
             )}
             <h4 className="text-sm font-semibold text-ig-text-primary cursor-pointer hover:text-ig-blue" onClick={() => setEditingTitle(true)}>
@@ -161,18 +147,12 @@ export default function BlockPanel({ token, block, onUpdateBlock, onDeleteBlock,
             )}
           </div>
         )}
-        <button onClick={() => onDeleteBlock(block.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error sm:ml-2 lg:min-h-9 lg:px-2 lg:text-xs">Delete</button>
+        <button onClick={() => deleteBlock(dayId, block.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error sm:ml-2 lg:min-h-9 lg:px-2 lg:text-xs">Delete</button>
       </div>
 
       <div className="space-y-2">
         {block.places.map((place) => (
-          <PlaceCard
-            key={place.id}
-            token={token}
-            place={place}
-            onUpdate={onUpdatePlace}
-            onDelete={(placeId) => onDeletePlace(block.id, placeId)}
-          />
+          <PlaceCard key={place.id} blockId={block.id} place={place} />
         ))}
       </div>
 

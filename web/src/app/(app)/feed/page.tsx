@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import StoryStrip from '@/components/ui/StoryStrip';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
-import type { CreatorStoryStrip, FeedItem } from '@/types';
+import type { CreatorStoryStrip, FeedItem, PageResponse } from '@/types';
 
 export default function FeedPage() {
   const { token, loading: tokenLoading } = useAccessToken();
@@ -23,11 +23,11 @@ export default function FeedPage() {
 
     Promise.all([
       api.get<CreatorStoryStrip[]>('/api/stories/feed', token).catch((err) => { console.error('[feed] stories:', err); return [] as CreatorStoryStrip[]; }),
-      api.get<FeedItem[]>('/api/feed', token).catch((err) => { console.error('[feed] items:', err); return [] as FeedItem[]; }),
+      api.get<PageResponse<FeedItem>>('/api/feed', token).catch((err) => { console.error('[feed] items:', err); return null; }),
     ])
-      .then(([strips, items]) => {
+      .then(([strips, page]) => {
         setStoryStrips(strips);
-        setFeedItems(items);
+        setFeedItems(page?.content ?? []);
       })
       .finally(() => setLoading(false));
   }, [token, tokenLoading, router]);

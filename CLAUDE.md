@@ -163,7 +163,23 @@ Flyway migrations at `backend/app/src/main/resources/db/migration/`
 | V9 | `add_purchases_and_discounts` | `purchases` table (originally with stripe column names), discount fields on `guides` |
 | V10 | `rename_stripe_to_unipay` | (Historical) Renamed Stripe columns. Superseded by V32. |
 | V32 | `bog_ipay_purchase_columns` | Renames legacy payment columns to BOG-shaped (`bog_order_id`, `bog_payment_hash`, `bog_ipay_payment_id`, `bog_transaction_id`). Idempotent. |
-| V33 | `purchases_gel_default_and_wipe` | Wipes purchases + creator_earnings, sets currency default to GEL |
+| V33 | `purchases_gel_default_and_wipe` | **Destructive.** Wipes purchases + creator_earnings, sets currency default to GEL. Pre-flight check before re-running on a snapshot with real data. |
+| V34–V39 | (various) | Free test purchase, seed creators, place reviews, terms acceptance, audit events, nullable BOG payment hash. See files. |
+| V40 | `denormalize_purchase_display` | Adds `guide_title_at_purchase`, `cover_image_url_at_purchase`, `region_at_purchase` to `purchases` so list views skip the snapshot-JSON parse. |
+| V41 | `schema_safety_and_indexes` | Adds CHECK constraint on `commission_rules` (rule_type ↔ region/creator_id), missing FK indexes (follows, guide_places, creator_earnings), and drops dead `stripe_*` columns. |
+
+### Two purchase aggregates — `purchases` vs `guide_purchases`
+
+These look like duplicates but are deliberately split. Don't try to consolidate without reading this section first.
+
+| Table | Module | Lives for | Owner |
+|-------|--------|-----------|-------|
+| `purchases` | `purchase` | The BOG iPay payment record (BOG order ID, signature hash, payment status). One row per paid checkout. | `PurchaseService` |
+| `guide_purchases` | `guide` | The trip / access record. Has trip dates, timezone, the materialised `guide_trip_items` for calendar export. One row per buyer-version-trip, including free guides, gifts, and creator self-copies. | `GuidePurchaseService` |
+
+The bridge is `PurchaseCompletedEvent`, published by `PurchaseService` after a successful BOG webhook. `GuidePurchaseEventListener` consumes it and calls `GuidePurchaseService.materializeTripForPurchase()` to write the `guide_purchases` row + `guide_trip_items`. Free / gift / creator-copy flows skip the `purchases` table and write `guide_purchases` directly.
+
+**Implication:** every `purchases` row that is COMPLETED should have a matching `guide_purchases` row, but `guide_purchases.provider IN ('mock','gift','creator_copy')` rows have no matching `purchases` row. There is no FK linking the two — the join is `(buyer_id, guide_id, guide_version_number)`.
 
 ---
 
@@ -319,9 +335,8 @@ SEED_EXAMPLE_* (example creator seed data)
 
 ## Known Caveats / Tech Debt
 
-- `GET /api/feed` returns a list, not a paginated envelope
-- `POST /api/auth/callback` returns `200 OK` (should be `201 Created`)
-- Backend tests effectively absent — Gradle test task passes with `NO-SOURCE`
+- `POST /api/auth/callback` returns `200 OK` for both first-time creation and existing-user lookup. Acceptable for an upsert endpoint; revisit if clients need to distinguish.
+- Backend test coverage is thin but not absent: `UserServiceTest`, `ProfileServiceTest`, `GuideServiceTest`, `MemoryServiceTest`, `MediaStorageServiceTest`, `WebhookControllerTest`. Critical gaps: deeper `PurchaseService` coverage (money path), `BogIpayClient` (3rd-party integration), `FollowService`, `RankingService`. Frontend has no tests yet.
 - Redis is provisioned in infra but not used in application logic yet
 - Mobile app (`mobile/`) is reserved workspace only — not runnable
 

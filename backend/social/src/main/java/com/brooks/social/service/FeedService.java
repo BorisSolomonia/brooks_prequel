@@ -1,5 +1,6 @@
 package com.brooks.social.service;
 
+import com.brooks.common.dto.PageResponse;
 import com.brooks.profile.domain.UserProfile;
 import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.guide.domain.Guide;
@@ -29,15 +30,19 @@ public class FeedService {
     private final UserService userService;
 
     @Transactional(readOnly = true)
-    public List<FeedItemResponse> getFeed(String auth0Subject, int page, int size) {
+    public PageResponse<FeedItemResponse> getFeed(String auth0Subject, int page, int size) {
         User user = userService.findByAuth0Subject(auth0Subject);
         List<UUID> followingIds = followService.getFollowingIds(user.getId());
 
         if (followingIds.isEmpty()) {
-            return Collections.emptyList();
+            return PageResponse.empty(page, size);
         }
 
         Instant now = Instant.now();
+        long totalElements = storyRepository.countActiveStoriesByCreatorIds(followingIds, now);
+        if (totalElements == 0L) {
+            return PageResponse.empty(page, size);
+        }
         // Sort + LIMIT/OFFSET pushed into SQL — query already orders by createdAt DESC.
         List<GuideStory> stories = storyRepository.findActiveStoriesByCreatorIds(
                 followingIds, now, PageRequest.of(page, size));
@@ -59,7 +64,7 @@ public class FeedService {
                 : guideRepository.findAllById(guideIds).stream()
                         .collect(Collectors.toMap(Guide::getId, g -> g));
 
-        return stories.stream()
+        List<FeedItemResponse> content = stories.stream()
                 .map(story -> {
                     User creator = creatorsById.get(story.getCreatorId());
                     UserProfile profile = profilesByUserId.get(story.getCreatorId());
@@ -87,5 +92,7 @@ public class FeedService {
                             .build();
                 })
                 .collect(Collectors.toList());
+
+        return PageResponse.of(content, page, size, totalElements);
     }
 }

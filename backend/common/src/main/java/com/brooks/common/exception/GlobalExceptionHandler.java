@@ -3,12 +3,14 @@ package com.brooks.common.exception;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,9 +36,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         List<Map<String, String>> errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> Map.of(
-                        "field", e.getField(),
-                        "code", e.getCode() == null ? "Invalid" : e.getCode()))
+                .map(e -> {
+                    Map<String, String> entry = new HashMap<>(3);
+                    entry.put("field", e.getField());
+                    entry.put("code", e.getCode() == null ? "Invalid" : e.getCode());
+                    if (e.getDefaultMessage() != null) {
+                        entry.put("message", e.getDefaultMessage());
+                    }
+                    return entry;
+                })
                 .collect(Collectors.toList());
         log.info("Validation failed: {}", ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + " " + e.getDefaultMessage())
@@ -44,6 +52,16 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
         detail.setType(URI.create("about:blank"));
         detail.setProperty("errors", errors);
+        return detail;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        // Spring Security's AccessDeniedException reaches here only when thrown after the
+        // request entered controller code (e.g., from @PreAuthorize). Anonymous-access denials
+        // are handled by the AccessDeniedHandler in SecurityConfig, not this advice.
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied");
+        detail.setType(URI.create("about:blank"));
         return detail;
     }
 

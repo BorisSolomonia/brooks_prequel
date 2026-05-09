@@ -2,6 +2,7 @@ package com.brooks.guide.domain;
 
 import com.brooks.common.domain.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -46,6 +47,7 @@ public class Guide extends BaseEntity {
     private String timezone;
 
     @Column(name = "price_cents", nullable = false)
+    @Min(0)
     private int priceCents = 0;
 
     @Column(name = "currency", nullable = false, length = 3)
@@ -68,6 +70,7 @@ public class Guide extends BaseEntity {
     private int sortOrder = 0;
 
     @Column(name = "sale_price_cents")
+    @Min(0)
     private Integer salePriceCents;
 
     @Column(name = "sale_ends_at")
@@ -110,5 +113,22 @@ public class Guide extends BaseEntity {
     public Guide(UUID creatorId, String title) {
         this.creatorId = creatorId;
         this.title = title;
+    }
+
+    /**
+     * Price the buyer actually pays right now: salePriceCents if a sale is configured and
+     * either has no end date or the end date is in the future, otherwise priceCents.
+     * Centralised here so the price-display invariant lives next to the data, not in
+     * services or DTOs.
+     */
+    public int effectivePrice() {
+        return effectivePrice(Instant.now());
+    }
+
+    int effectivePrice(Instant now) {
+        if (salePriceCents != null && (saleEndsAt == null || saleEndsAt.isAfter(now))) {
+            return salePriceCents;
+        }
+        return priceCents;
     }
 }

@@ -19,6 +19,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    // Exposes /actuator/prometheus for scraping. Brings micrometer-core onto the
+    // runtime classpath, which other modules consume via compileOnly to instrument
+    // hot paths (BogIpayClient, WebhookController).
+    implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("com.google.cloud:google-cloud-storage:2.67.0")
