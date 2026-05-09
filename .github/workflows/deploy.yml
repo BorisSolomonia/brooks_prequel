@@ -185,6 +185,32 @@ jobs:
             sudo mkdir -p "${APP_ROOT}/infra/postgres" "${APP_ROOT}/infra/scripts"
             sudo chown -R "$(whoami):$(whoami)" "${APP_ROOT}"
 
+      - name: Free disk space on VM
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ env.VM_HOST }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_VM_SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 300s
+          script: |
+            set -euo pipefail
+            docker_cmd() {
+              if docker info >/dev/null 2>&1; then docker "$@"; else sudo docker "$@"; fi
+            }
+            echo "::group::disk-before"
+            df -h /
+            docker_cmd system df || true
+            echo "::endgroup::"
+            docker_cmd container prune -f || true
+            docker_cmd image prune -af || true
+            docker_cmd builder prune -af || true
+            echo "::group::disk-after"
+            df -h /
+            docker_cmd system df || true
+            echo "::endgroup::"
+
       - name: Upload deployment files
         run: |
           set -euo pipefail
