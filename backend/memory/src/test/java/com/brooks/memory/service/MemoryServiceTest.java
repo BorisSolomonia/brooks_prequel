@@ -6,6 +6,7 @@ import com.brooks.memory.domain.MemoryShare;
 import com.brooks.memory.dto.MemoryRevealRequest;
 import com.brooks.memory.dto.MemoryRevealResponse;
 import com.brooks.memory.repository.MemoryCreatorVisibilityPreferenceRepository;
+import com.brooks.memory.repository.MemoryGrantRepository;
 import com.brooks.memory.repository.MemoryRepository;
 import com.brooks.memory.repository.MemoryRevealRepository;
 import com.brooks.memory.repository.MemoryShareRepository;
@@ -43,6 +44,8 @@ class MemoryServiceTest {
     @Mock private MemorySchemaHealthService memorySchemaHealthService;
     @Mock private UserService userService;
     @Mock private UserProfileRepository profileRepository;
+    @Mock private MemoryGrantService memoryGrantService;
+    @Mock private MemoryGrantRepository memoryGrantRepository;
 
     private MemoryService memoryService;
     private User viewer;
@@ -60,7 +63,9 @@ class MemoryServiceTest {
                 productEventService,
                 memorySchemaHealthService,
                 userService,
-                profileRepository
+                profileRepository,
+                memoryGrantService,
+                memoryGrantRepository
         );
         ReflectionTestUtils.setField(memoryService, "unlockRadiusMeters", 100.0);
 
