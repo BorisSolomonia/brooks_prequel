@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import type { Map as MapboxMap } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { useMapboxStyle } from '@/lib/mapboxStyle';
 import Avatar from '@/components/ui/Avatar';
 import FollowButton from '@/components/ui/FollowButton';
 import GuideCard from '@/components/ui/GuideCard';
@@ -29,7 +31,15 @@ export default function CreatorProfilePage({ params }: { params: { username: str
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<MapboxMap | null>(null);
   const mapInitRef = useRef(false);
+  const mapboxStyle = useMapboxStyle();
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setStyle(mapboxStyle);
+  }, [mapboxStyle]);
 
   useEffect(() => {
     api.get<Profile>(`/api/creators/${params.username}`)
@@ -81,14 +91,15 @@ export default function CreatorProfilePage({ params }: { params: { username: str
       mapboxgl.accessToken = mapboxToken;
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
-        style: process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? 'mapbox://styles/mapbox/dark-v11',
+        style: mapboxStyle,
         center: [profile.longitude!, profile.latitude!],
         zoom: 10,
         interactive: false,
       });
+      mapRef.current = map;
       new mapboxgl.Marker().setLngLat([profile.longitude!, profile.latitude!]).addTo(map);
     }).catch(() => {});
-  }, [activeTab, profile]);
+  }, [activeTab, profile, mapboxStyle]);
 
   const reloadReviews = async () => {
     const response = await api.get<CreatorReviewListResponse>(`/api/creators/${params.username}/reviews`, token || undefined);

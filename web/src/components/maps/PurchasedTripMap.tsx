@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GeoJSONSource, Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { useMapboxStyle } from '@/lib/mapboxStyle';
 import type { MyTripItem } from '@/types';
 
 const CATEGORY_FILTERS = [
@@ -29,20 +30,21 @@ function chronologicalSort(a: MyTripItem, b: MyTripItem): number {
   return aTime - bTime;
 }
 
-export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props) {
+export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapStylePropIgnored }: Props) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markersRef = useRef<MapboxMarker[]>([]);
   const mapboxModuleRef = useRef<typeof import('mapbox-gl') | null>(null);
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [mapReady, setMapReady] = useState(false);
+  const themedStyle = useMapboxStyle();
 
   const filteredItems = activeCategory === 'ALL'
     ? items
     : items.filter((item) => item.blockCategory === activeCategory);
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current || !mapboxToken || !mapStyle) {
+    if (!mapContainerRef.current || mapRef.current || !mapboxToken || !themedStyle) {
       return;
     }
 
@@ -63,7 +65,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
 
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
-        style: mapStyle,
+        style: themedStyle,
         center: firstItem ? [firstItem.longitude as number, firstItem.latitude as number] : [44.8014, 41.6938],
         zoom: firstItem ? 10 : 3,
       });
@@ -104,7 +106,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
       mapboxModuleRef.current = null;
       setMapReady(false);
     };
-  }, [items, mapStyle, mapboxToken]);
+  }, [items, themedStyle, mapboxToken]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -173,7 +175,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle }: Props
     }
   }, [filteredItems, mapReady]);
 
-  if (!mapboxToken || !mapStyle) {
+  if (!mapboxToken || !themedStyle) {
     return (
       <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-tertiary">
         Map configuration is missing. Set `MAPBOX_PUBLIC_TOKEN` and `MAPBOX_STYLE` to show purchased guide places on a map.

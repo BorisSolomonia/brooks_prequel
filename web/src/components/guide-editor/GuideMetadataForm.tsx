@@ -4,6 +4,7 @@ import { useMemo, useEffect, useRef } from 'react';
 import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
+import { useMapboxStyle } from '@/lib/mapboxStyle';
 import type { GuideCreateRequest, GuideUpdateRequest } from '@/types';
 
 const GENERIC_ADJECTIVES = /\b(beautiful|nice|amazing|great|wonderful|awesome|fantastic|incredible|gorgeous|lovely|perfect|excellent)\b/gi;
@@ -19,12 +20,18 @@ interface Props {
 }
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? '';
-const MAPBOX_STYLE = process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? 'mapbox://styles/mapbox/streets-v12';
 
 function DestinationMap({ lat, lng, onChange }: { lat: number | null | undefined; lng: number | null | undefined; onChange: (lat: number, lng: number) => void }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markerRef = useRef<MapboxMarker | null>(null);
+  const mapboxStyle = useMapboxStyle();
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setStyle(mapboxStyle);
+  }, [mapboxStyle]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN) return;
@@ -39,7 +46,7 @@ function DestinationMap({ lat, lng, onChange }: { lat: number | null | undefined
       const center: [number, number] = lng != null && lat != null ? [lng, lat] : [0, 20];
       const map = new mapboxgl.Map({
         container: containerRef.current,
-        style: MAPBOX_STYLE,
+        style: mapboxStyle,
         center,
         zoom: lat != null ? 8 : 1,
       });

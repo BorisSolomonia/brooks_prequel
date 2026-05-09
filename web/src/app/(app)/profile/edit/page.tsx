@@ -7,15 +7,22 @@ import { useRouter } from 'next/navigation';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
+import { useMapboxStyle } from '@/lib/mapboxStyle';
 import type { Profile, ProfileUpdateRequest } from '@/types';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? '';
-const MAPBOX_STYLE = process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? 'mapbox://styles/mapbox/streets-v12';
 
 function ProfileLocationMap({ lat, lng, onChange }: { lat: string; lng: string; onChange: (lat: string, lng: string) => void }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markerRef = useRef<MapboxMarker | null>(null);
+  const mapboxStyle = useMapboxStyle();
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setStyle(mapboxStyle);
+  }, [mapboxStyle]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN) return;
@@ -34,7 +41,7 @@ function ProfileLocationMap({ lat, lng, onChange }: { lat: string; lng: string; 
 
       const map = new mapboxgl.Map({
         container: containerRef.current,
-        style: MAPBOX_STYLE,
+        style: mapboxStyle,
         center,
         zoom: hasCoords ? 8 : 1,
       });

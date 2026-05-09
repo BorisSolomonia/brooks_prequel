@@ -7,6 +7,7 @@ import type { GeoJSONSource, LngLatBounds, LngLatLike, Map as MapboxMap, Marker 
 import StarRating from '@/components/reviews/StarRating';
 import { api } from '@/lib/api';
 import { scoreSearchMatch } from '@/lib/fuzzySearch';
+import { useMapboxStyle } from '@/lib/mapboxStyle';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import type {
   InfluencerMapPin,
@@ -606,6 +607,7 @@ export default function MapsExperience({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { token, loading: tokenLoading, error: tokenError } = useAccessToken();
+  const themedStyle = useMapboxStyle();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markersRef = useRef<MapboxMarker[]>([]);
@@ -650,7 +652,7 @@ export default function MapsExperience({
 
   const mapConfigured = Boolean(
     mapboxToken &&
-    mapStyle &&
+    themedStyle &&
     fallbackLatitude !== null &&
     fallbackLongitude !== null &&
     fallbackZoom !== null,
@@ -1041,7 +1043,7 @@ export default function MapsExperience({
 
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
-        style: mapStyle,
+        style: themedStyle,
         center: fallbackCenter,
         zoom: fallbackZoom ?? undefined,
       });
@@ -1150,7 +1152,7 @@ export default function MapsExperience({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [fallbackCenter, fallbackZoom, mapConfigured, mapStyle, mapboxToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fallbackCenter, fallbackZoom, mapConfigured, themedStyle, mapboxToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current;

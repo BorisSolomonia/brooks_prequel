@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import GlobalSearchBar from '@/components/layout/GlobalSearchBar';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 
 function SearchBarFallback() {
   return (
@@ -83,6 +84,7 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <ThemeToggle />
               {user ? (
                 <a
                   href="/api/auth/logout"
@@ -102,7 +104,8 @@ export default function Navbar() {
           )}
         </div>
 
-        <div className="shrink-0 md:hidden">
+        <div className="flex shrink-0 items-center gap-2 md:hidden">
+          <ThemeToggle />
           {isLoading ? (
             <div className="h-12 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />
           ) : user ? (
