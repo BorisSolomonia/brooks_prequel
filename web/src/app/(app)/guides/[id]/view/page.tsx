@@ -8,6 +8,7 @@ import BuyButton from '@/components/ui/BuyButton';
 import ReviewComposer from '@/components/reviews/ReviewComposer';
 import ReviewText from '@/components/reviews/ReviewText';
 import StarRating from '@/components/reviews/StarRating';
+import Spinner from '@/components/ui/Spinner';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -285,6 +286,7 @@ export default function ViewGuidePage() {
                 <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
                   <path d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75v18.114a.375.375 0 0 1-.614.291L12 17.72l-5.386 4.435A.375.375 0 0 1 6 21.864V3.75Z" />
                 </svg>
+                {saveLoading && <Spinner />}
                 {saveLoading ? 'Saving...' : saved ? 'Saved' : 'Save'}
               </button>
             ) : (

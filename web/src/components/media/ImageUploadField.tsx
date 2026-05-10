@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import Spinner from '@/components/ui/Spinner';
 import type { MediaUsage } from '@/types';
 
 const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp';
@@ -92,8 +93,9 @@ export function ImageUploadField({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-60"
+            className="mw-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm disabled:opacity-60"
           >
+            {uploading && <Spinner />}
             {uploading ? 'Uploading...' : value ? 'Replace image' : 'Upload image'}
           </button>
           {helpText && <p className="text-xs text-ig-text-tertiary">{helpText}</p>}
@@ -175,8 +177,9 @@ export function ImageUploadList({
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={uploading || remaining === 0}
-        className="min-h-11 rounded-md border border-ig-border bg-ig-elevated px-4 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:opacity-60"
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-ig-border bg-ig-elevated px-4 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:opacity-60"
       >
+        {uploading && <Spinner />}
         {uploading ? 'Uploading...' : remaining === 0 ? 'Image limit reached' : 'Upload place image'}
       </button>
       {error && <p className="text-xs text-ig-error">{error}</p>}

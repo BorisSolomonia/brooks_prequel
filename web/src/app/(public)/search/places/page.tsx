@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import type { PlaceSearchResult, PageResponse } from '@/types';
 import PlaceSearchCard from '@/components/search/PlaceSearchCard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
+import Spinner from '@/components/ui/Spinner';
 import Link from 'next/link';
 
 function SearchPlacesPageContent() {
@@ -70,8 +71,9 @@ function SearchPlacesPageContent() {
         <button
           onClick={() => fetchPage(page + 1, true)}
           disabled={loadingMore}
-          className="mw-button-secondary mt-6 w-full rounded-xl py-3 disabled:opacity-50"
+          className="mw-button-secondary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
         >
+          {loadingMore && <Spinner />}
           {loadingMore ? 'Loading...' : 'Load more'}
         </button>
       )}

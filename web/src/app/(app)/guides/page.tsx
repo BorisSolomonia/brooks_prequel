@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { GuideLibraryItem, GuideLibraryResponse, MyTripSummary, PageResponse, PurchaseResponse } from '@/types';
+import Spinner from '@/components/ui/Spinner';
 
 type LibraryTab = 'created' | 'saved' | 'purchased';
 
@@ -228,8 +229,9 @@ export default function MyGuidesPage() {
                     type="button"
                     onClick={() => openCalendarForGuide(guide)}
                     disabled={calendarLoadingGuideId === guide.id}
-                    className="mw-button-secondary min-h-11 w-full rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
+                    className="mw-button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
                   >
+                    {calendarLoadingGuideId === guide.id && <Spinner />}
                     {calendarLoadingGuideId === guide.id ? 'Preparing...' : 'Add to calendar'}
                   </button>
                 </div>

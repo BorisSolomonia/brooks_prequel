@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import StarInput from './StarInput';
+import Spinner from '@/components/ui/Spinner';
 
 interface ReviewComposerProps {
   title: string;
@@ -106,8 +107,9 @@ export default function ReviewComposer({
         <button
           type="submit"
           disabled={saving || deleting}
-          className="mw-button-primary min-h-11 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          className="mw-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
+          {saving && <Spinner />}
           {saving ? savingLabel : submitLabel}
         </button>
         {onDelete && (
@@ -115,8 +117,9 @@ export default function ReviewComposer({
             type="button"
             disabled={saving || deleting}
             onClick={handleDelete}
-            className="mw-button-secondary min-h-11 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+            className="mw-button-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
           >
+            {deleting && <Spinner />}
             {deleting ? 'Deleting...' : 'Delete'}
           </button>
         )}

@@ -8,6 +8,7 @@ import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
 import { useMapboxStyle } from '@/lib/mapboxStyle';
+import Spinner from '@/components/ui/Spinner';
 import type { Profile, ProfileUpdateRequest } from '@/types';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? '';
@@ -296,8 +297,9 @@ export default function EditProfilePage() {
         <button
           type="submit"
           disabled={saving}
-          className="min-h-12 w-full rounded-lg bg-brand-500 py-3 font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-500 py-3 font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
         >
+          {saving && <Spinner />}
           {saving ? 'Saving...' : 'Save Profile'}
         </button>
       </form>

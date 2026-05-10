@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
+import Spinner from '@/components/ui/Spinner';
 import type { FollowResponse } from '@/types';
 
 interface FollowButtonProps {
@@ -65,12 +66,13 @@ export default function FollowButton({ userId, initialFollowing = false, onFollo
       type="button"
       disabled={busy}
       onClick={handleToggle}
-      className={`min-h-11 rounded-md px-5 py-2 font-display text-sm font-black uppercase tracking-[0.06em] transition-colors ${
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-5 py-2 font-display text-sm font-black uppercase tracking-[0.06em] transition-colors ${
         following
           ? 'border-2 border-ig-border bg-ig-elevated text-ig-text-primary hover:bg-ig-secondary'
           : 'mw-button-primary'
       } ${busy ? 'opacity-70' : ''}`}
     >
+      {busy && <Spinner />}
       {following ? 'Following' : 'Follow'}
     </button>
   );

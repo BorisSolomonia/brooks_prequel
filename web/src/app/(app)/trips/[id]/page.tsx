@@ -12,6 +12,7 @@ import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { MyTripDetail, MyTripItem, MyTripItemUpdateRequest, MyTripSetupRequest, AiKeyResponse, GuidePlace } from '@/types';
 import { BuyerChatPanel } from '@/components/ai/BuyerChatPanel';
+import Spinner from '@/components/ui/Spinner';
 
 function toLocalInputValue(value: string | null): string {
   if (!value) return '';
@@ -330,8 +331,9 @@ export default function TripDetailPage() {
           <button
             onClick={handleSubmitReview}
             disabled={review.rating === 0 || review.submitting}
-            className="mw-button-primary mt-3 min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-50"
+            className="mw-button-primary mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm disabled:opacity-50"
           >
+            {review.submitting && <Spinner />}
             {review.submitting ? 'Submitting...' : 'Submit review'}
           </button>
         </div>
@@ -356,8 +358,9 @@ export default function TripDetailPage() {
               <button
                 onClick={handleSaveSetup}
                 disabled={saving}
-                className="min-h-11 w-full rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50 sm:w-auto"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50 sm:w-auto"
               >
+                {saving && <Spinner />}
                 {saving ? 'Saving...' : 'Save setup'}
               </button>
             </div>

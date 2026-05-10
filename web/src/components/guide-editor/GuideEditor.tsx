@@ -11,6 +11,7 @@ import GiftGuideModal from './GiftGuideModal';
 import { CreatorAiPanel } from '@/components/ai/CreatorAiPanel';
 import type { AiKeyResponse } from '@/types';
 import { GuideEditProvider, useGuideEdit } from './GuideEditContext';
+import Spinner from '@/components/ui/Spinner';
 
 interface Props {
   initialGuide?: Guide;
@@ -191,8 +192,9 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
             <button
               onClick={handleSaveMetadata}
               disabled={saving || !metadata.title}
-              className="mw-button-primary min-h-11 w-full rounded-lg py-2.5 text-sm disabled:opacity-50"
+              className="mw-button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm disabled:opacity-50"
             >
+              {saving && <Spinner />}
               {saving ? 'Saving…' : guide ? 'Save Changes' : 'Create Guide'}
             </button>
           </div>

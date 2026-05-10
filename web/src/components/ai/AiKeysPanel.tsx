@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
+import Spinner from '@/components/ui/Spinner';
 import type { AiKeyResponse, AiProvider } from '@/types';
 
 type Provider = AiProvider;
@@ -149,8 +150,9 @@ export function AiKeysPanel() {
                     <button
                       disabled={saving || !rawKey}
                       onClick={() => saveKey(id)}
-                      className="min-h-11 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
                     >
+                      {saving && <Spinner />}
                       {saving ? 'Saving…' : 'Save'}
                     </button>
                     <button

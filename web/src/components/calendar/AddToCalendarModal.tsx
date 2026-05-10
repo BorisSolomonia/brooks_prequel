@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
+import Spinner from '@/components/ui/Spinner';
 import type {
   CalendarConnectionStatusResponse,
   CalendarLateEvent,
@@ -272,7 +273,8 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
                 );
               })}
             </div>
-            <button type="button" onClick={saveLateEdits} disabled={saving} className="mt-3 min-h-11 w-full rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50">
+            <button type="button" onClick={saveLateEdits} disabled={saving} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50">
+              {saving && <Spinner />}
               Save edited times
             </button>
           </div>
@@ -283,7 +285,8 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
 
         <div className="mt-5 space-y-3">
           {connection?.googleConnected ? (
-            <button type="button" onClick={syncGoogle} disabled={saving || !trip} className="min-h-12 w-full rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+            <button type="button" onClick={syncGoogle} disabled={saving || !trip} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+              {saving && <Spinner />}
               {saving ? 'Working...' : 'Sync to Google Calendar'}
             </button>
           ) : (
@@ -291,7 +294,8 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
               Connect Google Calendar
             </a>
           )}
-          <button type="button" onClick={downloadIcs} disabled={saving || !trip} className="min-h-12 w-full rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm font-semibold text-ig-text-primary hover:border-brand-500/50 disabled:opacity-50">
+          <button type="button" onClick={downloadIcs} disabled={saving || !trip} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm font-semibold text-ig-text-primary hover:border-brand-500/50 disabled:opacity-50">
+            {saving && <Spinner />}
             Add to Apple Calendar (.ics)
           </button>
         </div>

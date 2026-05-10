@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { scoreSearchMatch } from '@/lib/fuzzySearch';
 import { useMapboxStyle } from '@/lib/mapboxStyle';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import Spinner from '@/components/ui/Spinner';
 import type {
   InfluencerMapPin,
   InfluencerMapResponse,
@@ -512,16 +513,18 @@ function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy
             type="button"
             disabled={busy}
             onClick={() => onShare(memory.id)}
-            className="min-h-11 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
           >
+            {busy && <Spinner />}
             Share
           </button>
           <button
             type="button"
             disabled={busy}
             onClick={() => onDelete(memory.id)}
-            className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary disabled:opacity-60"
           >
+            {busy && <Spinner />}
             Delete
           </button>
         </div>
@@ -532,8 +535,9 @@ function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy
             type="button"
             disabled={busy}
             onClick={() => onRemove(memory.id)}
-            className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary disabled:opacity-60"
           >
+            {busy && <Spinner />}
             Remove from my map
           </button>
         </div>
@@ -1576,8 +1580,9 @@ export default function MapsExperience({
               type="button"
               disabled={memoryBusy}
               onClick={handleCreateMemory}
-              className="mw-button-primary mt-3 min-h-11 w-full rounded-2xl px-4 py-2 text-sm transition hover:bg-brand-600 disabled:opacity-60"
+              className="mw-button-primary mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm transition hover:bg-brand-600 disabled:opacity-60"
             >
+              {memoryBusy && <Spinner />}
               {memoryBusy ? 'Saving...' : 'Save and share'}
             </button>
           </div>

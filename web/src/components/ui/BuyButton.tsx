@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useCurrency } from '@/hooks/useCurrency';
+import Spinner from '@/components/ui/Spinner';
 import type { GuideCheckoutSessionResponse } from '@/types';
 
 interface BuyButtonProps {
@@ -88,8 +89,9 @@ export default function BuyButton({ guideId, priceCents, salePriceCents, saleEnd
         <button
           onClick={handleBuy}
           disabled={loading || !acceptedTerms}
-          className="mw-button-primary min-h-11 flex-1 rounded-lg px-6 py-2.5 text-sm disabled:opacity-50 sm:flex-none"
+          className="mw-button-primary inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm disabled:opacity-50 sm:flex-none"
         >
+          {loading && <Spinner />}
           {loading ? 'Processing...' : isFree ? 'Get Guide Free' : `Buy for ${formatAmount(effectivePrice)}`}
         </button>
         {saleActive && (

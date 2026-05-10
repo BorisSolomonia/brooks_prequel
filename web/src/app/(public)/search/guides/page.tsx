@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import type { GuideSearchResult, PageResponse } from '@/types';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
+import Spinner from '@/components/ui/Spinner';
 import Link from 'next/link';
 
 const PERSONAS = [
@@ -132,8 +133,9 @@ function SearchGuidesPageContent() {
         <button
           onClick={() => fetchPage(page + 1, true)}
           disabled={loadingMore}
-          className="mw-button-secondary mt-6 min-h-12 w-full rounded-xl py-3 disabled:opacity-50"
+          className="mw-button-secondary mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
         >
+          {loadingMore && <Spinner />}
           {loadingMore ? 'Loading...' : 'Load more'}
         </button>
       )}

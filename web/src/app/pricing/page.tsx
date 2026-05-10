@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { compliance } from '@/lib/compliance';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { GuideSearchResult, PageResponse } from '@/types';
+import Spinner from '@/components/ui/Spinner';
 
 export default function PricingPage() {
   const { formatAmount } = useCurrency();
@@ -110,8 +111,9 @@ export default function PricingPage() {
           type="button"
           onClick={() => fetchPage(page + 1, true)}
           disabled={loadingMore}
-          className="mw-button-secondary mt-6 min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-60"
+          className="mw-button-secondary mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm disabled:opacity-60"
         >
+          {loadingMore && <Spinner />}
           {loadingMore ? 'Loading...' : 'Load more products'}
         </button>
       )}
