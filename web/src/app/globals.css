@@ -3,6 +3,78 @@
 @tailwind utilities;
 
 :root {
+  /* Brand palette — light = "Aged Photograph" (parchment / terracotta / river cyan / mint) */
+  --mw-pink: #C67B6F;
+  --mw-magenta: #8E5161;
+  --mw-orange: #B8694A;
+  --mw-red: #A85049;
+  --mw-yellow: #C9A047;
+  --mw-lime: #A8C69F;
+  --mw-mint: #7CA496;
+  --mw-cyan: #5A7D87;
+  --mw-blue: #7DB9C9;
+  --mw-violet: #7D6BA1;
+
+  /* Tailwind brand ramp — terracotta (rgb channels for alpha-modifier syntax) */
+  --brand-50: 251 238 233;
+  --brand-100: 244 215 204;
+  --brand-200: 234 183 167;
+  --brand-300: 220 149 128;
+  --brand-400: 211 136 117;
+  --brand-500: 198 123 111;
+  --brand-600: 178 106 94;
+  --brand-700: 153 88 80;
+  --brand-800: 112 64 54;
+  --brand-900: 80 43 37;
+
+  /* Tailwind accent ramp — antique gold */
+  --accent-50: 251 247 229;
+  --accent-100: 240 225 182;
+  --accent-200: 229 203 135;
+  --accent-300: 217 180 89;
+  --accent-400: 210 171 79;
+  --accent-500: 201 160 71;
+  --accent-600: 169 133 56;
+  --accent-700: 134 104 41;
+  --accent-800: 99 76 30;
+  --accent-900: 68 51 21;
+
+  /* Tailwind ig.* — light variants */
+  --ig-blue: 125 185 201;
+  --ig-blue-hover: 106 165 181;
+  --ig-error: 168 80 73;
+  --ig-success: 168 198 159;
+
+  /* Semantic tokens */
+  --brand-primary: var(--mw-pink);
+  --brand-hover: var(--mw-magenta);
+  --action-primary: var(--mw-blue);
+  --action-hover: #6AA5B5;
+  --accent-primary: var(--mw-yellow);
+  --accent-secondary: var(--mw-orange);
+  --success: var(--mw-lime);
+  --error: var(--mw-red);
+
+  /* Surfaces — Aged Parchment / Dusty Salmon */
+  --bg-primary: #F1E4D1;
+  --bg-secondary: #E9C4A7;
+  --bg-elevated: #F8EFDC;
+  --bg-hover: #EAD8BF;
+  --border: #C0A88F;
+  --border-light: #DECEB7;
+  --text-primary: #3B3B3B;
+  --text-secondary: #6B5F50;
+  --text-tertiary: #A09684;
+  --separator: #5A7D87;
+
+  --grain: rgba(59, 59, 59, 0.025);
+  --mw-card-shadow: 0 18px 42px rgba(59, 59, 59, 0.13);
+  --mw-hard-shadow: 7px 7px 0 rgba(198, 123, 111, 0.2);
+  --mw-border-width: 2px;
+}
+
+.dark {
+  /* Brand palette — dark = original punchy swatches */
   --mw-pink: #C95A7D;
   --mw-magenta: #9B4366;
   --mw-orange: #D97850;
@@ -13,30 +85,38 @@
   --mw-cyan: #5098B3;
   --mw-blue: #4963B8;
   --mw-violet: #7356AB;
-  --brand-primary: var(--mw-pink);
-  --brand-hover: var(--mw-magenta);
-  --action-primary: var(--mw-blue);
-  --action-hover: #3F58A7;
-  --accent-primary: var(--mw-yellow);
-  --accent-secondary: var(--mw-orange);
-  --success: var(--mw-lime);
-  --error: var(--mw-red);
-  --bg-primary: #F7F1E7;
-  --bg-secondary: #EFE6DA;
-  --bg-elevated: #FFF8EF;
-  --bg-hover: #E8DDD0;
-  --border: #CDBEAE;
-  --border-light: #E4D8CA;
-  --text-primary: #161311;
-  --text-secondary: #6E6258;
-  --text-tertiary: #988A7E;
-  --separator: #E4D8CA;
-  --mw-card-shadow: 0 18px 42px rgba(22, 19, 17, 0.13);
-  --mw-hard-shadow: 7px 7px 0 rgba(201, 90, 125, 0.2);
-  --mw-border-width: 2px;
-}
 
-.dark {
+  /* Tailwind brand ramp — original pink (rgb channels) */
+  --brand-50: 251 241 245;
+  --brand-100: 243 220 230;
+  --brand-200: 233 185 204;
+  --brand-300: 222 145 173;
+  --brand-400: 212 116 146;
+  --brand-500: 201 90 125;
+  --brand-600: 178 78 113;
+  --brand-700: 155 67 102;
+  --brand-800: 113 49 77;
+  --brand-900: 77 33 54;
+
+  /* Tailwind accent ramp — original yellow */
+  --accent-50: 252 247 232;
+  --accent-100: 242 229 190;
+  --accent-200: 231 209 140;
+  --accent-300: 221 187 88;
+  --accent-400: 216 178 70;
+  --accent-500: 212 170 58;
+  --accent-600: 183 139 37;
+  --accent-700: 147 110 29;
+  --accent-800: 112 83 22;
+  --accent-900: 80 59 16;
+
+  /* Tailwind ig.* — original variants */
+  --ig-blue: 73 99 184;
+  --ig-blue-hover: 63 88 167;
+  --ig-error: 196 73 82;
+  --ig-success: 152 181 74;
+
+  /* Semantic tokens */
   --brand-primary: var(--mw-pink);
   --brand-hover: var(--mw-magenta);
   --action-primary: var(--mw-blue);
@@ -45,6 +125,8 @@
   --accent-secondary: var(--mw-orange);
   --success: var(--mw-lime);
   --error: var(--mw-red);
+
+  /* Surfaces — neutral grays */
   --bg-primary: #0E0E0E;
   --bg-secondary: #141414;
   --bg-elevated: #1A1A1A;
@@ -55,6 +137,8 @@
   --text-secondary: #A0A0A0;
   --text-tertiary: #6B6B6B;
   --separator: #242424;
+
+  --grain: rgba(255, 255, 255, 0.018);
   --mw-card-shadow: 0 22px 58px rgba(0, 0, 0, 0.36);
   --mw-hard-shadow: 7px 7px 0 rgba(201, 90, 125, 0.14);
 }
@@ -80,7 +164,7 @@ body::before {
     radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--mw-pink) 16%, transparent), transparent 25rem),
     radial-gradient(circle at 88% 18%, color-mix(in srgb, var(--mw-cyan) 13%, transparent), transparent 24rem),
     radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--mw-yellow) 9%, transparent), transparent 28rem),
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 5px);
+    repeating-linear-gradient(0deg, var(--grain) 0 1px, transparent 1px 5px);
   opacity: 0.72;
 }
 
