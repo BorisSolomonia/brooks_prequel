@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Anton } from 'next/font/google';
 import FloatingFeatureCard from '@/components/landing/FloatingFeatureCard';
 import BottomFeatureStrip from '@/components/landing/BottomFeatureStrip';
+import GetStartedButton from '@/components/landing/GetStartedButton';
 
 const anton = Anton({ weight: '400', subsets: ['latin'] });
 
@@ -128,29 +129,7 @@ function HeroContent({ mobile = false }: { mobile?: boolean }) {
         Personal guides. Not for the crowd.
       </p>
 
-      <Link
-        href="/api/auth/login"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: mobile ? 220 : 250,
-          height: mobile ? 54 : 60,
-          background: BLACK,
-          borderRadius: 8,
-          marginTop: mobile ? 20 : 24,
-          paddingLeft: mobile ? 22 : 26,
-          paddingRight: mobile ? 20 : 22,
-          textDecoration: 'none',
-        }}
-      >
-        <span style={{ fontSize: mobile ? 17 : 19, fontWeight: 900, color: YELLOW, letterSpacing: 1, textTransform: 'uppercase' }}>
-          Get started
-        </span>
-        <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={YELLOW} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M5 12h14M12 5l7 7-7 7" />
-        </svg>
-      </Link>
+      <GetStartedButton mobile={mobile} />
     </>
   );
 }
