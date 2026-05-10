@@ -134,6 +134,7 @@ export default function MyGuidesPage() {
         <h1 className="mw-section-title text-xl">My Guides</h1>
         <Link
           href="/guides/new"
+          data-tour="create-guide"
           className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm"
         >
           + New Guide

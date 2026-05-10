@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { compliance } from '@/lib/compliance';
+import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 
 const links = [
   { href: '/pricing', label: 'Products & prices' },
@@ -11,6 +14,7 @@ const links = [
 ];
 
 export default function Footer() {
+  const { start } = useOnboarding();
   return (
     <footer className="border-t-2 border-ig-border bg-ig-primary px-4 py-8 pb-24 md:pb-8">
       <div className="mx-auto flex max-w-[1180px] flex-col gap-5 md:flex-row md:items-start md:justify-between">
@@ -29,6 +33,14 @@ export default function Footer() {
               {link.label}
             </Link>
           ))}
+          <button
+            type="button"
+            onClick={start}
+            data-tour="help-link"
+            className="text-ig-text-secondary transition-colors hover:text-brand-500"
+          >
+            Help
+          </button>
         </nav>
       </div>
     </footer>

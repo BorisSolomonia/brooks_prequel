@@ -75,6 +75,17 @@ public class UserService {
         return !userRepository.existsByUsername(username);
     }
 
+    @Transactional
+    @CacheEvict(value = "usersBySubject", key = "#auth0Subject")
+    public User markOnboardingCompleted(String auth0Subject) {
+        User user = findByAuth0Subject(auth0Subject);
+        if (!user.isOnboardingCompleted()) {
+            user.setOnboardingCompleted(true);
+            userRepository.save(user);
+        }
+        return user;
+    }
+
     @Transactional(readOnly = true)
     public Map<UUID, User> findAllByIds(Collection<UUID> ids) {
         return userRepository.findAllById(ids).stream()

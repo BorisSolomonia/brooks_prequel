@@ -62,9 +62,11 @@ export default function Navbar() {
         <Link href="/" className="font-display shrink-0 text-base font-black uppercase tracking-[0.08em] text-brand-500 md:text-xl">
           Brooks
         </Link>
-        <Suspense fallback={<SearchBarFallback />}>
-          <GlobalSearchBar />
-        </Suspense>
+        <div data-tour="search-bar" className="min-w-0 flex-1">
+          <Suspense fallback={<SearchBarFallback />}>
+            <GlobalSearchBar />
+          </Suspense>
+        </div>
 
         <div className="hidden items-center gap-3 whitespace-nowrap md:flex">
           {isLoading ? (
@@ -75,6 +77,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  data-tour={link.href === '/trips' ? 'trips-tab' : undefined}
                   className={`font-display text-xs font-bold uppercase tracking-[0.08em] transition-colors ${
                     isActive(pathname, link.href)
                       ? 'text-ig-text-primary'
@@ -142,6 +145,7 @@ export default function Navbar() {
             <Link
               key={tab.href}
               href={tab.href}
+              data-tour={tab.href === '/trips' ? 'trips-tab' : undefined}
               className={`flex min-h-[60px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition-colors ${
                 active ? 'text-brand-500' : 'text-ig-text-tertiary hover:text-ig-text-primary'
               }`}

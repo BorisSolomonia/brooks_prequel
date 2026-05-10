@@ -1515,6 +1515,7 @@ export default function MapsExperience({
           </div>
           <button
             type="button"
+            data-tour="memory-create"
             onClick={() => setCreateMemoryOpen((open) => !open)}
             className="mw-button-primary mt-3 min-h-11 w-full rounded-2xl px-4 py-2 text-sm transition hover:bg-brand-600"
           >
