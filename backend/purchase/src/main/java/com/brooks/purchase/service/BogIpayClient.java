@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * HTTP client for Bank of Georgia iPay (https://api.bog.ge/docs/en/payments/).
@@ -131,7 +130,7 @@ public class BogIpayClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
         headers.set("Accept-Language", properties.getLocale());
-        headers.set("Idempotency-Key", UUID.randomUUID().toString());
+        headers.set("Idempotency-Key", createOrderIdempotencyKey(shopOrderId));
 
         String amount = formatGel(amountMinorUnits);
 
@@ -236,7 +235,7 @@ public class BogIpayClient {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
-        headers.set("Idempotency-Key", UUID.randomUUID().toString());
+        headers.set("Idempotency-Key", refundIdempotencyKey(orderId, amountMinorUnits));
 
         Map<String, Object> body = new HashMap<>();
         if (amountMinorUnits != null) {
@@ -298,6 +297,16 @@ public class BogIpayClient {
             log.error("BOG iPay token response parse failed", e);
             throw new RuntimeException("Failed to parse BOG iPay token response", e);
         }
+    }
+
+    // Idempotency keys are deterministic by operation + target so that BOG dedupes
+    // retries instead of opening a second order / issuing a duplicate refund.
+    static String createOrderIdempotencyKey(String shopOrderId) {
+        return "create:" + shopOrderId;
+    }
+
+    static String refundIdempotencyKey(String orderId, Long amountMinorUnits) {
+        return "refund:" + orderId + ":" + (amountMinorUnits == null ? "full" : amountMinorUnits);
     }
 
     private static String formatGel(long minorUnits) {
