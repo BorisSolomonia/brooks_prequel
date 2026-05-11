@@ -123,7 +123,7 @@ function SearchGuidesPageContent() {
         <p className="text-ig-text-secondary text-center mt-16">No guides found.</p>
       )}
 
-      <div className="space-y-3">
+      <div data-tour="guides-list" className="space-y-3">
         {results.map((guide) => (
           <GuideSearchCard key={guide.id} guide={guide} />
         ))}

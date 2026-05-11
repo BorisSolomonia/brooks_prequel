@@ -5,13 +5,14 @@ import { useUser } from '@auth0/nextjs-auth0/client';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import OnboardingTour from './OnboardingTour';
-import { tourSteps } from './tourSteps';
+import { tourSteps, type TourStep } from './tourSteps';
 
 type Status = 'unknown' | 'pending' | 'completed';
 
 type OnboardingContextValue = {
   isActive: boolean;
   currentStepIndex: number;
+  currentStep: TourStep | null;
   totalSteps: number;
   start: () => void;
   next: () => void;
@@ -113,6 +114,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
       value={{
         isActive,
         currentStepIndex,
+        currentStep: isActive ? tourSteps[currentStepIndex] ?? null : null,
         totalSteps: tourSteps.length,
         start,
         next,

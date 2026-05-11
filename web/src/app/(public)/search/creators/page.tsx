@@ -49,7 +49,7 @@ function SearchCreatorsPageContent() {
       <Link href={`/search?q=${encodeURIComponent(q)}`} className="mb-4 inline-block font-display text-sm font-black uppercase tracking-[0.06em] text-brand-500 hover:text-brand-400">
         &larr; Back to search
       </Link>
-      <h1 className="mw-section-title mb-1 text-xl">Creators</h1>
+      <h1 data-tour="creators-page" className="mw-section-title mb-1 text-xl">Creators</h1>
       {total > 0 && (
         <p className="text-sm text-ig-text-secondary mb-6">{total} results for &ldquo;{q}&rdquo;</p>
       )}

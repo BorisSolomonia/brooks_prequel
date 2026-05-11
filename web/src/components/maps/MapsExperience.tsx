@@ -10,6 +10,7 @@ import { scoreSearchMatch } from '@/lib/fuzzySearch';
 import { useMapboxStyle } from '@/lib/mapboxStyle';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import Spinner from '@/components/ui/Spinner';
+import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 import type {
   InfluencerMapPin,
   InfluencerMapResponse,
@@ -642,6 +643,18 @@ export default function MapsExperience({
   const [hoveredMarkerPinId, setHoveredMarkerPinId] = useState<string | null>(null);
   const [openFilterMenu, setOpenFilterMenu] = useState<FilterMenuKey>(null);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const { currentStep, isActive: tourActive } = useOnboarding();
+
+  // When the onboarding tour reaches the "Create a memory" step, force-open
+  // the mobile maps panel so the [data-tour="memory-create"] button is
+  // actually rendered with non-zero dimensions — otherwise the spotlight
+  // engine can't find a visible target on phones.
+  useEffect(() => {
+    if (!tourActive || !currentStep) return;
+    if (currentStep.kind === 'spotlight' && currentStep.selector === '[data-tour="memory-create"]') {
+      setMobilePanelOpen(true);
+    }
+  }, [tourActive, currentStep]);
   const [activeLayers, setActiveLayers] = useState<MapLayerState>(DEFAULT_LAYERS);
   const [createMemoryOpen, setCreateMemoryOpen] = useState(false);
   const [memoryText, setMemoryText] = useState('');

@@ -33,6 +33,15 @@ public class User extends BaseEntity {
     @Column(name = "onboarding_completed", nullable = false)
     private boolean onboardingCompleted = false;
 
+    @Column(name = "payout_iban", length = 34)
+    private String payoutIban;
+
+    @Column(name = "payout_beneficiary_name", length = 255)
+    private String payoutBeneficiaryName;
+
+    @Column(name = "payout_currency", length = 3)
+    private String payoutCurrency;
+
     public User(String auth0Subject, String email) {
         this.auth0Subject = auth0Subject;
         this.email = email;

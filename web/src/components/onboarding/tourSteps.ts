@@ -24,12 +24,6 @@ export type CenteredStep = {
 
 export type TourStep = WelcomeStep | SpotlightStep | CenteredStep;
 
-// 8-step plan. Steps that REQUIRE a specific UI element to be visible
-// use `spotlight` (search bar in navbar, trips tab in navbar, help link
-// in footer). Steps that drive route navigation use `centered` because
-// target visibility on mobile / collapsed panels is unreliable — the
-// tour navigates the user to the right page and explains the flow with
-// a centered tooltip while the page renders behind it.
 export const tourSteps: TourStep[] = [
   {
     kind: 'welcome',
@@ -45,16 +39,20 @@ export const tourSteps: TourStep[] = [
     body: 'Top of every page: search guides, places, and creators. Type a city to discover what is curated.',
   },
   {
-    kind: 'centered',
+    kind: 'spotlight',
     route: '/search/creators',
+    selector: '[data-tour="creators-page"]',
+    placement: 'bottom',
     title: 'Discover creators',
-    body: 'Browse travel creators here. Tap any to see their profile, ratings, and the guides they sell. Follow the ones whose vibe fits yours.',
+    body: 'This page lists travel creators. Tap any to see their profile, ratings, and the guides they sell. Follow the ones whose vibe fits yours.',
   },
   {
-    kind: 'centered',
+    kind: 'spotlight',
     route: '/maps',
+    selector: '[data-tour="memory-create"]',
+    placement: 'top',
     title: 'How to create a memory',
-    body: 'On the Maps page, open the side panel and tap "Create hidden memory" to drop a pin. Add a photo or audio. Share the link with friends — they unlock it only when they visit the place.',
+    body: 'Tap "Create hidden memory" to drop a pin where you are. Add a photo or audio. Share the link with friends — they unlock it only when they visit the place.',
   },
   {
     kind: 'spotlight',
@@ -64,15 +62,20 @@ export const tourSteps: TourStep[] = [
     body: 'Your purchased guides become Trips here, day-by-day with map and schedule.',
   },
   {
-    kind: 'centered',
+    kind: 'spotlight',
+    route: '/search/guides',
+    selector: '[data-tour="guides-list"]',
+    placement: 'top',
     title: 'How to buy a guide',
-    body: 'Tap any guide card to see its preview. Read the description and reviews, accept the Terms checkbox, then tap Buy to pay via Bank of Georgia iPay. Free guides skip payment entirely.',
+    body: 'These are guides for sale. Tap any card to open it, read the preview, accept the Terms checkbox, then tap Buy to pay via Bank of Georgia iPay. Free guides skip payment.',
   },
   {
-    kind: 'centered',
+    kind: 'spotlight',
     route: '/guides',
+    selector: '[data-tour="create-guide"]',
+    placement: 'bottom',
     title: 'How to create a guide',
-    body: "In My Guides, tap '+ New Guide' at the top right. Add title, cover photo, days, and places. Hit Publish when ready to sell on the marketplace.",
+    body: "Tap '+ New Guide' to start. Add title, cover photo, days, and places. Hit Publish when ready to sell on the marketplace.",
   },
   {
     kind: 'spotlight',

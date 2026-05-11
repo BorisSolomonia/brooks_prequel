@@ -218,7 +218,10 @@ public class AdminCommissionController {
 
     @GetMapping("/earnings")
     public EarningsSummaryResponse getEarnings() {
-        List<Object[]> rows = earningRepository.findEarningsSummaryGroupedByCreator();
+        // "Earnings" here means amounts still OWED to creators (PENDING payout).
+        // Paid-out earnings stay in the DB for audit but are excluded from the totals
+        // so the admin sees a clear "what do I owe right now" number.
+        List<Object[]> rows = earningRepository.findEarningsSummaryGroupedByCreator("PENDING");
 
         long totalGross = 0, totalCommission = 0, totalNet = 0;
         List<EarningsSummaryResponse.CreatorEarningsSummary> byCreator = new ArrayList<>();
@@ -236,4 +239,27 @@ public class AdminCommissionController {
 
         return new EarningsSummaryResponse(totalGross, totalCommission, totalNet, byCreator);
     }
+
+    @PostMapping("/payouts/{creatorId}/mark-paid")
+    public ResponseEntity<Void> markCreatorPayoutsPaid(
+            @PathVariable UUID creatorId,
+            @RequestBody MarkPayoutPaidRequest req
+    ) {
+        List<com.brooks.purchase.domain.CreatorEarning> pending =
+                earningRepository.findAllByCreatorIdAndPayoutStatus(creatorId, "PENDING");
+        if (pending.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        Instant now = Instant.now();
+        String ref = req == null ? null : req.paymentReference();
+        for (com.brooks.purchase.domain.CreatorEarning earning : pending) {
+            earning.setPayoutStatus("PAID");
+            earning.setPaidAt(now);
+            earning.setPaymentReference(ref);
+        }
+        earningRepository.saveAll(pending);
+        return ResponseEntity.noContent().build();
+    }
+
+    public record MarkPayoutPaidRequest(String paymentReference) {}
 }

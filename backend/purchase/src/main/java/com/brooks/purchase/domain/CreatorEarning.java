@@ -46,6 +46,12 @@ public class CreatorEarning {
     @Column(name = "payout_status", nullable = false, length = 20)
     private String payoutStatus = "PENDING";
 
+    @Column(name = "paid_at")
+    private Instant paidAt;
+
+    @Column(name = "payment_reference", length = 120)
+    private String paymentReference;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 }

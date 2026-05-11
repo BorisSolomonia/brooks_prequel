@@ -86,6 +86,22 @@ public class UserService {
         return user;
     }
 
+    @Transactional
+    @CacheEvict(value = "usersBySubject", key = "#auth0Subject")
+    public User updatePayoutDetails(String auth0Subject, String iban, String beneficiaryName, String currency) {
+        User user = findByAuth0Subject(auth0Subject);
+        user.setPayoutIban(blankToNull(iban));
+        user.setPayoutBeneficiaryName(blankToNull(beneficiaryName));
+        user.setPayoutCurrency(blankToNull(currency == null ? null : currency.toUpperCase()));
+        return userRepository.save(user);
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     @Transactional(readOnly = true)
     public Map<UUID, User> findAllByIds(Collection<UUID> ids) {
         return userRepository.findAllById(ids).stream()

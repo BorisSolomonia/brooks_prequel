@@ -302,6 +302,14 @@ export default function EditProfilePage() {
           {saving && <Spinner />}
           {saving ? 'Saving...' : 'Save Profile'}
         </button>
+
+        <a
+          href="/profile/payout"
+          className="mt-4 block rounded-lg border-2 border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-secondary transition-colors hover:border-brand-500/60 hover:text-ig-text-primary"
+        >
+          <span className="font-display text-xs font-black uppercase tracking-[0.08em] text-brand-500">Payout details</span>
+          <span className="mt-1 block">Set or update your IBAN so the platform can send you your share of guide sales →</span>
+        </a>
       </form>
     </div>
   );
