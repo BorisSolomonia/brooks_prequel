@@ -36,6 +36,9 @@ export default function Pathway({ items, placeLookup, visitedMap, onToggleVisite
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const reducedMotionRef = useRef(false);
+  const lastScrollYRef = useRef(0);
+  const activeIndexRef = useRef(-1);
+  const glowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeItem, setActiveItem] = useState<MyTripItem | null>(null);
 
   const visibleItems = useMemo(
@@ -88,22 +91,53 @@ export default function Pathway({ items, placeLookup, visitedMap, onToggleVisite
       const viewportCenter = vh / 2;
       const halfVh = vh / 2;
       const reduce = reducedMotionRef.current;
-      cardRefs.current.forEach((el) => {
+      const currentY = window.scrollY;
+      const direction: 'down' | 'up' | null =
+        currentY > lastScrollYRef.current ? 'down' : currentY < lastScrollYRef.current ? 'up' : null;
+      lastScrollYRef.current = currentY;
+
+      let nearestIndex = -1;
+      let nearestDist = Infinity;
+      cardRefs.current.forEach((el, i) => {
         if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const cardCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(cardCenter - viewportCenter);
+        if (distance < nearestDist) {
+          nearestDist = distance;
+          nearestIndex = i;
+        }
         if (reduce) {
           el.style.transform = '';
           el.style.opacity = '';
           return;
         }
-        const rect = el.getBoundingClientRect();
-        const cardCenter = rect.top + rect.height / 2;
-        const distance = Math.abs(cardCenter - viewportCenter);
         const t = Math.min(1, distance / halfVh);
         const scale = 1 - t * 0.15;
         const opacity = 1 - t * 0.5;
         el.style.transform = `scale(${scale.toFixed(3)})`;
         el.style.opacity = opacity.toFixed(3);
       });
+
+      // Direction-aware glow: pulse the newly-focused card's badge briefly.
+      if (
+        !reduce &&
+        direction !== null &&
+        nearestIndex !== -1 &&
+        nearestIndex !== activeIndexRef.current &&
+        nearestDist < halfVh * 0.5
+      ) {
+        activeIndexRef.current = nearestIndex;
+        const el = cardRefs.current[nearestIndex];
+        if (el) {
+          el.setAttribute('data-glow', direction === 'down' ? 'new' : 'prev');
+          if (glowTimerRef.current) clearTimeout(glowTimerRef.current);
+          glowTimerRef.current = setTimeout(() => {
+            el.removeAttribute('data-glow');
+            glowTimerRef.current = null;
+          }, 700);
+        }
+      }
     };
     const onScroll = () => {
       if (raf) return;
@@ -114,6 +148,7 @@ export default function Pathway({ items, placeLookup, visitedMap, onToggleVisite
     window.addEventListener('resize', onScroll);
     return () => {
       if (raf) cancelAnimationFrame(raf);
+      if (glowTimerRef.current) clearTimeout(glowTimerRef.current);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
@@ -222,6 +257,30 @@ export default function Pathway({ items, placeLookup, visitedMap, onToggleVisite
           onClose={() => setActiveItem(null)}
         />
       )}
+      <style jsx global>{`
+        @keyframes pathwayGlowNew {
+          0% {
+            box-shadow: 0 0 0 0 rgb(var(--brand-500) / 0.6), 0 0 0 0 rgb(var(--brand-500) / 0);
+          }
+          100% {
+            box-shadow: 0 0 0 14px rgb(var(--brand-500) / 0), 0 0 0 14px rgb(var(--brand-500) / 0);
+          }
+        }
+        @keyframes pathwayGlowPrev {
+          0% {
+            box-shadow: 0 0 0 0 rgb(var(--brand-300) / 0.55);
+          }
+          100% {
+            box-shadow: 0 0 0 12px rgb(var(--brand-300) / 0);
+          }
+        }
+        [data-pathway-card][data-glow='new'] [data-pathway-badge] {
+          animation: pathwayGlowNew 700ms ease-out;
+        }
+        [data-pathway-card][data-glow='prev'] [data-pathway-badge] {
+          animation: pathwayGlowPrev 700ms ease-out;
+        }
+      `}</style>
     </div>
   );
 }

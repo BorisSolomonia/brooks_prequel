@@ -36,7 +36,7 @@ const PathwayNode = forwardRef<HTMLDivElement, Props>(function PathwayNode(
         {place && place.images.length > 0 ? (
           <div className="relative aspect-[16/10] w-full bg-ig-primary">
             <PlaceCarousel images={place.images} altPrefix={item.placeName} />
-            <span className="absolute left-3 top-3 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-black/55 px-2 text-[11px] font-black text-white backdrop-blur">
+            <span data-pathway-badge className="absolute left-3 top-3 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-black/55 px-2 text-[11px] font-black text-white backdrop-blur">
               {visited ? '✓' : number}
             </span>
             {scheduledLabel && (
@@ -48,7 +48,7 @@ const PathwayNode = forwardRef<HTMLDivElement, Props>(function PathwayNode(
         ) : (
           <div className="relative flex aspect-[16/10] w-full items-center justify-center bg-brand-200 text-4xl text-brand-700">
             📍
-            <span className="absolute left-3 top-3 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-black/55 px-2 text-[11px] font-black text-white backdrop-blur">
+            <span data-pathway-badge className="absolute left-3 top-3 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-black/55 px-2 text-[11px] font-black text-white backdrop-blur">
               {visited ? '✓' : number}
             </span>
             {scheduledLabel && (
