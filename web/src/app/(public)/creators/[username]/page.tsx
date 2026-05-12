@@ -171,7 +171,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
         <Avatar src={profile.avatarUrl} name={profile.displayName ?? profile.username ?? ''} size="xl" verified={profile.verified} />
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
-            <h1 className="text-xl font-bold text-ig-text-primary">{profile.displayName ?? profile.username}</h1>
+            <h1 data-tour="creator-profile-header" className="text-xl font-bold text-ig-text-primary">{profile.displayName ?? profile.username}</h1>
             {profile.verified && (
               <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-500">
                 Verified
@@ -251,7 +251,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div data-tour="creator-guides-list" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {guides.map((guide) => (
               <div
                 key={guide.id}

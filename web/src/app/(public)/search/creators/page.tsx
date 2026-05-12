@@ -62,8 +62,10 @@ function SearchCreatorsPageContent() {
       )}
 
       <div className="space-y-3">
-        {results.map((creator) => (
-          <CreatorSearchCard key={creator.userId} creator={creator} />
+        {results.map((creator, idx) => (
+          <div key={creator.userId} data-tour={idx === 0 ? 'first-creator-card' : undefined}>
+            <CreatorSearchCard creator={creator} />
+          </div>
         ))}
       </div>
 

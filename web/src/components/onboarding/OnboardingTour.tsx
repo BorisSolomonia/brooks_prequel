@@ -46,6 +46,32 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
       }, 200);
       return () => clearTimeout(t);
     }
+    if (sideEffect.kind === 'sequentialHighlight' && sideEffect.selector) {
+      const timers: ReturnType<typeof setTimeout>[] = [];
+      const launch = setTimeout(() => {
+        const container = document.querySelector(sideEffect.selector!);
+        if (!container) return;
+        const children = Array.from(container.children) as HTMLElement[];
+        children.forEach((child, i) => {
+          const startTimer = setTimeout(() => {
+            child.setAttribute('data-onboard-highlight', '1');
+            const clearTimer = setTimeout(() => child.removeAttribute('data-onboard-highlight'), 700);
+            timers.push(clearTimer);
+          }, i * 380);
+          timers.push(startTimer);
+        });
+      }, 300);
+      timers.push(launch);
+      return () => {
+        timers.forEach((t) => clearTimeout(t));
+        const container = document.querySelector(sideEffect.selector!);
+        if (container) {
+          Array.from(container.children).forEach((child) =>
+            (child as HTMLElement).removeAttribute('data-onboard-highlight'),
+          );
+        }
+      };
+    }
   }, [step]);
 
   useEffect(() => {
@@ -158,7 +184,7 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
       )}
 
       <div
-        className="absolute rounded-2xl border border-ig-border/60 bg-ig-elevated/85 p-3.5 shadow-xl backdrop-blur-md ring-1 ring-black/5"
+        className="absolute rounded-2xl border-2 border-ig-border bg-ig-elevated p-3.5 shadow-2xl ring-1 ring-black/10"
         style={tooltipPosition}
       >
         <div className="flex items-start justify-between gap-2">
@@ -221,6 +247,17 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
         }
         .tour-pulse {
           animation: tourPulse 1.6s ease-out infinite;
+        }
+        @keyframes onboardHighlight {
+          0% { box-shadow: 0 0 0 0 rgb(var(--brand-500) / 0.6); }
+          100% { box-shadow: 0 0 0 12px rgb(var(--brand-500) / 0); }
+        }
+        [data-onboard-highlight] {
+          outline: 2px solid rgb(var(--brand-500));
+          outline-offset: 4px;
+          border-radius: 12px;
+          animation: onboardHighlight 700ms ease-out;
+          transition: outline-color 200ms;
         }
       `}</style>
     </div>
