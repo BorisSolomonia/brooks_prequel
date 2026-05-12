@@ -7,6 +7,7 @@ import PurchasedTripMap from '@/components/maps/PurchasedTripMap';
 import PlaceCarousel from '@/components/places/PlaceCarousel';
 import PlaceReviewPanel from '@/components/reviews/PlaceReviewPanel';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
+import Pathway from '@/components/pathway/Pathway';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -113,6 +114,18 @@ export default function TripDetailPage() {
     submitted: false,
     error: null,
   });
+  const envPathwayEnabled = (() => {
+    const raw = (process.env.NEXT_PUBLIC_PATHWAY_VIEW_ENABLED ?? '').trim();
+    return raw === '' || raw.toLowerCase() !== 'false';
+  })();
+  const [viewMode, setViewMode] = useState<'pathway' | 'list'>(envPathwayEnabled ? 'pathway' : 'list');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const param = new URLSearchParams(window.location.search).get('pathway');
+    if (param === '1') setViewMode('pathway');
+    else if (param === '0') setViewMode('list');
+  }, []);
 
   useEffect(() => {
     if (tokenLoading) return;
@@ -305,6 +318,31 @@ export default function TripDetailPage() {
 
       {error && <p className="mb-4 text-sm text-ig-error">{error}</p>}
 
+      <div className="mb-6 inline-flex items-center gap-1 rounded-full border-2 border-ig-border bg-ig-elevated p-1">
+        <button
+          type="button"
+          onClick={() => setViewMode('pathway')}
+          className={`min-h-9 rounded-full px-4 py-1.5 text-xs font-display font-black uppercase tracking-[0.08em] transition-colors ${
+            viewMode === 'pathway'
+              ? 'bg-brand-500 text-white shadow'
+              : 'text-ig-text-secondary hover:text-ig-text-primary'
+          }`}
+        >
+          Pathway
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('list')}
+          className={`min-h-9 rounded-full px-4 py-1.5 text-xs font-display font-black uppercase tracking-[0.08em] transition-colors ${
+            viewMode === 'list'
+              ? 'bg-brand-500 text-white shadow'
+              : 'text-ig-text-secondary hover:text-ig-text-primary'
+          }`}
+        >
+          List
+        </button>
+      </div>
+
       {showReviewPrompt && (
         <div className="mw-card mb-6 p-5">
           <h2 className="font-display text-base font-black text-ig-text-primary">How was your trip?</h2>
@@ -345,6 +383,80 @@ export default function TripDetailPage() {
         </div>
       )}
 
+      {viewMode === 'pathway' && (
+        <div className="space-y-6">
+          <div className="sticky top-16 z-20 -mx-4 bg-ig-primary/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-2xl md:bg-transparent md:px-0 md:py-0">
+            <div className="rounded-2xl border border-ig-border bg-ig-elevated p-3 shadow-sm md:p-4">
+              <PurchasedTripMap
+                items={visibleItems}
+                mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? ''}
+                mapStyle={process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? ''}
+              />
+            </div>
+          </div>
+          <Pathway
+            items={trip.items}
+            placeLookup={placeLookup}
+            visitedMap={visitedMap}
+            onToggleVisited={handleToggleVisited}
+          />
+          <div className="mw-card p-4 md:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-display text-base font-black text-ig-text-primary md:text-lg">Trip setup</h2>
+                <p className="mt-1 hidden text-sm text-ig-text-secondary md:block">
+                  Choose when the itinerary starts. The app will prefill timings from creator hints.
+                </p>
+              </div>
+              <button
+                onClick={handleSaveSetup}
+                disabled={saving}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50 sm:w-auto"
+              >
+                {saving && <Spinner />}
+                {saving ? 'Saving...' : 'Save setup'}
+              </button>
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <label className="block text-sm">
+                <span className="mb-1 block text-ig-text-secondary">Trip start date</span>
+                <input
+                  type="date"
+                  value={tripStartDate}
+                  onChange={(e) => setTripStartDate(e.target.value)}
+                  className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block text-ig-text-secondary">Start time</span>
+                <input
+                  type="time"
+                  value={tripStartTime}
+                  onChange={(e) => setTripStartTime(e.target.value)}
+                  className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block text-ig-text-secondary">Timezone</span>
+                <input
+                  type="text"
+                  value={tripTimezone}
+                  onChange={(e) => setTripTimezone(e.target.value)}
+                  className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                />
+              </label>
+            </div>
+          </div>
+          {aiKeys.length > 0 && (
+            <BuyerChatPanel
+              tripId={tripId}
+              availableProviders={aiKeys.map((k) => k.provider)}
+            />
+          )}
+        </div>
+      )}
+
+      {viewMode === 'list' && (
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="order-2 space-y-6 lg:order-1">
           <div className="mw-card p-4 md:p-5">
@@ -574,6 +686,7 @@ export default function TripDetailPage() {
           )}
         </div>
       </div>
+      )}
 
       <div className="mt-6 rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
         <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Quick links</h2>

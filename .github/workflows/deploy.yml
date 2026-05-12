@@ -141,6 +141,7 @@ jobs:
             --build-arg NEXT_PUBLIC_AUTH0_AUDIENCE="$(get_env NEXT_PUBLIC_AUTH0_AUDIENCE)" \
             --build-arg NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN="$(get_env NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN)" \
             --build-arg NEXT_PUBLIC_MAPBOX_STYLE="$(get_env NEXT_PUBLIC_MAPBOX_STYLE)" \
+            --build-arg NEXT_PUBLIC_PATHWAY_VIEW_ENABLED="$(get_env NEXT_PUBLIC_PATHWAY_VIEW_ENABLED || true)" \
             -t "${IMAGE_PATH}:${GITHUB_SHA}" \
             -t "${IMAGE_PATH}:latest" \
             web/
