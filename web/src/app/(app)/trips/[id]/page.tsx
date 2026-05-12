@@ -8,6 +8,7 @@ import PlaceCarousel from '@/components/places/PlaceCarousel';
 import PlaceReviewPanel from '@/components/reviews/PlaceReviewPanel';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import Pathway from '@/components/pathway/Pathway';
+import SectionNavRail from '@/components/pathway/SectionNavRail';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -385,14 +386,22 @@ export default function TripDetailPage() {
 
       {viewMode === 'pathway' && (
         <div className="space-y-6">
-          <div className="sticky top-16 z-20 -mx-4 bg-ig-primary/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-2xl md:bg-transparent md:px-0 md:py-0">
-            <div className="rounded-2xl border border-ig-border bg-ig-elevated p-3 shadow-sm md:p-4">
-              <PurchasedTripMap
-                items={visibleItems}
-                mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? ''}
-                mapStyle={process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? ''}
-              />
-            </div>
+          <SectionNavRail
+            sections={[
+              { id: 'map', label: 'Map' },
+              ...Array.from(new Set(visibleItems.map((i) => i.dayNumber)))
+                .sort((a, b) => a - b)
+                .map((d) => ({ id: `day-${d}`, label: `Day ${d}` })),
+              { id: 'setup', label: 'Setup' },
+              { id: 'quick-links', label: 'Links' },
+            ]}
+          />
+          <div data-section="map" className="rounded-2xl border border-ig-border bg-ig-elevated p-3 shadow-sm md:p-4">
+            <PurchasedTripMap
+              items={visibleItems}
+              mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? ''}
+              mapStyle={process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? ''}
+            />
           </div>
           <Pathway
             items={trip.items}
@@ -400,7 +409,7 @@ export default function TripDetailPage() {
             visitedMap={visitedMap}
             onToggleVisited={handleToggleVisited}
           />
-          <div className="mw-card p-4 md:p-5">
+          <div data-section="setup" className="mw-card p-4 md:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="font-display text-base font-black text-ig-text-primary md:text-lg">Trip setup</h2>
@@ -688,7 +697,7 @@ export default function TripDetailPage() {
       </div>
       )}
 
-      <div className="mt-6 rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+      <div data-section="quick-links" className="mt-6 rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
         <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Quick links</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visibleItems.map((item) => (

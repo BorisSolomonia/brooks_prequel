@@ -7,10 +7,10 @@ import { useOnboarding } from './OnboardingProvider';
 
 type Rect = { top: number; left: number; width: number; height: number };
 
-const SPOTLIGHT_PADDING = 8;
-const TOOLTIP_OFFSET = 16;
-const TOOLTIP_WIDTH = 384;
-const TOOLTIP_HEIGHT_ESTIMATE = 240;
+const SPOTLIGHT_PADDING = 10;
+const TOOLTIP_OFFSET = 14;
+const TOOLTIP_WIDTH = 280;
+const TOOLTIP_HEIGHT_ESTIMATE = 180;
 const POLL_MAX_ATTEMPTS = 45;
 
 export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
@@ -36,17 +36,27 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     let frame: number | null = null;
     let attempts = 0;
 
+    let scrolled = false;
     const measure = () => {
       const candidates = document.querySelectorAll(step.selector);
+      let el: HTMLElement | null = null;
       let rect: DOMRect | null = null;
       for (const candidate of Array.from(candidates) as HTMLElement[]) {
         const candidateRect = candidate.getBoundingClientRect();
         if (candidateRect.width > 0 || candidateRect.height > 0) {
+          el = candidate;
           rect = candidateRect;
           break;
         }
       }
-      if (!rect) return false;
+      if (!el || !rect) return false;
+      const vh = window.innerHeight;
+      const offscreen = rect.top < 64 || rect.bottom > vh - 64;
+      if (offscreen && !scrolled) {
+        scrolled = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        return false;
+      }
       setTargetRect({
         top: rect.top - SPOTLIGHT_PADDING,
         left: rect.left - SPOTLIGHT_PADDING,
@@ -100,49 +110,60 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   return (
     <div className="fixed inset-0 z-[9999]" role="dialog" aria-modal="true" aria-label="Onboarding tour">
       {isCenteredOverlay ? (
-        <div className="absolute inset-0 bg-black/65" />
+        <div className="absolute inset-0 bg-black/55" />
       ) : (
-        <div
-          className="pointer-events-none absolute rounded-md transition-all duration-300 ease-out"
-          style={{
-            top: targetRect!.top,
-            left: targetRect!.left,
-            width: targetRect!.width,
-            height: targetRect!.height,
-            boxShadow: '0 0 0 9999px rgba(0,0,0,0.65)',
-          }}
-        />
+        <>
+          <div
+            className="pointer-events-none absolute rounded-xl transition-all duration-300 ease-out"
+            style={{
+              top: targetRect!.top,
+              left: targetRect!.left,
+              width: targetRect!.width,
+              height: targetRect!.height,
+              boxShadow: '0 0 0 9999px rgba(0,0,0,0.42)',
+            }}
+          />
+          <div
+            className="pointer-events-none absolute rounded-xl transition-all duration-300 ease-out tour-pulse"
+            style={{
+              top: targetRect!.top,
+              left: targetRect!.left,
+              width: targetRect!.width,
+              height: targetRect!.height,
+            }}
+          />
+        </>
       )}
 
       <div
-        className="absolute w-[calc(100vw-32px)] max-w-sm rounded-2xl border-2 border-ig-border bg-ig-elevated p-5 shadow-2xl"
+        className="absolute rounded-2xl border border-ig-border/60 bg-ig-elevated/85 p-3.5 shadow-xl backdrop-blur-md ring-1 ring-black/5"
         style={tooltipPosition}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500">
-              Step {stepIndex + 1} of {totalSteps}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-500">
+              {stepIndex + 1} / {totalSteps}
             </p>
-            <h2 className="mt-2 font-display text-lg font-black text-ig-text-primary">
+            <h2 className="mt-1 font-display text-sm font-black leading-tight text-ig-text-primary">
               {step.title}
             </h2>
           </div>
           <button
             type="button"
             onClick={skip}
-            className="-mr-2 -mt-2 min-h-9 rounded-full px-3 text-xs font-semibold uppercase tracking-[0.12em] text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
+            className="-mr-1 -mt-1 min-h-8 rounded-full px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
             aria-label="Skip tour"
           >
             Skip
           </button>
         </div>
-        <p className="mt-3 text-sm leading-relaxed text-ig-text-secondary">{step.body}</p>
-        <div className="mt-5 flex items-center justify-between gap-3">
+        <p className="mt-2 text-xs leading-snug text-ig-text-secondary">{step.body}</p>
+        <div className="mt-3 flex items-center justify-between gap-2">
           {stepIndex > 0 ? (
             <button
               type="button"
               onClick={prev}
-              className="min-h-11 rounded-md px-3 py-2 text-sm font-medium text-ig-text-secondary transition-colors hover:text-ig-text-primary"
+              className="min-h-9 rounded-md px-2 py-1.5 text-xs font-medium text-ig-text-secondary transition-colors hover:text-ig-text-primary"
             >
               Back
             </button>
@@ -152,12 +173,34 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
           <button
             type="button"
             onClick={handleNext}
-            className="mw-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-5 py-2 text-sm"
+            className="mw-button-primary inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-4 py-1.5 text-xs"
           >
             {isLast ? 'Got it' : 'Next'}
           </button>
         </div>
       </div>
+      <style jsx global>{`
+        @keyframes tourPulse {
+          0% {
+            box-shadow:
+              0 0 0 0 rgb(var(--brand-500) / 0.55),
+              inset 0 0 0 2px rgb(var(--brand-500) / 0.6);
+          }
+          70% {
+            box-shadow:
+              0 0 0 14px rgb(var(--brand-500) / 0),
+              inset 0 0 0 2px rgb(var(--brand-500) / 0.4);
+          }
+          100% {
+            box-shadow:
+              0 0 0 0 rgb(var(--brand-500) / 0),
+              inset 0 0 0 2px rgb(var(--brand-500) / 0.6);
+          }
+        }
+        .tour-pulse {
+          animation: tourPulse 1.6s ease-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
