@@ -124,8 +124,10 @@ function SearchGuidesPageContent() {
       )}
 
       <div data-tour="guides-list" className="space-y-3">
-        {results.map((guide) => (
-          <GuideSearchCard key={guide.id} guide={guide} />
+        {results.map((guide, idx) => (
+          <div key={guide.id} data-tour={idx === 0 ? 'first-guide-card' : undefined}>
+            <GuideSearchCard guide={guide} />
+          </div>
         ))}
       </div>
 

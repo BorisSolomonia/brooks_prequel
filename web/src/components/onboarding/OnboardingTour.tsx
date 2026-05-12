@@ -37,10 +37,16 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     let attempts = 0;
 
     const measure = () => {
-      const el = document.querySelector(step.selector) as HTMLElement | null;
-      if (!el) return false;
-      const rect = el.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) return false;
+      const candidates = document.querySelectorAll(step.selector);
+      let rect: DOMRect | null = null;
+      for (const candidate of Array.from(candidates) as HTMLElement[]) {
+        const candidateRect = candidate.getBoundingClientRect();
+        if (candidateRect.width > 0 || candidateRect.height > 0) {
+          rect = candidateRect;
+          break;
+        }
+      }
+      if (!rect) return false;
       setTargetRect({
         top: rect.top - SPOTLIGHT_PADDING,
         left: rect.left - SPOTLIGHT_PADDING,
@@ -171,39 +177,80 @@ function computeTooltipPosition(step: TourStep, targetRect: Rect | null): CSSPro
 
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const placement = (step as { placement: string }).placement || 'auto';
+  const margin = 16;
+  const tooltipWidth = Math.min(TOOLTIP_WIDTH, viewportWidth - margin * 2);
+  const tooltipHeight = TOOLTIP_HEIGHT_ESTIMATE;
+  const requested = (step as { placement: string }).placement || 'auto';
 
-  let actualPlacement = placement;
-  if (placement === 'auto') {
-    actualPlacement = targetRect.top > viewportHeight / 2 ? 'top' : 'bottom';
+  const targetTop = targetRect.top;
+  const targetBottom = targetRect.top + targetRect.height;
+  const targetLeft = targetRect.left;
+  const targetRight = targetRect.left + targetRect.width;
+  const spaceTop = targetTop - margin;
+  const spaceBottom = viewportHeight - targetBottom - margin;
+  const spaceLeft = targetLeft - margin;
+  const spaceRight = viewportWidth - targetRight - margin;
+
+  let actual = requested;
+  if (requested === 'auto') {
+    actual = spaceBottom >= tooltipHeight + TOOLTIP_OFFSET
+      ? 'bottom'
+      : spaceTop >= tooltipHeight + TOOLTIP_OFFSET
+      ? 'top'
+      : spaceBottom >= spaceTop
+      ? 'bottom'
+      : 'top';
+  } else if (requested === 'top' && spaceTop < tooltipHeight + TOOLTIP_OFFSET) {
+    actual = spaceBottom >= tooltipHeight + TOOLTIP_OFFSET || spaceBottom > spaceTop ? 'bottom' : 'top';
+  } else if (requested === 'bottom' && spaceBottom < tooltipHeight + TOOLTIP_OFFSET) {
+    actual = spaceTop >= tooltipHeight + TOOLTIP_OFFSET || spaceTop > spaceBottom ? 'top' : 'bottom';
+  } else if (requested === 'left' && spaceLeft < tooltipWidth + TOOLTIP_OFFSET) {
+    actual = spaceRight >= tooltipWidth + TOOLTIP_OFFSET || spaceRight > spaceLeft ? 'right' : 'left';
+  } else if (requested === 'right' && spaceRight < tooltipWidth + TOOLTIP_OFFSET) {
+    actual = spaceLeft >= tooltipWidth + TOOLTIP_OFFSET || spaceLeft > spaceRight ? 'left' : 'right';
   }
 
   let top: number;
   let left: number;
-  switch (actualPlacement) {
+  switch (actual) {
     case 'top':
-      top = targetRect.top - TOOLTIP_HEIGHT_ESTIMATE - TOOLTIP_OFFSET;
-      left = targetRect.left + targetRect.width / 2 - TOOLTIP_WIDTH / 2;
+      top = targetTop - tooltipHeight - TOOLTIP_OFFSET;
+      left = targetLeft + targetRect.width / 2 - tooltipWidth / 2;
       break;
     case 'bottom':
-      top = targetRect.top + targetRect.height + TOOLTIP_OFFSET;
-      left = targetRect.left + targetRect.width / 2 - TOOLTIP_WIDTH / 2;
+      top = targetBottom + TOOLTIP_OFFSET;
+      left = targetLeft + targetRect.width / 2 - tooltipWidth / 2;
       break;
     case 'left':
-      top = targetRect.top + targetRect.height / 2 - TOOLTIP_HEIGHT_ESTIMATE / 2;
-      left = targetRect.left - TOOLTIP_WIDTH - TOOLTIP_OFFSET;
+      top = targetTop + targetRect.height / 2 - tooltipHeight / 2;
+      left = targetLeft - tooltipWidth - TOOLTIP_OFFSET;
       break;
     case 'right':
-      top = targetRect.top + targetRect.height / 2 - TOOLTIP_HEIGHT_ESTIMATE / 2;
-      left = targetRect.left + targetRect.width + TOOLTIP_OFFSET;
+      top = targetTop + targetRect.height / 2 - tooltipHeight / 2;
+      left = targetRight + TOOLTIP_OFFSET;
       break;
     default:
-      top = targetRect.top + targetRect.height + TOOLTIP_OFFSET;
-      left = targetRect.left;
+      top = targetBottom + TOOLTIP_OFFSET;
+      left = targetLeft;
   }
 
-  left = Math.max(16, Math.min(viewportWidth - TOOLTIP_WIDTH - 16, left));
-  top = Math.max(16, Math.min(viewportHeight - TOOLTIP_HEIGHT_ESTIMATE - 16, top));
+  left = Math.max(margin, Math.min(viewportWidth - tooltipWidth - margin, left));
 
-  return { top, left };
+  if (actual === 'top') {
+    const maxTop = targetTop - TOOLTIP_OFFSET - tooltipHeight;
+    top = Math.max(margin, Math.min(maxTop, top));
+  } else if (actual === 'bottom') {
+    const minTop = targetBottom + TOOLTIP_OFFSET;
+    top = Math.max(minTop, Math.min(viewportHeight - tooltipHeight - margin, top));
+  } else if (actual === 'left') {
+    left = Math.max(margin, Math.min(targetLeft - tooltipWidth - TOOLTIP_OFFSET, left));
+    top = Math.max(margin, Math.min(viewportHeight - tooltipHeight - margin, top));
+  } else if (actual === 'right') {
+    left = Math.max(targetRight + TOOLTIP_OFFSET, Math.min(viewportWidth - tooltipWidth - margin, left));
+    top = Math.max(margin, Math.min(viewportHeight - tooltipHeight - margin, top));
+  } else {
+    top = Math.max(margin, Math.min(viewportHeight - tooltipHeight - margin, top));
+  }
+
+  return { top, left, width: tooltipWidth };
 }

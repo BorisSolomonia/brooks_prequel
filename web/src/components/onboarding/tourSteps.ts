@@ -64,10 +64,10 @@ export const tourSteps: TourStep[] = [
   {
     kind: 'spotlight',
     route: '/search/guides',
-    selector: '[data-tour="guides-list"]',
-    placement: 'top',
+    selector: '[data-tour="first-guide-card"]',
+    placement: 'bottom',
     title: 'How to buy a guide',
-    body: 'These are guides for sale. Tap any card to open it, read the preview, accept the Terms checkbox, then tap Buy to pay via Bank of Georgia iPay. Free guides skip payment.',
+    body: 'Tap a card like this to open the guide. Read the preview, accept the Terms checkbox, then tap Buy to pay via Bank of Georgia iPay. Free guides skip payment.',
   },
   {
     kind: 'spotlight',
