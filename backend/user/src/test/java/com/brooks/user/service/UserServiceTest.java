@@ -1,5 +1,6 @@
 package com.brooks.user.service;
 
+import com.brooks.user.audit.AuditService;
 import com.brooks.user.domain.User;
 import com.brooks.user.domain.UserRole;
 import com.brooks.user.repository.UserRepository;
@@ -23,32 +24,57 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private AuditService auditService;
+
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository);
+        userService = new UserService(userRepository, auditService);
         ReflectionTestUtils.setField(userService, "adminEmails", List.of("borissolomoniaphone@gmail.com"));
     }
 
     @Test
-    void findOrCreateUserPromotesExistingConfiguredAdminEmail() {
+    void findOrCreateUserPromotesExistingConfiguredAdminEmailWhenVerified() {
+        User existing = new User("auth0|admin", "borissolomoniaphone@gmail.com");
+        existing.setRole(UserRole.USER);
+        when(userRepository.findByAuth0Subject("auth0|admin")).thenReturn(Optional.of(existing));
+
+        User result = userService.findOrCreateUser("auth0|admin", "borissolomoniaphone@gmail.com", true);
+
+        assertThat(result.getRole()).isEqualTo(UserRole.ADMIN);
+    }
+
+    @Test
+    void findOrCreateUserDoesNotPromoteUnverifiedAdminEmail() {
+        User existing = new User("auth0|admin", "borissolomoniaphone@gmail.com");
+        existing.setRole(UserRole.USER);
+        when(userRepository.findByAuth0Subject("auth0|admin")).thenReturn(Optional.of(existing));
+
+        User result = userService.findOrCreateUser("auth0|admin", "borissolomoniaphone@gmail.com", false);
+
+        assertThat(result.getRole()).isEqualTo(UserRole.USER);
+    }
+
+    @Test
+    void legacyTwoArgOverloadTreatsCallerAsUnverified() {
         User existing = new User("auth0|admin", "borissolomoniaphone@gmail.com");
         existing.setRole(UserRole.USER);
         when(userRepository.findByAuth0Subject("auth0|admin")).thenReturn(Optional.of(existing));
 
         User result = userService.findOrCreateUser("auth0|admin", "borissolomoniaphone@gmail.com");
 
-        assertThat(result.getRole()).isEqualTo(UserRole.ADMIN);
+        assertThat(result.getRole()).isEqualTo(UserRole.USER);
     }
 
     @Test
-    void findOrCreateUserCreatesConfiguredAdminAsAdmin() {
+    void findOrCreateUserCreatesConfiguredAdminAsAdminWhenVerified() {
         when(userRepository.findByAuth0Subject("auth0|admin")).thenReturn(Optional.empty());
         when(userRepository.save(org.mockito.ArgumentMatchers.any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userService.findOrCreateUser("auth0|admin", "borissolomoniaphone@gmail.com");
+        User result = userService.findOrCreateUser("auth0|admin", "borissolomoniaphone@gmail.com", true);
 
         assertThat(result.getRole()).isEqualTo(UserRole.ADMIN);
         verify(userRepository).save(result);

@@ -1,6 +1,7 @@
 package com.brooks.user.service;
 
 import com.brooks.common.exception.ResourceNotFoundException;
+import com.brooks.user.audit.AuditService;
 import com.brooks.user.domain.User;
 import com.brooks.user.domain.UserRole;
 import com.brooks.user.repository.UserRepository;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Value("${app.admin-emails:}")
     private List<String> adminEmails;
@@ -31,9 +33,9 @@ public class UserService {
     // have just changed (admin email syncing, first-time creation).
     @Transactional
     @CacheEvict(value = "usersBySubject", key = "#auth0Subject")
-    public User findOrCreateUser(String auth0Subject, String email) {
+    public User findOrCreateUser(String auth0Subject, String email, boolean emailVerified) {
         return userRepository.findByAuth0Subject(auth0Subject)
-                .map(user -> syncAdminRole(user, email))
+                .map(user -> syncAdminRole(user, email, emailVerified))
                 .orElseGet(() -> {
                     // The users.email column is UNIQUE NOT NULL, so a blank fallback collides as
                     // soon as a second emailless user signs in. Derive a deterministic per-subject
@@ -41,8 +43,16 @@ public class UserService {
                     String safeEmail = (email == null || email.isBlank())
                             ? auth0Subject.replace("|", "_") + "@noemail.brooks.local"
                             : email;
-                    return userRepository.save(syncAdminRole(new User(auth0Subject, safeEmail), safeEmail));
+                    return userRepository.save(syncAdminRole(new User(auth0Subject, safeEmail), safeEmail, emailVerified));
                 });
+    }
+
+    // Backwards-compatible overload; callers that don't yet pass email_verified are treated as unverified
+    // (so admin role is never auto-granted via this path).
+    @Transactional
+    @CacheEvict(value = "usersBySubject", key = "#auth0Subject")
+    public User findOrCreateUser(String auth0Subject, String email) {
+        return findOrCreateUser(auth0Subject, email, false);
     }
 
     // Hit on every authenticated request — cache aggressively. Eviction happens via
@@ -90,10 +100,27 @@ public class UserService {
     @CacheEvict(value = "usersBySubject", key = "#auth0Subject")
     public User updatePayoutDetails(String auth0Subject, String iban, String beneficiaryName, String currency) {
         User user = findByAuth0Subject(auth0Subject);
+        String previousIbanMasked = maskIban(user.getPayoutIban());
         user.setPayoutIban(blankToNull(iban));
         user.setPayoutBeneficiaryName(blankToNull(beneficiaryName));
         user.setPayoutCurrency(blankToNull(currency == null ? null : currency.toUpperCase()));
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        String newIbanMasked = maskIban(saved.getPayoutIban());
+        auditService.record(
+                saved.getId(),
+                AuditService.EVENT_PAYOUT_DETAILS_UPDATED,
+                "from=" + previousIbanMasked + ";to=" + newIbanMasked
+        );
+        return saved;
+    }
+
+    // Audit log must never store full IBAN. Keep first 4 + last 4 to allow forensic comparison
+    // without exposing payment routing info to anyone who reads the table.
+    private static String maskIban(String iban) {
+        if (iban == null) return "null";
+        String trimmed = iban.trim();
+        if (trimmed.length() <= 8) return "***";
+        return trimmed.substring(0, 4) + "..." + trimmed.substring(trimmed.length() - 4);
     }
 
     private static String blankToNull(String value) {
@@ -108,9 +135,14 @@ public class UserService {
                 .collect(Collectors.toMap(User::getId, u -> u));
     }
 
-    private User syncAdminRole(User user, String email) {
-        if (isConfiguredAdminEmail(email)) {
-            user.setRole(UserRole.ADMIN);
+    private User syncAdminRole(User user, String email, boolean emailVerified) {
+        if (isConfiguredAdminEmail(email) && emailVerified) {
+            if (user.getRole() != UserRole.ADMIN) {
+                user.setRole(UserRole.ADMIN);
+                if (user.getId() != null) {
+                    auditService.record(user.getId(), AuditService.EVENT_ADMIN_ROLE_GRANT, "email=" + email);
+                }
+            }
         }
         return user;
     }

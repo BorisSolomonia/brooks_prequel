@@ -19,6 +19,7 @@ import com.brooks.purchase.repository.CommissionPromotionRepository;
 import com.brooks.purchase.repository.CommissionRuleRepository;
 import com.brooks.purchase.repository.CreatorEarningRepository;
 import com.brooks.purchase.service.CommissionRateResolver;
+import com.brooks.user.audit.AuditService;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class AdminCommissionController {
     private final UserProfileRepository profileRepository;
     private final UserService userService;
     private final AuthService authService;
+    private final AuditService auditService;
 
     // ── Rules ────────────────────────────────────────────────────────────────
 
@@ -258,6 +260,12 @@ public class AdminCommissionController {
             earning.setPaymentReference(ref);
         }
         earningRepository.saveAll(pending);
+        long totalPaidNet = pending.stream().mapToLong(e -> e.getNetAmountCents()).sum();
+        auditService.record(
+                creatorId,
+                AuditService.EVENT_PAYOUT_MARKED_PAID,
+                "count=" + pending.size() + ";net_cents=" + totalPaidNet + ";ref=" + (ref == null ? "" : ref)
+        );
         return ResponseEntity.noContent().build();
     }
 

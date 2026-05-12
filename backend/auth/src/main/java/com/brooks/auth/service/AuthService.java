@@ -28,4 +28,10 @@ public class AuthService {
         Jwt jwt = (Jwt) authentication.getPrincipal();
         return Optional.ofNullable(jwt.getClaimAsString("picture"));
     }
+
+    public boolean isEmailVerified(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Boolean verified = jwt.getClaim("email_verified");
+        return Boolean.TRUE.equals(verified);
+    }
 }

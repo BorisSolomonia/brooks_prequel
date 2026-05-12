@@ -1,6 +1,7 @@
 package com.brooks.user.api;
 
 import com.brooks.auth.service.AuthService;
+import com.brooks.user.audit.AuditService;
 import com.brooks.user.domain.User;
 import com.brooks.user.dto.UserResponse;
 import com.brooks.user.service.UserService;
@@ -20,6 +21,7 @@ public class AuthCallbackController {
 
     private final UserService userService;
     private final AuthService authService;
+    private final AuditService auditService;
 
     @PostMapping("/callback")
     public ResponseEntity<UserResponse> callback(Authentication authentication) {
@@ -28,7 +30,9 @@ public class AuthCallbackController {
         }
         String subject = authService.extractSubject(authentication);
         String email = authService.extractEmail(authentication).orElse("");
-        User user = userService.findOrCreateUser(subject, email);
+        boolean emailVerified = authService.isEmailVerified(authentication);
+        User user = userService.findOrCreateUser(subject, email, emailVerified);
+        auditService.record(user.getId(), AuditService.EVENT_LOGIN, "verified=" + emailVerified);
         return ResponseEntity.ok(toResponse(user));
     }
 
@@ -36,7 +40,8 @@ public class AuthCallbackController {
     public ResponseEntity<UserResponse> me(Authentication authentication) {
         String subject = authService.extractSubject(authentication);
         String email = authService.extractEmail(authentication).orElse("");
-        User user = userService.findOrCreateUser(subject, email);
+        boolean emailVerified = authService.isEmailVerified(authentication);
+        User user = userService.findOrCreateUser(subject, email, emailVerified);
         return ResponseEntity.ok(toResponse(user));
     }
 
