@@ -33,6 +33,25 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     if (step.kind === 'welcome') return;
     const sideEffect = (step as { sideEffect?: { kind: string; selector?: string; ms?: number } }).sideEffect;
     if (!sideEffect) return;
+    if (sideEffect.kind === 'discoverCreator') {
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await fetch('/api/tour/sample-creator');
+          if (!res.ok) return;
+          const data = (await res.json()) as { username?: string };
+          if (cancelled || !data?.username) return;
+          if (pathname !== `/creators/${data.username}`) {
+            router.push(`/creators/${data.username}`);
+          }
+        } catch {
+          // Network or parse error — fall back to centered overlay; user can still continue.
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
     if (sideEffect.kind === 'click' && sideEffect.selector) {
       const t = setTimeout(() => {
         const candidates = document.querySelectorAll(sideEffect.selector!);
@@ -205,6 +224,12 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
             Skip
           </button>
         </div>
+        {step.kind === 'centered' && (step as { illustration?: string }).illustration && (
+          <div
+            className="mt-2 overflow-hidden rounded-lg border border-ig-border"
+            dangerouslySetInnerHTML={{ __html: (step as { illustration: string }).illustration }}
+          />
+        )}
         <p className="mt-2 text-xs leading-snug text-ig-text-secondary">{step.body}</p>
         <div className="mt-3 flex items-center justify-between gap-2">
           {stepIndex > 0 ? (

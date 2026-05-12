@@ -15,6 +15,8 @@ public interface GuideRepository extends JpaRepository<Guide, UUID> {
 
     Optional<Guide> findFirstByCreatorIdOrderByCreatedAtAsc(UUID creatorId);
 
+    Optional<Guide> findFirstByStatusOrderByCreatedAtAsc(GuideStatus status);
+
     Page<Guide> findByCreatorIdAndStatusNot(UUID creatorId, GuideStatus status, Pageable pageable);
 
     Page<Guide> findByCreatorIdAndStatus(UUID creatorId, GuideStatus status, Pageable pageable);

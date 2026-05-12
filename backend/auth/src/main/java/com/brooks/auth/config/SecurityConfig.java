@@ -60,6 +60,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/memory-shares/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/tour/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/webhooks/bog-ipay").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/media/local/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
