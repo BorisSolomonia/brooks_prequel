@@ -86,6 +86,14 @@ interface Props {
 const ACTION_PATTERN = /<action\s+type="(update_guide|add_day|add_block|add_place|update_day|update_block|update_place|delete_day|delete_block|delete_place)">([\s\S]*?)<\/action>/;
 const PROFILE_PATTERN = /<profile>([\s\S]*?)<\/profile>/g;
 
+// Phrases that signal the AI thinks it's making a change but forgot to emit the <action> tag.
+const INTENT_SIGNAL_PATTERN = /\b(adding|will be added|i'?ll add|let me add|got it,?\s*adding|i (have|'ve) added|added\s+to|done!?\s*i'?ve|sure,?\s*adding|i'?m adding|creating|i'?ll create|i (have|'ve) created|updating|i'?ll update|deleting|i'?ll delete)\b/i;
+const ACTION_KEYWORDS_PATTERN = /\b(day\s*\d|block|place|museum|stop|guide)\b/i;
+
+function looksLikeIntentWithoutAction(text: string): boolean {
+  return INTENT_SIGNAL_PATTERN.test(text) && ACTION_KEYWORDS_PATTERN.test(text);
+}
+
 function loadMessages(guideId: string): Message[] {
   try {
     const raw = localStorage.getItem(`brooks_ai_msgs_${guideId}`);
@@ -150,6 +158,10 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
   const [streaming, setStreaming] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [accepting, setAccepting] = useState(false);
+  // When the AI describes an action ("adding...", "will add...") but emits no action tag,
+  // we flag the last user message as retryable. One-click retry resends with stronger
+  // instruction so the AI is forced to emit the tag.
+  const [missingActionForMessage, setMissingActionForMessage] = useState<string | null>(null);
   const accumulatedRef = useRef('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -244,9 +256,15 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
         const payload = JSON.parse(match[2].trim());
         setPendingAction({ type, payload });
         cleanText = rawText.replace(ACTION_PATTERN, '').trim();
+        setMissingActionForMessage(null);
       } catch {
         // Malformed JSON — leave message as-is
       }
+    } else if (looksLikeIntentWithoutAction(cleanText)) {
+      // AI described an action but emitted no tag — offer one-click retry
+      setMissingActionForMessage(userMessage);
+    } else {
+      setMissingActionForMessage(null);
     }
 
     const finalMessages = (prev: Message[]) => {
@@ -432,6 +450,36 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
             </span>
           </div>
         ))}
+
+        {/* Missing-action warning */}
+        {missingActionForMessage && !pendingAction && !streaming && (
+          <div className="rounded-xl border-2 border-yellow-500/40 bg-yellow-500/10 p-3 space-y-2">
+            <p className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
+              ⚠ The AI confirmed but didn’t actually make the change
+            </p>
+            <p className="text-xs text-[var(--text-secondary)]">
+              The model described the action without emitting the structured tag the editor needs. Click Retry to ask it again with a stronger instruction.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => {
+                  const msg = missingActionForMessage;
+                  setMissingActionForMessage(null);
+                  void send(`${msg}\n\nIMPORTANT: emit the <action type="..."> tag at the end of your reply. Without the tag the change is not applied.`);
+                }}
+                className="min-h-9 rounded-lg bg-yellow-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yellow-600"
+              >
+                Retry as action
+              </button>
+              <button
+                onClick={() => setMissingActionForMessage(null)}
+                className="min-h-9 rounded-lg px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Action confirmation card */}
         {pendingAction && !streaming && (

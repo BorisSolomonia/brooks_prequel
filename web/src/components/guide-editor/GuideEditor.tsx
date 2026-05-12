@@ -45,7 +45,9 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(
+    () => aiKeys.length > 0 && (initialGuide?.days?.length ?? 0) === 0,
+  );
   const [showGiftModal, setShowGiftModal] = useState(false);
 
   const handleAddTag = () => {
@@ -283,16 +285,29 @@ function DaysSection({
         <h2 className="text-lg font-semibold text-ig-text-primary">Itinerary</h2>
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-ig-text-tertiary">{guide.dayCount} days, {guide.placeCount} places</span>
-          <button
-            data-tour="ai-button-in-guide"
-            onClick={onToggleAiPanel}
-            disabled={aiKeys.length === 0}
-            title={aiKeys.length === 0 ? 'Add an AI provider key in Profile → AI Keys to enable' : undefined}
-            className="flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent lg:min-h-0 lg:py-1 lg:text-xs"
-          >
-            <span>✨</span>
-            <span>{showAiPanel ? 'Hide AI' : 'Create with AI'}</span>
-          </button>
+          {aiKeys.length === 0 ? (
+            <a
+              data-tour="ai-button-in-guide"
+              href="/profile?tab=ai-keys"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-600 hover:shadow-lg lg:min-h-0 lg:py-2 lg:text-xs"
+            >
+              <span className="text-base leading-none">✨</span>
+              <span>Connect AI</span>
+            </a>
+          ) : (
+            <button
+              data-tour="ai-button-in-guide"
+              onClick={onToggleAiPanel}
+              className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-md transition-colors lg:min-h-0 lg:py-2 lg:text-xs ${
+                showAiPanel
+                  ? 'border-2 border-brand-500 bg-brand-500/10 text-brand-500 hover:bg-brand-500/20'
+                  : 'bg-brand-500 text-white hover:bg-brand-600 hover:shadow-lg'
+              }`}
+            >
+              <span className="text-base leading-none">✨</span>
+              <span>{showAiPanel ? 'Hide AI' : 'Create with AI'}</span>
+            </button>
+          )}
         </div>
       </div>
 
