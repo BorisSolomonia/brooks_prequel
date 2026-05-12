@@ -7,7 +7,6 @@ import PurchasedTripMap from '@/components/maps/PurchasedTripMap';
 import PlaceCarousel from '@/components/places/PlaceCarousel';
 import PlaceReviewPanel from '@/components/reviews/PlaceReviewPanel';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
-import SimpleAgenda from '@/components/pathway/SimpleAgenda';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -346,20 +345,8 @@ export default function TripDetailPage() {
         </div>
       )}
 
-      <div className="space-y-6">
-          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-3 shadow-sm md:p-4">
-            <PurchasedTripMap
-              items={visibleItems}
-              mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? ''}
-              mapStyle={process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? ''}
-            />
-          </div>
-          <SimpleAgenda
-            items={trip.items}
-            placeLookup={placeLookup}
-            visitedMap={visitedMap}
-            onToggleVisited={handleToggleVisited}
-          />
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="order-2 space-y-6 lg:order-1">
           <div className="mw-card p-4 md:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -407,6 +394,178 @@ export default function TripDetailPage() {
               </label>
             </div>
           </div>
+
+          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Itinerary</h2>
+            <div className="mt-4 space-y-6">
+              {sortedDays.map((dayNumber) => {
+                const dayItems = dayGroups.get(dayNumber) ?? [];
+                const dayVisited = dayItems.filter((i) => visitedMap[i.id]).length;
+                const dayTotal = dayItems.length;
+                return (
+                  <div key={dayNumber}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-brand-400 uppercase tracking-wide">Day {dayNumber}</span>
+                      <span className="text-xs text-ig-text-tertiary">{dayVisited}/{dayTotal} visited</span>
+                    </div>
+                    <div className="mb-3 h-1 rounded-full bg-ig-border overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-brand-500/60 transition-all duration-300"
+                        style={{ width: dayTotal > 0 ? `${(dayVisited / dayTotal) * 100}%` : '0%' }}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      {dayItems.map((item: MyTripItem) => {
+                        const edit = itemEdits[item.placeId] ?? {
+                          scheduledStart: toLocalInputValue(item.scheduledStart),
+                          scheduledEnd: toLocalInputValue(item.scheduledEnd),
+                          skipped: item.skipped,
+                        };
+                        const isVisited = visitedMap[item.id] ?? item.visited;
+                        const placeData = placeLookup.get(item.placeId);
+                        const placeTags = placeData?.tags ?? [];
+                        const displayTags = placeTags.slice(0, 2);
+                        const extraTags = placeTags.length > 2 ? placeTags.length - 2 : 0;
+                        const tagLine = displayTags.length > 0
+                          ? displayTags.join(' • ') + (extraTags > 0 ? ` • +${extraTags}` : '')
+                          : '';
+                        return (
+                          <div key={item.placeId} className={`rounded-xl border bg-ig-primary transition-colors ${isVisited ? 'border-brand-500/30' : 'border-ig-border'}`}>
+                            <div className="flex gap-3 p-3">
+                              <div className="flex flex-col items-center gap-2 md:gap-0">
+                                <button
+                                  onClick={() => handleToggleVisited(item)}
+                                  title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
+                                  className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors md:h-7 md:w-7 lg:h-5 lg:w-5 ${
+                                    isVisited
+                                      ? 'border-brand-500 bg-brand-500 text-white'
+                                      : 'border-ig-border hover:border-brand-500/50'
+                                  }`}
+                                >
+                                  {isVisited && (
+                                    <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+                                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                  )}
+                                </button>
+                                <label className="flex flex-col items-center gap-0.5 cursor-pointer md:hidden">
+                                  <input
+                                    type="checkbox"
+                                    checked={edit.skipped}
+                                    onChange={(e) => setItemEdits((current) => ({
+                                      ...current,
+                                      [item.placeId]: { ...edit, skipped: e.target.checked },
+                                    }))}
+                                    className="h-4 w-4 cursor-pointer"
+                                  />
+                                  <span className="text-[10px] font-medium text-ig-text-secondary">Skip</span>
+                                </label>
+                              </div>
+                              <div className="w-14 flex-shrink-0 md:w-16">
+                                {placeData && placeData.images.length > 0 ? (
+                                  <PlaceCarousel images={placeData.images} altPrefix={item.placeName} />
+                                ) : (
+                                  <div className="h-14 w-14 rounded-lg border border-ig-border bg-ig-elevated md:h-16 md:w-16" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                  <h3 className={`text-sm font-semibold break-words ${isVisited ? 'text-ig-text-secondary line-through' : 'text-ig-text-primary'}`}>
+                                    {item.placeName}
+                                  </h3>
+                                  <div className="flex flex-wrap items-center justify-start gap-1 md:flex-shrink-0 md:justify-end">
+                                    {item.latitude !== null && item.longitude !== null && (
+                                      <a
+                                        href={`https://brooksweb.uk/maps?lat=${item.latitude}&lng=${item.longitude}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7"
+                                        title="View on map"
+                                      >
+                                        📍
+                                      </a>
+                                    )}
+                                    {item.latitude !== null && item.longitude !== null && (
+                                      <NavigateMenu lat={item.latitude} lng={item.longitude} />
+                                    )}
+                                    <label className="hidden md:inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-ig-text-secondary cursor-pointer lg:min-h-9 lg:text-xs">
+                                      <input
+                                        type="checkbox"
+                                        checked={edit.skipped}
+                                        onChange={(e) => setItemEdits((current) => ({
+                                          ...current,
+                                          [item.placeId]: { ...edit, skipped: e.target.checked },
+                                        }))}
+                                      />
+                                      Skip
+                                    </label>
+                                  </div>
+                                </div>
+                                <div className="hidden md:block">
+                                  {tagLine && <p className="mt-0.5 text-left text-xs text-ig-text-secondary truncate">{tagLine}</p>}
+                                  {item.placeAddress && <p className="mt-0.5 text-left text-xs text-ig-text-tertiary line-clamp-2">{item.placeAddress}</p>}
+                                  {placeData?.description && <p className="mt-1 text-left text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="block md:hidden px-3 pb-2 space-y-0.5">
+                              {tagLine && <p className="text-left text-xs text-ig-text-secondary truncate">{tagLine}</p>}
+                              {item.placeAddress && <p className="text-left text-xs text-ig-text-tertiary line-clamp-2">{item.placeAddress}</p>}
+                              {placeData?.description && <p className="text-left text-xs text-ig-text-secondary line-clamp-2">{placeData.description}</p>}
+                            </div>
+                            <div className="grid gap-3 px-3 pb-3 sm:grid-cols-2">
+                              <input
+                                type="datetime-local"
+                                value={edit.scheduledStart}
+                                onChange={(e) => setItemEdits((current) => ({
+                                  ...current,
+                                  [item.placeId]: { ...edit, scheduledStart: e.target.value },
+                                }))}
+                                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                              />
+                              <input
+                                type="datetime-local"
+                                value={edit.scheduledEnd}
+                                onChange={(e) => setItemEdits((current) => ({
+                                  ...current,
+                                  [item.placeId]: { ...edit, scheduledEnd: e.target.value },
+                                }))}
+                                className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-brand-500 focus:outline-none"
+                              />
+                            </div>
+                            <p className="hidden px-3 pb-3 text-xs text-ig-text-tertiary md:block">
+                              {item.suggestedStartMinute !== null ? `Creator start hint: +${item.suggestedStartMinute} min.` : 'No creator start hint.'}
+                              {item.suggestedDurationMinutes !== null ? ` Suggested: ${item.suggestedDurationMinutes} min.` : ''}
+                            </p>
+                            <div className="px-3 pb-3">
+                              <PlaceReviewPanel placeId={item.placeId} placeName={item.placeName} token={token} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="order-1 space-y-6 lg:order-2">
+          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Trip map</h2>
+            <p className="mt-1 text-sm text-ig-text-secondary">
+              Skipped places are hidden from the map.
+            </p>
+            <div className="mt-4">
+              <PurchasedTripMap
+                items={visibleItems}
+                mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? ''}
+                mapStyle={process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? ''}
+              />
+            </div>
+          </div>
+
           {aiKeys.length > 0 && (
             <BuyerChatPanel
               tripId={tripId}
@@ -414,6 +573,7 @@ export default function TripDetailPage() {
             />
           )}
         </div>
+      </div>
 
 
       <div className="mt-6 rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
