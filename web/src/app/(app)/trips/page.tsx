@@ -38,7 +38,7 @@ export default function MyTripsPage() {
       <div className="mb-8 flex items-center justify-between gap-4">
         <div>
           <p className="mw-eyebrow">Buyer Library</p>
-          <h1 className="mw-section-title mt-2 text-3xl">Purchased guides</h1>
+          <h1 data-tour="trips-page-header" className="mw-section-title mt-2 text-3xl">Purchased guides</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
             Purchased guide versions live here. Open a trip to set dates, review the map, and export it to your calendar.
           </p>

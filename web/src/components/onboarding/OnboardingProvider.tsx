@@ -1,11 +1,14 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import OnboardingTour from './OnboardingTour';
 import { tourSteps, type TourStep } from './tourSteps';
+
+const LOCAL_STORAGE_KEY = 'brooks.onboarding.completed';
 
 type Status = 'unknown' | 'pending' | 'completed';
 
@@ -40,11 +43,16 @@ type AuthMeResponse = {
 export default function OnboardingProvider({ children }: { children: ReactNode }) {
   const { user, isLoading: userLoading } = useUser();
   const { token, loading: tokenLoading } = useAccessToken();
+  const pathname = usePathname();
   const [status, setStatus] = useState<Status>('unknown');
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage.getItem(LOCAL_STORAGE_KEY) === 'true') {
+      setStatus('completed');
+      return;
+    }
     if (userLoading || tokenLoading) return;
     if (!user || !token) {
       setStatus('unknown');
@@ -54,7 +62,14 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     api.get<AuthMeResponse>('/api/auth/me', token)
       .then((me) => {
         if (cancelled) return;
-        setStatus(me.onboardingCompleted ? 'completed' : 'pending');
+        if (me.onboardingCompleted) {
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(LOCAL_STORAGE_KEY, 'true');
+          }
+          setStatus('completed');
+        } else {
+          setStatus('pending');
+        }
       })
       .catch(() => {
         if (cancelled) return;
@@ -68,12 +83,15 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
 
   useEffect(() => {
     if (status !== 'pending' || isActive) return;
+    // Only fire the welcome on /maps (post-auth landing for new users).
+    // The user-clicked Help link calls start() directly, bypassing this gate.
+    if (!pathname || !pathname.startsWith('/maps')) return;
     const timer = setTimeout(() => {
       setIsActive(true);
       setCurrentStepIndex(0);
-    }, 1000);
+    }, 800);
     return () => clearTimeout(timer);
-  }, [status, isActive]);
+  }, [status, isActive, pathname]);
 
   const start = useCallback(() => {
     setIsActive(true);
@@ -89,11 +107,14 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   }, []);
 
   const persistComplete = useCallback(async () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, 'true');
+    }
     if (!token) return;
     try {
       await api.post('/api/me/onboarding/complete', undefined, token);
     } catch {
-      // Best-effort. If it fails, the worst case is the tour replays next session.
+      // localStorage already gates re-firing across reloads; backend sync is best-effort.
     }
   }, [token]);
 

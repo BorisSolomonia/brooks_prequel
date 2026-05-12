@@ -645,12 +645,16 @@ export default function MapsExperience({
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const { currentStep, isActive: tourActive } = useOnboarding();
 
-  // When the onboarding tour reaches the "Create a memory" step, force-open
-  // the mobile maps panel so the [data-tour="memory-create"] button is
-  // actually rendered with non-zero dimensions — otherwise the spotlight
-  // engine can't find a visible target on phones.
+  // Onboarding tour: step 4a is a centered "watch the panel slide up" intro;
+  // we close the panel first, then open it after ~700ms so the user sees the
+  // motion. Step 4b spotlights the create-memory button — keep the panel open.
   useEffect(() => {
     if (!tourActive || !currentStep) return;
+    if (currentStep.kind === 'centered' && (currentStep as { id?: string }).id === 'memory-intro') {
+      setMobilePanelOpen(false);
+      const t = setTimeout(() => setMobilePanelOpen(true), 700);
+      return () => clearTimeout(t);
+    }
     if (currentStep.kind === 'spotlight' && currentStep.selector === '[data-tour="memory-create"]') {
       setMobilePanelOpen(true);
     }

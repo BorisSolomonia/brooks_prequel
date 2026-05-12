@@ -22,10 +22,31 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   const isLast = stepIndex === totalSteps - 1;
 
   useEffect(() => {
-    if ('route' in step && step.route && pathname !== step.route) {
+    if (!('route' in step) || !step.route) return;
+    const targetPath = step.route.split('?')[0];
+    if (pathname !== targetPath) {
       router.push(step.route);
     }
   }, [step, pathname, router]);
+
+  useEffect(() => {
+    if (step.kind === 'welcome') return;
+    const sideEffect = (step as { sideEffect?: { kind: string; selector?: string; ms?: number } }).sideEffect;
+    if (!sideEffect) return;
+    if (sideEffect.kind === 'click' && sideEffect.selector) {
+      const t = setTimeout(() => {
+        const candidates = document.querySelectorAll(sideEffect.selector!);
+        for (const cand of Array.from(candidates) as HTMLElement[]) {
+          const r = cand.getBoundingClientRect();
+          if (r.width > 0 || r.height > 0) {
+            cand.click();
+            break;
+          }
+        }
+      }, 200);
+      return () => clearTimeout(t);
+    }
+  }, [step]);
 
   useEffect(() => {
     if (step.kind !== 'spotlight') {
@@ -120,7 +141,8 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
               left: targetRect!.left,
               width: targetRect!.width,
               height: targetRect!.height,
-              boxShadow: '0 0 0 9999px rgba(0,0,0,0.42)',
+              boxShadow:
+                '0 0 0 2px rgb(var(--brand-500)), 0 0 0 9999px rgba(0,0,0,0.5)',
             }}
           />
           <div

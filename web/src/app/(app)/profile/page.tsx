@@ -136,7 +136,7 @@ function ProfilePageInner() {
       )}
 
       {activeTab === 'ai-keys' && (
-        <div>
+        <div data-tour="ai-keys-panel">
           <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-1">AI Provider Keys</h2>
           <AiKeysPanel />
         </div>
