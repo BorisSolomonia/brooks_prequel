@@ -283,15 +283,16 @@ function DaysSection({
         <h2 className="text-lg font-semibold text-ig-text-primary">Itinerary</h2>
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-ig-text-tertiary">{guide.dayCount} days, {guide.placeCount} places</span>
-          {aiKeys.length > 0 && (
-            <button
-              onClick={onToggleAiPanel}
-              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] lg:min-h-0 lg:py-1 lg:text-xs"
-            >
-              <span>✨</span>
-              <span>{showAiPanel ? 'Hide AI' : 'Create with AI'}</span>
-            </button>
-          )}
+          <button
+            data-tour="ai-button-in-guide"
+            onClick={onToggleAiPanel}
+            disabled={aiKeys.length === 0}
+            title={aiKeys.length === 0 ? 'Add an AI provider key in Profile → AI Keys to enable' : undefined}
+            className="flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent lg:min-h-0 lg:py-1 lg:text-xs"
+          >
+            <span>✨</span>
+            <span>{showAiPanel ? 'Hide AI' : 'Create with AI'}</span>
+          </button>
         </div>
       </div>
 

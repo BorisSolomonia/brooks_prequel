@@ -645,17 +645,33 @@ export default function MapsExperience({
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const { currentStep, isActive: tourActive } = useOnboarding();
 
-  // Onboarding tour: step 4a is a centered "watch the panel slide up" intro;
-  // we close the panel first, then open it after ~700ms so the user sees the
-  // motion. Step 4b spotlights the create-memory button — keep the panel open.
+  // Onboarding tour: step 'memory-intro' closes the panel then slides it up so
+  // the user SEES the motion, and pulses a brand-color outline for 1.5s so the
+  // panel reads as the subject of the tour. Step 'memory-form' auto-opens the
+  // creation form. Step 'memory-button' keeps the panel open.
   useEffect(() => {
     if (!tourActive || !currentStep) return;
-    if (currentStep.kind === 'centered' && (currentStep as { id?: string }).id === 'memory-intro') {
+    const stepId = (currentStep as { id?: string }).id;
+    if (currentStep.kind === 'centered' && stepId === 'memory-intro') {
       setMobilePanelOpen(false);
-      const t = setTimeout(() => setMobilePanelOpen(true), 700);
-      return () => clearTimeout(t);
+      const open = setTimeout(() => {
+        setMobilePanelOpen(true);
+        const panelEl = document.querySelector('[data-tour="memory-panel"]') as HTMLElement | null;
+        if (panelEl) {
+          panelEl.setAttribute('data-tour-panel-lit', '1');
+          setTimeout(() => panelEl.removeAttribute('data-tour-panel-lit'), 1800);
+        }
+      }, 700);
+      return () => {
+        clearTimeout(open);
+        const panelEl = document.querySelector('[data-tour="memory-panel"]') as HTMLElement | null;
+        if (panelEl) panelEl.removeAttribute('data-tour-panel-lit');
+      };
     }
     if (currentStep.kind === 'spotlight' && currentStep.selector === '[data-tour="memory-create"]') {
+      setMobilePanelOpen(true);
+    }
+    if (currentStep.kind === 'spotlight' && currentStep.selector === '[data-tour="memory-form"]') {
       setMobilePanelOpen(true);
     }
   }, [tourActive, currentStep]);
@@ -1478,7 +1494,7 @@ export default function MapsExperience({
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      <div className="mw-panel absolute inset-x-2 bottom-3 z-20 max-h-[72dvh] overflow-hidden rounded-[28px] p-3 backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4">
+      <div data-tour="memory-panel" className="mw-panel absolute inset-x-2 bottom-3 z-20 max-h-[72dvh] overflow-hidden rounded-[28px] p-3 backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4">
         <button
           type="button"
           onClick={() => setMobilePanelOpen((open) => !open)}
@@ -1540,7 +1556,7 @@ export default function MapsExperience({
           </button>
         </div>
         {createMemoryOpen && (
-          <div className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
+          <div data-tour="memory-form" className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
             <p className="mw-eyebrow text-[11px]">New memory</p>
             <textarea
               value={memoryText}

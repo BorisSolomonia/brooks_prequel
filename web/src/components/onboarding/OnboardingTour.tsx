@@ -259,6 +259,16 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
           animation: onboardHighlight 700ms ease-out;
           transition: outline-color 200ms;
         }
+        @keyframes tourPanelLit {
+          0% { box-shadow: 0 0 0 0 rgb(var(--brand-500) / 0.55); outline-color: rgb(var(--brand-500) / 0); }
+          30% { box-shadow: 0 0 0 6px rgb(var(--brand-500) / 0.35); outline-color: rgb(var(--brand-500)); }
+          100% { box-shadow: 0 0 0 18px rgb(var(--brand-500) / 0); outline-color: rgb(var(--brand-500) / 0); }
+        }
+        [data-tour-panel-lit] {
+          outline: 3px solid rgb(var(--brand-500));
+          outline-offset: -1px;
+          animation: tourPanelLit 1.5s ease-out;
+        }
       `}</style>
     </div>
   );
