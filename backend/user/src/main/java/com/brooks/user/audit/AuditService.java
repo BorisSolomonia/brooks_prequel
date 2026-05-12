@@ -1,13 +1,14 @@
 package com.brooks.user.audit;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 
 @Service
@@ -22,7 +23,6 @@ public class AuditService {
     public static final String EVENT_ACCOUNT_DELETED = "ACCOUNT_DELETED";
 
     private final AuditEventRepository repository;
-    private final ObjectProvider<HttpServletRequest> requestProvider;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(UUID userId, String eventType, String metadata) {
@@ -30,7 +30,7 @@ public class AuditService {
             AuditEvent event = new AuditEvent();
             event.setUserId(userId);
             event.setEventType(eventType);
-            HttpServletRequest req = requestProvider.getIfAvailable();
+            HttpServletRequest req = currentRequest();
             if (req != null) {
                 event.setIpAddress(extractClientIp(req));
                 String ua = req.getHeader("User-Agent");
@@ -46,6 +46,18 @@ public class AuditService {
 
     public void record(UUID userId, String eventType) {
         record(userId, eventType, null);
+    }
+
+    private static HttpServletRequest currentRequest() {
+        try {
+            var attrs = RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof ServletRequestAttributes sra) {
+                return sra.getRequest();
+            }
+        } catch (Exception ignored) {
+            // Outside a request context (startup, scheduled task) — fine, no IP/UA to capture.
+        }
+        return null;
     }
 
     private static String extractClientIp(HttpServletRequest req) {
