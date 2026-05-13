@@ -148,6 +148,48 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
             {guide ? 'Edit Guide' : 'New Guide'}
           </h1>
           <div className="flex flex-wrap items-center gap-3">
+            {/* Editor-header AI button. Always rendered (even on /guides/new before the
+             * guide object exists) so the onboarding tour spotlight can find it, and so
+             * users immediately discover the AI workflow. Three states:
+             *   no AI key       → link to /profile?tab=ai-keys ("Connect AI")
+             *   key but !guide  → disabled with helper text
+             *   key and guide   → toggle the AI panel
+             */}
+            {aiKeys.length === 0 ? (
+              <a
+                data-tour="ai-button-in-guide"
+                href="/profile?tab=ai-keys"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-600 hover:shadow-lg"
+              >
+                <span className="text-base leading-none">✨</span>
+                <span>Connect AI</span>
+              </a>
+            ) : !guide ? (
+              <button
+                data-tour="ai-button-in-guide"
+                type="button"
+                disabled
+                title="Save the guide first — then I can draft days, blocks, and places for you."
+                className="inline-flex min-h-11 cursor-not-allowed items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white opacity-60 shadow-md"
+              >
+                <span className="text-base leading-none">✨</span>
+                <span>Create with AI</span>
+              </button>
+            ) : (
+              <button
+                data-tour="ai-button-in-guide"
+                type="button"
+                onClick={() => setShowAiPanel((v) => !v)}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-md transition-colors ${
+                  showAiPanel
+                    ? 'border-2 border-brand-500 bg-brand-500/10 text-brand-500 hover:bg-brand-500/20'
+                    : 'bg-brand-500 text-white hover:bg-brand-600 hover:shadow-lg'
+                }`}
+              >
+                <span className="text-base leading-none">✨</span>
+                <span>{showAiPanel ? 'Hide AI' : 'Create with AI'}</span>
+              </button>
+            )}
             {guide && (
               <button
                 type="button"
@@ -287,7 +329,6 @@ function DaysSection({
           <span className="text-sm text-ig-text-tertiary">{guide.dayCount} days, {guide.placeCount} places</span>
           {aiKeys.length === 0 ? (
             <a
-              data-tour="ai-button-in-guide"
               href="/profile?tab=ai-keys"
               className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-600 hover:shadow-lg lg:min-h-0 lg:py-2 lg:text-xs"
             >
@@ -296,7 +337,6 @@ function DaysSection({
             </a>
           ) : (
             <button
-              data-tour="ai-button-in-guide"
               onClick={onToggleAiPanel}
               className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-md transition-colors lg:min-h-0 lg:py-2 lg:text-xs ${
                 showAiPanel
