@@ -645,34 +645,29 @@ export default function MapsExperience({
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const { currentStep, isActive: tourActive } = useOnboarding();
 
-  // Onboarding tour: step 'memory-intro' closes the panel then slides it up so
-  // the user SEES the motion, and pulses a brand-color outline for 1.5s so the
-  // panel reads as the subject of the tour. Step 'memory-form' auto-opens the
-  // creation form. Step 'memory-button' keeps the panel open.
+  // Onboarding tour wiring. Match on step.id (kind-agnostic so the same logic survives
+  // future centered/spotlight refactors).
   useEffect(() => {
     if (!tourActive || !currentStep) return;
     const stepId = (currentStep as { id?: string }).id;
-    if (currentStep.kind === 'centered' && stepId === 'memory-intro') {
+    if (stepId === 'memory-intro') {
+      // Close, then slide back up after 700ms so the user SEES the motion inside the
+      // spotlight cutout. ResizeObserver on the panel keeps the spotlight rect glued
+      // to the panel as it grows.
       setMobilePanelOpen(false);
-      const open = setTimeout(() => {
-        setMobilePanelOpen(true);
-        const panelEl = document.querySelector('[data-tour="memory-panel"]') as HTMLElement | null;
-        if (panelEl) {
-          panelEl.setAttribute('data-tour-panel-lit', '1');
-          setTimeout(() => panelEl.removeAttribute('data-tour-panel-lit'), 1800);
-        }
-      }, 700);
-      return () => {
-        clearTimeout(open);
-        const panelEl = document.querySelector('[data-tour="memory-panel"]') as HTMLElement | null;
-        if (panelEl) panelEl.removeAttribute('data-tour-panel-lit');
-      };
+      const open = setTimeout(() => setMobilePanelOpen(true), 700);
+      return () => clearTimeout(open);
     }
-    if (currentStep.kind === 'spotlight' && currentStep.selector === '[data-tour="memory-create"]') {
+    if (stepId === 'memory-form') {
+      // Idempotent: set both states to true so Back-navigation never accidentally
+      // closes either via a toggle.
       setMobilePanelOpen(true);
+      setCreateMemoryOpen(true);
+      return;
     }
-    if (currentStep.kind === 'spotlight' && currentStep.selector === '[data-tour="memory-form"]') {
+    if (stepId === 'memory-button') {
       setMobilePanelOpen(true);
+      return;
     }
   }, [tourActive, currentStep]);
   const [activeLayers, setActiveLayers] = useState<MapLayerState>(DEFAULT_LAYERS);

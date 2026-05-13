@@ -3,7 +3,9 @@ export type TourPlacement = 'top' | 'bottom' | 'left' | 'right' | 'auto';
 export type TourSideEffect =
   | { kind: 'click'; selector: string }
   | { kind: 'sequentialHighlight'; selector: string }
-  | { kind: 'discoverCreator' }
+  // Fetches /api/tour/sample-creator and navigates. `route` is a template; {username}
+  // is substituted with the fetched username. Default = '/creators/{username}'.
+  | { kind: 'discoverCreator'; route?: string }
   | { kind: 'wait'; ms: number };
 
 export type WelcomeStep = {
@@ -60,7 +62,8 @@ export const tourSteps: TourStep[] = [
     placement: 'top',
     title: 'Create a hidden memory',
     body: 'Fill in your message, optional photo or voice, then Save. Share the link — friends unlock it only when they arrive at this spot.',
-    sideEffect: { kind: 'click', selector: '[data-tour="memory-create"]' },
+    // The form is opened idempotently by MapsExperience based on step.id — no click side-effect
+    // (a toggle click would CLOSE the form when the user goes back to this step).
   },
   {
     kind: 'spotlight',
@@ -74,11 +77,13 @@ export const tourSteps: TourStep[] = [
   {
     kind: 'spotlight',
     id: 'creators',
-    route: '/search/creators?q=brooks',
     selector: '[data-tour="first-creator-card"]',
     placement: 'bottom',
     title: 'Sample creator',
     body: 'This is a creator on Brooks. Tap a card to visit their profile.',
+    // Discover any real creator on prod and route to /search/creators?q=<that creator's
+    // username> so the search ALWAYS returns at least one result regardless of seed state.
+    sideEffect: { kind: 'discoverCreator', route: '/search/creators?q={username}' },
   },
   {
     kind: 'spotlight',

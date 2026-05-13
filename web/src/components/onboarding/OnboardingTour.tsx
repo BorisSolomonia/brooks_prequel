@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, CSSProperties } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { tourSteps, type TourStep } from './tourSteps';
 import { useOnboarding } from './OnboardingProvider';
 
@@ -18,16 +18,20 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   const { next, prev, skip, complete, totalSteps } = useOnboarding();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const isLast = stepIndex === totalSteps - 1;
 
   useEffect(() => {
     if (!('route' in step) || !step.route) return;
-    const targetPath = step.route.split('?')[0];
-    if (pathname !== targetPath) {
+    const [targetPath, targetQuery = ''] = step.route.split('?');
+    const currentQuery = searchParams.toString();
+    // Push if pathname differs OR if the target has a specific query that doesn't match
+    // (e.g. /profile?tab=ai-keys needs to switch tabs even when already on /profile).
+    if (pathname !== targetPath || (targetQuery && currentQuery !== targetQuery)) {
       router.push(step.route);
     }
-  }, [step, pathname, router]);
+  }, [step, pathname, router, searchParams]);
 
   useEffect(() => {
     if (step.kind === 'welcome') return;
@@ -35,14 +39,17 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     if (!sideEffect) return;
     if (sideEffect.kind === 'discoverCreator') {
       let cancelled = false;
+      const template = (sideEffect as { route?: string }).route ?? '/creators/{username}';
       (async () => {
         try {
           const res = await fetch('/api/tour/sample-creator');
           if (!res.ok) return;
           const data = (await res.json()) as { username?: string };
           if (cancelled || !data?.username) return;
-          if (pathname !== `/creators/${data.username}`) {
-            router.push(`/creators/${data.username}`);
+          const destination = template.replace('{username}', encodeURIComponent(data.username));
+          const destinationPath = destination.split('?')[0];
+          if (pathname !== destinationPath) {
+            router.push(destination);
           }
         } catch {
           // Network or parse error — fall back to centered overlay; user can still continue.
