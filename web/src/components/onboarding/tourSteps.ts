@@ -44,11 +44,13 @@ export const tourSteps: TourStep[] = [
     body: 'Quick tour. Skip anytime.',
   },
   {
-    kind: 'centered',
+    kind: 'spotlight',
     id: 'memory-intro',
     route: '/maps',
+    selector: '[data-tour="memory-panel"]',
+    placement: 'auto',
     title: 'Memories panel',
-    body: 'Watch — the panel slides up from the bottom. It lights up so you know where it lives.',
+    body: 'This panel slides up from the bottom. It holds your memories and nearby guides.',
   },
   {
     kind: 'spotlight',
@@ -97,23 +99,13 @@ export const tourSteps: TourStep[] = [
     sideEffect: { kind: 'sequentialHighlight', selector: '[data-tour="creator-guides-list"]' },
   },
   {
-    kind: 'centered',
+    kind: 'spotlight',
     id: 'add-to-calendar',
-    route: '/trips',
+    route: '/trips/preview',
+    selector: '[data-tour="add-to-calendar"]',
+    placement: 'bottom',
     title: 'Add to Calendar',
-    body: 'After buying a guide, open any trip from this page. The Add to Calendar button at the top syncs with Google Calendar or downloads an .ics file.',
-    illustration: `<svg viewBox="0 0 280 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trip page with Add to Calendar button highlighted">
-      <rect x="0.5" y="0.5" width="279" height="129" rx="10" fill="rgb(var(--bg-primary))" stroke="rgb(var(--brand-200))"/>
-      <text x="14" y="28" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="rgb(var(--text-primary))">48 Hours in Tbilisi</text>
-      <text x="14" y="44" font-family="system-ui,sans-serif" font-size="8" fill="rgb(var(--text-tertiary))">Tbilisi • 2 days • 6 places</text>
-      <rect x="14" y="58" width="86" height="22" rx="6" fill="none" stroke="rgb(var(--brand-300))"/>
-      <text x="57" y="73" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="rgb(var(--text-secondary))">Open in Maps</text>
-      <rect x="108" y="56" width="118" height="26" rx="7" fill="rgb(var(--brand-500))" stroke="rgb(var(--brand-600))" stroke-width="1.5"/>
-      <text x="167" y="72" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#fff">📅 Add to Calendar</text>
-      <rect x="105" y="53" width="124" height="32" rx="8" fill="none" stroke="rgb(var(--brand-500))" stroke-width="2" stroke-dasharray="3 3" opacity="0.85"/>
-      <path d="M167 96 L167 110 M161 104 L167 110 L173 104" stroke="rgb(var(--brand-500))" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <text x="167" y="124" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" font-weight="700" fill="rgb(var(--brand-500))" letter-spacing="0.8">TAP HERE</text>
-    </svg>`,
+    body: 'Tap here to sync this trip with Google Calendar or download an .ics file.',
   },
   {
     kind: 'spotlight',

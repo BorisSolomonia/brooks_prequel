@@ -11,7 +11,7 @@ const SPOTLIGHT_PADDING = 10;
 const TOOLTIP_OFFSET = 14;
 const TOOLTIP_WIDTH = 280;
 const TOOLTIP_HEIGHT_ESTIMATE = 180;
-const POLL_MAX_ATTEMPTS = 45;
+const POLL_MAX_ATTEMPTS = 120;
 
 export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   const step = tourSteps[stepIndex];
@@ -94,15 +94,16 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   }, [step]);
 
   useEffect(() => {
-    if (step.kind !== 'spotlight') {
-      setTargetRect(null);
-      return;
-    }
+    // Clear any prior rect synchronously so the spotlight never briefly highlights an element
+    // on the previous page during navigation.
+    setTargetRect(null);
+    if (step.kind !== 'spotlight') return;
 
     let frame: number | null = null;
     let attempts = 0;
-
     let scrolled = false;
+    let observedEl: HTMLElement | null = null;
+    let resizeObserver: ResizeObserver | null = null;
     const measure = () => {
       const candidates = document.querySelectorAll(step.selector);
       let el: HTMLElement | null = null;
@@ -129,6 +130,24 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
         width: rect.width + SPOTLIGHT_PADDING * 2,
         height: rect.height + SPOTLIGHT_PADDING * 2,
       });
+      // Keep the rect fresh when the target itself resizes (e.g. a panel that slides open
+      // after the first measure already succeeded on its collapsed state).
+      if (el !== observedEl && typeof ResizeObserver !== 'undefined') {
+        if (resizeObserver) resizeObserver.disconnect();
+        observedEl = el;
+        const target = el;
+        resizeObserver = new ResizeObserver(() => {
+          const fresh = target.getBoundingClientRect();
+          if (fresh.width === 0 && fresh.height === 0) return;
+          setTargetRect({
+            top: fresh.top - SPOTLIGHT_PADDING,
+            left: fresh.left - SPOTLIGHT_PADDING,
+            width: fresh.width + SPOTLIGHT_PADDING * 2,
+            height: fresh.height + SPOTLIGHT_PADDING * 2,
+          });
+        });
+        resizeObserver.observe(target);
+      }
       return true;
     };
 
@@ -149,10 +168,11 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     window.addEventListener('scroll', onChange, true);
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
+      if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener('resize', onChange);
       window.removeEventListener('scroll', onChange, true);
     };
-  }, [step, stepIndex]);
+  }, [step, stepIndex, pathname]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -187,7 +207,7 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
               width: targetRect!.width,
               height: targetRect!.height,
               boxShadow:
-                '0 0 0 2px rgb(var(--brand-500)), 0 0 0 9999px rgba(0,0,0,0.5)',
+                '0 0 0 3px rgb(var(--brand-500)), 0 0 0 9999px rgba(0,0,0,0.5)',
             }}
           />
           <div
