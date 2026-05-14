@@ -6,7 +6,10 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useCurrency } from '@/hooks/useCurrency';
 import Spinner from '@/components/ui/Spinner';
+import GooglePayButton from '@/components/ui/GooglePayButton';
 import type { GuideCheckoutSessionResponse } from '@/types';
+
+const GOOGLE_PAY_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_PAY_ENABLED === 'true';
 
 interface BuyButtonProps {
   guideId: string;
@@ -22,7 +25,7 @@ interface PaidCheckoutResponse {
   sessionId: string;
 }
 
-export default function BuyButton({ guideId, priceCents, salePriceCents, saleEndsAt, token }: BuyButtonProps) {
+export default function BuyButton({ guideId, priceCents, currency, salePriceCents, saleEndsAt, token }: BuyButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -33,6 +36,7 @@ export default function BuyButton({ guideId, priceCents, salePriceCents, saleEnd
 
   const effectivePrice = saleActive ? salePriceCents : priceCents;
   const isFree = effectivePrice === 0;
+  const showGooglePay = GOOGLE_PAY_ENABLED && !isFree && acceptedTerms;
 
   const handleBuy = async () => {
     if (!acceptedTerms) return;
@@ -86,6 +90,16 @@ export default function BuyButton({ guideId, priceCents, salePriceCents, saleEnd
           .
         </span>
       </label>
+      {showGooglePay && effectivePrice !== null && effectivePrice !== undefined && (
+        <GooglePayButton
+          guideId={guideId}
+          priceCents={effectivePrice}
+          currency={currency}
+          token={token}
+          onSuccess={(tripId) => router.push(`/trips/${tripId}`)}
+          onFallback={() => { /* user can still tap the iPay button below */ }}
+        />
+      )}
       <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
         <button
           data-tour="guide-buy-button"

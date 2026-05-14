@@ -15,10 +15,13 @@
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",
     "@capacitor/android": "^6.2.1",
+    "@capacitor/browser": "^6.0.4",
     "@capacitor/cli": "^6.2.1",
     "@capacitor/core": "^6.2.1",
     "@capacitor/ios": "^6.2.1",
+    "@capacitor/push-notifications": "^6.0.4",
     "@capacitor/share": "^6.0.4",
+    "@capacitor/splash-screen": "^6.0.3",
     "clsx": "^2.1.1",
     "mapbox-gl": "^3.21.0",
     "next": "14.2.25",

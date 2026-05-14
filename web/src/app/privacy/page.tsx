@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { compliance } from '@/lib/compliance';
 
 export const metadata = {
@@ -43,6 +44,13 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-display text-lg font-black text-ig-text-primary">Your rights</h2>
           <p>You can request access to, correction of, or deletion of your account data by writing to {compliance.email}. We will respond within {compliance.supportResponseTime}. You can disconnect optional integrations (such as Google Calendar) from inside the app at any time. Deleting your account removes your profile, purchases, and uploaded content from our active database; backup copies may persist for up to 30 days before being purged.</p>
+          <p className="mt-2">Self-service account deletion: signed-in users can delete from <Link href="/settings/account/delete" className="text-brand-500 underline hover:text-brand-400">Settings &rarr; Delete account</Link>. If you have lost access, request deletion at <Link href="/account/delete" className="text-brand-500 underline hover:text-brand-400">{compliance.domain}/account/delete</Link> — we email a confirmation link to the address on file.</p>
+        </section>
+
+        <section>
+          <h2 className="font-display text-lg font-black text-ig-text-primary">Brooks Android app</h2>
+          <p>The Brooks Android application (package <code>uk.brooksweb.app</code>) is a thin shell that loads {compliance.domain} inside a secure WebView. The native shell additionally requests, only when relevant: notification permission (to deliver booking and trip reminders), and location permission (to centre the map on your current position). Neither permission is required to use the app. Location coordinates sent to Mapbox to render tiles are subject to Mapbox&rsquo;s privacy policy. Apple/Google Play Store identifiers (install ID, device language, OS version) are processed by the respective store and not collected by Brooks beyond standard crash reporting.</p>
+          <p className="mt-2">In-app payments inside the Brooks Android app use the same Bank of Georgia iPay processor as the web site; Google Pay, where offered, is a wallet that tokenises your card and forwards the token to Bank of Georgia iPay for the actual charge — Brooks never receives or stores your card details.</p>
         </section>
 
         <section>

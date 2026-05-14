@@ -1,12 +1,16 @@
 'use client';
 
+import { openExternalAuth } from '@/lib/capacitor';
+
 export default function LoginPage() {
   const handleLogin = () => {
-    window.location.href = '/api/auth/login';
+    void openExternalAuth(`${window.location.origin}/api/auth/login`);
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = '/api/auth/login?connection=google-oauth2';
+    void openExternalAuth(
+      `${window.location.origin}/api/auth/login?connection=google-oauth2`,
+    );
   };
 
   return (
