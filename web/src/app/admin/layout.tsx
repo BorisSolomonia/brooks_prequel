@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (role !== 'ADMIN') redirect('/');
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh">
       <aside className="w-56 shrink-0 border-r-2 border-[var(--border)] bg-[var(--bg-secondary)] px-4 py-6">
         <p className="mw-eyebrow mb-4">Admin</p>
         <AdminNav />

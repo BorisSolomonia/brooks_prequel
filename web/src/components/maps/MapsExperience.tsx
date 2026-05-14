@@ -1489,7 +1489,7 @@ export default function MapsExperience({
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      <div data-tour="memory-panel" className="mw-panel absolute inset-x-2 bottom-3 z-20 max-h-[72dvh] overflow-hidden rounded-[28px] p-3 backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4">
+      <div data-tour="memory-panel" className={`mw-panel absolute inset-x-2 bottom-3 z-20 ${createMemoryOpen ? 'max-h-[92dvh]' : 'max-h-[72dvh]'} overflow-hidden rounded-[28px] p-3 backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4`}>
         <button
           type="button"
           onClick={() => setMobilePanelOpen((open) => !open)}
@@ -1511,7 +1511,7 @@ export default function MapsExperience({
             {activeLayers.guides ? viewportPins.length : viewportMemories.length} visible
           </button>
         </div>
-        <div className={`${mobilePanelOpen ? 'block' : 'hidden'} max-h-[calc(72dvh_-_6rem)] overflow-y-auto overscroll-contain pr-1 md:block md:max-h-[calc(100dvh_-_170px)]`}>
+        <div className={`${mobilePanelOpen ? 'block' : 'hidden'} ${createMemoryOpen ? 'max-h-[calc(92dvh_-_6rem)]' : 'max-h-[calc(72dvh_-_6rem)]'} overflow-y-auto overscroll-contain pr-1 md:block md:max-h-[calc(100dvh_-_170px)]`}>
         <div className="mt-4 rounded-3xl border-2 border-ig-border bg-ig-primary/80 p-3">
           <div className="flex items-center justify-between gap-3">
             <p className="mw-eyebrow text-[11px]">Map layers</p>
@@ -1552,35 +1552,39 @@ export default function MapsExperience({
         </div>
         {createMemoryOpen && (
           <div data-tour="memory-form" className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
-            <p className="mw-eyebrow text-[11px]">New memory</p>
+            <div className="flex items-baseline justify-between">
+              <p className="mw-eyebrow text-[11px]">New memory</p>
+              <span className="text-[11px] text-ig-text-tertiary">{memoryText.length}/500</span>
+            </div>
             <textarea
               value={memoryText}
               onChange={(event) => setMemoryText(event.target.value.slice(0, 500))}
               placeholder="Write the memory someone will unlock here..."
-              className="mt-3 min-h-24 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+              className="mt-2 min-h-20 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500 md:min-h-24"
             />
-            <div className="mt-2 flex items-center justify-between text-xs text-ig-text-tertiary">
-              <span>{Array.isArray(userCoordinates) ? 'Using your current map location' : 'Location required'}</span>
-              <span>{memoryText.length}/500</span>
+            <p className="mt-1 text-[11px] text-ig-text-tertiary">
+              {Array.isArray(userCoordinates) ? 'Using your current map location' : 'Location required'}
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <input
+                value={memoryPlaceLabel}
+                onChange={(event) => setMemoryPlaceLabel(event.target.value)}
+                placeholder="Place label"
+                className="min-h-11 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+              />
+              <select
+                value={memoryVisibility}
+                onChange={(event) => setMemoryVisibility(event.target.value as MemoryVisibility)}
+                className="min-h-11 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+              >
+                <option value="SHARED_LINK">Hidden link</option>
+                <option value="FOLLOWERS_PUBLIC">Followers public</option>
+                <option value="PRIVATE">Private</option>
+              </select>
             </div>
-            <input
-              value={memoryPlaceLabel}
-              onChange={(event) => setMemoryPlaceLabel(event.target.value)}
-              placeholder="Place label, optional"
-              className="mt-3 min-h-11 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
-            />
-            <select
-              value={memoryVisibility}
-              onChange={(event) => setMemoryVisibility(event.target.value as MemoryVisibility)}
-              className="mt-3 min-h-11 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
-            >
-              <option value="SHARED_LINK">Hidden link</option>
-              <option value="FOLLOWERS_PUBLIC">Followers public</option>
-              <option value="PRIVATE">Private</option>
-            </select>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary">
-                {memoryPhoto ? 'Photo added' : 'Add photo'}
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-ig-border px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
+                {memoryPhoto ? '✓ Photo' : 'Photo'}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -1588,8 +1592,8 @@ export default function MapsExperience({
                   onChange={(event) => void handlePhotoSelected(event.target.files?.[0] ?? null)}
                 />
               </label>
-              <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary">
-                {memoryAudio ? 'Audio added' : 'Upload audio'}
+              <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-ig-border px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
+                {memoryAudio ? '✓ Audio' : 'Audio'}
                 <input
                   type="file"
                   accept="audio/mpeg,audio/mp4,audio/webm,audio/ogg,audio/wav"
@@ -1597,14 +1601,14 @@ export default function MapsExperience({
                   onChange={(event) => void handleAudioSelected(event.target.files?.[0] ?? null)}
                 />
               </label>
+              <button
+                type="button"
+                onClick={recording ? stopRecording : startRecording}
+                className="flex min-h-11 items-center justify-center rounded-2xl border border-ig-border px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm"
+              >
+                {recording ? 'Stop' : memoryAudio ? 'Re-rec' : 'Record'}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={recording ? stopRecording : startRecording}
-              className="mt-2 min-h-11 w-full rounded-2xl border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-secondary transition hover:text-ig-text-primary"
-            >
-              {recording ? 'Stop recording' : memoryAudio ? 'Record again' : 'Record audio'}
-            </button>
             <button
               type="button"
               disabled={memoryBusy}

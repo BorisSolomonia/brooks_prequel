@@ -143,12 +143,12 @@ export default function SharedMemoryPage() {
     : '#';
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-ig-primary text-ig-text-secondary">Loading hidden memory...</div>;
+    return <div className="flex min-h-dvh items-center justify-center bg-ig-primary text-ig-text-secondary">Loading hidden memory...</div>;
   }
 
   if (!teaser || !teaser.available) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-ig-primary px-4">
+      <main className="flex min-h-dvh items-center justify-center bg-ig-primary px-4">
         <section className="max-w-md rounded-3xl border border-ig-border bg-ig-elevated p-6 text-center">
           <h1 className="text-2xl font-semibold text-ig-text-primary">Memory unavailable</h1>
           <p className="mt-3 text-sm text-ig-text-secondary">{teaser?.unavailableReason || error || 'This hidden memory cannot be opened.'}</p>
@@ -159,7 +159,7 @@ export default function SharedMemoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-ig-primary px-4 py-10">
+    <main className="min-h-dvh bg-ig-primary px-4 py-10">
       <section className="mx-auto max-w-xl rounded-[32px] border border-ig-border bg-ig-elevated p-6 shadow-xl">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 overflow-hidden rounded-full bg-ig-hover">

@@ -176,6 +176,20 @@ body {
 
 html {
   scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  /* Prevent iOS Safari auto-zoom of body text in landscape (-webkit- for older */
+  /* iOS, standard for everything else). Keeps user "Zoom" Reader gesture intact. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  /* Use dynamic viewport height so the body fills the visible area on iOS */
+  /* Safari without the classic 100vh / URL-bar gap. */
+  min-height: 100dvh;
+  /* Anti-aliased rendering on iOS — system default but explicit for parity. */
+  -webkit-font-smoothing: antialiased;
+  /* Prevent rubber-band over-scroll exposing white outside the design system. */
+  overscroll-behavior-y: none;
 }
 
 button,

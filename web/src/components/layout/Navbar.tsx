@@ -57,7 +57,7 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className="sticky top-0 z-50 border-b-2 border-ig-border bg-ig-elevated/95 backdrop-blur">
+    <nav className="sticky top-0 z-50 border-b-2 border-ig-border bg-ig-elevated/95 pt-safe-top backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-2 px-3 md:h-[60px] md:gap-4 md:px-4">
         <Link href="/" className="font-display shrink-0 text-base font-black uppercase tracking-[0.08em] text-brand-500 md:text-xl">
           Brooks

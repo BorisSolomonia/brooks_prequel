@@ -158,7 +158,13 @@ export default function LandingPage() {
 
         <nav
           className="absolute inset-x-0 top-0 z-20 flex items-start justify-between"
-          style={{ paddingLeft: 'clamp(20px, 4vw, 45px)', paddingRight: 'clamp(20px, 4vw, 45px)', paddingTop: 24 }}
+          style={{
+            paddingLeft: 'max(clamp(20px, 4vw, 45px), env(safe-area-inset-left))',
+            paddingRight: 'max(clamp(20px, 4vw, 45px), env(safe-area-inset-right))',
+            // Push the nav below the iPhone notch / Dynamic Island. 24px on Android
+            // / non-notched, 24+notch on iPhone X+ (47-59px depending on model).
+            paddingTop: 'calc(24px + env(safe-area-inset-top))',
+          }}
         >
           <div className="flex items-baseline" style={{ gap: 6 }}>
             <span className={anton.className} style={{ fontSize: 24, color: BLACK, letterSpacing: 1, lineHeight: 1 }}>
@@ -184,7 +190,16 @@ export default function LandingPage() {
           <HeroContent />
         </div>
 
-        <div className="lg:hidden relative z-10" style={{ padding: '86px clamp(22px, 7vw, 44px) 140px', maxWidth: 640 }}>
+        <div
+          className="lg:hidden relative z-10"
+          style={{
+            paddingTop: 'calc(86px + env(safe-area-inset-top))',
+            paddingLeft: 'max(clamp(22px, 7vw, 44px), env(safe-area-inset-left))',
+            paddingRight: 'max(clamp(22px, 7vw, 44px), env(safe-area-inset-right))',
+            paddingBottom: 'calc(140px + env(safe-area-inset-bottom))',
+            maxWidth: 640,
+          }}
+        >
           <HeroContent mobile />
           <div className="mt-5 flex gap-6">
             <Link href="/guides" className="inline-flex min-h-11 items-center text-sm font-black uppercase tracking-wide text-black">Guides</Link>

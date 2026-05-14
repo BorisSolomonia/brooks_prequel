@@ -14,7 +14,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <UserProvider>
       <OnboardingProvider>
         {!isLandingPage && <Navbar />}
-        <main className={isLandingPage ? '' : 'min-h-screen pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'}>{children}</main>
+        <main className={isLandingPage ? '' : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'}>{children}</main>
         {!isLandingPage && <Footer />}
       </OnboardingProvider>
     </UserProvider>

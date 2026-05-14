@@ -14,7 +14,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-ig-primary px-4">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-ig-primary px-4 pt-safe-top pb-safe-bottom">
       <div className="mw-card w-full max-w-md p-8">
         <h1 className="mw-section-title mb-2 text-center text-2xl">Welcome to Brooks</h1>
         <p className="mb-8 text-center text-ig-text-secondary">Sign in to start your journey</p>
