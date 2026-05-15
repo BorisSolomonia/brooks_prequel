@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { compliance } from '@/lib/compliance';
+import { useAccessToken } from '@/hooks/useAccessToken';
 import Spinner from '@/components/ui/Spinner';
 
 const CONFIRM_PHRASE = 'delete my account';
 
 export default function DeleteAccountPage() {
   const router = useRouter();
+  const { token } = useAccessToken();
   const [phrase, setPhrase] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,10 +23,14 @@ export default function DeleteAccountPage() {
 
   const handleSubmit = async () => {
     if (!phraseOk) return;
+    if (!token) {
+      setError('Not signed in. Refresh the page and try again.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      await api.post('/api/account/delete', { reason }, undefined);
+      await api.post('/api/account/delete', { reason }, token);
       setDone(true);
       setTimeout(() => router.push('/api/auth/logout'), 4000);
     } catch (err: unknown) {

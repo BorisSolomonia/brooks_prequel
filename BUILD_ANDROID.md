@@ -1,5 +1,9 @@
 # Build Brooks Android — first AAB
 
+> 🔔 **Status update (May 14 2026):** steps 1, 3–7, and most of 9 were executed on your behalf from the Brooks AI session. The Android shell exists at `web/android/`. The signing block in `app/build.gradle` is wired but key-less. See **`NEXT_STEPS_BUILD_AAB.md`** for the streamlined "what you actually still need to do" list — that's the daily checklist.
+>
+> This document remains the long-form reference; `NEXT_STEPS_BUILD_AAB.md` is the practical handoff.
+
 Run these on a machine with **JDK 17** and **Android Studio Ladybug+** (SDK Platform 35 installed). Steps marked `LOCAL` run on your machine; nothing here can be done from CI without a real keystore.
 
 ---
@@ -26,7 +30,7 @@ sdkmanager --list | grep "platforms;android-35"
 
 ---
 
-## 1. Install new Capacitor plugins
+## 1. Install new Capacitor plugins ✅ DONE
 
 From `web/`:
 ```bash
@@ -58,7 +62,7 @@ This populates every iOS + Android icon and splash density automatically using t
 
 ---
 
-## 3. Generate the Android shell
+## 3. Generate the Android shell ✅ DONE
 
 From `web/`:
 ```bash
@@ -69,7 +73,7 @@ This creates `web/android/`. Commit the folder (or .gitignore the `web/android/.
 
 ---
 
-## 4. Bump targetSdk to 35 (Play 2026 floor)
+## 4. Bump targetSdk to 35 (Play 2026 floor) ✅ DONE
 
 Edit `web/android/variables.gradle`:
 ```gradle
@@ -93,7 +97,7 @@ ext {
 
 ---
 
-## 5. AndroidManifest tweaks
+## 5. AndroidManifest tweaks ✅ DONE
 
 Open `web/android/app/src/main/AndroidManifest.xml` and:
 
@@ -120,7 +124,7 @@ c) **App label**: `android:label="Brooks"` on the `<application>` and the launch
 
 ---
 
-## 6. Sync web → native
+## 6. Sync web → native ✅ DONE (re-run after asset generation)
 
 From `web/`:
 ```bash
@@ -131,7 +135,7 @@ Run this every time you change `capacitor.config.ts` or update Capacitor plugins
 
 ---
 
-## 7. Versioning
+## 7. Versioning ✅ DONE
 
 Edit `web/android/app/build.gradle` inside `android { defaultConfig { ... } }`:
 ```gradle
@@ -146,7 +150,7 @@ For every subsequent upload to Play, increment `versionCode` by 1.
 
 ---
 
-## 8. Generate upload keystore (DO THIS ONCE, BACK IT UP)
+## 8. Generate upload keystore (DO THIS ONCE, BACK IT UP) — YOUR TURN
 
 > ⚠️ **You cannot recover this keystore. Losing it = losing the ability to ship updates forever.** Back it up to **two separate places** — a password manager AND offline storage.
 
@@ -170,7 +174,11 @@ You will be prompted for:
 
 ---
 
-## 9. Wire signing into Gradle
+## 9. Wire signing into Gradle ✅ PARTIALLY DONE — only `key.properties` is left for you
+
+The `app/build.gradle` already has the `signingConfigs.release` block, the `keystoreProperties` loader, and the `buildTypes.release` conditional. `key.properties.example` is on disk. The `.gitignore` already excludes `key.properties` + `*.jks`.
+
+**You still need to:** copy `key.properties.example` to `key.properties`, then fill in your real values from step 8 above.
 
 Create `web/android/key.properties` (gitignored):
 ```properties
@@ -215,7 +223,7 @@ key.properties
 
 ---
 
-## 10. Build the AAB
+## 10. Build the AAB — YOUR TURN
 
 From `web/android/`:
 ```bash

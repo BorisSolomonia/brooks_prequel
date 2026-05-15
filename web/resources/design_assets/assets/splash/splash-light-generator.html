@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Brooks Splash (Light)</title>
+<style>
+  body { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #fff6e5; }
+  canvas { border: 1px solid #ddd; max-width: 90vw; max-height: 90vh; }
+</style>
+</head>
+<body>
+<canvas id="c" width="2732" height="2732"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Muted Warhol light splash
+ctx.fillStyle = '#FFF6E5';
+ctx.fillRect(0, 0, 2732, 2732);
+
+ctx.save();
+ctx.translate(1366, 1366);
+
+// Large centered circle — muted pink
+ctx.fillStyle = '#C95A7D';
+ctx.beginPath();
+ctx.arc(0, 0, 520, 0, Math.PI * 2);
+ctx.fill();
+
+// "B" letterform
+ctx.fillStyle = '#FFF6E5';
+ctx.font = '700 700px Archivo, sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('B', 0, 16);
+
+// Accent dot
+ctx.fillStyle = '#D4AA3A';
+ctx.beginPath();
+ctx.arc(160, -110, 64, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.restore();
+
+// Wordmark below
+ctx.fillStyle = '#0E0E0E';
+ctx.font = '900 120px Archivo, sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+ctx.fillText('BROOKS', 1366, 2080);
+
+// Tagline
+ctx.fillStyle = '#6B6B6B';
+ctx.font = '400 48px Bricolage Grotesque, sans-serif';
+ctx.fillText('Travel guides from creators you trust', 1366, 2240);
+
+// Save as PNG
+setTimeout(() => {
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'brooks-splash-light-2732.png';
+    a.click();
+  });
+}, 100);
+</script>
+</body>
+</html>

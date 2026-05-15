@@ -1,5 +1,9 @@
 # Brooks Mobile App — Complete Build Guide
 
+> 🔔 **Repo state update (May 14 2026):** The Android side of this guide has been **partially executed** by the Brooks AI session. The Capacitor shell, manifest, gradle config, signing wiring, resources scaffold, and assetlinks placeholder are all in the repo. You no longer start from "blank slate" for Android — start from the **`NEXT_STEPS_BUILD_AAB.md`** checklist at the project root. The iOS sections of this guide are still applicable as-written.
+>
+> See `BUILD_ANDROID.md` for the long-form Android reference (with `✅ DONE` / `YOUR TURN` markers per step) and `NEXT_STEPS_BUILD_AAB.md` for the condensed handoff.
+
 This guide takes the existing **Brooks** Next.js web app at https://brooksweb.uk and turns it into real iOS + Android apps you can publish to the App Store and Google Play. It is written for someone with no mobile-development experience. Every command, every button click, every form field is here.
 
 If you follow this guide top to bottom you will end up with:

@@ -10,7 +10,7 @@
     "cap:sync": "cap sync",
     "cap:open:ios": "cap open ios",
     "cap:open:android": "cap open android",
-    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#C95A7D' --iconBackgroundColorDark '#0E0E0E' --splashBackgroundColor '#F7F1E7' --splashBackgroundColorDark '#0E0E0E'"
+    "cap:assets": "capacitor-assets generate --iconBackgroundColor \"#C95A7D\" --iconBackgroundColorDark \"#0E0E0E\" --splashBackgroundColor \"#F7F1E7\" --splashBackgroundColorDark \"#0E0E0E\""
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",
@@ -27,7 +27,8 @@
     "next": "14.2.25",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

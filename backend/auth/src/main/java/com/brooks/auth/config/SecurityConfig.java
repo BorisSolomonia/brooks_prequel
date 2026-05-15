@@ -63,6 +63,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/tour/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/webhooks/bog-ipay").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/media/local/**").permitAll()
+                // Public account-deletion endpoints — Play Console / App Store
+                // require an unauthenticated path for users who have lost
+                // access. Body validation + per-user logic lives in the
+                // service; never leaks whether an account exists.
+                .requestMatchers(HttpMethod.POST, "/api/account/delete-request").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/account/delete/confirm").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().denyAll()

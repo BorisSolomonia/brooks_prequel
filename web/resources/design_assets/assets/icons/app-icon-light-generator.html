@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Brooks App Icon (Light)</title>
+<style>
+  body { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f5f5f5; }
+  canvas { border: 1px solid #ddd; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1024" height="1024"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Muted Warhol light app icon
+// Background
+ctx.fillStyle = '#FFF6E5'; // cream
+ctx.fillRect(0, 0, 1024, 1024);
+
+// Centered "B" mark
+ctx.save();
+ctx.translate(512, 512);
+
+// Background circle — muted pink
+ctx.fillStyle = '#C95A7D';
+ctx.beginPath();
+ctx.arc(0, 0, 380, 0, Math.PI * 2);
+ctx.fill();
+
+// Inner "B" letterform — cream
+ctx.fillStyle = '#FFF6E5';
+ctx.font = '700 520px Archivo, sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('B', 0, 12);
+
+// Accent dot — muted gold
+ctx.fillStyle = '#D4AA3A';
+ctx.beginPath();
+ctx.arc(120, -80, 48, 0, Math.PI * 2);
+ctx.fill();
+
+ctx.restore();
+
+// Save as PNG
+setTimeout(() => {
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'brooks-icon-light-1024.png';
+    a.click();
+  });
+}, 100);
+</script>
+</body>
+</html>

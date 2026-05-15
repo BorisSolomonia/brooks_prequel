@@ -20,6 +20,7 @@ const desktopLinks = [
   { href: '/trips', label: 'Purchased guides', auth: true },
   { href: '/contact', label: 'Contact' },
   { href: '/profile', label: 'Profile', auth: true },
+  { href: '/settings', label: 'Settings', auth: true },
 ];
 
 const mobileTabs = [
@@ -122,6 +123,7 @@ export default function Navbar() {
                 <Link href="/guides" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">My Guides</Link>
                 <Link href="/trips" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Purchased guides</Link>
                 <Link href="/profile" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Profile</Link>
+                <Link href="/settings" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Settings</Link>
                 <Link href="/contact" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Contact</Link>
                 <a href="/api/auth/logout" className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
               </div>

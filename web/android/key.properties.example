@@ -1,0 +1,12 @@
+# Copy this file to web/android/key.properties (gitignored) once you have
+# generated your upload keystore with:
+#   keytool -genkey -v -keystore ~/brooks-upload.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias brooks-upload
+#
+# Fill in your real values below. NEVER commit key.properties — it contains
+# the password that unlocks your upload keystore.
+
+storeFile=/absolute/path/to/brooks-upload.jks
+storePassword=REPLACE_WITH_STORE_PASSWORD
+keyAlias=brooks-upload
+keyPassword=REPLACE_WITH_KEY_PASSWORD
