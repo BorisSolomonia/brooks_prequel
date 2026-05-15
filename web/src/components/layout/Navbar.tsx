@@ -6,6 +6,16 @@ import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import GlobalSearchBar from '@/components/layout/GlobalSearchBar';
 import ThemeToggle from '@/components/theme/ThemeToggle';
+import { openExternalAuth } from '@/lib/capacitor';
+
+// Shared click handler for any "Sign In" entry point. On web this behaves
+// like a normal anchor (browser navigates). On native (Capacitor), it
+// opens a Custom Tab — generic WebViews are rejected by Google's OAuth
+// page with "disallowed_useragent".
+function handleSignInClick(event: React.MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
+  void openExternalAuth(`${window.location.origin}/api/auth/login`);
+}
 
 function SearchBarFallback() {
   return (
@@ -99,6 +109,7 @@ export default function Navbar() {
               ) : (
                 <Link
                   href="/api/auth/login"
+                  onClick={handleSignInClick}
                   className="mw-button-primary rounded-md px-4 py-2 text-sm transition-colors"
                 >
                   Sign In
@@ -131,6 +142,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/api/auth/login"
+              onClick={handleSignInClick}
               className="mw-button-primary inline-flex h-12 items-center rounded-full px-4 text-sm transition-colors"
             >
               Sign In

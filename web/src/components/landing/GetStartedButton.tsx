@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Spinner from '@/components/ui/Spinner';
+import { openExternalAuth } from '@/lib/capacitor';
 
 const BLACK = '#050505';
 const YELLOW = '#D4AA3A';
@@ -12,7 +13,11 @@ export default function GetStartedButton({ mobile }: { mobile: boolean }) {
   const handleClick = () => {
     if (loggingIn) return;
     setLoggingIn(true);
-    window.location.href = '/api/auth/login';
+    // On web this is a plain location change. Inside the Capacitor WebView,
+    // openExternalAuth opens an Android Custom Tab — the only user agent
+    // Google's OAuth screen accepts. Generic WebViews are blocked with
+    // "disallowed_useragent" and render as "This page isn't working".
+    void openExternalAuth(`${window.location.origin}/api/auth/login`);
   };
 
   return (

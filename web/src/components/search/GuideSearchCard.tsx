@@ -4,6 +4,7 @@ import { useState } from 'react';
 import GuideCard from '@/components/ui/GuideCard';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
+import { openExternalAuth } from '@/lib/capacitor';
 import type { GuideSaveStatusResponse, GuideSearchResult } from '@/types';
 
 interface GuideSearchCardProps {
@@ -17,7 +18,7 @@ export default function GuideSearchCard({ guide }: GuideSearchCardProps) {
 
   const handleSaveClick = async () => {
     if (!token) {
-      window.location.href = '/api/auth/login';
+      void openExternalAuth(`${window.location.origin}/api/auth/login`);
       return;
     }
 
