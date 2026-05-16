@@ -1493,15 +1493,17 @@ export default function MapsExperience({
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      {/* ───────── Top-right hamburger trigger ─────────
+      {/* ───────── Top-LEFT hamburger trigger ─────────
           Opens the right-side drawer holding layer toggles, filters and the
-          viewport result list. Universal "this opens a menu/panel" affordance. */}
+          viewport result list. Placed top-LEFT because Mapbox renders its
+          zoom in/out + compass + geolocate controls top-right by default;
+          putting the hamburger on the right would overlap them. */}
       <button
         type="button"
         onClick={() => setDrawerOpen((open) => !open)}
         aria-label="Open guides, filters and layers"
         aria-expanded={drawerOpen}
-        className="absolute right-3 top-3 z-30 inline-flex h-touch w-touch items-center justify-center rounded-full border border-ig-border bg-ig-elevated/95 text-ig-text-primary shadow-[0_4px_16px_rgba(15,23,42,0.18)] backdrop-blur transition active:scale-95 md:right-4 md:top-4"
+        className="absolute left-3 top-3 z-30 inline-flex h-touch w-touch items-center justify-center rounded-full border border-ig-border bg-ig-elevated/95 text-ig-text-primary shadow-[0_4px_16px_rgba(15,23,42,0.18)] backdrop-blur transition active:scale-95 md:left-4 md:top-4"
       >
         <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <line x1="4" y1="7" x2="20" y2="7" />
@@ -1510,21 +1512,20 @@ export default function MapsExperience({
         </svg>
       </button>
 
-      {/* ───────── Bottom-centered "Create memory" pill ─────────
-          Always-visible primary creative action. Centered horizontally above
-          the bottom-tab nav. Hidden while the composer is open. */}
+      {/* ───────── Bottom-centered "Create a memory" pill ─────────
+          Always-visible primary creative action. Centered horizontally.
+          Sits 2rem (~32 dp) above the bottom-tab nav for comfortable Material 3
+          spacing — was 1rem previously which crowded the nav on Android where
+          safe-area-inset-bottom is 0. Hidden while the composer is open. */}
       {!createMemoryOpen && (
         <button
           type="button"
           data-tour="memory-create"
           onClick={() => setCreateMemoryOpen(true)}
-          className="absolute left-1/2 z-30 inline-flex min-h-touch -translate-x-1/2 items-center gap-2 rounded-full bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95"
-          style={{
-            bottom: 'calc(1rem + env(safe-area-inset-bottom))',
-          }}
+          className="absolute bottom-8 left-1/2 z-30 inline-flex min-h-touch -translate-x-1/2 items-center gap-2 rounded-full bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95"
         >
           <span aria-hidden className="text-base leading-none">+</span>
-          <span>Create memory</span>
+          <span>Create a memory</span>
         </button>
       )}
 
