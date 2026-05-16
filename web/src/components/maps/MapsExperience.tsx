@@ -1512,21 +1512,28 @@ export default function MapsExperience({
         </svg>
       </button>
 
-      {/* ───────── Bottom-centered "Create a memory" pill ─────────
-          Always-visible primary creative action. Centered horizontally.
-          Sits 2rem (~32 dp) above the bottom-tab nav for comfortable Material 3
-          spacing — was 1rem previously which crowded the nav on Android where
-          safe-area-inset-bottom is 0. Hidden while the composer is open. */}
+      {/* ───────── Bottom-centered "Create a memory" pill + separator ─────
+          Always-visible primary creative action, centered. Sits 3 rem (~48 dp)
+          above the bottom of the map container, with a thin centered hairline
+          1 rem above the bottom-tab nav so there's a clear visual gap +
+          divider between the action zone and the nav zone. Hidden while the
+          composer is open. */}
       {!createMemoryOpen && (
-        <button
-          type="button"
-          data-tour="memory-create"
-          onClick={() => setCreateMemoryOpen(true)}
-          className="absolute bottom-8 left-1/2 z-30 inline-flex min-h-touch -translate-x-1/2 items-center gap-2 rounded-full bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95"
-        >
-          <span aria-hidden className="text-base leading-none">+</span>
-          <span>Create a memory</span>
-        </button>
+        <>
+          <button
+            type="button"
+            data-tour="memory-create"
+            onClick={() => setCreateMemoryOpen(true)}
+            className="absolute bottom-12 left-1/2 z-30 inline-flex min-h-touch -translate-x-1/2 items-center gap-2 rounded-full bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95"
+          >
+            <span aria-hidden className="text-base leading-none">+</span>
+            <span>Create a memory</span>
+          </button>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-4 z-20 mx-auto h-px max-w-[60%] bg-ig-border/70"
+          />
+        </>
       )}
 
       {/* ───────── Bottom sheet (mobile) / left panel (desktop) ─────────
