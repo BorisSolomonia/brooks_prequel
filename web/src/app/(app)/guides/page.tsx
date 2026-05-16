@@ -18,6 +18,8 @@ export default function MyGuidesPage() {
   const { token, loading: tokenLoading } = useAccessToken();
   const { formatAmount } = useCurrency();
   const router = useRouter();
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const [library, setLibrary] = useState<GuideLibraryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<LibraryTab>('created');
@@ -92,9 +94,6 @@ export default function MyGuidesPage() {
     }
     return `/guides/${item.id}/view`;
   };
-
-  const toast = useToast();
-  const { confirm } = useConfirm();
 
   const handleDeleteGuide = async (guide: GuideLibraryItem) => {
     if (!token || deletingGuideId) return;
