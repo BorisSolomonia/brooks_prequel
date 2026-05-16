@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import type { GuidePlaceImage } from '@/types';
 
 interface Props {
@@ -55,9 +56,11 @@ export default function PlaceCarousel({ images, altPrefix }: Props) {
               className="relative h-14 w-14 flex-shrink-0 snap-center overflow-hidden md:h-16 md:w-16"
               title={image.caption || `${altPrefix} photo ${index + 1}`}
             >
-              <img
+              <Image
                 src={image.imageUrl}
                 alt={image.caption || `${altPrefix} photo ${index + 1}`}
+                width={64}
+                height={64}
                 className="h-full w-full object-cover"
               />
             </button>
@@ -90,9 +93,12 @@ export default function PlaceCarousel({ images, altPrefix }: Props) {
             className="relative flex w-full max-w-4xl flex-col items-center gap-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
+            <Image
               src={images[lightboxIndex].imageUrl}
               alt={images[lightboxIndex].caption || `${altPrefix} photo ${lightboxIndex + 1}`}
+              width={1600}
+              height={1200}
+              sizes="(max-width: 1024px) 100vw, 1024px"
               className="max-h-[80vh] w-auto max-w-full rounded-lg object-contain"
             />
             <div className="flex items-center gap-3">

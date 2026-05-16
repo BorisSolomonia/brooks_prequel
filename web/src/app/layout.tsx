@@ -48,6 +48,24 @@ export const viewport: Viewport = {
   ],
 };
 
+// Cross-origin hosts the WebView is guaranteed to hit early in the session.
+// Adding <link rel="preconnect"> kicks off DNS + TCP + TLS in parallel with
+// the initial HTML parse, saving 100-300 ms per host on first connection —
+// most impactful on mobile networks where setup cost dominates.
+const PRECONNECT_HOSTS = [
+  // Auth0 OAuth endpoints (login redirect happens early in the session).
+  // The exact tenant URL comes from AUTH0_ISSUER_BASE_URL but the host
+  // pattern *.us.auth0.com is correct for current production.
+  'https://dev-4zduxht0r6gq1f7f.us.auth0.com',
+  // Mapbox tile + API endpoints — pulled the moment /maps mounts.
+  'https://api.mapbox.com',
+  'https://events.mapbox.com',
+  // GCS-served images (user avatars, guide covers, memory photos).
+  'https://storage.googleapis.com',
+  // Google account profile pictures (for Auth0 Google logins).
+  'https://lh3.googleusercontent.com',
+];
+
 export default function RootLayout({
   children,
 }: {
@@ -55,6 +73,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {PRECONNECT_HOSTS.map((host) => (
+          <link key={`pc-${host}`} rel="preconnect" href={host} crossOrigin="anonymous" />
+        ))}
+        {PRECONNECT_HOSTS.map((host) => (
+          <link key={`dp-${host}`} rel="dns-prefetch" href={host} />
+        ))}
+      </head>
       <body className={`${archivo.variable} ${bricolage.variable} bg-ig-primary font-sans text-ig-text-primary`}>
         <ThemeProvider>
           <AppShell>{children}</AppShell>

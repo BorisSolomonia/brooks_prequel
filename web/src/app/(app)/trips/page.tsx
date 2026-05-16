@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -69,8 +70,14 @@ export default function MyTripsPage() {
               className="mw-card overflow-hidden p-0 transition-colors hover:border-brand-500/60"
             >
               {trip.coverImageUrl ? (
-                <div className="h-44 bg-ig-secondary">
-                  <img src={trip.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                <div className="relative h-44 bg-ig-secondary">
+                  <Image
+                    src={trip.coverImageUrl}
+                    alt=""
+                    fill
+                    sizes="(max-width: 768px) 100vw, 384px"
+                    className="object-cover"
+                  />
                 </div>
               ) : (
                 <div className="flex h-44 items-center justify-center bg-ig-secondary text-4xl text-ig-text-tertiary">🗺️</div>

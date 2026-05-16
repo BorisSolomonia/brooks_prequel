@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -56,8 +57,14 @@ export default function MyPurchasesPage() {
                 className="mw-card block overflow-hidden p-0 transition-colors hover:border-brand-500/60"
               >
                 {purchase.guideCoverImageUrl ? (
-                  <div className="h-36 bg-ig-secondary">
-                    <img src={purchase.guideCoverImageUrl} alt="" className="w-full h-full object-cover" />
+                  <div className="relative h-36 bg-ig-secondary">
+                    <Image
+                      src={purchase.guideCoverImageUrl}
+                      alt=""
+                      fill
+                      sizes="(max-width: 768px) 100vw, 384px"
+                      className="object-cover"
+                    />
                   </div>
                 ) : (
                   <div className="h-36 bg-ig-secondary flex items-center justify-center">

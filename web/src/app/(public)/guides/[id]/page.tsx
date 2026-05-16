@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import StarRating from '@/components/reviews/StarRating';
 import type { GuidePreview } from '@/types';
@@ -38,7 +39,14 @@ export default async function PublicGuidePreviewPage({ params }: { params: { id:
       <div className="mb-6">
         {preview.coverImageUrl && (
           <div className="mw-photo-frame relative mb-4 h-52 overflow-hidden rounded-xl bg-ig-secondary">
-            <img src={preview.coverImageUrl} alt="" className="h-full w-full object-cover saturate-[0.92] contrast-[1.04]" />
+            <Image
+              src={preview.coverImageUrl}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              priority
+              className="object-cover saturate-[0.92] contrast-[1.04]"
+            />
             {preview.bestSeasonLabel && (
               <span className={`absolute right-3 top-3 rounded-full border-2 border-white/30 px-2.5 py-1 text-xs font-semibold ${
                 inSeason ? 'bg-brand-500 text-white' : 'bg-black/70 text-white/80'

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import type { CreatorStoryStrip } from '@/types';
 
@@ -31,9 +32,11 @@ export default function StoryStrip({ strips }: StoryStripProps) {
             >
               <div className="h-full w-full rounded-full bg-ig-primary p-[2px]">
                 {strip.creatorAvatarUrl ? (
-                  <img
+                  <Image
                     src={strip.creatorAvatarUrl}
                     alt={strip.creatorUsername}
+                    width={56}
+                    height={56}
                     className="h-full w-full rounded-full object-cover saturate-[0.92] contrast-[1.04]"
                   />
                 ) : (
@@ -86,15 +89,24 @@ export default function StoryStrip({ strips }: StoryStripProps) {
                   <div className="absolute left-4 top-6 z-10 flex items-center gap-2">
                     <div className="h-8 w-8 overflow-hidden rounded-full border-2 border-white/70 bg-ig-elevated">
                       {strip.creatorAvatarUrl && (
-                        <img src={strip.creatorAvatarUrl} alt="" className="h-full w-full object-cover" />
+                        <Image
+                          src={strip.creatorAvatarUrl}
+                          alt=""
+                          width={32}
+                          height={32}
+                          className="h-full w-full object-cover"
+                        />
                       )}
                     </div>
                     <span className="font-display text-sm font-black text-white">{strip.creatorUsername}</span>
                   </div>
 
-                  <img
+                  <Image
                     src={story.imageUrl}
                     alt={story.guideTitle}
+                    width={1080}
+                    height={1920}
+                    sizes="(max-width: 640px) 100vw, 512px"
                     className="aspect-[9/16] w-full rounded-lg border-2 border-white/30 object-cover saturate-[0.92] contrast-[1.04]"
                   />
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import StoryStrip from '@/components/ui/StoryStrip';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
@@ -57,7 +58,13 @@ export default function FeedPage() {
               <div className="flex items-center gap-3 p-3">
                 <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border-2 border-ig-border bg-ig-secondary">
                   {item.creatorAvatarUrl && (
-                    <img src={item.creatorAvatarUrl} alt="" className="h-full w-full object-cover" />
+                    <Image
+                      src={item.creatorAvatarUrl}
+                      alt=""
+                      width={36}
+                      height={36}
+                      className="h-full w-full object-cover"
+                    />
                   )}
                 </div>
                 <div>
@@ -67,7 +74,14 @@ export default function FeedPage() {
               </div>
 
               {item.imageUrl && (
-                <img src={item.imageUrl} alt={item.title || ''} className="aspect-video w-full border-y-2 border-ig-border object-cover saturate-[0.92] contrast-[1.04]" />
+                <Image
+                  src={item.imageUrl}
+                  alt={item.title || ''}
+                  width={1280}
+                  height={720}
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  className="aspect-video w-full border-y-2 border-ig-border object-cover saturate-[0.92] contrast-[1.04]"
+                />
               )}
 
               {(item.title || item.caption) && (

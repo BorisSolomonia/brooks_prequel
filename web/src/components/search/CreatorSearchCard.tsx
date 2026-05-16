@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { CreatorSearchResult } from '@/types';
 
 interface CreatorSearchCardProps {
@@ -13,7 +14,13 @@ export default function CreatorSearchCard({ creator }: CreatorSearchCardProps) {
     >
       <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-ig-border bg-gradient-to-br from-brand-500 to-accent-500">
         {creator.avatarUrl ? (
-          <img src={creator.avatarUrl} alt={creator.displayName || creator.username} className="w-full h-full object-cover" />
+          <Image
+            src={creator.avatarUrl}
+            alt={creator.displayName || creator.username}
+            width={48}
+            height={48}
+            className="h-full w-full object-cover"
+          />
         ) : (
           <span className="text-ig-text-secondary text-lg font-semibold">
             {(creator.displayName || creator.username || '?').charAt(0).toUpperCase()}
