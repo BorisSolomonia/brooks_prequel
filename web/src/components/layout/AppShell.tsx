@@ -10,9 +10,27 @@ import { setupNativeAuthListener } from '@/lib/capacitor';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 
+// Immersive routes — full-screen experiences where the in-document chrome
+// (Footer in particular) competes with the primary surface. On these the
+// Footer is suppressed at every breakpoint, including desktop, so the map /
+// memory reveal owns the entire viewport edge-to-edge.
+const IMMERSIVE_ROUTES = ['/maps', '/m'];
+
+function isImmersiveRoute(pathname: string): boolean {
+  return IMMERSIVE_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLandingPage = pathname === '/';
+  const isImmersive = isImmersiveRoute(pathname);
+  // Footer logic: never on landing (its own design), never on immersive
+  // surfaces (map / memory reveal), and never on mobile at all (relocated
+  // to Settings → Legal & company per the May 2026 IA cleanup). The desktop
+  // fat footer is still useful for SEO and convention on long-form pages.
+  const showFooter = !isLandingPage && !isImmersive;
 
   // Register the appUrlOpen deep-link listener once at app startup. No-op on
   // web. Required so Auth0's redirect to uk.brooksweb.app://auth/callback
@@ -34,7 +52,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <OnboardingProvider>
             {!isLandingPage && <Navbar />}
             <main className={isLandingPage ? '' : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'}>{children}</main>
-            {!isLandingPage && <Footer />}
+            {showFooter && <Footer />}
           </OnboardingProvider>
         </ConfirmProvider>
       </ToastProvider>

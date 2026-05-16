@@ -27,6 +27,7 @@ const desktopLinks = [
   { href: '/maps', label: 'Maps', auth: true },
   { href: '/guides', label: 'My Guides', auth: true },
   { href: '/trips', label: 'Purchased guides', auth: true },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/contact', label: 'Contact' },
   { href: '/profile', label: 'Profile', auth: true },
   { href: '/settings', label: 'Settings', auth: true },
@@ -134,6 +135,7 @@ export default function Navbar() {
                 <Link href="/trips" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Purchased guides</Link>
                 <Link href="/profile" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Profile</Link>
                 <Link href="/settings" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Settings</Link>
+                <Link href="/pricing" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Pricing</Link>
                 <Link href="/contact" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Contact</Link>
                 <a href="/api/auth/logout" className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
               </div>

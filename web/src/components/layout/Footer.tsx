@@ -15,8 +15,12 @@ const links = [
 
 export default function Footer() {
   const { start } = useOnboarding();
+  // Hidden on mobile (`hidden md:block`): the legal/business links here are
+  // relocated to /settings on small screens — May 2026 IA cleanup keeps every
+  // mobile page edge-to-edge. The desktop fat footer is preserved for SEO
+  // and the long-form-page convention.
   return (
-    <footer className="border-t-2 border-ig-border bg-ig-primary px-4 py-8 pb-24 md:pb-8">
+    <footer className="hidden border-t-2 border-ig-border bg-ig-primary px-4 py-8 md:block md:pb-8">
       <div className="mx-auto flex max-w-[1180px] flex-col gap-5 md:flex-row md:items-start md:justify-between">
         <div className="max-w-md">
           <p className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-primary">{compliance.companyName}</p>
