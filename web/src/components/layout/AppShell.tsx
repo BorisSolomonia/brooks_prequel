@@ -51,7 +51,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <ConfirmProvider>
           <OnboardingProvider>
             {!isLandingPage && <Navbar />}
-            <main className={isLandingPage ? '' : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'}>{children}</main>
+            <main
+              className={
+                isLandingPage || isImmersive
+                  ? ''
+                  : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'
+              }
+            >
+              {children}
+            </main>
             {showFooter && <Footer />}
           </OnboardingProvider>
         </ConfirmProvider>

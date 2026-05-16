@@ -1483,73 +1483,137 @@ export default function MapsExperience({
   }
 
   return (
-    <div className="relative h-[calc(100dvh_-_8rem_-_env(safe-area-inset-bottom))] min-h-[420px] w-full overflow-hidden bg-ig-primary md:h-[calc(100dvh_-_60px)] md:min-h-0">
+    <div className="relative h-[calc(100dvh_-_9rem_-_env(safe-area-inset-bottom))] min-h-[420px] w-full overflow-hidden bg-ig-primary md:h-[calc(100dvh_-_60px)] md:min-h-0">
       {(tokenLoading || !token) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-ig-primary">
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      <div data-tour="memory-panel" className={`mw-panel absolute inset-x-2 bottom-3 z-20 ${createMemoryOpen ? 'max-h-[92dvh]' : 'max-h-[72dvh]'} overflow-hidden rounded-[28px] p-3 backdrop-blur md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4`}>
+      {/* ───────── Top-right layer toggle pill (always visible) ─────────
+          Configuration of WHAT renders on the map. Lives in the top-right
+          corner so it doesn't compete with content the user is browsing,
+          and is recognisable from Google/Apple Maps where layer controls
+          have always lived top-right. */}
+      <div className="absolute right-3 top-3 z-30 md:right-4 md:top-4">
+        <div className="mw-panel flex items-center gap-1 rounded-full p-1 shadow-[0_4px_16px_rgba(15,23,42,0.14)] backdrop-blur" role="group" aria-label="Map layers">
+          <button
+            type="button"
+            onClick={() => toggleLayer('memories')}
+            aria-pressed={activeLayers.memories}
+            className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition ${
+              activeLayers.memories
+                ? 'bg-brand-500 text-white'
+                : 'text-ig-text-secondary hover:bg-ig-hover'
+            }`}
+          >
+            <span aria-hidden>★</span>
+            <span>Memories</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleLayer('guides')}
+            aria-pressed={activeLayers.guides}
+            className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition ${
+              activeLayers.guides
+                ? 'bg-brand-500 text-white'
+                : 'text-ig-text-secondary hover:bg-ig-hover'
+            }`}
+          >
+            <span aria-hidden>◆</span>
+            <span>Guides</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ───────── Bottom-right "+ Memory" FAB (primary creative action) ─────────
+          Always visible UNLESS the memory composer is already open (avoids
+          duplicate triggers). Extended FAB pattern — icon + label — so the
+          action is self-explanatory without a tooltip. Brand colour to mark
+          it as the screen's primary action; shadow to lift it above the map. */}
+      {!createMemoryOpen && (
+        <button
+          type="button"
+          data-tour="memory-create"
+          onClick={() => {
+            setCreateMemoryOpen(true);
+            setMobilePanelOpen(true);
+          }}
+          className="absolute right-3 z-30 inline-flex min-h-touch items-center gap-2 rounded-full bg-brand-500 px-5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95 md:right-4"
+          style={{
+            // Float above the bottom sheet peek height (~5rem) + safe-area inset.
+            bottom: 'calc(5.5rem + env(safe-area-inset-bottom))',
+          }}
+          aria-label="Add memory"
+        >
+          <span aria-hidden className="text-base leading-none">+</span>
+          <span>Memory</span>
+        </button>
+      )}
+
+      {/* ───────── Bottom sheet (mobile) / left panel (desktop) ─────────
+          Peek state shows the in-view summary (no longer ambiguous — explicit
+          counts for both layer types). Tap drag-handle / count area to expand.
+          Expanded reveals filter chips + viewport result list. When memory
+          composer is active, the same surface re-purposes for the form. */}
+      <div data-tour="memory-panel" className={`mw-panel absolute inset-x-2 bottom-3 z-20 ${createMemoryOpen ? 'max-h-[92dvh]' : mobilePanelOpen ? 'max-h-[72dvh]' : 'max-h-[5rem]'} overflow-hidden rounded-[28px] p-3 backdrop-blur transition-[max-height] duration-200 md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4`}>
         <button
           type="button"
           onClick={() => setMobilePanelOpen((open) => !open)}
-          className="mx-auto mb-3 block h-8 w-20 rounded-full md:hidden"
-          aria-label={mobilePanelOpen ? 'Collapse map panel' : 'Expand map panel'}
+          className="-mt-1 mb-2 block w-full md:hidden"
+          aria-label={mobilePanelOpen ? 'Collapse panel' : 'Expand panel'}
         >
           <span className="mx-auto block h-1.5 w-12 rounded-full bg-ig-border" />
         </button>
-        <div className="flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => setMobilePanelOpen((open) => !open)}
+          className="flex w-full items-center justify-between gap-3 text-left md:pointer-events-none"
+        >
           <div>
-            <p className="mw-eyebrow">Brooks Maps</p>
-            <h1 className="mw-section-title mt-1 text-lg text-ig-text-primary md:text-2xl">{activeLayers.guides ? 'Guides in view' : 'Memories in view'}</h1>
+            {createMemoryOpen ? (
+              <>
+                <p className="mw-eyebrow text-[11px]">Compose</p>
+                <h1 className="mw-section-title mt-0.5 text-base text-ig-text-primary md:text-xl">New memory</h1>
+              </>
+            ) : (
+              <>
+                <p className="mw-eyebrow text-[11px]">In view</p>
+                <h1 className="mw-section-title mt-0.5 text-base text-ig-text-primary md:text-xl">
+                  {viewportPins.length + viewportMemories.length} nearby
+                </h1>
+                <p className="mt-0.5 text-[11px] text-ig-text-tertiary">
+                  {viewportPins.length} guides · {viewportMemories.length} memories
+                </p>
+              </>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setMobilePanelOpen((open) => !open)}
-            className="mw-badge min-h-11 rounded-full px-4 py-2 text-sm md:pointer-events-none lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs"
-          >
-            {activeLayers.guides ? viewportPins.length : viewportMemories.length} visible
-          </button>
-        </div>
+          {createMemoryOpen ? (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(event) => {
+                event.stopPropagation();
+                setCreateMemoryOpen(false);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setCreateMemoryOpen(false);
+                }
+              }}
+              aria-label="Close memory composer"
+              className="mw-ripple inline-flex min-h-touch min-w-touch items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-base text-ig-text-secondary md:pointer-events-auto"
+            >
+              ×
+            </span>
+          ) : (
+            <span className="mw-badge min-h-11 rounded-full px-4 py-2 text-xs md:pointer-events-none lg:min-h-0 lg:px-3 lg:py-1">
+              {mobilePanelOpen ? 'Collapse' : 'Expand'}
+            </span>
+          )}
+        </button>
         <div className={`${mobilePanelOpen ? 'block' : 'hidden'} ${createMemoryOpen ? 'max-h-[calc(92dvh_-_6rem)]' : 'max-h-[calc(72dvh_-_6rem)]'} overflow-y-auto overscroll-contain pr-1 md:block md:max-h-[calc(100dvh_-_170px)]`}>
-        <div className="mt-4 rounded-3xl border-2 border-ig-border bg-ig-primary/80 p-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="mw-eyebrow text-[11px]">Map layers</p>
-            <span className="text-xs text-ig-text-tertiary">{layerLabel(activeLayers)}</span>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => toggleLayer('memories')}
-              className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
-                activeLayers.memories
-                  ? 'border-brand-500/50 bg-brand-500/15 text-brand-500'
-                  : 'border-ig-border text-ig-text-secondary hover:text-ig-text-primary'
-              }`}
-            >
-              {activeLayers.memories ? '✓ ' : ''}Memories
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleLayer('guides')}
-              className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
-                activeLayers.guides
-                  ? 'border-brand-500/50 bg-brand-500/15 text-brand-500'
-                  : 'border-ig-border text-ig-text-secondary hover:text-ig-text-primary'
-              }`}
-            >
-              {activeLayers.guides ? '✓ ' : ''}Guides
-            </button>
-          </div>
-          <button
-            type="button"
-            data-tour="memory-create"
-            onClick={() => setCreateMemoryOpen((open) => !open)}
-            className="mw-button-primary mt-3 min-h-11 w-full rounded-2xl px-4 py-2 text-sm transition hover:bg-brand-600"
-          >
-            {createMemoryOpen ? 'Close memory creator' : 'Create hidden memory'}
-          </button>
-        </div>
         {createMemoryOpen && (
           <div data-tour="memory-form" className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
             <div className="flex items-baseline justify-between">
@@ -1618,6 +1682,16 @@ export default function MapsExperience({
               {memoryBusy && <Spinner />}
               {memoryBusy ? 'Saving...' : 'Save and share'}
             </button>
+            {/* Learning-module link — Creator Academy carries Brooks's
+                guidance on what makes a memory worth unlocking. Surfaced
+                here at the moment the user is composing, when the advice
+                is most actionable. */}
+            <a
+              href="/guides/academy"
+              className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-brand-500 hover:underline"
+            >
+              Tips for memorable memories — Creator Academy →
+            </a>
           </div>
         )}
         <div className={`${activeLayers.guides ? 'flex' : 'hidden'} mt-4 max-h-32 flex-wrap gap-2 overflow-y-auto md:max-h-none`}>
