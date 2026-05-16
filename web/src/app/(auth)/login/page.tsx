@@ -1,16 +1,22 @@
 'use client';
 
-import { openExternalAuth } from '@/lib/capacitor';
+import { startAuthFlow, isNative } from '@/lib/capacitor';
 
 export default function LoginPage() {
   const handleLogin = () => {
-    void openExternalAuth(`${window.location.origin}/api/auth/login`);
+    void startAuthFlow();
   };
 
   const handleGoogleLogin = () => {
-    void openExternalAuth(
-      `${window.location.origin}/api/auth/login?connection=google-oauth2`,
-    );
+    // ?connection=google-oauth2 is a web-only shortcut to skip Auth0's
+    // provider chooser. On native, fall back to the standard universal
+    // login (which still offers Google) since the connection param
+    // doesn't flow through init-app.
+    if (isNative()) {
+      void startAuthFlow();
+      return;
+    }
+    window.location.href = `${window.location.origin}/api/auth/login?connection=google-oauth2`;
   };
 
   return (

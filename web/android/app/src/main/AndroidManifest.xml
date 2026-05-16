@@ -32,6 +32,22 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="brooksweb.uk" android:pathPrefix="/api/auth/callback" />
             </intent-filter>
+
+            <!--
+              Custom URI scheme for the Auth0 deep-link handover. When Auth0
+              redirects the Custom Tab to uk.brooksweb.app://auth/callback?...,
+              Android opens the Brooks app and dispatches the URI to the
+              @capacitor/app plugin's appUrlOpen event. Our JS listener (see
+              src/lib/capacitor.ts) then navigates the WebView to
+              /api/auth/callback with the code+state so the SDK can complete
+              the OAuth flow inside the WebView's cookie jar.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="uk.brooksweb.app" android:host="auth" android:pathPrefix="/callback" />
+            </intent-filter>
         </activity>
 
         <provider

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Spinner from '@/components/ui/Spinner';
-import { openExternalAuth } from '@/lib/capacitor';
+import { startAuthFlow } from '@/lib/capacitor';
 
 const BLACK = '#050505';
 const YELLOW = '#D4AA3A';
@@ -13,11 +13,13 @@ export default function GetStartedButton({ mobile }: { mobile: boolean }) {
   const handleClick = () => {
     if (loggingIn) return;
     setLoggingIn(true);
-    // On web this is a plain location change. Inside the Capacitor WebView,
-    // openExternalAuth opens an Android Custom Tab — the only user agent
-    // Google's OAuth screen accepts. Generic WebViews are blocked with
-    // "disallowed_useragent" and render as "This page isn't working".
-    void openExternalAuth(`${window.location.origin}/api/auth/login`);
+    // startAuthFlow handles both paths:
+    //  - web: redirects to /api/auth/login (standard SDK flow)
+    //  - native: calls /api/auth/init-app to set cookies in WebView jar,
+    //    then opens a Custom Tab with the Auth0 authorize URL pointed at
+    //    the uk.brooksweb.app:// custom scheme so the redirect returns
+    //    to the app (not lost in Chrome).
+    void startAuthFlow();
   };
 
   return (

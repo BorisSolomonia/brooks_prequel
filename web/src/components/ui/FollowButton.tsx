@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
-import { openExternalAuth } from '@/lib/capacitor';
+import { startAuthFlow } from '@/lib/capacitor';
 import Spinner from '@/components/ui/Spinner';
 import type { FollowResponse } from '@/types';
 
@@ -27,8 +27,7 @@ export default function FollowButton({ userId, initialFollowing = false, onFollo
 
   const handleToggle = async () => {
     if (!token) {
-      const returnTo = encodeURIComponent(window.location.pathname);
-      void openExternalAuth(`${window.location.origin}/api/auth/login?returnTo=${returnTo}`);
+      void startAuthFlow(window.location.pathname);
       return;
     }
     if (busy) return;
