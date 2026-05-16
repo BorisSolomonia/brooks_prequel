@@ -13,10 +13,10 @@ const APP_REDIRECT_URI = 'uk.brooksweb.app://auth/callback';
 //
 // We invoke this handler programmatically below and translate its 302 response
 // into a JSON body so the WebView's JS can read the authorize URL and open it
-// in a Capacitor Custom Tab. Crucially, the SDK still sets the
-// `auth_verification` cookie via Set-Cookie headers — those are preserved on
-// our JSON response and land in the WebView's cookie jar, available to
-// `/api/auth/callback` when the deep link returns.
+// in a Capacitor Custom Tab. The SDK sets `auth_verification` via
+// `res.cookies.set(...)` (see auth0-next-response.js) — we must copy via the
+// .cookies API too, NOT headers.getSetCookie() which returns empty because
+// the cookies live in NextResponse's internal cookie store until serialization.
 const appLoginHandler = handleLogin({
   returnTo: '/maps',
   authorizationParams: {
@@ -29,9 +29,9 @@ export async function GET(req: NextRequest) {
   // Synthetic dynamic-route context — handleLogin is normally invoked by
   // handleAuth which provides {params: {auth0: ['login']}}. We mimic that.
   const ctx = { params: { auth0: ['login'] } };
-  let upstream: Response;
+  let upstream: NextResponse;
   try {
-    upstream = await appLoginHandler(req, ctx) as Response;
+    upstream = (await appLoginHandler(req, ctx)) as NextResponse;
   } catch (err) {
     console.error('[auth init-app] handleLogin threw:', err);
     return NextResponse.json({ error: 'login_init_failed' }, { status: 500 });
@@ -45,14 +45,12 @@ export async function GET(req: NextRequest) {
 
   const json = NextResponse.json({ authorizeUrl });
 
-  // Forward every Set-Cookie header the SDK emitted (auth_verification +
-  // anything else it adds). Without these, /api/auth/callback can't validate
-  // state when the deep link returns.
-  const setCookies = typeof upstream.headers.getSetCookie === 'function'
-    ? upstream.headers.getSetCookie()
-    : [upstream.headers.get('set-cookie')].filter((v): v is string => Boolean(v));
-  for (const sc of setCookies) {
-    json.headers.append('Set-Cookie', sc);
+  // Copy cookies via the NextResponse .cookies API. The SDK sets cookies via
+  // res.cookies.set() — those live in the internal cookies store and are only
+  // serialized to the Set-Cookie header when the response is sent. Reading via
+  // headers.getSetCookie() during construction returns empty.
+  for (const cookie of upstream.cookies.getAll()) {
+    json.cookies.set(cookie);
   }
 
   // Mark this auth flow as app-initiated so the callback handler knows to use
