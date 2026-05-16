@@ -118,11 +118,14 @@ function HeroContent({ mobile = false }: { mobile?: boolean }) {
         style={{
           fontSize: mobile ? 17 : 19,
           fontWeight: 700,
-          color: BLACK,
           lineHeight: 1.22,
           marginTop: mobile ? 18 : 24,
           marginBottom: 0,
           maxWidth: 360,
+          // White with the same ink-stroke text-shadow used by the hero's
+          // "Most people / never check" lines. Stays legible over any part
+          // of the warm hero background (parchment, terracotta, photographs).
+          ...CONTRAST_TEXT_STYLE,
         }}
       >
         Hidden memories. Real places.<br />

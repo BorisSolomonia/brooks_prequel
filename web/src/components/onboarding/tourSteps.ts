@@ -46,13 +46,36 @@ export const tourSteps: TourStep[] = [
     body: 'Quick tour. Skip anytime.',
   },
   {
+    // NEW — highlight the hamburger BEFORE the drawer opens, so the user
+    // sees where the panel comes from. MapsExperience's tour effect keeps
+    // the drawer closed while this step is active.
+    kind: 'spotlight',
+    id: 'memory-drawer-trigger',
+    route: '/maps',
+    selector: '[data-tour="memory-drawer-trigger"]',
+    placement: 'bottom',
+    title: 'Open the guides + filters menu',
+    body: 'Tap this button (top-left of the map) to open the panel with map layers, filter chips, and the list of nearby guides + memories.',
+  },
+  {
     kind: 'spotlight',
     id: 'memory-intro',
     route: '/maps',
     selector: '[data-tour="memory-panel"]',
     placement: 'auto',
-    title: 'Memories panel',
-    body: 'This panel slides up from the bottom. It holds your memories and nearby guides.',
+    title: 'Guides + filters panel',
+    body: 'This is the panel that just opened. It holds map layers, filter chips, and the list of nearby guides and memories.',
+  },
+  {
+    // NEW — highlight the bottom "+ Create a memory" pill BEFORE the
+    // composer modal opens. Same pattern as memory-drawer-trigger.
+    kind: 'spotlight',
+    id: 'memory-button',
+    route: '/maps',
+    selector: '[data-tour="memory-create"]',
+    placement: 'top',
+    title: 'Create a hidden memory',
+    body: 'Tap this button to drop a memory at your current map location. A full-screen composer opens next.',
   },
   {
     kind: 'spotlight',
@@ -60,9 +83,9 @@ export const tourSteps: TourStep[] = [
     route: '/maps',
     selector: '[data-tour="memory-form"]',
     placement: 'top',
-    title: 'Create a hidden memory',
-    body: 'Fill in your message, optional photo or voice, then Save. Share the link — friends unlock it only when they arrive at this spot.',
-    // The form is opened idempotently by MapsExperience based on step.id — no click side-effect
+    title: 'New memory composer',
+    body: 'Fill in your message, add an optional photo or voice, choose visibility, then Save. Share the link — friends unlock it only when they arrive at this spot.',
+    // The composer is opened idempotently by MapsExperience based on step.id — no click side-effect
     // (a toggle click would CLOSE the form when the user goes back to this step).
   },
   {
@@ -131,11 +154,15 @@ export const tourSteps: TourStep[] = [
     body: 'Paste your provider API key here (OpenAI, Anthropic, Gemini). The AI button in the editor lights up the moment you save.',
   },
   {
+    // Updated May 2026 — the Footer is hidden on mobile, so the old
+    // [data-tour="help-link"] target no longer renders. Redirect the tour
+    // to Settings → Help & tour where the same action lives now.
     kind: 'spotlight',
     id: 'help',
-    selector: '[data-tour="help-link"]',
+    route: '/settings',
+    selector: '[data-tour="help-tour-button"]',
     placement: 'top',
     title: 'Help',
-    body: 'Replay this tour anytime from the footer.',
+    body: 'Replay this tour anytime from Settings → Help & tour.',
   },
 ];

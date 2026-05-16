@@ -654,23 +654,30 @@ export default function MapsExperience({
   useEffect(() => {
     if (!tourActive || !currentStep) return;
     const stepId = (currentStep as { id?: string }).id;
+    if (stepId === 'memory-drawer-trigger') {
+      // Highlight the hamburger BEFORE the drawer opens — close the drawer
+      // and the composer so nothing covers the trigger button.
+      setDrawerOpen(false);
+      setCreateMemoryOpen(false);
+      return;
+    }
     if (stepId === 'memory-intro') {
-      // Slide the drawer in (was: bounce the legacy bottom panel). The user
-      // SEES the drawer open inside the spotlight cutout.
+      // Slide the drawer in. The user SEES the drawer open inside the
+      // spotlight cutout — confirming the action they were shown previously.
       setDrawerOpen(false);
       const open = setTimeout(() => setDrawerOpen(true), 700);
       return () => clearTimeout(open);
     }
-    if (stepId === 'memory-form') {
-      // Open the full-screen composer modal (was: panel + create flag).
-      setCreateMemoryOpen(true);
+    if (stepId === 'memory-button') {
+      // Highlight the "+ Create a memory" pill BEFORE the composer opens —
+      // close the drawer and the composer so the pill is unobscured.
+      setDrawerOpen(false);
+      setCreateMemoryOpen(false);
       return;
     }
-    if (stepId === 'memory-button') {
-      // No state change needed — the "Create memory" bottom-center pill is
-      // always visible when the composer isn't open. Closing any open drawer
-      // makes sure the pill isn't covered.
-      setDrawerOpen(false);
+    if (stepId === 'memory-form') {
+      // Open the full-screen composer modal.
+      setCreateMemoryOpen(true);
       return;
     }
   }, [tourActive, currentStep]);
@@ -1496,14 +1503,19 @@ export default function MapsExperience({
       {/* ───────── Top-LEFT hamburger trigger ─────────
           Opens the right-side drawer holding layer toggles, filters and the
           viewport result list. Placed top-LEFT because Mapbox renders its
-          zoom in/out + compass + geolocate controls top-right by default;
-          putting the hamburger on the right would overlap them. */}
+          zoom in/out + compass + geolocate controls top-right by default.
+          The 2 px ink-coloured border (instead of the lighter ig-border)
+          gives strong contrast against any Mapbox tile background — pale
+          parchment streets, dark satellite, green parks, blue water. The
+          data-tour attr lets the onboarding tour spotlight this button
+          before the drawer opens. */}
       <button
         type="button"
+        data-tour="memory-drawer-trigger"
         onClick={() => setDrawerOpen((open) => !open)}
         aria-label="Open guides, filters and layers"
         aria-expanded={drawerOpen}
-        className="absolute left-3 top-3 z-30 inline-flex h-touch w-touch items-center justify-center rounded-full border border-ig-border bg-ig-elevated/95 text-ig-text-primary shadow-[0_4px_16px_rgba(15,23,42,0.18)] backdrop-blur transition active:scale-95 md:left-4 md:top-4"
+        className="absolute left-3 top-3 z-30 inline-flex h-touch w-touch items-center justify-center rounded-full border-2 border-ig-text-primary bg-ig-elevated text-ig-text-primary shadow-[0_4px_16px_rgba(15,23,42,0.28)] transition active:scale-95 md:left-4 md:top-4"
       >
         <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <line x1="4" y1="7" x2="20" y2="7" />

@@ -22,9 +22,11 @@ interface RowProps {
   body?: string;
   destructive?: boolean;
   testid?: string;
+  /** Optional `data-tour` attribute so the onboarding spotlight can target this row. */
+  tourId?: string;
 }
 
-function SettingsRow({ href, onClick, title, body, destructive, testid }: RowProps) {
+function SettingsRow({ href, onClick, title, body, destructive, testid, tourId }: RowProps) {
   const className =
     'mw-ripple flex min-h-touch w-full items-start gap-3 rounded-2xl border-2 p-4 text-left transition hover:bg-ig-hover ' +
     (destructive
@@ -55,7 +57,7 @@ function SettingsRow({ href, onClick, title, body, destructive, testid }: RowPro
   if (href) {
     return (
       <li>
-        <Link href={href} className={className} data-testid={testid}>
+        <Link href={href} className={className} data-testid={testid} data-tour={tourId}>
           {content}
         </Link>
       </li>
@@ -63,7 +65,7 @@ function SettingsRow({ href, onClick, title, body, destructive, testid }: RowPro
   }
   return (
     <li>
-      <button type="button" onClick={onClick} className={className} data-testid={testid}>
+      <button type="button" onClick={onClick} className={className} data-testid={testid} data-tour={tourId}>
         {content}
       </button>
     </li>
@@ -124,6 +126,7 @@ export default function SettingsPage() {
           title="Help & tour"
           body="Restart the in-app onboarding walkthrough."
           testid="settings-help-tour"
+          tourId="help-tour-button"
         />
         <SettingsRow
           href="/contact"

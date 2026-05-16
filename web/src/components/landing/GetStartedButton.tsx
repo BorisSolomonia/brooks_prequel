@@ -38,7 +38,10 @@ export default function GetStartedButton({ mobile }: { mobile: boolean }) {
         marginTop: mobile ? 20 : 24,
         paddingLeft: mobile ? 22 : 26,
         paddingRight: mobile ? 20 : 22,
-        border: 'none',
+        // Yellow border matches the button's text + arrow colour, giving the
+        // pill a clean two-tone identity and lifting it off the warm hero
+        // background. 3 px reads well at thumb distance without looking heavy.
+        border: `3px solid ${YELLOW}`,
         cursor: loggingIn ? 'wait' : 'pointer',
         opacity: loggingIn ? 0.85 : 1,
         color: YELLOW,
