@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import StarInput from './StarInput';
 import Spinner from '@/components/ui/Spinner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 interface ReviewComposerProps {
   title: string;
@@ -30,6 +31,7 @@ export default function ReviewComposer({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     setRating(initialRating);
@@ -62,9 +64,14 @@ export default function ReviewComposer({
   };
 
   const handleDelete = async () => {
-    if (!onDelete || !window.confirm('Delete this review?')) {
-      return;
-    }
+    if (!onDelete) return;
+    const ok = await confirm({
+      title: 'Delete this review?',
+      body: 'Your rating and text will be removed and you can write a new review later if you change your mind.',
+      confirmLabel: 'Delete review',
+      destructive: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     setError(null);
     try {

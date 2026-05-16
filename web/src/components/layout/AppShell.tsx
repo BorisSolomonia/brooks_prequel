@@ -7,6 +7,8 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import OnboardingProvider from '@/components/onboarding/OnboardingProvider';
 import { setupNativeAuthListener } from '@/lib/capacitor';
+import { ToastProvider } from '@/components/ui/Toast';
+import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,11 +29,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <UserProvider>
-      <OnboardingProvider>
-        {!isLandingPage && <Navbar />}
-        <main className={isLandingPage ? '' : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'}>{children}</main>
-        {!isLandingPage && <Footer />}
-      </OnboardingProvider>
+      <ToastProvider>
+        <ConfirmProvider>
+          <OnboardingProvider>
+            {!isLandingPage && <Navbar />}
+            <main className={isLandingPage ? '' : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'}>{children}</main>
+            {!isLandingPage && <Footer />}
+          </OnboardingProvider>
+        </ConfirmProvider>
+      </ToastProvider>
     </UserProvider>
   );
 }

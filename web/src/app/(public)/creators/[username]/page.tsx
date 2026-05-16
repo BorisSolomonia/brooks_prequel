@@ -10,6 +10,7 @@ import FollowButton from '@/components/ui/FollowButton';
 import GuideCard from '@/components/ui/GuideCard';
 import ReviewComposer from '@/components/reviews/ReviewComposer';
 import ReviewText from '@/components/reviews/ReviewText';
+import { useToast } from '@/components/ui/Toast';
 import StarRating from '@/components/reviews/StarRating';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -19,6 +20,7 @@ type Tab = 'guides' | 'reviews' | 'about';
 
 export default function CreatorProfilePage({ params }: { params: { username: string } }) {
   const { token } = useAccessToken();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('guides');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -351,7 +353,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                         <button
                           type="button"
                           disabled={!review.canVote}
-                          onClick={() => handleVote(review.id, 'HELPFUL').catch((err) => alert(err instanceof Error ? err.message : 'Failed to vote'))}
+                          onClick={() => handleVote(review.id, 'HELPFUL').catch((err) => toast.error(err instanceof Error ? err.message : 'Failed to vote'))}
                           className={`min-h-11 rounded-full border px-4 py-2 text-sm transition lg:min-h-9 lg:px-3 lg:py-1 lg:text-xs ${
                             review.viewerVote === 'HELPFUL'
                               ? 'border-brand-500/30 bg-brand-500/10 text-brand-500'
@@ -363,7 +365,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                         <button
                           type="button"
                           disabled={!review.canVote}
-                          onClick={() => handleVote(review.id, 'NOT_HELPFUL').catch((err) => alert(err instanceof Error ? err.message : 'Failed to vote'))}
+                          onClick={() => handleVote(review.id, 'NOT_HELPFUL').catch((err) => toast.error(err instanceof Error ? err.message : 'Failed to vote'))}
                           className={`min-h-11 rounded-full border px-4 py-2 text-sm transition lg:min-h-9 lg:px-3 lg:py-1 lg:text-xs ${
                             review.viewerVote === 'NOT_HELPFUL'
                               ? 'border-ig-error/30 bg-ig-error/10 text-ig-error'

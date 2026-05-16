@@ -9,6 +9,7 @@ import DayPanel from './DayPanel';
 import PublishButton from './PublishButton';
 import GiftGuideModal from './GiftGuideModal';
 import { CreatorAiPanel } from '@/components/ai/CreatorAiPanel';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import type { AiKeyResponse } from '@/types';
 import { GuideEditProvider, useGuideEdit } from './GuideEditContext';
 import Spinner from '@/components/ui/Spinner';
@@ -21,6 +22,7 @@ interface Props {
 
 export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props) {
   const router = useRouter();
+  const { confirm } = useConfirm();
   const [guide, setGuide] = useState<Guide | null>(initialGuide || null);
   const [metadata, setMetadata] = useState<GuideUpdateRequest>({
     title: initialGuide?.title || '',
@@ -116,10 +118,13 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
 
   const handleDeleteGuide = async () => {
     if (!guide || deleting) return;
-    const confirmed = window.confirm(
-      `Delete "${guide.title}"? This removes it from your guides and cannot be undone.`
-    );
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: `Delete "${guide.title}"?`,
+      body: 'This removes it from your guides and cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
 
     setDeleting(true);
     setError(null);

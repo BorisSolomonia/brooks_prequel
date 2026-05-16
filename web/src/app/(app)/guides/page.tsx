@@ -9,6 +9,8 @@ import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { GuideLibraryItem, GuideLibraryResponse, MyTripSummary, PageResponse, PurchaseResponse } from '@/types';
 import Spinner from '@/components/ui/Spinner';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 type LibraryTab = 'created' | 'saved' | 'purchased';
 
@@ -91,13 +93,19 @@ export default function MyGuidesPage() {
     return `/guides/${item.id}/view`;
   };
 
+  const toast = useToast();
+  const { confirm } = useConfirm();
+
   const handleDeleteGuide = async (guide: GuideLibraryItem) => {
     if (!token || deletingGuideId) return;
 
-    const confirmed = window.confirm(
-      `Delete "${guide.title}"? This removes it from your guides and cannot be undone.`
-    );
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: `Delete "${guide.title}"?`,
+      body: 'This removes it from your guides and cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
 
     setDeletingGuideId(guide.id);
     try {
@@ -106,8 +114,9 @@ export default function MyGuidesPage() {
         ...current,
         created: current.created.filter((item) => item.id !== guide.id),
       } : current);
+      toast.success('Guide deleted');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete guide');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete guide');
     } finally {
       setDeletingGuideId(null);
     }
@@ -122,7 +131,7 @@ export default function MyGuidesPage() {
         : await api.get<MyTripSummary>(`/api/me/trips/by-guide/${guide.id}`, token);
       setCalendarTripId(trip.id);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to prepare calendar trip');
+      toast.error(err instanceof Error ? err.message : 'Failed to prepare calendar trip');
     } finally {
       setCalendarLoadingGuideId(null);
     }

@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useCurrency } from '@/hooks/useCurrency';
 import Spinner from '@/components/ui/Spinner';
 import GooglePayButton from '@/components/ui/GooglePayButton';
+import { useToast } from '@/components/ui/Toast';
 import type { GuideCheckoutSessionResponse } from '@/types';
 
 const GOOGLE_PAY_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_PAY_ENABLED === 'true';
@@ -27,6 +28,7 @@ interface PaidCheckoutResponse {
 
 export default function BuyButton({ guideId, priceCents, currency, salePriceCents, saleEndsAt, token }: BuyButtonProps) {
   const router = useRouter();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { formatAmount } = useCurrency();
@@ -65,7 +67,7 @@ export default function BuyButton({ guideId, priceCents, currency, salePriceCent
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Checkout failed';
-      alert(message);
+      toast.error(message);
       setLoading(false);
     }
   };

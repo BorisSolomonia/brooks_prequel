@@ -9,6 +9,7 @@ import ReviewComposer from '@/components/reviews/ReviewComposer';
 import ReviewText from '@/components/reviews/ReviewText';
 import StarRating from '@/components/reviews/StarRating';
 import Spinner from '@/components/ui/Spinner';
+import { useToast } from '@/components/ui/Toast';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -37,6 +38,7 @@ export default function ViewGuidePage() {
   const { token, loading: tokenLoading } = useAccessToken();
   const router = useRouter();
   const { formatAmount } = useCurrency();
+  const toast = useToast();
 
   const [mode, setMode] = useState<ViewMode>('loading');
   const [guide, setGuide] = useState<Guide | null>(null);
@@ -132,7 +134,7 @@ export default function ViewGuidePage() {
         : await api.post<GuideSaveStatusResponse>(`/api/guides/${guideId}/save`, undefined, token);
       setSaved(response.saved);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to update save state');
+      toast.error(err instanceof Error ? err.message : 'Failed to update save state');
     } finally {
       setSaveLoading(false);
     }
@@ -163,7 +165,7 @@ export default function ViewGuidePage() {
       await api.post(`/api/guides/${guideId}/reviews/${reviewId}/vote`, { vote }, token);
       await reloadReviews();
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to register vote');
+      toast.error(error instanceof Error ? error.message : 'Failed to register vote');
     }
   };
 

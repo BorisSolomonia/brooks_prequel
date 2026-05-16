@@ -5,6 +5,7 @@ import GuideCard from '@/components/ui/GuideCard';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import { startAuthFlow } from '@/lib/capacitor';
+import { useToast } from '@/components/ui/Toast';
 import type { GuideSaveStatusResponse, GuideSearchResult } from '@/types';
 
 interface GuideSearchCardProps {
@@ -13,6 +14,7 @@ interface GuideSearchCardProps {
 
 export default function GuideSearchCard({ guide }: GuideSearchCardProps) {
   const { token } = useAccessToken();
+  const toast = useToast();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -29,7 +31,7 @@ export default function GuideSearchCard({ guide }: GuideSearchCardProps) {
         : await api.post<GuideSaveStatusResponse>(`/api/guides/${guide.id}/save`, undefined, token);
       setSaved(response.saved);
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to update save state');
+      toast.error(error instanceof Error ? error.message : 'Failed to update save state');
     } finally {
       setSaving(false);
     }

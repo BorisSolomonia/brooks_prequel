@@ -200,6 +200,35 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Material-style ripple. Add `mw-ripple` to any tappable element to get a
+   subtle ink-pulse on press. Pure CSS — no JS. Pairs with parchment brand. */
+.mw-ripple {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.mw-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(var(--brand-500), 0.18) 1%, transparent 1%);
+  background-position: center;
+  background-size: 1000% 1000%;
+  opacity: 0;
+  transition: background-size 0s, opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.mw-ripple:active::after {
+  background-size: 200% 200%;
+  opacity: 1;
+  transition: background-size 0.4s ease-out, opacity 0s;
+}
+.mw-ripple > * {
+  position: relative;
+  z-index: 1;
+}
+
 input,
 select,
 textarea {
