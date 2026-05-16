@@ -484,7 +484,7 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
 
 function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy }: SelectedMemoryCardProps) {
   return (
-    <div className="absolute inset-x-3 bottom-3 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
+    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
@@ -549,7 +549,7 @@ function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy
 
 function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
   return (
-    <div className="absolute inset-x-3 bottom-3 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
+    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-3">
           <div className="h-14 w-14 overflow-hidden rounded-full border border-white/90 bg-ig-secondary shadow-[0_0_0_2px_var(--brand-primary)]">
@@ -1528,9 +1528,11 @@ export default function MapsExperience({
           Always-visible primary creative action, centered. Sits 3 rem (~48 dp)
           above the bottom of the map container, with a thin centered hairline
           1 rem above the bottom-tab nav so there's a clear visual gap +
-          divider between the action zone and the nav zone. Hidden while the
-          composer is open. */}
-      {!createMemoryOpen && (
+          divider between the action zone and the nav zone.
+          Hidden while: (a) the composer is open, OR (b) a pin/memory popup
+          card is showing — in those modes the user is in a focused detail
+          view and the create CTA is irrelevant + would compete visually. */}
+      {!createMemoryOpen && !selectedPin && !selectedMemory && (
         <>
           <button
             type="button"

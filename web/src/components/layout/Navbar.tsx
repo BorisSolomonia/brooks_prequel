@@ -152,7 +152,11 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t-2 border-ig-border bg-ig-elevated/95 backdrop-blur md:hidden" aria-label="Primary">
+    {/* Stronger backdrop-blur-xl + slight desaturation underneath give the
+        bottom-tab nav clear separation from the map / page content without
+        sacrificing the parchment transparency. Per-Link text-shadow lifts
+        labels + icons over busy backgrounds like map tiles. */}
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t-2 border-ig-border bg-ig-elevated/95 backdrop-blur-xl backdrop-saturate-50 md:hidden" aria-label="Primary">
       <div className="mx-auto flex max-w-lg justify-around px-1 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
         {visibleMobileTabs.map((tab) => {
           const active = isActive(pathname, tab.href);
@@ -161,8 +165,8 @@ export default function Navbar() {
               key={tab.href}
               href={tab.href}
               data-tour={tab.href === '/trips' ? 'trips-tab' : undefined}
-              className={`flex min-h-[60px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition-colors ${
-                active ? 'text-brand-500' : 'text-ig-text-tertiary hover:text-ig-text-primary'
+              className={`flex min-h-[60px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold transition-colors [text-shadow:0_1px_2px_rgba(15,23,42,0.18)] ${
+                active ? 'text-brand-500' : 'text-ig-text-secondary hover:text-ig-text-primary'
               }`}
             >
               <MobileTabIcon path={tab.icon} />
