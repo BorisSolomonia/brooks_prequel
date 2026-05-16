@@ -642,7 +642,11 @@ export default function MapsExperience({
   const [hoveredSlicePinId, setHoveredSlicePinId] = useState<string | null>(null);
   const [hoveredMarkerPinId, setHoveredMarkerPinId] = useState<string | null>(null);
   const [openFilterMenu, setOpenFilterMenu] = useState<FilterMenuKey>(null);
-  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  // Slides the right-side drawer holding layers + filters + viewport list.
+  // Replaces the old bottom-anchored panel + mobilePanelOpen state — May 2026
+  // redesign per user's three-zone direction: bottom CTA + top-right hamburger
+  // + drawer + full-screen composer modal.
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { currentStep, isActive: tourActive } = useOnboarding();
 
   // Onboarding tour wiring. Match on step.id (kind-agnostic so the same logic survives
@@ -651,22 +655,22 @@ export default function MapsExperience({
     if (!tourActive || !currentStep) return;
     const stepId = (currentStep as { id?: string }).id;
     if (stepId === 'memory-intro') {
-      // Close, then slide back up after 700ms so the user SEES the motion inside the
-      // spotlight cutout. ResizeObserver on the panel keeps the spotlight rect glued
-      // to the panel as it grows.
-      setMobilePanelOpen(false);
-      const open = setTimeout(() => setMobilePanelOpen(true), 700);
+      // Slide the drawer in (was: bounce the legacy bottom panel). The user
+      // SEES the drawer open inside the spotlight cutout.
+      setDrawerOpen(false);
+      const open = setTimeout(() => setDrawerOpen(true), 700);
       return () => clearTimeout(open);
     }
     if (stepId === 'memory-form') {
-      // Idempotent: set both states to true so Back-navigation never accidentally
-      // closes either via a toggle.
-      setMobilePanelOpen(true);
+      // Open the full-screen composer modal (was: panel + create flag).
       setCreateMemoryOpen(true);
       return;
     }
     if (stepId === 'memory-button') {
-      setMobilePanelOpen(true);
+      // No state change needed — the "Create memory" bottom-center pill is
+      // always visible when the composer isn't open. Closing any open drawer
+      // makes sure the pill isn't covered.
+      setDrawerOpen(false);
       return;
     }
   }, [tourActive, currentStep]);
@@ -1489,64 +1493,38 @@ export default function MapsExperience({
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      {/* ───────── Top-right layer toggle pill (always visible) ─────────
-          Configuration of WHAT renders on the map. Lives in the top-right
-          corner so it doesn't compete with content the user is browsing,
-          and is recognisable from Google/Apple Maps where layer controls
-          have always lived top-right. */}
-      <div className="absolute right-3 top-3 z-30 md:right-4 md:top-4">
-        <div className="mw-panel flex items-center gap-1 rounded-full p-1 shadow-[0_4px_16px_rgba(15,23,42,0.14)] backdrop-blur" role="group" aria-label="Map layers">
-          <button
-            type="button"
-            onClick={() => toggleLayer('memories')}
-            aria-pressed={activeLayers.memories}
-            className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition ${
-              activeLayers.memories
-                ? 'bg-brand-500 text-white'
-                : 'text-ig-text-secondary hover:bg-ig-hover'
-            }`}
-          >
-            <span aria-hidden>★</span>
-            <span>Memories</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => toggleLayer('guides')}
-            aria-pressed={activeLayers.guides}
-            className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition ${
-              activeLayers.guides
-                ? 'bg-brand-500 text-white'
-                : 'text-ig-text-secondary hover:bg-ig-hover'
-            }`}
-          >
-            <span aria-hidden>◆</span>
-            <span>Guides</span>
-          </button>
-        </div>
-      </div>
+      {/* ───────── Top-right hamburger trigger ─────────
+          Opens the right-side drawer holding layer toggles, filters and the
+          viewport result list. Universal "this opens a menu/panel" affordance. */}
+      <button
+        type="button"
+        onClick={() => setDrawerOpen((open) => !open)}
+        aria-label="Open guides, filters and layers"
+        aria-expanded={drawerOpen}
+        className="absolute right-3 top-3 z-30 inline-flex h-touch w-touch items-center justify-center rounded-full border border-ig-border bg-ig-elevated/95 text-ig-text-primary shadow-[0_4px_16px_rgba(15,23,42,0.18)] backdrop-blur transition active:scale-95 md:right-4 md:top-4"
+      >
+        <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <line x1="4" y1="7" x2="20" y2="7" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="4" y1="17" x2="20" y2="17" />
+        </svg>
+      </button>
 
-      {/* ───────── Bottom-right "+ Memory" FAB (primary creative action) ─────────
-          Always visible UNLESS the memory composer is already open (avoids
-          duplicate triggers). Extended FAB pattern — icon + label — so the
-          action is self-explanatory without a tooltip. Brand colour to mark
-          it as the screen's primary action; shadow to lift it above the map. */}
+      {/* ───────── Bottom-centered "Create memory" pill ─────────
+          Always-visible primary creative action. Centered horizontally above
+          the bottom-tab nav. Hidden while the composer is open. */}
       {!createMemoryOpen && (
         <button
           type="button"
           data-tour="memory-create"
-          onClick={() => {
-            setCreateMemoryOpen(true);
-            setMobilePanelOpen(true);
-          }}
-          className="absolute right-3 z-30 inline-flex min-h-touch items-center gap-2 rounded-full bg-brand-500 px-5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95 md:right-4"
+          onClick={() => setCreateMemoryOpen(true)}
+          className="absolute left-1/2 z-30 inline-flex min-h-touch -translate-x-1/2 items-center gap-2 rounded-full bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95"
           style={{
-            // Float above the bottom sheet peek height (~5rem) + safe-area inset.
-            bottom: 'calc(5.5rem + env(safe-area-inset-bottom))',
+            bottom: 'calc(1rem + env(safe-area-inset-bottom))',
           }}
-          aria-label="Add memory"
         >
           <span aria-hidden className="text-base leading-none">+</span>
-          <span>Memory</span>
+          <span>Create memory</span>
         </button>
       )}
 
@@ -1555,99 +1533,338 @@ export default function MapsExperience({
           counts for both layer types). Tap drag-handle / count area to expand.
           Expanded reveals filter chips + viewport result list. When memory
           composer is active, the same surface re-purposes for the form. */}
-      <div data-tour="memory-panel" className={`mw-panel absolute inset-x-2 bottom-3 z-20 ${createMemoryOpen ? 'max-h-[92dvh]' : mobilePanelOpen ? 'max-h-[72dvh]' : 'max-h-[5rem]'} overflow-hidden rounded-[28px] p-3 backdrop-blur transition-[max-height] duration-200 md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100dvh_-_92px)] md:w-[min(380px,calc(100vw-2rem))] md:p-4`}>
-        <button
-          type="button"
-          onClick={() => setMobilePanelOpen((open) => !open)}
-          className="-mt-1 mb-2 block w-full md:hidden"
-          aria-label={mobilePanelOpen ? 'Collapse panel' : 'Expand panel'}
-        >
-          <span className="mx-auto block h-1.5 w-12 rounded-full bg-ig-border" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobilePanelOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-3 text-left md:pointer-events-none"
-        >
-          <div>
-            {createMemoryOpen ? (
-              <>
-                <p className="mw-eyebrow text-[11px]">Compose</p>
-                <h1 className="mw-section-title mt-0.5 text-base text-ig-text-primary md:text-xl">New memory</h1>
-              </>
-            ) : (
-              <>
+      {/* ───────── Right slide-in drawer ─────────
+          Contains layer toggles, filter chips, filter dropdowns, status pills
+          and the viewport result list. Opens from the top-right hamburger.
+          Replaces the legacy bottom-anchored panel — separating discovery
+          (drawer) from primary creation (bottom pill) from the map itself. */}
+      {drawerOpen && (
+        <div className="absolute inset-0 z-40">
+          <button
+            type="button"
+            aria-label="Close drawer"
+            onClick={() => setDrawerOpen(false)}
+            className="absolute inset-0 bg-black/35 backdrop-blur-[2px]"
+          />
+          <div
+            data-tour="memory-panel"
+            className="absolute right-0 top-0 flex h-full w-[min(92vw,420px)] flex-col rounded-l-[28px] border-l-2 border-ig-border bg-ig-primary p-3 shadow-[-12px_0_32px_rgba(15,23,42,0.22)] md:p-4"
+            style={{ animation: 'mw-drawer-in 220ms ease-out' }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
                 <p className="mw-eyebrow text-[11px]">In view</p>
-                <h1 className="mw-section-title mt-0.5 text-base text-ig-text-primary md:text-xl">
+                <h2 className="mw-section-title mt-0.5 text-base text-ig-text-primary md:text-xl">
                   {viewportPins.length + viewportMemories.length} nearby
-                </h1>
+                </h2>
                 <p className="mt-0.5 text-[11px] text-ig-text-tertiary">
                   {viewportPins.length} guides · {viewportMemories.length} memories
                 </p>
-              </>
-            )}
-          </div>
-          {createMemoryOpen ? (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(event) => {
-                event.stopPropagation();
-                setCreateMemoryOpen(false);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setCreateMemoryOpen(false);
-                }
-              }}
-              aria-label="Close memory composer"
-              className="mw-ripple inline-flex min-h-touch min-w-touch items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-base text-ig-text-secondary md:pointer-events-auto"
-            >
-              ×
-            </span>
-          ) : (
-            <span className="mw-badge min-h-11 rounded-full px-4 py-2 text-xs md:pointer-events-none lg:min-h-0 lg:px-3 lg:py-1">
-              {mobilePanelOpen ? 'Collapse' : 'Expand'}
-            </span>
-          )}
-        </button>
-        <div className={`${mobilePanelOpen ? 'block' : 'hidden'} ${createMemoryOpen ? 'max-h-[calc(92dvh_-_6rem)]' : 'max-h-[calc(72dvh_-_6rem)]'} overflow-y-auto overscroll-contain pr-1 md:block md:max-h-[calc(100dvh_-_170px)]`}>
-        {createMemoryOpen && (
-          <div data-tour="memory-form" className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
-            <div className="flex items-baseline justify-between">
-              <p className="mw-eyebrow text-[11px]">New memory</p>
-              <span className="text-[11px] text-ig-text-tertiary">{memoryText.length}/500</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                aria-label="Close"
+                className="mw-ripple inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-ig-text-secondary"
+              >
+                <span aria-hidden className="text-lg leading-none">×</span>
+              </button>
             </div>
+
+            <div className="-mr-1 mt-4 flex-1 overflow-y-auto overscroll-contain pr-1">
+              <div className="rounded-3xl border-2 border-ig-border bg-ig-primary/80 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="mw-eyebrow text-[11px]">Map layers</p>
+                  <span className="text-xs text-ig-text-tertiary">{layerLabel(activeLayers)}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleLayer('memories')}
+                    className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
+                      activeLayers.memories
+                        ? 'border-brand-500/50 bg-brand-500/15 text-brand-500'
+                        : 'border-ig-border text-ig-text-secondary hover:text-ig-text-primary'
+                    }`}
+                  >
+                    {activeLayers.memories ? '✓ ' : ''}Memories
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLayer('guides')}
+                    className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
+                      activeLayers.guides
+                        ? 'border-brand-500/50 bg-brand-500/15 text-brand-500'
+                        : 'border-ig-border text-ig-text-secondary hover:text-ig-text-primary'
+                    }`}
+                  >
+                    {activeLayers.guides ? '✓ ' : ''}Guides
+                  </button>
+                </div>
+              </div>
+
+              <div className={`${activeLayers.guides ? 'flex' : 'hidden'} mt-4 flex-wrap gap-2`}>
+                <FilterChip
+                  label="Country"
+                  activeCount={activeFilters.countries.length}
+                  active={openFilterMenu === 'countries'}
+                  onClick={() => setOpenFilterMenu((current) => (current === 'countries' ? null : 'countries'))}
+                />
+                <FilterChip
+                  label="City"
+                  activeCount={activeFilters.cities.length}
+                  active={openFilterMenu === 'cities'}
+                  onClick={() => setOpenFilterMenu((current) => (current === 'cities' ? null : 'cities'))}
+                />
+                <FilterChip
+                  label="Region"
+                  activeCount={activeFilters.regions.length}
+                  active={openFilterMenu === 'regions'}
+                  onClick={() => setOpenFilterMenu((current) => (current === 'regions' ? null : 'regions'))}
+                />
+                <FilterChip
+                  label="Verified"
+                  activeCount={activeFilters.verifiedStates.length}
+                  active={openFilterMenu === 'verifiedStates'}
+                  onClick={() => setOpenFilterMenu((current) => (current === 'verifiedStates' ? null : 'verifiedStates'))}
+                />
+                <FilterChip
+                  label="Price"
+                  activeCount={activeFilters.priceBuckets.length}
+                  active={openFilterMenu === 'priceBuckets'}
+                  onClick={() => setOpenFilterMenu((current) => (current === 'priceBuckets' ? null : 'priceBuckets'))}
+                />
+                <FilterChip
+                  label="Length"
+                  activeCount={activeFilters.dayBuckets.length}
+                  active={openFilterMenu === 'dayBuckets'}
+                  onClick={() => setOpenFilterMenu((current) => (current === 'dayBuckets' ? null : 'dayBuckets'))}
+                />
+                <FilterChip
+                  label="Places"
+                  activeCount={activeFilters.placeBuckets.length}
+                  active={openFilterMenu === 'placeBuckets'}
+                  onClick={() => setOpenFilterMenu((current) => (current === 'placeBuckets' ? null : 'placeBuckets'))}
+                />
+                <FilterChip
+                  label="Followers"
+                  activeCount={activeFilters.followerBuckets.length}
+                  active={openFilterMenu === 'followerBuckets'}
+                  onClick={() => setOpenFilterMenu((current) => (current === 'followerBuckets' ? null : 'followerBuckets'))}
+                />
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  disabled={activeFilterCount === 0}
+                  className="min-h-11 rounded-full border border-transparent px-4 py-2 text-sm font-medium text-ig-text-tertiary transition hover:text-ig-text-primary disabled:cursor-default disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5 lg:text-xs"
+                >
+                  Clear all
+                </button>
+              </div>
+
+              {activeLayers.guides && openFilterMenu && (
+                <div className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
+                  {openFilterMenu === 'countries' && (
+                    <FilterSection
+                      title="Guide country"
+                      options={countryOptions}
+                      selected={activeFilters.countries}
+                      onToggle={(value) => toggleFilterValue('countries', value)}
+                    />
+                  )}
+                  {openFilterMenu === 'cities' && (
+                    <FilterSection
+                      title="Guide city"
+                      options={cityOptions}
+                      selected={activeFilters.cities}
+                      onToggle={(value) => toggleFilterValue('cities', value)}
+                    />
+                  )}
+                  {openFilterMenu === 'regions' && (
+                    <FilterSection
+                      title="Creator region"
+                      options={regionOptions}
+                      selected={activeFilters.regions}
+                      onToggle={(value) => toggleFilterValue('regions', value)}
+                    />
+                  )}
+                  {openFilterMenu === 'verifiedStates' && (
+                    <FilterSection
+                      title="Creator verification"
+                      options={['verified', 'unverified']}
+                      selected={activeFilters.verifiedStates}
+                      onToggle={(value) => toggleFilterValue('verifiedStates', value)}
+                      renderLabel={(value) => formatRangeBucket(value, VERIFIED_LABELS)}
+                    />
+                  )}
+                  {openFilterMenu === 'priceBuckets' && (
+                    <FilterSection
+                      title="Guide price"
+                      options={['free', 'budget', 'premium']}
+                      selected={activeFilters.priceBuckets}
+                      onToggle={(value) => toggleFilterValue('priceBuckets', value)}
+                      renderLabel={formatPriceBucket}
+                    />
+                  )}
+                  {openFilterMenu === 'dayBuckets' && (
+                    <FilterSection
+                      title="Trip length"
+                      options={['short', 'medium', 'long']}
+                      selected={activeFilters.dayBuckets}
+                      onToggle={(value) => toggleFilterValue('dayBuckets', value)}
+                      renderLabel={(value) => formatRangeBucket(value, DAY_BUCKET_LABELS)}
+                    />
+                  )}
+                  {openFilterMenu === 'placeBuckets' && (
+                    <FilterSection
+                      title="Place count"
+                      options={['compact', 'balanced', 'full']}
+                      selected={activeFilters.placeBuckets}
+                      onToggle={(value) => toggleFilterValue('placeBuckets', value)}
+                      renderLabel={(value) => formatRangeBucket(value, PLACE_BUCKET_LABELS)}
+                    />
+                  )}
+                  {openFilterMenu === 'followerBuckets' && (
+                    <FilterSection
+                      title="Follower range"
+                      options={['emerging', 'growing', 'established']}
+                      selected={activeFilters.followerBuckets}
+                      onToggle={(value) => toggleFilterValue('followerBuckets', value)}
+                      renderLabel={(value) => formatRangeBucket(value, FOLLOWER_BUCKET_LABELS)}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-ig-text-tertiary">
+                <span className="rounded-pill border border-ig-border px-2 py-1">
+                  {locationState === 'current' ? 'Centered on your location' : 'Using configured fallback viewport'}
+                </span>
+                {searchQuery && (
+                  <span className="rounded-pill border border-ig-border px-2 py-1">
+                    {hasDirectPinMatches ? `Filtered by "${searchQuery}"` : `No direct pin matches for "${searchQuery}", showing all creators`}
+                  </span>
+                )}
+                {activeFilterCount > 0 && (
+                  <span className="rounded-pill border border-ig-border px-2 py-1">
+                    {activeFilterCount} active filters
+                  </span>
+                )}
+                {pinsLoading && activeLayers.guides && <span className="rounded-pill border border-ig-border px-2 py-1">Loading guide pins</span>}
+                {memoriesLoading && activeLayers.memories && <span className="rounded-pill border border-ig-border px-2 py-1">Loading memories</span>}
+                {tokenError && <span className="rounded-pill border border-ig-border px-2 py-1">{tokenError}</span>}
+                {!pinsLoading && activeLayers.guides && viewportPins.length === 0 && (
+                  <span className="rounded-pill border border-ig-border px-2 py-1">No guides in the current view</span>
+                )}
+                {!activeLayers.guides && !memoriesLoading && activeLayers.memories && viewportMemories.length === 0 && (
+                  <span className="rounded-pill border border-ig-border px-2 py-1">No memories in the current view</span>
+                )}
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {activeLayers.guides
+                  ? viewportPins.map((pin) => (
+                      <InfluencerViewportSlice
+                        key={pin.userId}
+                        pin={pin}
+                        onHoverStart={setHoveredSlicePinId}
+                        onHoverEnd={() => setHoveredSlicePinId(null)}
+                      />
+                    ))
+                  : viewportMemories.map((memory) => (
+                      <MemoryViewportSlice
+                        key={memory.id}
+                        memory={memory}
+                        onSelect={(nextMemory) => {
+                          setSelectedMemory(nextMemory);
+                          setSelectedPin(null);
+                        }}
+                      />
+                    ))}
+              </div>
+            </div>
+          </div>
+          <style jsx global>{`
+            @keyframes mw-drawer-in {
+              from { transform: translateX(100%); }
+              to { transform: translateX(0); }
+            }
+          `}</style>
+        </div>
+      )}
+
+      {/* ───────── Full-screen composer modal ─────────
+          Pure memory form — no layer toggles, no filters, no result list, no
+          other context. Header with close X, body with text/place/visibility/
+          media/save, footer link to Creator Academy. Covers everything
+          including bottom-tab nav (z-60). */}
+      {createMemoryOpen && (
+        <div
+          data-tour="memory-form"
+          className="fixed inset-0 z-[60] flex flex-col bg-ig-primary"
+          role="dialog"
+          aria-modal="true"
+          aria-label="New memory"
+        >
+          <header
+            className="flex items-center gap-3 border-b-2 border-ig-border bg-ig-elevated px-3 py-3"
+            style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
+          >
+            <button
+              type="button"
+              onClick={() => setCreateMemoryOpen(false)}
+              aria-label="Close composer"
+              className="mw-ripple inline-flex h-touch w-touch items-center justify-center rounded-full text-ig-text-secondary"
+            >
+              <span className="text-lg" aria-hidden>×</span>
+            </button>
+            <h1 className="flex-1 text-base font-semibold text-ig-text-primary">New memory</h1>
+            <span className="text-[11px] text-ig-text-tertiary">{memoryText.length}/500</span>
+          </header>
+
+          <div
+            className="flex-1 overflow-y-auto px-4 py-5"
+            style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
+          >
             <textarea
               value={memoryText}
               onChange={(event) => setMemoryText(event.target.value.slice(0, 500))}
               placeholder="Write the memory someone will unlock here..."
-              className="mt-2 min-h-20 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500 md:min-h-24"
+              rows={6}
+              className="w-full rounded-2xl border-2 border-ig-border bg-ig-elevated px-3 py-3 text-base text-ig-text-primary outline-none transition focus:border-brand-500"
             />
-            <p className="mt-1 text-[11px] text-ig-text-tertiary">
+            <p className="mt-2 text-xs text-ig-text-tertiary">
               {Array.isArray(userCoordinates) ? 'Using your current map location' : 'Location required'}
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <input
-                value={memoryPlaceLabel}
-                onChange={(event) => setMemoryPlaceLabel(event.target.value)}
-                placeholder="Place label"
-                className="min-h-11 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
-              />
-              <select
-                value={memoryVisibility}
-                onChange={(event) => setMemoryVisibility(event.target.value as MemoryVisibility)}
-                className="min-h-11 w-full rounded-2xl border border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
-              >
-                <option value="SHARED_LINK">Hidden link</option>
-                <option value="FOLLOWERS_PUBLIC">Followers public</option>
-                <option value="PRIVATE">Private</option>
-              </select>
-            </div>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-ig-border px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
+
+            <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
+              Place label
+            </label>
+            <input
+              value={memoryPlaceLabel}
+              onChange={(event) => setMemoryPlaceLabel(event.target.value)}
+              placeholder={"Optional - e.g. \"The corner everyone walks past\""}
+              className="mt-1 min-h-touch w-full rounded-2xl border-2 border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+            />
+
+            <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
+              Who can see this
+            </label>
+            <select
+              value={memoryVisibility}
+              onChange={(event) => setMemoryVisibility(event.target.value as MemoryVisibility)}
+              className="mt-1 min-h-touch w-full rounded-2xl border-2 border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+            >
+              <option value="SHARED_LINK">Hidden link</option>
+              <option value="FOLLOWERS_PUBLIC">Followers public</option>
+              <option value="PRIVATE">Private</option>
+            </select>
+
+            <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
+              Attach media
+            </label>
+            <div className="mt-1 grid grid-cols-3 gap-2">
+              <label className="mw-ripple flex min-h-touch cursor-pointer items-center justify-center rounded-2xl border-2 border-ig-border bg-ig-elevated px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
                 {memoryPhoto ? '✓ Photo' : 'Photo'}
                 <input
                   type="file"
@@ -1656,7 +1873,7 @@ export default function MapsExperience({
                   onChange={(event) => void handlePhotoSelected(event.target.files?.[0] ?? null)}
                 />
               </label>
-              <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-ig-border px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
+              <label className="mw-ripple flex min-h-touch cursor-pointer items-center justify-center rounded-2xl border-2 border-ig-border bg-ig-elevated px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
                 {memoryAudio ? '✓ Audio' : 'Audio'}
                 <input
                   type="file"
@@ -1668,213 +1885,31 @@ export default function MapsExperience({
               <button
                 type="button"
                 onClick={recording ? stopRecording : startRecording}
-                className="flex min-h-11 items-center justify-center rounded-2xl border border-ig-border px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm"
+                className="mw-ripple flex min-h-touch items-center justify-center rounded-2xl border-2 border-ig-border bg-ig-elevated px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm"
               >
                 {recording ? 'Stop' : memoryAudio ? 'Re-rec' : 'Record'}
               </button>
             </div>
+
             <button
               type="button"
               disabled={memoryBusy}
               onClick={handleCreateMemory}
-              className="mw-button-primary mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm transition hover:bg-brand-600 disabled:opacity-60"
+              className="mw-button-primary mt-6 inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold transition hover:bg-brand-600 disabled:opacity-60"
             >
               {memoryBusy && <Spinner />}
               {memoryBusy ? 'Saving...' : 'Save and share'}
             </button>
-            {/* Learning-module link — Creator Academy carries Brooks's
-                guidance on what makes a memory worth unlocking. Surfaced
-                here at the moment the user is composing, when the advice
-                is most actionable. */}
+
             <a
               href="/guides/academy"
-              className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-brand-500 hover:underline"
+              className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-brand-500 hover:underline"
             >
               Tips for memorable memories — Creator Academy →
             </a>
           </div>
-        )}
-        <div className={`${activeLayers.guides ? 'flex' : 'hidden'} mt-4 max-h-32 flex-wrap gap-2 overflow-y-auto md:max-h-none`}>
-          <FilterChip
-            label="Country"
-            activeCount={activeFilters.countries.length}
-            active={openFilterMenu === 'countries'}
-            onClick={() => setOpenFilterMenu((current) => (current === 'countries' ? null : 'countries'))}
-          />
-          <FilterChip
-            label="City"
-            activeCount={activeFilters.cities.length}
-            active={openFilterMenu === 'cities'}
-            onClick={() => setOpenFilterMenu((current) => (current === 'cities' ? null : 'cities'))}
-          />
-          <FilterChip
-            label="Region"
-            activeCount={activeFilters.regions.length}
-            active={openFilterMenu === 'regions'}
-            onClick={() => setOpenFilterMenu((current) => (current === 'regions' ? null : 'regions'))}
-          />
-          <FilterChip
-            label="Verified"
-            activeCount={activeFilters.verifiedStates.length}
-            active={openFilterMenu === 'verifiedStates'}
-            onClick={() => setOpenFilterMenu((current) => (current === 'verifiedStates' ? null : 'verifiedStates'))}
-          />
-          <FilterChip
-            label="Price"
-            activeCount={activeFilters.priceBuckets.length}
-            active={openFilterMenu === 'priceBuckets'}
-            onClick={() => setOpenFilterMenu((current) => (current === 'priceBuckets' ? null : 'priceBuckets'))}
-          />
-          <FilterChip
-            label="Length"
-            activeCount={activeFilters.dayBuckets.length}
-            active={openFilterMenu === 'dayBuckets'}
-            onClick={() => setOpenFilterMenu((current) => (current === 'dayBuckets' ? null : 'dayBuckets'))}
-          />
-          <FilterChip
-            label="Places"
-            activeCount={activeFilters.placeBuckets.length}
-            active={openFilterMenu === 'placeBuckets'}
-            onClick={() => setOpenFilterMenu((current) => (current === 'placeBuckets' ? null : 'placeBuckets'))}
-          />
-          <FilterChip
-            label="Followers"
-            activeCount={activeFilters.followerBuckets.length}
-            active={openFilterMenu === 'followerBuckets'}
-            onClick={() => setOpenFilterMenu((current) => (current === 'followerBuckets' ? null : 'followerBuckets'))}
-          />
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            disabled={activeFilterCount === 0}
-            className="min-h-11 rounded-full border border-transparent px-4 py-2 text-sm font-medium text-ig-text-tertiary transition hover:text-ig-text-primary disabled:cursor-default disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5 lg:text-xs"
-          >
-            Clear all
-          </button>
         </div>
-        {activeLayers.guides && openFilterMenu && (
-          <div className="mt-3 rounded-3xl border-2 border-ig-border bg-ig-primary/95 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
-            {openFilterMenu === 'countries' && (
-              <FilterSection
-                title="Guide country"
-                options={countryOptions}
-                selected={activeFilters.countries}
-                onToggle={(value) => toggleFilterValue('countries', value)}
-              />
-            )}
-            {openFilterMenu === 'cities' && (
-              <FilterSection
-                title="Guide city"
-                options={cityOptions}
-                selected={activeFilters.cities}
-                onToggle={(value) => toggleFilterValue('cities', value)}
-              />
-            )}
-            {openFilterMenu === 'regions' && (
-              <FilterSection
-                title="Creator region"
-                options={regionOptions}
-                selected={activeFilters.regions}
-                onToggle={(value) => toggleFilterValue('regions', value)}
-              />
-            )}
-            {openFilterMenu === 'verifiedStates' && (
-              <FilterSection
-                title="Creator verification"
-                options={['verified', 'unverified']}
-                selected={activeFilters.verifiedStates}
-                onToggle={(value) => toggleFilterValue('verifiedStates', value)}
-                renderLabel={(value) => formatRangeBucket(value, VERIFIED_LABELS)}
-              />
-            )}
-            {openFilterMenu === 'priceBuckets' && (
-              <FilterSection
-                title="Guide price"
-                options={['free', 'budget', 'premium']}
-                selected={activeFilters.priceBuckets}
-                onToggle={(value) => toggleFilterValue('priceBuckets', value)}
-                renderLabel={formatPriceBucket}
-              />
-            )}
-            {openFilterMenu === 'dayBuckets' && (
-              <FilterSection
-                title="Trip length"
-                options={['short', 'medium', 'long']}
-                selected={activeFilters.dayBuckets}
-                onToggle={(value) => toggleFilterValue('dayBuckets', value)}
-                renderLabel={(value) => formatRangeBucket(value, DAY_BUCKET_LABELS)}
-              />
-            )}
-            {openFilterMenu === 'placeBuckets' && (
-              <FilterSection
-                title="Place count"
-                options={['compact', 'balanced', 'full']}
-                selected={activeFilters.placeBuckets}
-                onToggle={(value) => toggleFilterValue('placeBuckets', value)}
-                renderLabel={(value) => formatRangeBucket(value, PLACE_BUCKET_LABELS)}
-              />
-            )}
-            {openFilterMenu === 'followerBuckets' && (
-              <FilterSection
-                title="Follower range"
-                options={['emerging', 'growing', 'established']}
-                selected={activeFilters.followerBuckets}
-                onToggle={(value) => toggleFilterValue('followerBuckets', value)}
-                renderLabel={(value) => formatRangeBucket(value, FOLLOWER_BUCKET_LABELS)}
-              />
-            )}
-          </div>
-        )}
-        <p className="mt-2 hidden text-sm text-ig-text-secondary md:block">
-          The panel tracks the current map viewport. When both layers are on, guide slices stay here first; uncheck Guides to browse memory slices.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-ig-text-tertiary">
-          <span className="rounded-pill border border-ig-border px-2 py-1">
-            {locationState === 'current' ? 'Centered on your location' : 'Using configured fallback viewport'}
-          </span>
-          {searchQuery && (
-            <span className="rounded-pill border border-ig-border px-2 py-1">
-              {hasDirectPinMatches ? `Filtered by "${searchQuery}"` : `No direct pin matches for "${searchQuery}", showing all creators`}
-            </span>
-          )}
-          {activeFilterCount > 0 && (
-            <span className="rounded-pill border border-ig-border px-2 py-1">
-              {activeFilterCount} active filters
-            </span>
-          )}
-          {pinsLoading && activeLayers.guides && <span className="rounded-pill border border-ig-border px-2 py-1">Loading guide pins</span>}
-          {memoriesLoading && activeLayers.memories && <span className="rounded-pill border border-ig-border px-2 py-1">Loading memories</span>}
-          {tokenError && <span className="rounded-pill border border-ig-border px-2 py-1">{tokenError}</span>}
-          {!pinsLoading && activeLayers.guides && viewportPins.length === 0 && (
-            <span className="rounded-pill border border-ig-border px-2 py-1">No guides in the current view</span>
-          )}
-          {!activeLayers.guides && !memoriesLoading && activeLayers.memories && viewportMemories.length === 0 && (
-            <span className="rounded-pill border border-ig-border px-2 py-1">No memories in the current view</span>
-          )}
-        </div>
-        <div className="mt-4 max-h-[32dvh] space-y-3 overflow-y-auto pr-1 md:max-h-[55vh]">
-          {activeLayers.guides
-            ? viewportPins.map((pin) => (
-                <InfluencerViewportSlice
-                  key={pin.userId}
-                  pin={pin}
-                  onHoverStart={setHoveredSlicePinId}
-                  onHoverEnd={() => setHoveredSlicePinId(null)}
-                />
-              ))
-            : viewportMemories.map((memory) => (
-                <MemoryViewportSlice
-                  key={memory.id}
-                  memory={memory}
-                  onSelect={(nextMemory) => {
-                    setSelectedMemory(nextMemory);
-                    setSelectedPin(null);
-                  }}
-                />
-              ))}
-        </div>
-        </div>
-      </div>
+      )}
 
       {pageError && (
         <div className="absolute inset-x-4 top-28 z-10 mx-auto max-w-2xl rounded-xl border border-ig-error/40 bg-ig-elevated/95 px-4 py-3 text-sm text-ig-error shadow-lg backdrop-blur">
