@@ -122,10 +122,12 @@ function HeroContent({ mobile = false }: { mobile?: boolean }) {
           marginTop: mobile ? 18 : 24,
           marginBottom: 0,
           maxWidth: 360,
-          // White with the same ink-stroke text-shadow used by the hero's
-          // "Most people / never check" lines. Stays legible over any part
-          // of the warm hero background (parchment, terracotta, photographs).
+          // Pure white (per user spec) with the same ink-stroke text-shadow
+          // used by the hero's "Most people / never check" lines. Stays
+          // legible on both mobile and web over any part of the warm hero
+          // background (parchment, terracotta, photographs).
           ...CONTRAST_TEXT_STYLE,
+          color: '#ffffff',
         }}
       >
         Hidden memories. Real places.<br />
