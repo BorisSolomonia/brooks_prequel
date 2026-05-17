@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, CSSProperties } from 'react';
+import { useEffect, useRef, useState, CSSProperties } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { tourSteps, type TourStep } from './tourSteps';
 import { useOnboarding } from './OnboardingProvider';
@@ -11,16 +11,43 @@ const SPOTLIGHT_PADDING = 10;
 const TOOLTIP_OFFSET = 14;
 const TOOLTIP_WIDTH = 280;
 const TOOLTIP_HEIGHT_ESTIMATE = 180;
-const POLL_MAX_ATTEMPTS = 120;
+// 5 s ceiling (was 2 s) — paired with MutationObserver fast-path + visible "Locating…"
+// hint, so a longer ceiling no longer translates to longer perceived freeze.
+const POLL_MAX_ATTEMPTS = 300;
+// How long the spotlight effect waits before showing the "Locating…" hint.
+const LOCATING_HINT_DELAY_MS = 350;
+// Safety net for `isAdvancing` — if the next step never mounts, release the button.
+const ADVANCE_SAFETY_TIMEOUT_MS = 4000;
 
 export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   const step = tourSteps[stepIndex];
-  const { next, prev, skip, complete, totalSteps } = useOnboarding();
+  const { next, prev, skip, complete, totalSteps, sampleCreatorUsername } = useOnboarding();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  const [showLocating, setShowLocating] = useState(false);
+  const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLast = stepIndex === totalSteps - 1;
+
+  // Release the Next button spinner as soon as the new step renders. Cleanup also
+  // runs on unmount (tour close), so this single effect covers both reset paths.
+  useEffect(() => {
+    setIsAdvancing(false);
+    return () => {
+      if (safetyTimerRef.current) {
+        clearTimeout(safetyTimerRef.current);
+        safetyTimerRef.current = null;
+      }
+    };
+  }, [stepIndex]);
+
+  // Also release the spinner the moment the spotlight finds its anchor — covers the
+  // case where stepIndex doesn't change but the new step's element finally mounts.
+  useEffect(() => {
+    if (targetRect) setIsAdvancing(false);
+  }, [targetRect]);
 
   useEffect(() => {
     if (!('route' in step) || !step.route) return;
@@ -40,17 +67,32 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     if (sideEffect.kind === 'discoverCreator') {
       let cancelled = false;
       const template = (sideEffect as { route?: string }).route ?? '/creators/{username}';
+
+      const navigateTo = (username: string) => {
+        if (cancelled) return;
+        const destination = template.replace('{username}', encodeURIComponent(username));
+        const destinationPath = destination.split('?')[0];
+        if (pathname !== destinationPath) {
+          router.push(destination);
+        }
+      };
+
+      // Cache hit: navigate immediately, eliminating the per-step network wait that was
+      // the dominant cause of the "freeze" on the sample-creator steps.
+      if (sampleCreatorUsername) {
+        navigateTo(sampleCreatorUsername);
+        return () => {
+          cancelled = true;
+        };
+      }
+
       (async () => {
         try {
           const res = await fetch('/api/tour/sample-creator');
           if (!res.ok) return;
           const data = (await res.json()) as { username?: string };
           if (cancelled || !data?.username) return;
-          const destination = template.replace('{username}', encodeURIComponent(data.username));
-          const destinationPath = destination.split('?')[0];
-          if (pathname !== destinationPath) {
-            router.push(destination);
-          }
+          navigateTo(data.username);
         } catch {
           // Network or parse error — fall back to centered overlay; user can still continue.
         }
@@ -98,12 +140,18 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
         }
       };
     }
-  }, [step]);
+    // sampleCreatorUsername is intentionally in deps so a prefetch that resolves
+    // after this step entered will re-fire the effect and use the cache.
+    // pathname/router are intentionally NOT in deps — re-firing on every navigation
+    // would cause repeat clicks / fetches; the closure capture at step-entry is correct.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, sampleCreatorUsername]);
 
   useEffect(() => {
     // Clear any prior rect synchronously so the spotlight never briefly highlights an element
     // on the previous page during navigation.
     setTargetRect(null);
+    setShowLocating(false);
     if (step.kind !== 'spotlight') return;
 
     let frame: number | null = null;
@@ -111,6 +159,10 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     let scrolled = false;
     let observedEl: HTMLElement | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let mutationObserver: MutationObserver | null = null;
+    let mutationPending = false;
+    let found = false;
+
     const measure = () => {
       const candidates = document.querySelectorAll(step.selector);
       let el: HTMLElement | null = null;
@@ -137,6 +189,18 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
         width: rect.width + SPOTLIGHT_PADDING * 2,
         height: rect.height + SPOTLIGHT_PADDING * 2,
       });
+      // Found it — stop the rAF poll and the mutation observer to spare CPU.
+      // Mapbox mutates the DOM dozens of times per second on /maps; an idle
+      // MutationObserver here would be a perf catastrophe.
+      found = true;
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+        frame = null;
+      }
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+        mutationObserver = null;
+      }
       // Keep the rect fresh when the target itself resizes (e.g. a panel that slides open
       // after the first measure already succeeded on its collapsed state).
       if (el !== observedEl && typeof ResizeObserver !== 'undefined') {
@@ -163,12 +227,31 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
       attempts += 1;
       if (attempts < POLL_MAX_ATTEMPTS) {
         frame = requestAnimationFrame(poll);
-      } else {
-        setTargetRect(null);
       }
     };
 
+    // Event-driven fast path: the moment the DOM gains the selector's element
+    // (a route just mounted, a panel just opened), measure() succeeds instantly
+    // instead of waiting for the next rAF tick. Throttled to one call per frame
+    // because /maps mutates constantly — we coalesce a burst into one measure.
+    if (typeof MutationObserver !== 'undefined') {
+      mutationObserver = new MutationObserver(() => {
+        if (found || mutationPending) return;
+        mutationPending = true;
+        requestAnimationFrame(() => {
+          mutationPending = false;
+          if (!found) measure();
+        });
+      });
+      mutationObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
     poll();
+
+    // Show a subtle "Locating…" hint if we still don't have a rect after the delay.
+    const locatingTimer = setTimeout(() => {
+      if (!found) setShowLocating(true);
+    }, LOCATING_HINT_DELAY_MS);
 
     const onChange = () => measure();
     window.addEventListener('resize', onChange);
@@ -176,6 +259,8 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
       if (resizeObserver) resizeObserver.disconnect();
+      if (mutationObserver) mutationObserver.disconnect();
+      clearTimeout(locatingTimer);
       window.removeEventListener('resize', onChange);
       window.removeEventListener('scroll', onChange, true);
     };
@@ -190,6 +275,15 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   }, [skip]);
 
   const handleNext = () => {
+    if (isAdvancing) return; // multi-click guard
+    setIsAdvancing(true);
+    // Safety net: if the next step never mounts (e.g. selector never appears + route
+    // push silently failed), release the spinner so the user can try again.
+    if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
+    safetyTimerRef.current = setTimeout(() => {
+      setIsAdvancing(false);
+      safetyTimerRef.current = null;
+    }, ADVANCE_SAFETY_TIMEOUT_MS);
     if (isLast) {
       complete();
     } else {
@@ -258,6 +352,12 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
           />
         )}
         <p className="mt-2 text-xs leading-snug text-ig-text-secondary">{step.body}</p>
+        {showLocating && !targetRect && step.kind === 'spotlight' && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-ig-text-tertiary" aria-live="polite">
+            <span className="tour-spinner h-2.5 w-2.5" aria-hidden="true" />
+            Locating…
+          </p>
+        )}
         <div className="mt-3 flex items-center justify-between gap-2">
           {stepIndex > 0 ? (
             <button
@@ -273,9 +373,15 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
           <button
             type="button"
             onClick={handleNext}
-            className="mw-button-primary inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-4 py-1.5 text-xs"
+            aria-disabled={isAdvancing}
+            aria-busy={isAdvancing}
+            className="mw-button-primary inline-flex min-h-9 min-w-[72px] items-center justify-center gap-2 rounded-md px-4 py-1.5 text-xs"
           >
-            {isLast ? 'Got it' : 'Next'}
+            {isAdvancing ? (
+              <span className="tour-spinner h-3.5 w-3.5" aria-hidden="true" />
+            ) : (
+              <>{isLast ? 'Got it' : 'Next'}</>
+            )}
           </button>
         </div>
       </div>
@@ -320,6 +426,17 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
           outline: 3px solid rgb(var(--brand-500));
           outline-offset: -1px;
           animation: tourPanelLit 1.5s ease-out;
+        }
+        @keyframes tourSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .tour-spinner {
+          display: inline-block;
+          border-radius: 9999px;
+          border: 2px solid rgba(255, 255, 255, 0.35);
+          border-top-color: currentColor;
+          animation: tourSpin 600ms linear infinite;
         }
       `}</style>
     </div>

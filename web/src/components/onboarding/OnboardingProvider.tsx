@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { api } from '@/lib/api';
@@ -17,6 +17,7 @@ type OnboardingContextValue = {
   currentStepIndex: number;
   currentStep: TourStep | null;
   totalSteps: number;
+  sampleCreatorUsername: string | null;
   start: () => void;
   next: () => void;
   prev: () => void;
@@ -47,6 +48,30 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   const [status, setStatus] = useState<Status>('unknown');
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [sampleCreatorUsername, setSampleCreatorUsername] = useState<string | null>(null);
+  // useRef sentinel (not state) prevents React 18 strict-mode double-effects from firing
+  // the prefetch twice. Reset on every start() so each tour invocation re-validates.
+  const prefetchedRef = useRef(false);
+
+  const fetchSampleCreator = useCallback(async () => {
+    if (prefetchedRef.current) return;
+    prefetchedRef.current = true;
+    try {
+      const res = await fetch('/api/tour/sample-creator');
+      if (!res.ok) return;
+      const data = (await res.json()) as { username?: string };
+      if (data?.username) setSampleCreatorUsername(data.username);
+    } catch {
+      // Tour falls back to live fetch in the step's sideEffect handler.
+    }
+  }, []);
+
+  // Prefetch once auth is ready, so the cache is warm before the user clicks Help.
+  useEffect(() => {
+    if (tokenLoading || !user) return;
+    if (sampleCreatorUsername) return;
+    void fetchSampleCreator();
+  }, [tokenLoading, user, sampleCreatorUsername, fetchSampleCreator]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage.getItem(LOCAL_STORAGE_KEY) === 'true') {
@@ -96,7 +121,12 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   const start = useCallback(() => {
     setIsActive(true);
     setCurrentStepIndex(0);
-  }, []);
+    // Re-validate the cached sample creator each time the tour is explicitly started,
+    // so a stale username (deleted account) can't strand the user on a 404.
+    prefetchedRef.current = false;
+    setSampleCreatorUsername(null);
+    void fetchSampleCreator();
+  }, [fetchSampleCreator]);
 
   const next = useCallback(() => {
     setCurrentStepIndex((i) => Math.min(i + 1, tourSteps.length - 1));
@@ -137,6 +167,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
         currentStepIndex,
         currentStep: isActive ? tourSteps[currentStepIndex] ?? null : null,
         totalSteps: tourSteps.length,
+        sampleCreatorUsername,
         start,
         next,
         prev,
