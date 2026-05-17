@@ -296,12 +296,13 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   };
 
   const tooltipPosition = computeTooltipPosition(step, targetRect);
-  // Large targets (composer covers the full viewport) make tooltip placement
-  // useless — the cutout would fill the screen and the tooltip would land
-  // off-screen. Fall back to centered overlay AND suppress the spotlight
-  // cutout in that case.
+  // Targets that take up half the viewport or more make edge-anchored
+  // tooltips unreadable — the tooltip ends up overlapping the highlighted
+  // area, or clipped at a screen edge. Fall back to centered overlay AND
+  // suppress the spotlight cutout. Threshold lowered from 80% → 50% to
+  // catch composers, drawers, and other large surfaces.
   const isLargeTarget = !!targetRect && typeof window !== 'undefined' &&
-    (targetRect.width * targetRect.height) >= 0.8 * (window.innerWidth * window.innerHeight);
+    (targetRect.width * targetRect.height) >= 0.5 * (window.innerWidth * window.innerHeight);
   const isCenteredOverlay = step.kind !== 'spotlight' || !targetRect || isLargeTarget;
 
   return (
@@ -335,7 +336,16 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
 
       <div
         className="absolute rounded-2xl border-2 border-ig-border bg-ig-elevated p-3.5 shadow-2xl ring-1 ring-black/10"
-        style={tooltipPosition}
+        style={{
+          ...tooltipPosition,
+          // Always clamp so the tooltip is fully visible regardless of which
+          // mode (centered or anchored) was chosen. Without these caps a
+          // long body or narrow viewport can push the tooltip off-screen.
+          // safe-area-inset handles Pixel 3-button nav + iPhone notch.
+          maxWidth: 'min(280px, calc(100vw - 32px))',
+          maxHeight: 'calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px)',
+          overflowY: 'auto',
+        }}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

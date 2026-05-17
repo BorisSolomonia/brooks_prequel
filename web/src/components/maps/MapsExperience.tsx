@@ -926,8 +926,19 @@ export default function MapsExperience({
   };
 
   const handleCreateMemory = async () => {
-    if (!token || !userCoordinates || !Array.isArray(userCoordinates)) {
-      setPageError('Your current location is required to create a memory');
+    // Specific pre-checks so the user knows EXACTLY what's missing rather
+    // than getting a generic "could not create memory" toast. Capacitor on
+    // Android can silently fail any of these without the user realizing
+    // why — explicit messages here turn the support back-and-forth into
+    // a one-step fix.
+    if (!token) {
+      setPageError('Please sign in again — your session has expired.');
+      console.error('[memory] save blocked: missing auth token');
+      return;
+    }
+    if (!userCoordinates || !Array.isArray(userCoordinates)) {
+      setPageError('Location permission needed. Enable Location in Settings → Apps → Brooks.');
+      console.error('[memory] save blocked: missing geolocation');
       return;
     }
     const trimmedText = memoryText.trim();
@@ -992,9 +1003,21 @@ export default function MapsExperience({
         media: snapshot.media,
       }, token);
     } catch (error) {
-      // Rollback: remove the optimistic pin and surface the error.
+      // Rollback: remove the optimistic pin and surface a SPECIFIC error.
       setMemories((prev) => prev.filter((m) => m.id !== optimisticId));
-      setPageError(error instanceof Error ? error.message : 'Could not create memory');
+      console.error('[memory] save POST failed:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      // Auth0's challenge redirect returns HTML — api.post throws a JSON
+      // parse error in that case. Detect and surface as a sign-in prompt.
+      if (/Unexpected token|JSON|<!DOCTYPE/i.test(msg)) {
+        setPageError('Your sign-in expired. Tap any tab to reload, then sign in again.');
+      } else if (/401|403|unauthor/i.test(msg)) {
+        setPageError('Sign-in expired. Reload the app to sign in again.');
+      } else if (/network|fetch|failed to fetch/i.test(msg)) {
+        setPageError('No network connection. Check Wi-Fi or mobile data and try again.');
+      } else {
+        setPageError(`Could not save: ${msg}`);
+      }
       return;
     }
 
