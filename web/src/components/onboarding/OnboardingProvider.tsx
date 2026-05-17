@@ -1,12 +1,22 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import OnboardingTour from './OnboardingTour';
 import { tourSteps, type TourStep } from './tourSteps';
+
+// Every distinct path the tour will navigate to. Strip query because router.prefetch
+// works on path only. Computed once at module load — the step list is static.
+const TOUR_PREFETCH_PATHS = Array.from(
+  new Set(
+    tourSteps
+      .filter((step): step is TourStep & { route: string } => 'route' in step && typeof step.route === 'string')
+      .map((step) => step.route.split('?')[0]),
+  ),
+);
 
 const LOCAL_STORAGE_KEY = 'brooks.onboarding.completed';
 
@@ -45,6 +55,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   const { user, isLoading: userLoading } = useUser();
   const { token, loading: tokenLoading } = useAccessToken();
   const pathname = usePathname();
+  const router = useRouter();
   const [status, setStatus] = useState<Status>('unknown');
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -72,6 +83,23 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     if (sampleCreatorUsername) return;
     void fetchSampleCreator();
   }, [tokenLoading, user, sampleCreatorUsername, fetchSampleCreator]);
+
+  // Warm every tour destination chunk the moment the user authenticates. The
+  // user is likely to either hit the auto-tour on /maps or click Help in
+  // Settings — either way these routes will be needed in the next minute.
+  // Idempotent and side-effect-free; Next.js dedupes prefetches per path.
+  useEffect(() => {
+    if (!user) return;
+    TOUR_PREFETCH_PATHS.forEach((path) => router.prefetch(path));
+  }, [user, router]);
+
+  // Also warm the creator-deep-link routes the moment the username resolves.
+  useEffect(() => {
+    if (!sampleCreatorUsername) return;
+    const encoded = encodeURIComponent(sampleCreatorUsername);
+    router.prefetch(`/creators/${encoded}`);
+    router.prefetch(`/search/creators`);
+  }, [sampleCreatorUsername, router]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage.getItem(LOCAL_STORAGE_KEY) === 'true') {

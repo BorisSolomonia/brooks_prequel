@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { tourSteps, type TourStep } from './tourSteps';
 import { useOnboarding } from './OnboardingProvider';
@@ -276,9 +277,12 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
 
   const handleNext = () => {
     if (isAdvancing) return; // multi-click guard
-    setIsAdvancing(true);
-    // Safety net: if the next step never mounts (e.g. selector never appears + route
-    // push silently failed), release the spinner so the user can try again.
+    // flushSync forces React to paint the spinner in the SAME frame as the click
+    // instead of batching it with the navigation work. Without this the user can
+    // see ~100 ms of dead time between click and spinner on slow Android devices.
+    flushSync(() => {
+      setIsAdvancing(true);
+    });
     if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
     safetyTimerRef.current = setTimeout(() => {
       setIsAdvancing(false);
@@ -375,10 +379,13 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
             onClick={handleNext}
             aria-disabled={isAdvancing}
             aria-busy={isAdvancing}
-            className="mw-button-primary inline-flex min-h-9 min-w-[72px] items-center justify-center gap-2 rounded-md px-4 py-1.5 text-xs"
+            className="mw-button-primary inline-flex min-h-9 min-w-[96px] items-center justify-center gap-2 rounded-md px-4 py-1.5 text-xs"
           >
             {isAdvancing ? (
-              <span className="tour-spinner h-3.5 w-3.5" aria-hidden="true" />
+              <>
+                <span className="tour-spinner h-4 w-4" aria-hidden="true" />
+                <span>Loading…</span>
+              </>
             ) : (
               <>{isLast ? 'Got it' : 'Next'}</>
             )}

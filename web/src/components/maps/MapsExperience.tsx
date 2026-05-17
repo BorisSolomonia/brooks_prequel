@@ -1815,6 +1815,22 @@ export default function MapsExperience({
         </div>
       )}
 
+      {/* Pre-mount anchor for the onboarding tour's memory-form spotlight.
+          The real composer below mounts via a tour-effect setState which runs
+          in useEffect AFTER the first render of the memory-form step — that
+          extra commit cycle was the perceived freeze. This invisible stub
+          gives the spotlight selector something to anchor to on the FIRST
+          commit, so the tooltip and dim overlay appear instantly. The real
+          composer takes over on the next commit at the same fullscreen rect
+          (no visual jump). */}
+      {tourActive && (currentStep as { id?: string } | null)?.id === 'memory-form' && !createMemoryOpen && (
+        <div
+          data-tour="memory-form"
+          aria-hidden
+          style={{ position: 'fixed', inset: 0, opacity: 0, pointerEvents: 'none' }}
+        />
+      )}
+
       {/* ───────── Full-screen composer modal ─────────
           Pure memory form — no layer toggles, no filters, no result list, no
           other context. Header with close X, body with text/place/visibility/
