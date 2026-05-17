@@ -176,17 +176,27 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     }
   }, [token]);
 
+  // Tour exit always lands on /maps. setTimeout(0) defers the navigation past
+  // the current React commit so OnboardingTour can unmount cleanly first —
+  // microtasks would race with the unmount and trigger render-phase warnings.
+  // router.replace (not push) keeps the back stack clean.
+  const exitToMaps = useCallback(() => {
+    setTimeout(() => router.replace('/maps'), 0);
+  }, [router]);
+
   const skip = useCallback(() => {
     setIsActive(false);
     setStatus('completed');
     void persistComplete();
-  }, [persistComplete]);
+    exitToMaps();
+  }, [persistComplete, exitToMaps]);
 
   const complete = useCallback(() => {
     setIsActive(false);
     setStatus('completed');
     void persistComplete();
-  }, [persistComplete]);
+    exitToMaps();
+  }, [persistComplete, exitToMaps]);
 
   return (
     <OnboardingContext.Provider

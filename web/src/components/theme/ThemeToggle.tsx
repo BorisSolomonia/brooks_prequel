@@ -3,16 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
-type ThemeChoice = 'system' | 'light' | 'dark';
+type ThemeChoice = 'light' | 'dark';
 
 const NEXT_CHOICE: Record<ThemeChoice, ThemeChoice> = {
-  system: 'light',
   light: 'dark',
-  dark: 'system',
+  dark: 'light',
 };
 
 const LABEL: Record<ThemeChoice, string> = {
-  system: 'Match device',
   light: 'Bright',
   dark: 'Dark',
 };
@@ -49,7 +47,7 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
     );
   }
 
-  const current = (theme === 'light' || theme === 'dark' ? theme : 'system') as ThemeChoice;
+  const current: ThemeChoice = theme === 'dark' ? 'dark' : 'light';
   const next = NEXT_CHOICE[current];
   const aria = `Theme: ${LABEL[current]}. Click to switch to ${LABEL[next]}.`;
 
@@ -75,7 +73,7 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
       title={aria}
       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
     >
-      {current === 'system' ? <MonitorIcon /> : current === 'light' ? <SunIcon /> : <MoonIcon />}
+      {current === 'light' ? <SunIcon /> : <MoonIcon />}
     </button>
   );
 }
@@ -97,11 +95,3 @@ function MoonIcon() {
   );
 }
 
-function MonitorIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="3" width="20" height="14" rx="2" />
-      <path d="M8 21h8M12 17v4" />
-    </svg>
-  );
-}
