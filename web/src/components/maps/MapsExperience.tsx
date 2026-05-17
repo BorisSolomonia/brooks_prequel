@@ -619,6 +619,10 @@ export default function MapsExperience({
   const markerElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const memoryMarkersRef = useRef<MapboxMarker[]>([]);
   const userLocationMarkerRef = useRef<MapboxMarker | null>(null);
+  // Tracks the style URL currently applied to the map so we don't re-call
+  // setStyle on the first mapReady event (the map already initialized with
+  // this style; calling setStyle again would needlessly reload tiles).
+  const lastAppliedStyleRef = useRef<string | null>(null);
 
   const [pins, setPins] = useState<InfluencerMapPin[]>(
     () => (_cachedPins && Date.now() < _pinsCacheExpiry ? _cachedPins : [])
@@ -932,36 +936,92 @@ export default function MapsExperience({
       return;
     }
 
-    setMemoryBusy(true);
+    // Optimistic pin: drop it on the map BEFORE we hear back from the
+    // server. This is the top-100-app "instant" pattern — every write
+    // feels free. On server success, refreshMemories reconciles. On
+    // failure, we filter the optimistic pin out below.
+    const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimisticPin: MemoryMapPin = {
+      id: optimisticId,
+      creatorId: 'me',
+      creatorUsername: null,
+      creatorDisplayName: 'You',
+      creatorAvatarUrl: null,
+      textPreview: trimmedText.slice(0, 200),
+      latitude: userCoordinates[1],
+      longitude: userCoordinates[0],
+      placeLabel: memoryPlaceLabel.trim() || null,
+      visibility: memoryVisibility,
+      ownedByViewer: true,
+      sharedWithViewer: false,
+      hasImage: !!memoryPhoto,
+      hasAudio: !!memoryAudio,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Snapshot the form values BEFORE we reset state, so the background
+    // POST sees the user's actual input even though the UI has moved on.
+    const snapshot = {
+      text: trimmedText,
+      placeLabel: memoryPlaceLabel.trim() || undefined,
+      visibility: memoryVisibility,
+      media: [memoryPhoto, memoryAudio].filter(
+        (item): item is MemoryMediaRequest => Boolean(item),
+      ),
+      latitude: userCoordinates[1],
+      longitude: userCoordinates[0],
+    };
+
+    // Drop UI state + show the optimistic pin in a single React commit.
+    setMemories((prev) => [...prev, optimisticPin]);
+    setMemoryText('');
+    setMemoryPlaceLabel('');
+    setMemoryPhoto(null);
+    setMemoryAudio(null);
+    setCreateMemoryOpen(false);
+    setMemoryBusy(false);
+
+    let created: { id: string };
     try {
-      const media = [memoryPhoto, memoryAudio].filter((item): item is MemoryMediaRequest => Boolean(item));
-      const created = await api.post<{ id: string }>('/api/memories', {
-        textContent: trimmedText,
-        latitude: userCoordinates[1],
-        longitude: userCoordinates[0],
-        placeLabel: memoryPlaceLabel.trim() || undefined,
-        visibility: memoryVisibility,
-        media,
+      created = await api.post<{ id: string }>('/api/memories', {
+        textContent: snapshot.text,
+        latitude: snapshot.latitude,
+        longitude: snapshot.longitude,
+        placeLabel: snapshot.placeLabel,
+        visibility: snapshot.visibility,
+        media: snapshot.media,
       }, token);
-      setMemoryText('');
-      setMemoryPlaceLabel('');
-      setMemoryPhoto(null);
-      setMemoryAudio(null);
-      setCreateMemoryOpen(false);
-      await api.post<MemoryShareResponse>(`/api/memories/${created.id}/shares`, undefined, token).then(async (share) => {
+    } catch (error) {
+      // Rollback: remove the optimistic pin and surface the error.
+      setMemories((prev) => prev.filter((m) => m.id !== optimisticId));
+      setPageError(error instanceof Error ? error.message : 'Could not create memory');
+      return;
+    }
+
+    // Reconcile: server returned the real id. Refresh authoritative list,
+    // which will replace the optimistic pin (we filter by id so duplicates
+    // can't accumulate even if the server response races).
+    refreshMemories();
+
+    // Share is best-effort and must NEVER block the UI. On Android WebView
+    // navigator.share() can hang the main thread until the share sheet is
+    // dismissed — awaiting it inline froze the composer in production.
+    // Fire-and-forget here; if it fails or hangs, memory is still saved
+    // and the user can share from the pin later.
+    const createdId = created.id;
+    void (async () => {
+      try {
+        const share = await api.post<MemoryShareResponse>(`/api/memories/${createdId}/shares`, undefined, token);
         if (navigator.share) {
           await navigator.share({ title: 'Hidden Brooks memory', text: 'You have a hidden memory waiting for you.', url: share.shareUrl });
         } else if (navigator.clipboard) {
           await navigator.clipboard.writeText(share.shareUrl);
           setPageError('Share link copied');
         }
-      });
-      refreshMemories();
-    } catch (error) {
-      setPageError(error instanceof Error ? error.message : 'Could not create memory');
-    } finally {
-      setMemoryBusy(false);
-    }
+      } catch {
+        // Memory is saved; share is bonus. Stay silent.
+      }
+    })();
   };
 
   const handleShareMemory = async (memoryId: string) => {
@@ -1093,15 +1153,15 @@ export default function MapsExperience({
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
+      // Record the style we just initialized with so the theme-swap effect
+      // doesn't fire a redundant setStyle on first mapReady.
+      lastAppliedStyleRef.current = themedStyle;
 
-      map.on('load', () => {
-        setMapReady(true);
-        const initialBounds = map.getBounds();
-        if (initialBounds) {
-          setCurrentBounds(getBoundsState(initialBounds));
-        }
-
-        // Cluster source + layers for zoomed-out view
+      // Source + layer setup extracted so it can also re-run after a
+      // theme-driven style swap (Mapbox clears custom sources/layers on
+      // setStyle). Idempotent via getSource check.
+      const installClusterLayers = () => {
+        if (map.getSource('creator-clusters')) return;
         map.addSource('creator-clusters', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] },
@@ -1109,7 +1169,6 @@ export default function MapsExperience({
           clusterMaxZoom: 9,
           clusterRadius: 50,
         });
-
         map.addLayer({
           id: 'cluster-circles',
           type: 'circle',
@@ -1123,7 +1182,6 @@ export default function MapsExperience({
             'circle-stroke-color': '#ffffff',
           },
         });
-
         map.addLayer({
           id: 'cluster-count',
           type: 'symbol',
@@ -1136,6 +1194,18 @@ export default function MapsExperience({
           },
           paint: { 'text-color': '#ffffff' },
         });
+      };
+
+      map.on('style.load', installClusterLayers);
+
+      map.on('load', () => {
+        setMapReady(true);
+        const initialBounds = map.getBounds();
+        if (initialBounds) {
+          setCurrentBounds(getBoundsState(initialBounds));
+        }
+
+        installClusterLayers();
 
         map.on('click', 'cluster-circles', (e) => {
           const features = map.queryRenderedFeatures(e.point, { layers: ['cluster-circles'] });
@@ -1195,7 +1265,21 @@ export default function MapsExperience({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [fallbackCenter, fallbackZoom, mapConfigured, themedStyle, mapboxToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fallbackCenter, fallbackZoom, mapConfigured, mapboxToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Theme swap: change the Mapbox style in place instead of destroying
+  // and recreating the WebGL context (1-2 s freeze). The 'style.load'
+  // listener installed during init re-adds the cluster source/layers
+  // since Mapbox wipes custom sources on setStyle. DOM markers (creator
+  // pins, memory pins, user location) persist through setStyle and need
+  // no re-attach.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    if (lastAppliedStyleRef.current === themedStyle) return;
+    lastAppliedStyleRef.current = themedStyle;
+    map.setStyle(themedStyle);
+  }, [themedStyle, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

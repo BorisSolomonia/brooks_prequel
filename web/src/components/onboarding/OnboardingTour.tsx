@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { useTheme } from 'next-themes';
 import { tourSteps, type TourStep } from './tourSteps';
 import { useOnboarding } from './OnboardingProvider';
 
@@ -30,16 +29,8 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [showLocating, setShowLocating] = useState(false);
-  const [themeMounted, setThemeMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
   const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLast = stepIndex === totalSteps - 1;
-
-  // next-themes returns undefined during SSR; gate UI on mounted to avoid
-  // a hydration mismatch flash on the Welcome theme buttons.
-  useEffect(() => {
-    setThemeMounted(true);
-  }, []);
 
   // Release the Next button spinner as soon as the new step renders. Cleanup also
   // runs on unmount (tour close), so this single effect covers both reset paths.
@@ -371,29 +362,6 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
           />
         )}
         <p className="mt-2 text-xs leading-snug text-ig-text-secondary">{step.body}</p>
-        {step.kind === 'welcome' && (
-          <div className="mt-3 flex gap-2" role="group" aria-label="Theme">
-            {(['light', 'dark'] as const).map((mode) => {
-              const isActive = themeMounted && theme === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setTheme(mode)}
-                  aria-pressed={isActive}
-                  className={`flex-1 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border-2 px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    isActive
-                      ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
-                      : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
-                  }`}
-                >
-                  {mode === 'light' ? <WelcomeSunIcon /> : <WelcomeMoonIcon />}
-                  <span>{mode === 'light' ? 'Bright' : 'Dark'}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
         {showLocating && !targetRect && step.kind === 'spotlight' && (
           <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-ig-text-tertiary" aria-live="polite">
             <span className="tour-spinner h-2.5 w-2.5" aria-hidden="true" />
@@ -581,19 +549,3 @@ function computeTooltipPosition(step: TourStep, targetRect: Rect | null): CSSPro
   return { top, left, width: tooltipWidth };
 }
 
-function WelcomeSunIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-    </svg>
-  );
-}
-
-function WelcomeMoonIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
-    </svg>
-  );
-}
