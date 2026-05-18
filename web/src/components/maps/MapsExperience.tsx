@@ -706,8 +706,24 @@ export default function MapsExperience({
   const [memoryAudio, setMemoryAudio] = useState<MemoryMediaRequest | null>(null);
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [recording, setRecording] = useState(false);
+  // Memory share mode: 'link' = current behavior (token URL after save),
+  // 'follower' = direct in-app share to a follower (no link).
+  const [shareMode, setShareMode] = useState<'link' | 'follower'>('link');
+  const [followers, setFollowers] = useState<Array<{ userId: string; username: string | null; displayName: string; avatarUrl: string | null }>>([]);
+  const [selectedFollowerId, setSelectedFollowerId] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<BlobPart[]>([]);
+
+  // Fetch followers when the composer opens AND share mode is 'follower'.
+  // Keeps the network call lazy so users who only ever share via link
+  // never hit the endpoint.
+  useEffect(() => {
+    if (!createMemoryOpen || shareMode !== 'follower' || !token) return;
+    if (followers.length > 0) return; // cached
+    api.get<typeof followers>('/api/me/followers', token)
+      .then(setFollowers)
+      .catch((err) => console.warn('[memory] follower fetch failed:', err));
+  }, [createMemoryOpen, shareMode, token, followers.length]);
 
   const mapConfigured = Boolean(
     mapboxToken &&
@@ -995,6 +1011,11 @@ export default function MapsExperience({
       longitude: userCoordinates[0],
     };
 
+    // Snapshot share mode + selected follower so the background call uses
+    // the right values even if the UI moves on while POSTs are in flight.
+    const sharePath: 'link' | 'follower' = shareMode;
+    const followerRecipientId = sharePath === 'follower' ? selectedFollowerId : '';
+
     // Drop UI state + show the optimistic pin in a single React commit.
     setMemories((prev) => [...prev, optimisticPin]);
     setMemoryText('');
@@ -1003,6 +1024,9 @@ export default function MapsExperience({
     setMemoryAudio(null);
     setCreateMemoryOpen(false);
     setMemoryBusy(false);
+    // Reset share mode for the next composer session.
+    setShareMode('link');
+    setSelectedFollowerId('');
 
     let created: { id: string };
     try {
@@ -1038,12 +1062,35 @@ export default function MapsExperience({
     // can't accumulate even if the server response races).
     refreshMemories();
 
-    // Share is best-effort and must NEVER block the UI. On Android WebView
-    // navigator.share() can hang the main thread until the share sheet is
-    // dismissed — awaiting it inline froze the composer in production.
-    // Fire-and-forget here; if it fails or hangs, memory is still saved
-    // and the user can share from the pin later.
+    // Branch on share path. Both are fire-and-forget — memory is saved
+    // regardless of share success.
     const createdId = created.id;
+
+    // Direct in-app share to a follower: backend creates a MemoryGrant
+    // and pushes "shared a memory with you" to the recipient.
+    if (sharePath === 'follower' && followerRecipientId) {
+      void api
+        .post(
+          `/api/memories/${createdId}/direct-shares`,
+          { recipientUserId: followerRecipientId },
+          token,
+        )
+        .then(() => {
+          setPageError('Sent to follower. They\'ll get a notification.');
+        })
+        .catch((err) => {
+          console.error('[memory] direct share failed:', err);
+          setPageError(
+            err instanceof Error
+              ? `Memory saved, but follower send failed: ${err.message}`
+              : 'Memory saved, but follower send failed.',
+          );
+        });
+      return;
+    }
+
+    // Link share — generate share token, then open the native share sheet
+    // OR copy to clipboard. Existing behavior, unchanged.
     void (async () => {
       try {
         const share = await api.post<MemoryShareResponse>(`/api/memories/${createdId}/shares`, undefined, token);
@@ -2091,14 +2138,70 @@ export default function MapsExperience({
               </button>
             </div>
 
+            {/* Share mode — link (token URL) vs direct share to a follower */}
+            <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
+              How to share
+            </label>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setShareMode('link')}
+                className={`min-h-touch rounded-2xl border-2 px-3 py-2 text-xs font-semibold transition ${
+                  shareMode === 'link'
+                    ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
+                    : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
+                }`}
+              >
+                Share via link
+              </button>
+              <button
+                type="button"
+                onClick={() => setShareMode('follower')}
+                className={`min-h-touch rounded-2xl border-2 px-3 py-2 text-xs font-semibold transition ${
+                  shareMode === 'follower'
+                    ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
+                    : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
+                }`}
+              >
+                Share with follower
+              </button>
+            </div>
+
+            {shareMode === 'follower' && (
+              <div className="mt-3">
+                {followers.length === 0 ? (
+                  <p className="text-xs text-ig-text-tertiary">
+                    No followers yet. Share the app or switch to &quot;Share via link&quot;.
+                  </p>
+                ) : (
+                  <select
+                    value={selectedFollowerId}
+                    onChange={(e) => setSelectedFollowerId(e.target.value)}
+                    className="min-h-touch w-full rounded-2xl border-2 border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
+                  >
+                    <option value="">Pick a follower…</option>
+                    {followers.map((f) => (
+                      <option key={f.userId} value={f.userId}>
+                        {f.displayName}{f.username ? ` (@${f.username})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
             <button
               type="button"
-              disabled={memoryBusy}
+              disabled={memoryBusy || (shareMode === 'follower' && !selectedFollowerId)}
               onClick={handleCreateMemory}
               className="mw-button-primary mt-6 inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold transition hover:bg-brand-600 disabled:opacity-60"
             >
               {memoryBusy && <Spinner />}
-              {memoryBusy ? 'Saving...' : 'Save and share'}
+              {memoryBusy
+                ? 'Saving...'
+                : shareMode === 'follower'
+                  ? 'Save and send'
+                  : 'Save and share'}
             </button>
 
             <a

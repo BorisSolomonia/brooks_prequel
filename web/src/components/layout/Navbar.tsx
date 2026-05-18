@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import GlobalSearchBar from '@/components/layout/GlobalSearchBar';
 import ThemeToggle from '@/components/theme/ThemeToggle';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import { startAuthFlow } from '@/lib/capacitor';
 
 // Shared click handler for any "Sign In" entry point. On web this navigates
@@ -98,6 +99,7 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <NotificationBell />
               <ThemeToggle />
               {user ? (
                 <a
@@ -120,6 +122,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center gap-2 md:hidden">
+          <NotificationBell />
           <ThemeToggle />
           {isLoading ? (
             <div className="h-12 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />

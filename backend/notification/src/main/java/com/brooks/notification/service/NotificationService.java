@@ -1,7 +1,10 @@
 package com.brooks.notification.service;
 
 import com.brooks.notification.domain.DeviceToken;
+import com.brooks.notification.domain.InAppNotification;
 import com.brooks.notification.repository.DeviceTokenRepository;
+import com.brooks.notification.repository.InAppNotificationRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -27,23 +30,43 @@ import java.util.UUID;
 public class NotificationService {
 
     private final DeviceTokenRepository deviceTokenRepository;
+    private final InAppNotificationRepository inAppRepo;
     private final FcmSender fcmSender;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Async
     @Transactional
     public void notifyUser(UUID userId, String title, String body, Map<String, String> data) {
+        // 1. Persist in-app history FIRST so the bell dropdown shows the
+        // notification even if every FCM send fails. The push is bonus;
+        // the in-app record is the source of truth.
+        String type = data != null ? data.getOrDefault("type", "generic") : "generic";
+        String dataJson = null;
+        if (data != null && !data.isEmpty()) {
+            try {
+                dataJson = objectMapper.writeValueAsString(data);
+            } catch (Exception ignored) {
+                /* fall through with null dataJson */
+            }
+        }
+        inAppRepo.save(new InAppNotification(userId, type, safeTrim(title, 200), safeTrim(body, 500), dataJson));
+
+        // 2. Fan-out the FCM push to every registered device.
         List<DeviceToken> tokens = deviceTokenRepository.findAllByUserId(userId);
         if (tokens.isEmpty()) {
-            log.debug("No device tokens for user {} — skipping notification \"{}\"", userId, title);
+            log.debug("No device tokens for user {} — in-app notification stored, push skipped", userId);
             return;
         }
         for (DeviceToken t : tokens) {
             boolean ok = fcmSender.send(t.getToken(), title, body, data);
             if (!ok) {
-                // Conservatively purge tokens FCM didn't accept. Cheaper to
-                // re-register on next app open than to keep stale rows.
                 deviceTokenRepository.deleteByToken(t.getToken());
             }
         }
+    }
+
+    private String safeTrim(String s, int max) {
+        if (s == null) return "";
+        return s.length() <= max ? s : s.substring(0, max - 1) + "…";
     }
 }

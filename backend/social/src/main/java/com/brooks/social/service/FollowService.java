@@ -88,16 +88,27 @@ public class FollowService {
 
     @Transactional(readOnly = true)
     public List<FollowerSummaryResponse> getMyFollowers(String auth0Subject) {
-        User me = userService.findByAuth0Subject(auth0Subject);
-        List<UUID> followerIds = followRepository.findFollowerIdsByFollowingId(me.getId());
-        if (followerIds.isEmpty()) {
-            return List.of();
-        }
-        Map<UUID, User> userMap = userService.findAllByIds(followerIds);
-        Map<UUID, UserProfile> profileMap = profileRepository.findAllByUserIdIn(followerIds)
-                .stream().collect(Collectors.toMap(UserProfile::getUserId, p -> p));
+        return listFollowersOf(auth0Subject);
+    }
 
-        return followerIds.stream()
+    @Transactional(readOnly = true)
+    public List<FollowerSummaryResponse> listFollowersOf(String auth0Subject) {
+        User me = userService.findByAuth0Subject(auth0Subject);
+        return summariesFor(followRepository.findFollowerIdsByFollowingId(me.getId()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<FollowerSummaryResponse> listFollowingOf(String auth0Subject) {
+        User me = userService.findByAuth0Subject(auth0Subject);
+        return summariesFor(followRepository.findFollowingIdsByFollowerId(me.getId()));
+    }
+
+    private List<FollowerSummaryResponse> summariesFor(List<UUID> userIds) {
+        if (userIds.isEmpty()) return List.of();
+        Map<UUID, User> userMap = userService.findAllByIds(userIds);
+        Map<UUID, UserProfile> profileMap = profileRepository.findAllByUserIdIn(userIds)
+                .stream().collect(Collectors.toMap(UserProfile::getUserId, p -> p));
+        return userIds.stream()
                 .filter(userMap::containsKey)
                 .map(id -> {
                     User u = userMap.get(id);
