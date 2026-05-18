@@ -43,12 +43,10 @@ public class FollowController {
         return ResponseEntity.ok(followService.getFollowStatus(subject, userId));
     }
 
-    /** Users who follow ME — used by memory composer's follower picker. */
-    @GetMapping("/me/followers")
-    public ResponseEntity<List<FollowerSummaryResponse>> myFollowers(Authentication authentication) {
-        String subject = AuthPrincipal.subject(authentication);
-        return ResponseEntity.ok(followService.listFollowersOf(subject));
-    }
+    // NOTE: GET /api/me/followers already lives in GuideGiftController
+    // (com.brooks.app.api) and returns List<FollowerSummaryResponse> —
+    // same shape the memory-composer picker consumes. Don't re-add it
+    // here or the Spring boot ambiguous-mapping error returns.
 
     /** Users I FOLLOW — used by profile "Following" tab in batch 2C. */
     @GetMapping("/me/following")
