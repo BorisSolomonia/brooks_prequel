@@ -194,6 +194,29 @@ function getMemoryPinAppearance(memory: MemoryMapPin): { background: string; gly
   return { background: '#12c7c9', glyph: 'M', ariaLabel: 'Memory pin' };
 }
 
+/**
+ * Haversine distance in meters between two lat/lng pairs. Used to sort
+ * drawer memory list by proximity to the user — closest first. Drops
+ * trig precision a touch (Earth-radius rounded to 6,371 km) but cheap
+ * enough to run on every memory in the viewport without memoization.
+ */
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6_371_000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Pretty-printed distance for the drawer's "closest" callout. */
+function formatDistance(meters: number | null): string {
+  if (meters === null) return '';
+  if (meters < 1000) return `${Math.round(meters)} m away`;
+  return `${(meters / 1000).toFixed(meters < 10000 ? 1 : 0)} km away`;
+}
+
 function isMemoryWithinBounds(memory: MemoryMapPin, bounds: MapBoundsState | null): boolean {
   if (!bounds) {
     return true;
@@ -652,6 +675,14 @@ export default function MapsExperience({
   // redesign per user's three-zone direction: bottom CTA + top-right hamburger
   // + drawer + full-screen composer modal.
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Curated-list state — show the first N memories in the drawer, hide
+  // the rest behind a "Show all" tap. Reduces overwhelm + frames the
+  // list as discovery rather than a feed. Resets on drawer close so each
+  // session feels fresh.
+  const [drawerShowAllMemories, setDrawerShowAllMemories] = useState(false);
+  useEffect(() => {
+    if (!drawerOpen) setDrawerShowAllMemories(false);
+  }, [drawerOpen]);
   const { currentStep, isActive: tourActive } = useOnboarding();
 
   // Auto-close the drawer whenever a memory becomes selected. The selected
@@ -802,6 +833,29 @@ export default function MapsExperience({
   const viewportMemories = useMemo(() => {
     return visibleMemories.filter((memory) => isMemoryWithinBounds(memory, currentBounds));
   }, [currentBounds, visibleMemories]);
+
+  // Sorted-and-scored viewport memories for the drawer list. Density
+  // intelligence: closest first, then "shared with me" boost, then
+  // "has rich media" boost. Distance computed via haversine when the
+  // user's coordinates are known; falls back to original order otherwise.
+  const sortedViewportMemories = useMemo(() => {
+    if (!userCoordinates || !Array.isArray(userCoordinates)) {
+      return viewportMemories.map((m) => ({ memory: m, distanceMeters: null as number | null }));
+    }
+    const [userLng, userLat] = userCoordinates as [number, number];
+    return viewportMemories
+      .map((m) => ({
+        memory: m,
+        distanceMeters: haversineMeters(userLat, userLng, m.latitude, m.longitude),
+      }))
+      .sort((a, b) => {
+        // Closest first. Friend-shared (sharedWithViewer) gets a virtual
+        // 50-meter pull. Media-rich memories nudge ahead by 25m.
+        const aBoost = (a.memory.sharedWithViewer ? 50 : 0) + (a.memory.hasImage || a.memory.hasAudio ? 25 : 0);
+        const bBoost = (b.memory.sharedWithViewer ? 50 : 0) + (b.memory.hasImage || b.memory.hasAudio ? 25 : 0);
+        return ((a.distanceMeters ?? Infinity) - aBoost) - ((b.distanceMeters ?? Infinity) - bBoost);
+      });
+  }, [viewportMemories, userCoordinates]);
 
   useEffect(() => {
     if (!tokenLoading && !token) {
@@ -1781,23 +1835,27 @@ export default function MapsExperience({
           Replaces the legacy bottom-anchored panel — separating discovery
           (drawer) from primary creation (bottom pill) from the map itself. */}
       {drawerOpen && (
-        <div className="absolute inset-0 z-40">
+        <div className="absolute inset-0 z-40" style={{ animation: 'mw-drawer-fade-in 220ms ease-out' }}>
           <button
             type="button"
             aria-label="Close drawer"
             onClick={() => setDrawerOpen(false)}
-            className="absolute inset-0 bg-black/35 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/55 backdrop-blur-[3px]"
           />
           <div
             data-tour="memory-panel"
-            className="absolute right-0 top-0 flex h-full w-[min(92vw,420px)] flex-col rounded-l-[28px] border-l-2 border-ig-border bg-ig-primary p-3 shadow-[-12px_0_32px_rgba(15,23,42,0.22)] md:p-4"
-            style={{ animation: 'mw-drawer-in 220ms ease-out' }}
+            className="absolute right-0 top-0 flex h-full w-[min(92vw,420px)] flex-col rounded-l-[28px] border-l-2 border-ig-border bg-ig-primary p-3 shadow-[-18px_0_48px_rgba(15,23,42,0.32)] md:p-4"
+            style={{ animation: 'mw-drawer-in 280ms cubic-bezier(0.22, 1, 0.36, 1)' }}
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="mw-eyebrow text-[11px]">In view</p>
+                <p className="mw-eyebrow text-[11px]">Discovery</p>
                 <h2 className="mw-section-title mt-0.5 text-base text-ig-text-primary md:text-xl">
-                  {viewportPins.length + viewportMemories.length} nearby
+                  {viewportMemories.length === 0 && viewportPins.length === 0
+                    ? 'Nothing in view yet'
+                    : viewportMemories.length > 0
+                      ? `People left ${viewportMemories.length} memor${viewportMemories.length === 1 ? 'y' : 'ies'} here`
+                      : `${viewportPins.length} guide${viewportPins.length === 1 ? '' : 's'} around you`}
                 </h2>
                 <p className="mt-0.5 text-[11px] text-ig-text-tertiary">
                   {viewportPins.length} guides · {viewportMemories.length} memories
@@ -2003,33 +2061,97 @@ export default function MapsExperience({
                 )}
               </div>
 
-              <div className="mt-4 space-y-3">
-                {activeLayers.guides
-                  ? viewportPins.map((pin) => (
+              <div className="mt-4">
+                {activeLayers.guides ? (
+                  // Guides list — left unchanged, rendered exactly as before.
+                  <div className="space-y-3">
+                    {viewportPins.map((pin) => (
                       <InfluencerViewportSlice
                         key={pin.userId}
                         pin={pin}
                         onHoverStart={setHoveredSlicePinId}
                         onHoverEnd={() => setHoveredSlicePinId(null)}
                       />
-                    ))
-                  : viewportMemories.map((memory) => (
-                      <MemoryViewportSlice
-                        key={memory.id}
-                        memory={memory}
-                        onSelect={(nextMemory) => {
-                          setSelectedMemory(nextMemory);
-                          setSelectedPin(null);
-                        }}
-                      />
                     ))}
+                  </div>
+                ) : (
+                  // Memories list — curated: first 5 visible, "Show all"
+                  // expands. First item is highlighted as the closest /
+                  // most relevant. Spacing rhythm: extra mt every 4th
+                  // item to break the wall-of-cards feel.
+                  (() => {
+                    const INITIAL_VISIBLE = 5;
+                    const total = sortedViewportMemories.length;
+                    const showAll = drawerShowAllMemories || total <= INITIAL_VISIBLE;
+                    const visible = showAll ? sortedViewportMemories : sortedViewportMemories.slice(0, INITIAL_VISIBLE);
+                    const hiddenCount = total - visible.length;
+                    return (
+                      <>
+                        {visible.length > 0 && (
+                          <p className="mw-eyebrow mb-2 text-[10px] text-ig-text-tertiary">
+                            {visible[0]?.memory.sharedWithViewer ? 'Shared with you · closest' : 'Closest to you'}
+                          </p>
+                        )}
+                        <ul className="list-none p-0">
+                          {visible.map((entry, idx) => {
+                            const isClosest = idx === 0;
+                            // Rhythm: extra top margin every 4th item.
+                            const rhythmGap = idx > 0 && idx % 4 === 0 ? 'mt-5' : idx > 0 ? 'mt-3' : '';
+                            return (
+                              <li key={entry.memory.id} className={rhythmGap}>
+                                {isClosest ? (
+                                  <div className="relative">
+                                    <span className="absolute -top-2 left-3 z-10 rounded-pill border border-brand-500/40 bg-brand-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-brand-500">
+                                      {entry.memory.sharedWithViewer ? '★ Shared · ' : ''}
+                                      {formatDistance(entry.distanceMeters) || 'Closest'}
+                                    </span>
+                                    <div className="ring-2 ring-brand-500/40 ring-offset-2 ring-offset-ig-primary rounded-[24px]">
+                                      <MemoryViewportSlice
+                                        memory={entry.memory}
+                                        onSelect={(nextMemory) => {
+                                          setSelectedMemory(nextMemory);
+                                          setSelectedPin(null);
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <MemoryViewportSlice
+                                    memory={entry.memory}
+                                    onSelect={(nextMemory) => {
+                                      setSelectedMemory(nextMemory);
+                                      setSelectedPin(null);
+                                    }}
+                                  />
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {hiddenCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setDrawerShowAllMemories(true)}
+                            className="mt-4 inline-flex w-full min-h-touch items-center justify-center rounded-2xl border-2 border-dashed border-ig-border bg-ig-primary/60 px-4 py-2.5 text-sm font-semibold text-ig-text-secondary transition hover:bg-ig-hover hover:text-ig-text-primary"
+                          >
+                            Show all nearby memories ({hiddenCount} more)
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()
+                )}
               </div>
             </div>
           </div>
           <style jsx global>{`
             @keyframes mw-drawer-in {
-              from { transform: translateX(100%); }
-              to { transform: translateX(0); }
+              from { transform: translateX(100%); opacity: 0.6; }
+              to   { transform: translateX(0);    opacity: 1;   }
+            }
+            @keyframes mw-drawer-fade-in {
+              from { opacity: 0; }
+              to   { opacity: 1; }
             }
           `}</style>
         </div>
