@@ -21,15 +21,27 @@ public class SearchRepository {
     // ── Creator search ──────────────────────────────────────────
 
     public List<CreatorSearchResult> searchCreators(String tsQuery, int limit, int offset) {
+        // LEFT JOIN user_profiles so users WITHOUT a profile row (signed
+        // up but never edited their profile) are still findable. Match
+        // either the profile's search_vector OR the username substring,
+        // so people who haven't published a guide — or even filled in
+        // a display name — appear in the People tab.
         return jdbcTemplate.query("""
-            SELECT u.id, u.username, p.display_name, p.avatar_url, p.region,
-                   p.follower_count, p.guide_count, p.is_verified
-            FROM user_profiles p
-            JOIN users u ON u.id = p.user_id
-            WHERE p.search_vector @@ plainto_tsquery('english', ?)
-              AND u.status = 'ACTIVE'
-            ORDER BY ts_rank(p.search_vector, plainto_tsquery('english', ?)) DESC,
-                     p.follower_count DESC
+            SELECT u.id, u.username,
+                   COALESCE(p.display_name, u.username) AS display_name,
+                   p.avatar_url, p.region,
+                   COALESCE(p.follower_count, 0) AS follower_count,
+                   COALESCE(p.guide_count, 0) AS guide_count,
+                   COALESCE(p.is_verified, false) AS is_verified
+            FROM users u
+            LEFT JOIN user_profiles p ON p.user_id = u.id
+            WHERE u.status = 'ACTIVE'
+              AND (
+                  (p.search_vector IS NOT NULL AND p.search_vector @@ plainto_tsquery('english', ?))
+                  OR LOWER(u.username) LIKE LOWER('%' || ? || '%')
+              )
+            ORDER BY COALESCE(ts_rank(p.search_vector, plainto_tsquery('english', ?)), 0) DESC,
+                     COALESCE(p.follower_count, 0) DESC
             LIMIT ? OFFSET ?
             """,
             (rs, rowNum) -> CreatorSearchResult.builder()
@@ -42,18 +54,21 @@ public class SearchRepository {
                 .guideCount(rs.getInt("guide_count"))
                 .verified(rs.getBoolean("is_verified"))
                 .build(),
-            tsQuery, tsQuery, limit, offset
+            tsQuery, tsQuery, tsQuery, limit, offset
         );
     }
 
     public long countCreators(String tsQuery) {
         Long count = jdbcTemplate.queryForObject("""
             SELECT COUNT(*)
-            FROM user_profiles p
-            JOIN users u ON u.id = p.user_id
-            WHERE p.search_vector @@ plainto_tsquery('english', ?)
-              AND u.status = 'ACTIVE'
-            """, Long.class, tsQuery);
+            FROM users u
+            LEFT JOIN user_profiles p ON p.user_id = u.id
+            WHERE u.status = 'ACTIVE'
+              AND (
+                  (p.search_vector IS NOT NULL AND p.search_vector @@ plainto_tsquery('english', ?))
+                  OR LOWER(u.username) LIKE LOWER('%' || ? || '%')
+              )
+            """, Long.class, tsQuery, tsQuery);
         return count != null ? count : 0;
     }
 

@@ -54,4 +54,27 @@ public interface MemoryRepository extends JpaRepository<Memory, UUID> {
     List<Memory> findAllWithMediaByIdIn(@Param("ids") Collection<UUID> ids);
 
     long countByCreatorIdAndDeletedAtIsNullAndCreatedAtAfter(UUID creatorId, java.time.Instant createdAt);
+
+    /** Memories I created (excludes soft-deleted). Newest first. */
+    @Query("""
+        SELECT m FROM Memory m
+        WHERE m.creatorId = :creatorId
+          AND m.deletedAt IS NULL
+        ORDER BY m.createdAt DESC
+        """)
+    List<Memory> findMyCreatedMemories(@Param("creatorId") UUID creatorId);
+
+    /** Memories shared with me via either link-redemption or direct share. */
+    @Query("""
+        SELECT m FROM Memory m
+        WHERE m.deletedAt IS NULL
+          AND EXISTS (
+              SELECT 1 FROM MemoryGrant g
+              WHERE g.memoryId = m.id
+                AND g.beneficiaryUserId = :viewerId
+                AND g.removedAt IS NULL
+          )
+        ORDER BY m.createdAt DESC
+        """)
+    List<Memory> findMemoriesSharedWithMe(@Param("viewerId") UUID viewerId);
 }

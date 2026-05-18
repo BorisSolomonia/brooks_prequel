@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
+import { useToast } from '@/components/ui/Toast';
 import type { MediaUsage } from '@/types';
 
 const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp';
@@ -44,6 +45,7 @@ export function ImageUploadField({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
@@ -52,8 +54,14 @@ export function ImageUploadField({
     try {
       const uploaded = await api.uploadMedia(file, usage, token);
       onChange(uploaded.url);
+      toast.success('Image uploaded.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      const msg = err instanceof Error ? err.message : 'Upload failed';
+      console.error('[ImageUploadField] upload failed:', err);
+      setError(msg);
+      // Also surface as a toast so the user can't miss it. The inline
+      // <p> below is a nicety; the toast is the loud signal.
+      toast.error(`Upload failed: ${msg}`);
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';

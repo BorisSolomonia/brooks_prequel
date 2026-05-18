@@ -2,6 +2,7 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":auth"))
     implementation(project(":user"))
+    implementation(project(":social"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")

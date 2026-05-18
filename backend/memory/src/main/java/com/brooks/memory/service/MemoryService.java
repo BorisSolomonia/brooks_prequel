@@ -92,6 +92,24 @@ public class MemoryService {
         return toResponse(memory, viewer.getId());
     }
 
+    /** Memories I created — newest first. Used by /memories "Created" tab. */
+    @Transactional(readOnly = true)
+    public List<MemoryResponse> listMyCreatedMemories(String auth0Subject) {
+        User viewer = userService.findByAuth0Subject(auth0Subject);
+        return memoryRepository.findMyCreatedMemories(viewer.getId()).stream()
+                .map(m -> toResponse(m, viewer.getId()))
+                .toList();
+    }
+
+    /** Memories shared with me (via link redemption OR direct in-app share). */
+    @Transactional(readOnly = true)
+    public List<MemoryResponse> listMemoriesSharedWithMe(String auth0Subject) {
+        User viewer = userService.findByAuth0Subject(auth0Subject);
+        return memoryRepository.findMemoriesSharedWithMe(viewer.getId()).stream()
+                .map(m -> toResponse(m, viewer.getId()))
+                .toList();
+    }
+
     @Transactional
     public MemoryResponse updateMemory(String auth0Subject, UUID memoryId, MemoryUpdateRequest request) {
         User viewer = userService.findByAuth0Subject(auth0Subject);

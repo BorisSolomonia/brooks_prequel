@@ -27,6 +27,7 @@ const desktopLinks = [
   { href: '/search', label: 'Explore' },
   { href: '/maps', label: 'Maps', auth: true },
   { href: '/guides', label: 'My Guides', auth: true },
+  { href: '/memories', label: 'My Memories', auth: true },
   { href: '/trips', label: 'Purchased guides', auth: true },
   { href: '/pricing', label: 'Pricing' },
   { href: '/contact', label: 'Contact' },

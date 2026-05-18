@@ -127,7 +127,10 @@ export default function NotificationBell() {
               Notifications
             </p>
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          {/* Height capped to viewport minus the navbar + safe-area so the
+              full dropdown is always visible on mobile (Pixel 3-button nav,
+              iPhone notch). 9rem leaves room for navbar + small buffer. */}
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(100dvh - 9rem - env(safe-area-inset-bottom))' }}>
             {items.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-ig-text-tertiary">
                 Nothing yet. You&apos;ll see memory shares, follows and updates here.

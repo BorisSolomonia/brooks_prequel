@@ -710,6 +710,8 @@ export default function MapsExperience({
   // 'follower' = direct in-app share to a follower (no link).
   const [shareMode, setShareMode] = useState<'link' | 'follower'>('link');
   const [followers, setFollowers] = useState<Array<{ userId: string; username: string | null; displayName: string; avatarUrl: string | null }>>([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followersFetched, setFollowersFetched] = useState(false);
   const [selectedFollowerId, setSelectedFollowerId] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<BlobPart[]>([]);
@@ -719,11 +721,20 @@ export default function MapsExperience({
   // never hit the endpoint.
   useEffect(() => {
     if (!createMemoryOpen || shareMode !== 'follower' || !token) return;
-    if (followers.length > 0) return; // cached
+    if (followersFetched) return;
+    setFollowersLoading(true);
     api.get<typeof followers>('/api/me/followers', token)
-      .then(setFollowers)
-      .catch((err) => console.warn('[memory] follower fetch failed:', err));
-  }, [createMemoryOpen, shareMode, token, followers.length]);
+      .then((data) => {
+        console.info('[memory] followers fetched:', data?.length ?? 0);
+        setFollowers(data ?? []);
+        setFollowersFetched(true);
+      })
+      .catch((err) => {
+        console.error('[memory] follower fetch failed:', err);
+        setPageError('Could not load your followers. Try again or use the link mode.');
+      })
+      .finally(() => setFollowersLoading(false));
+  }, [createMemoryOpen, shareMode, token, followersFetched]);
 
   const mapConfigured = Boolean(
     mapboxToken &&
@@ -2169,7 +2180,9 @@ export default function MapsExperience({
 
             {shareMode === 'follower' && (
               <div className="mt-3">
-                {followers.length === 0 ? (
+                {followersLoading ? (
+                  <p className="text-xs text-ig-text-tertiary">Loading your followers…</p>
+                ) : followers.length === 0 ? (
                   <p className="text-xs text-ig-text-tertiary">
                     No followers yet. Share the app or switch to &quot;Share via link&quot;.
                   </p>

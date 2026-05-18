@@ -85,14 +85,20 @@ function ProfilePageInner() {
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div className="rounded-xl border border-ig-border bg-ig-primary p-3">
+                <Link
+                  href="/profile/followers"
+                  className="rounded-xl border border-ig-border bg-ig-primary p-3 transition-colors hover:bg-ig-hover"
+                >
                   <p className="text-xs uppercase tracking-wide text-ig-text-tertiary">Followers</p>
                   <p className="mt-2 text-xl font-semibold text-ig-text-primary">{profile.followerCount}</p>
-                </div>
-                <div className="rounded-xl border border-ig-border bg-ig-primary p-3">
+                </Link>
+                <Link
+                  href="/profile/following"
+                  className="rounded-xl border border-ig-border bg-ig-primary p-3 transition-colors hover:bg-ig-hover"
+                >
                   <p className="text-xs uppercase tracking-wide text-ig-text-tertiary">Following</p>
                   <p className="mt-2 text-xl font-semibold text-ig-text-primary">{profile.followingCount}</p>
-                </div>
+                </Link>
                 <div className="rounded-xl border border-ig-border bg-ig-primary p-3">
                   <p className="text-xs uppercase tracking-wide text-ig-text-tertiary">Guides</p>
                   <p className="mt-2 text-xl font-semibold text-ig-text-primary">{profile.guideCount}</p>

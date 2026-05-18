@@ -48,6 +48,16 @@ public class MemoryController {
         return ResponseEntity.ok(memoryService.getMemory(subject(authentication), memoryId));
     }
 
+    @GetMapping("/me/memories/created")
+    public ResponseEntity<java.util.List<MemoryResponse>> listMyCreated(Authentication authentication) {
+        return ResponseEntity.ok(memoryService.listMyCreatedMemories(subject(authentication)));
+    }
+
+    @GetMapping("/me/memories/shared")
+    public ResponseEntity<java.util.List<MemoryResponse>> listSharedWithMe(Authentication authentication) {
+        return ResponseEntity.ok(memoryService.listMemoriesSharedWithMe(subject(authentication)));
+    }
+
     @PatchMapping("/memories/{memoryId}")
     public ResponseEntity<MemoryResponse> updateMemory(
             Authentication authentication,
