@@ -1,6 +1,7 @@
 package com.brooks.memory.api;
 
 import com.brooks.memory.dto.*;
+import com.brooks.memory.service.MemoryDirectShareService;
 import com.brooks.memory.service.MemoryService;
 import com.brooks.user.service.UserService;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class MemoryController {
 
     private final MemoryService memoryService;
+    private final MemoryDirectShareService memoryDirectShareService;
     private final UserService userService;
 
     @PostMapping("/memories")
@@ -67,6 +69,21 @@ public class MemoryController {
             Authentication authentication,
             @PathVariable UUID memoryId) {
         return ResponseEntity.ok(memoryService.shareMemory(subject(authentication), memoryId));
+    }
+
+    /**
+     * Direct in-app share to a follower. Recipient must currently follow
+     * the memory creator. Creates a MemoryGrant with source = DIRECT and
+     * fires DirectMemoryShareCreatedEvent (notification module pushes).
+     */
+    @PostMapping("/memories/{memoryId}/direct-shares")
+    public ResponseEntity<Void> shareMemoryWithFollower(
+            Authentication authentication,
+            @PathVariable UUID memoryId,
+            @Valid @RequestBody DirectShareRequest request) {
+        UUID creatorId = userService.findByAuth0Subject(subject(authentication)).getId();
+        memoryDirectShareService.shareWithFollower(memoryId, creatorId, request.recipientUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/memory-shares/{token}")
