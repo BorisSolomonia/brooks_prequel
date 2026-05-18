@@ -93,3 +93,13 @@ build/
 !**/gradle/wrapper/gradle-wrapper.jar
 *.har
 brooks-485009-*.json
+
+# Firebase / FCM secrets — added 2026-05-18.
+# google-services.json contains the Android-side Firebase config (API key,
+# project ID, sender ID). Public-ish but treated as secret for hygiene.
+# firebase-admin.json is the SERVICE ACCOUNT key — full admin access to
+# the Firebase project. NEVER commit. GitHub Push Protection blocks this.
+google-services.json
+**/google-services.json
+firebase-admin.json
+**/firebase-admin.json

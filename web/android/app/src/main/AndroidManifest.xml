@@ -71,4 +71,16 @@
       the system prompt to appear.
     -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      Location permissions for the /maps page. ACCESS_FINE_LOCATION gives
+      the precise GPS location used when the user creates a memory. The
+      coarse fallback is granted if the user picks "approximate location"
+      in the system dialog. BOTH must be declared here for navigator
+      .geolocation in the WebView to actually surface the system prompt
+      — without these, the request is silently denied and the app's entry
+      in Settings → Apps shows no Location tab at all.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 </manifest>

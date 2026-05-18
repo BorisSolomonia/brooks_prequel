@@ -11,6 +11,7 @@ import { useMapboxStyle } from '@/lib/mapboxStyle';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import Spinner from '@/components/ui/Spinner';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
+import { isNative } from '@/lib/capacitor';
 import type {
   InfluencerMapPin,
   InfluencerMapResponse,
@@ -653,6 +654,17 @@ export default function MapsExperience({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { currentStep, isActive: tourActive } = useOnboarding();
 
+  // Auto-close the drawer whenever a memory becomes selected. The selected
+  // memory card renders at bottom-12; the right-slide drawer would otherwise
+  // cover it, hiding the card the user just asked to see. Handles every
+  // selection path uniformly (tap from drawer list, tap a pin on the map,
+  // programmatic selection) without needing setDrawerOpen calls scattered
+  // through every onSelect handler. We don't reopen on close — clean map
+  // is the expected UX, per user spec.
+  useEffect(() => {
+    if (selectedMemory) setDrawerOpen(false);
+  }, [selectedMemory]);
+
   // Onboarding tour wiring. Match on step.id (kind-agnostic so the same logic survives
   // future centered/spotlight refactors).
   useEffect(() => {
@@ -1135,19 +1147,62 @@ export default function MapsExperience({
   }, [token, currentBounds, activeLayers.memories]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!fallbackCenter || typeof window === 'undefined' || !navigator.geolocation) {
+    if (!fallbackCenter || typeof window === 'undefined') {
       setLocationState('fallback');
       return;
     }
 
+    let cancelled = false;
+
+    const handleCoords = (lng: number, lat: number) => {
+      if (cancelled) return;
+      setUserCoordinates([lng, lat]);
+      setLocationState('current');
+    };
+    const handleFail = () => {
+      if (cancelled) return;
+      setLocationState('fallback');
+    };
+
+    if (isNative()) {
+      // navigator.geolocation in the Capacitor WebView is sandboxed and
+      // returns null EVEN WHEN the Android-level ACCESS_FINE_LOCATION
+      // permission is granted. The @capacitor/geolocation native plugin
+      // bridges directly to Android's LocationManager and returns real
+      // coordinates as long as the OS permission is granted.
+      (async () => {
+        try {
+          // @ts-ignore - resolved at runtime via npm install
+          const mod = await import('@capacitor/geolocation');
+          if (cancelled) return;
+          const pos = await mod.Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 8000,
+          });
+          handleCoords(pos.coords.longitude, pos.coords.latitude);
+        } catch (err) {
+          console.error('[MapsExperience] native geolocation failed:', err);
+          handleFail();
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    // Web path — standard browser API.
+    if (!navigator.geolocation) {
+      setLocationState('fallback');
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setUserCoordinates([coords.longitude, coords.latitude]);
-        setLocationState('current');
-      },
-      () => setLocationState('fallback'),
+      ({ coords }) => handleCoords(coords.longitude, coords.latitude),
+      handleFail,
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
     );
+    return () => {
+      cancelled = true;
+    };
   }, [fallbackCenter]);
 
   useEffect(() => {

@@ -61,8 +61,10 @@ key.properties
 .externalNativeBuild
 .cxx/
 
-# Google Services (e.g. APIs or Firebase)
-# google-services.json
+# Google Services (e.g. APIs or Firebase) — REQUIRED for Brooks; the file
+# contains project credentials. Tracked in repo-root .gitignore too as
+# extra safety. GitHub Push Protection blocks commits containing this.
+google-services.json
 
 # Freeline
 freeline.py

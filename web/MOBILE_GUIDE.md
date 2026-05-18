@@ -4,6 +4,146 @@
 >
 > See `BUILD_ANDROID.md` for the long-form Android reference (with `✅ DONE` / `YOUR TURN` markers per step) and `NEXT_STEPS_BUILD_AAB.md` for the condensed handoff.
 
+---
+
+## 🟢 Already-installed quick-debug — "I debugged yesterday, plugged the phone in today, what now"
+
+Use this when **all** of the following are already true:
+
+- Android Studio installed (you have `adb`)
+- USB debugging enabled on the phone (one-time toggle)
+- The phone trusted this laptop at least once in the past
+- The Brooks app is installed on the phone
+
+This is the daily resume path. ~60 seconds.
+
+### Step 1 — Plug in the phone
+
+Plug the USB cable in. **Pull down the notification shade on the phone
+and confirm USB mode is "File transfer" (not "Charging only").** Android
+defaults to charging-only on every replug.
+
+### Step 2 — Confirm the laptop sees the phone
+
+In PowerShell, from anywhere:
+
+```powershell
+adb devices
+```
+
+Expected:
+
+```
+List of devices attached
+2B201JEHN03654    device
+```
+
+If empty → re-do step 1's USB mode change, OR the cable became
+charge-only somehow (try another).
+
+If `unauthorized` → unlock the phone and tap **Allow** on the "Allow USB
+debugging?" dialog.
+
+If `adb` isn't recognized as a command → either PATH isn't set (see
+`MOBILE_SETUP.md` "Debugging preparation" section, step 2) or use the
+helper at `web\scripts\adb-debug.ps1 devices` which auto-finds adb.
+
+### Step 3 — Open the Brooks app on the phone
+
+Just tap the app icon. It needs to be in the foreground for DevTools
+to attach.
+
+### Step 4 — Open Chrome DevTools attached to the WebView
+
+```powershell
+cd C:\Users\Boris\Dell\Projects\APPS\Brooks_prequel\web
+.\scripts\adb-debug.ps1 inspect
+```
+
+This opens `chrome://inspect/#devices` in your default browser. Within
+~5 seconds you should see:
+
+```
+Remote Target #YourPhoneSerial
+  WebView in uk.brooksweb.app
+  https://brooksweb.uk/whatever-page-you-are-on
+  [inspect]
+```
+
+**Click "inspect".** A DevTools window opens pointed at the live WebView
+on your phone. Console, Network, Sources, Performance, breakpoints — all
+work exactly like inspecting any website on your laptop.
+
+### Step 5 — Reproduce the bug while watching DevTools
+
+- **Console tab** for JS errors. Brooks logs use prefixes:
+  - `[Brooks] root render error:` (error boundary fired)
+  - `[memory] save POST failed:` (memory create failed)
+  - `[PermissionsBootstrap] location:` (permission flow error)
+  - `[tour]` (tour navigation events)
+- **Network tab** to see API calls — filter by `memor`, `tour`, or `auth`.
+- **Application tab → Local Storage → `https://brooksweb.uk`** for:
+  - `brooks.onboarding.completed` — has the user finished the tour?
+  - `brooks.permissionsBootstrap.v2` — has the install-time permission
+    prompt fired yet?
+- **Performance tab** to record what the main thread is doing during
+  a slow action.
+
+### One-line commands for common moves while debugging
+
+```powershell
+.\scripts\adb-debug.ps1 stop          # force-stop the Brooks app
+.\scripts\adb-debug.ps1 clear         # wipe app data, keep install
+.\scripts\adb-debug.ps1 info          # installed versionCode + version name
+.\scripts\adb-debug.ps1 screenshot    # save screen.png from the phone
+.\scripts\adb-debug.ps1 console       # tail JS console in a terminal
+.\scripts\adb-debug.ps1 logs          # tail native Android logs (for crashes)
+```
+
+### If the phone isn't seen (quick diagnostic)
+
+In order of likelihood:
+
+1. **Charge-only cable** — try a different one. Cables look identical
+   but some carry no data.
+2. **USB mode** — pull down notification shade, change to "File transfer"
+3. **ADB server stuck** — `adb kill-server` then `adb devices`
+4. **Pending auth dialog** — unlock phone, look for "Allow USB
+   debugging?" — check the "Always allow" box, tap Allow.
+5. **Phone screen locked** — some Pixel models gate ADB while locked.
+
+### If DevTools shows the phone but no "WebView in uk.brooksweb.app"
+
+- App isn't running → open it
+- App is in the background → bring it foreground
+- WebView is showing the offline fallback → navigate to a page first,
+  then refresh chrome://inspect
+- Release builds suppress WebView debugging by default. Brooks's release
+  builds DO enable it (Capacitor sets `setWebContentsDebuggingEnabled(true)`).
+  If you ever build a custom Android variant that disables this, swap
+  back to a debug APK temporarily.
+
+### When you need raw Android logs (native crashes)
+
+Chrome DevTools can't see logs from a crashed app process. For
+first-launch crashes or anything that exits the WebView, use:
+
+```powershell
+.\scripts\adb-debug.ps1 logs
+```
+
+Open the app. If it crashes, look for `FATAL EXCEPTION` followed by a
+Java stack trace. That's the smoking gun.
+
+### Full debugging reference
+
+For comprehensive debugging — including wireless ADB, logcat filtering,
+screen recording, and troubleshooting the 14 most common failure modes
+— see **`DEBUG_ANDROID.md`** at the repo root. This quick-start above
+is enough for the daily "phone plugged in, want to inspect" cycle.
+
+---
+
 This guide takes the existing **Brooks** Next.js web app at https://brooksweb.uk and turns it into real iOS + Android apps you can publish to the App Store and Google Play. It is written for someone with no mobile-development experience. Every command, every button click, every form field is here.
 
 If you follow this guide top to bottom you will end up with:

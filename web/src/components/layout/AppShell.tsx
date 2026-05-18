@@ -6,6 +6,7 @@ import { UserProvider } from '@auth0/nextjs-auth0/client';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import OnboardingProvider from '@/components/onboarding/OnboardingProvider';
+import PermissionsBootstrap from '@/components/PermissionsBootstrap';
 import { setupNativeAuthListener } from '@/lib/capacitor';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
@@ -50,6 +51,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <ToastProvider>
         <ConfirmProvider>
           <OnboardingProvider>
+            <PermissionsBootstrap />
             {!isLandingPage && <Navbar />}
             <main
               className={

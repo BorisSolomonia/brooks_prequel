@@ -1,7 +1,7 @@
 # adb-debug.ps1 — convenience wrapper around adb for the Brooks Android app.
 #
 # Usage from any shell (PowerShell, Windows Terminal, or Git Bash via pwsh):
-#   .\scripts\adb-debug.ps1 <command> [args...]
+#   .\scripts\adb-debug.ps1 [command] [args...]
 #
 # Run without arguments to see the help screen.
 #
@@ -71,37 +71,44 @@ function Invoke-Adb {
 # Commands
 
 function Show-Help {
-    Write-Host ""
-    Write-Host "adb-debug.ps1 — Brooks Android debugging helper" -ForegroundColor Cyan
-    Write-Host "Target package: $PackageName" -ForegroundColor DarkGray
-    Write-Host "adb: $AdbPath" -ForegroundColor DarkGray
-    Write-Host ""
-    Write-Host "USAGE:" -ForegroundColor Yellow
-    Write-Host "  .\scripts\adb-debug.ps1 <command>"
-    Write-Host ""
-    Write-Host "COMMANDS:" -ForegroundColor Yellow
-    Write-Host "  devices         List connected devices"
-    Write-Host "  inspect         Open chrome://inspect for WebView debugging"
-    Write-Host "  logs            Tail logcat filtered to the Brooks app process"
-    Write-Host "  console         Tail Capacitor + Chromium console output only"
-    Write-Host "  save-logs       Dump full logcat to brooks-log.txt and exit"
-    Write-Host "  install <apk>   Install a freshly built APK (-r replace mode)"
-    Write-Host "  uninstall       Uninstall the app completely (clears all data)"
-    Write-Host "  stop            Force-stop the app process"
-    Write-Host "  clear           Clear app data (keep app installed)"
-    Write-Host "  info            Show installed version + package info"
-    Write-Host "  screenshot      Save phone screen to screen.png"
-    Write-Host "  record [sec]    Record screen video (default 30s) -> repro.mp4"
-    Write-Host "  wireless <ip>   Switch to wireless ADB; if no IP given, prints how"
+    # Single-quoted strings are LITERAL in PowerShell — no variable expansion,
+    # no operator parsing inside. We pre-render the dynamic bits (package
+    # name, adb path) into a string variable, then emit everything else as
+    # single-quoted literals. Avoids the PS 5.1 parser bug where `;` followed
+    # by `if` inside double-quoted strings gets re-tokenized as an if-stmt.
+    $dyn1 = "Target package: $PackageName"
+    $dyn2 = "adb: $AdbPath"
+    Write-Host ''
+    Write-Host 'adb-debug.ps1 -- Brooks Android debugging helper' -ForegroundColor Cyan
+    Write-Host $dyn1 -ForegroundColor DarkGray
+    Write-Host $dyn2 -ForegroundColor DarkGray
+    Write-Host ''
+    Write-Host 'USAGE:' -ForegroundColor Yellow
+    Write-Host '  .\scripts\adb-debug.ps1 [command]'
+    Write-Host ''
+    Write-Host 'COMMANDS:' -ForegroundColor Yellow
+    Write-Host '  devices         List connected devices'
+    Write-Host '  inspect         Open chrome://inspect for WebView debugging'
+    Write-Host '  logs            Tail logcat filtered to the Brooks app process'
+    Write-Host '  console         Tail Capacitor + Chromium console output only'
+    Write-Host '  save-logs       Dump full logcat to brooks-log.txt and exit'
+    Write-Host '  install [apk]   Install a freshly built APK (-r replace mode)'
+    Write-Host '  uninstall       Uninstall the app completely (clears all data)'
+    Write-Host '  stop            Force-stop the app process'
+    Write-Host '  clear           Clear app data (keep app installed)'
+    Write-Host '  info            Show installed version + package info'
+    Write-Host '  screenshot      Save phone screen to screen.png'
+    Write-Host '  record [sec]    Record screen video (default 30s) to repro.mp4'
+    Write-Host '  wireless [ip]   Switch to wireless ADB. No IP -- prints how-to.'
     Write-Host "  pidof           Print the app's PID (handy for piping)"
-    Write-Host "  help            Show this help"
-    Write-Host ""
-    Write-Host "EXAMPLES:" -ForegroundColor Yellow
-    Write-Host "  .\scripts\adb-debug.ps1 devices"
-    Write-Host "  .\scripts\adb-debug.ps1 logs              # Ctrl+C to stop"
-    Write-Host "  .\scripts\adb-debug.ps1 install android\app\build\outputs\apk\release\app-release.apk"
-    Write-Host "  .\scripts\adb-debug.ps1 record 15"
-    Write-Host ""
+    Write-Host '  help            Show this help'
+    Write-Host ''
+    Write-Host 'EXAMPLES:' -ForegroundColor Yellow
+    Write-Host '  .\scripts\adb-debug.ps1 devices'
+    Write-Host '  .\scripts\adb-debug.ps1 logs              # Ctrl+C to stop'
+    Write-Host '  .\scripts\adb-debug.ps1 install android\app\build\outputs\apk\release\app-release.apk'
+    Write-Host '  .\scripts\adb-debug.ps1 record 15'
+    Write-Host ''
 }
 
 function Cmd-Devices {
@@ -155,7 +162,7 @@ function Cmd-SaveLogs {
 
 function Cmd-Install {
     if ($Rest.Count -lt 1) {
-        Write-Host "Usage: adb-debug.ps1 install <path-to-apk>" -ForegroundColor Red
+        Write-Host "Usage: adb-debug.ps1 install [path-to-apk]" -ForegroundColor Red
         exit 1
     }
     $apk = $Rest[0]
@@ -217,7 +224,7 @@ function Cmd-Wireless {
         Write-Host "  2. Run: .\scripts\adb-debug.ps1 wireless prepare"
         Write-Host "  3. Note the phone's IP (printed at the end)."
         Write-Host "  4. Unplug the cable."
-        Write-Host "  5. Run: .\scripts\adb-debug.ps1 wireless <phone-ip>"
+        Write-Host "  5. Run: .\scripts\adb-debug.ps1 wireless [phone-ip]"
         exit 0
     }
     if ($Rest[0] -eq 'prepare') {
@@ -226,7 +233,7 @@ function Cmd-Wireless {
         Invoke-Adb @('shell', 'ip', '-f', 'inet', 'addr', 'show', 'wlan0') |
             Select-String -Pattern 'inet '
         Write-Host ""
-        Write-Host "Now unplug the cable, then run: adb-debug.ps1 wireless <that-ip>" -ForegroundColor Yellow
+        Write-Host "Now unplug the cable, then run: adb-debug.ps1 wireless [that-ip]" -ForegroundColor Yellow
         exit 0
     }
     $ip = $Rest[0]
