@@ -65,7 +65,7 @@ APP_BASE_URL=https://brooksweb.uk
 For the JSON, escape any internal newlines OR base64-encode and decode
 on startup — depends on your env-var injection mechanism. On Cloud Run
 the simplest path is to mount the JSON as a secret file and set
-`brooks.media.credentials-path=/run/secrets/gcs.json` instead.
+`brooks.media.credentials-path=/run/secrets/gcs.json` instead..
 
 **Option B — local dev only:**
 
