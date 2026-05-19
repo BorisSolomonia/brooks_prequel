@@ -12,6 +12,7 @@ import { useAccessToken } from '@/hooks/useAccessToken';
 import Spinner from '@/components/ui/Spinner';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 import { isNative } from '@/lib/capacitor';
+import { useProximityNotifier } from '@/hooks/useProximityNotifier';
 import type {
   InfluencerMapPin,
   InfluencerMapResponse,
@@ -862,6 +863,18 @@ export default function MapsExperience({
       router.push('/api/auth/login');
     }
   }, [router, token, tokenLoading]);
+
+  // Foreground proximity notifier. Watches the user's location while they're
+  // on /maps and fires an in-app banner when they cross from outside →
+  // inside 100 m of a memory that's been directly shared with them.
+  // Dedupes per-memory per-calendar-day. No new permissions; uses the
+  // location grant already in place. Background detection (phone in pocket)
+  // is intentionally v2 — would need @capacitor-community/background-
+  // geolocation + ACCESS_BACKGROUND_LOCATION permission.
+  useProximityNotifier({
+    enabled: Boolean(token) && memories.length > 0,
+    memories,
+  });
 
   useEffect(() => {
     const fromUrl = parseLayerState(searchParams.get('layers'));
