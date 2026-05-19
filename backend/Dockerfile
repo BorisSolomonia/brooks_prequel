@@ -2,6 +2,11 @@ FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
 COPY gradle/ gradle/
 COPY gradlew build.gradle.kts settings.gradle.kts ./
+# IMPORTANT: every Gradle subproject listed in settings.gradle.kts MUST
+# have a matching COPY line below. Missing copies don't fail the build —
+# Gradle silently skips the module, and the resulting JAR lacks its
+# controllers/services. Bug reproduced 2026-05-19 with the notification
+# module; symptom was 500 errors on every /api/me/notifications path.
 COPY common/ common/
 COPY auth/ auth/
 COPY user/ user/
@@ -12,6 +17,7 @@ COPY memory/ memory/
 COPY search/ search/
 COPY purchase/ purchase/
 COPY ai/ ai/
+COPY notification/ notification/
 COPY app/ app/
 RUN chmod +x gradlew && ./gradlew :app:bootJar --no-daemon
 
