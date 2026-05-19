@@ -1352,6 +1352,13 @@ export default function MapsExperience({
         style: themedStyle,
         center: fallbackCenter,
         zoom: fallbackZoom ?? undefined,
+        // Cap tile cache to fight Android WebView renderer OOM kills.
+        // Default is unbounded; on Pixel devices with DPR ~3, the
+        // unbounded cache pushed the renderer past its quota within
+        // a few zoom/pan cycles. 50 keeps recent context without
+        // accumulating forever. Reproduced 2026-05-20 with PID
+        // 13979 renderer OOM in aw_browser_terminator.cc.
+        maxTileCacheSize: 50,
       });
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
