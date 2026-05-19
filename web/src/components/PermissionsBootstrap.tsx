@@ -49,32 +49,37 @@ export default function PermissionsBootstrap() {
     const firstRun = window.localStorage.getItem(PERM_BOOTSTRAP_KEY) !== '1';
 
     const run = async () => {
-      // LOCATION — first-run dialog only.
-      if (firstRun) {
-        try {
-          // @ts-ignore - resolved at runtime via npm install
-          const mod = await import('@capacitor/geolocation');
-          if (cancelled) return;
-          const { Geolocation } = mod;
-          const current = await Geolocation.checkPermissions();
-          if (current.location !== 'granted' && current.location !== 'denied') {
-            const result = await Geolocation.requestPermissions({
-              permissions: ['location'],
-            });
-            if (result.location === 'granted') {
-              void Geolocation.getCurrentPosition({
-                enableHighAccuracy: false,
-                timeout: 8000,
-              }).catch(() => undefined);
-            }
+      // LOCATION — always check the OS state first. If "prompt", request
+      // regardless of our localStorage sentinel: the sentinel can outlive
+      // the actual permission grant (uninstall+reinstall, app-data wipe,
+      // or user revokes in Settings then opens app again).
+      try {
+        // @ts-ignore - resolved at runtime via npm install
+        const mod = await import('@capacitor/geolocation');
+        if (cancelled) return;
+        const { Geolocation } = mod;
+        const current = await Geolocation.checkPermissions();
+        console.info('[PermissionsBootstrap] location current:', current.location);
+        if (current.location !== 'granted' && current.location !== 'denied') {
+          console.info('[PermissionsBootstrap] requesting location dialog');
+          const result = await Geolocation.requestPermissions({
+            permissions: ['location'],
+          });
+          console.info('[PermissionsBootstrap] location result:', result.location);
+          if (result.location === 'granted') {
+            void Geolocation.getCurrentPosition({
+              enableHighAccuracy: false,
+              timeout: 8000,
+            }).catch(() => undefined);
           }
-        } catch (err) {
-          console.error('[PermissionsBootstrap] location:', err);
         }
+      } catch (err) {
+        console.error('[PermissionsBootstrap] location:', err);
       }
 
-      // NOTIFICATIONS — request once, but re-register every cold start so
-      // a rotated FCM token gets re-emitted via the registration listener.
+      // NOTIFICATIONS — same logic: check OS state, request whenever it's
+      // "prompt". Sentinel is no longer used to gate the dialog. Then
+      // re-register every cold start so a rotated FCM token gets emitted.
       try {
         const mod = await import('@capacitor/push-notifications');
         if (cancelled) return;
@@ -85,6 +90,7 @@ export default function PermissionsBootstrap() {
         await PushNotifications.addListener('registration', (t) => {
           if (cancelled) return;
           if (!t?.value) return;
+          console.info('[PermissionsBootstrap] FCM token received:', t.value.slice(0, 12) + '...');
           setFcmToken(t.value);
           try {
             window.localStorage.setItem(FCM_TOKEN_KEY, t.value);
@@ -97,11 +103,17 @@ export default function PermissionsBootstrap() {
         });
 
         let permission = await PushNotifications.checkPermissions();
-        if (firstRun && permission.receive !== 'granted' && permission.receive !== 'denied') {
+        console.info('[PermissionsBootstrap] notifications current:', permission.receive);
+        if (permission.receive !== 'granted' && permission.receive !== 'denied') {
+          console.info('[PermissionsBootstrap] requesting notifications dialog');
           permission = await PushNotifications.requestPermissions();
+          console.info('[PermissionsBootstrap] notifications result:', permission.receive);
         }
         if (permission.receive === 'granted') {
+          console.info('[PermissionsBootstrap] calling PushNotifications.register()');
           await PushNotifications.register();
+        } else {
+          console.warn('[PermissionsBootstrap] notifications NOT granted — push disabled');
         }
       } catch (err) {
         console.error('[PermissionsBootstrap] notifications:', err);
@@ -120,19 +132,21 @@ export default function PermissionsBootstrap() {
 
   // POST the FCM token whenever we have BOTH the auth token AND the FCM
   // token. Runs on every cold start; the backend upserts so duplicates
-  // are cheap. Stays silent on failure — push isn't critical-path.
+  // are cheap. Surfaces failures via console for diagnostic visibility.
   useEffect(() => {
     if (!authToken || !fcmToken) return;
     if (!isNative()) return;
     const platformName = detectPlatform().toUpperCase();
+    console.info('[PermissionsBootstrap] POST /api/me/device-tokens with', platformName, 'token=' + fcmToken.slice(0, 12) + '...');
     void api
       .post(
         '/api/me/device-tokens',
         { token: fcmToken, platform: platformName },
         authToken,
       )
+      .then(() => console.info('[PermissionsBootstrap] device token POST OK'))
       .catch((err) => {
-        console.warn('[PermissionsBootstrap] device token POST failed:', err);
+        console.error('[PermissionsBootstrap] device token POST failed:', err);
       });
   }, [authToken, fcmToken]);
 
