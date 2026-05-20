@@ -1,17 +1,19 @@
 /** @type {import('next').NextConfig} */
-// Scope the GCS allowlist to the configured bucket so next/image cannot be used to
-// proxy arbitrary public GCS objects from other tenants. Production builds MUST
-// provide GCS_BUCKET (or NEXT_PUBLIC_GCS_BUCKET) — falling back to an unscoped
-// pattern would let next/image proxy any public GCS object, a cross-tenant data
-// leak vector. Non-production builds (CI smoke test, local dev) are allowed to
-// run without it; we simply omit the GCS pattern, and next/image will refuse
-// GCS URLs at runtime — visible failure instead of a security hole.
+// Scope the GCS allowlist to the configured bucket so next/image cannot be
+// used to proxy arbitrary public GCS objects from other tenants. If
+// GCS_BUCKET is unset we OMIT the GCS pattern entirely — next/image then
+// rejects every storage.googleapis.com URL, which is visible failure
+// (broken images) rather than the previous silent-leak fallback. We do not
+// throw here, because next.config.js is also loaded by `next lint` and
+// dev/CI workflows that don't need the bucket; throwing on a missing env
+// var breaks those flows. The deploy pipeline does its OWN explicit check
+// before the production docker build (see .github/workflows/deploy.yml).
 const gcsBucket = process.env.GCS_BUCKET || process.env.NEXT_PUBLIC_GCS_BUCKET;
 if (!gcsBucket && process.env.NODE_ENV === 'production') {
-  throw new Error(
-    'GCS_BUCKET (or NEXT_PUBLIC_GCS_BUCKET) must be set for production builds. ' +
-    'Without it, next/image would proxy any public storage.googleapis.com object. ' +
-    'Set it via --build-arg in your Dockerfile or your CI/CD env config.'
+  console.warn(
+    '[next.config] GCS_BUCKET is unset for a production build — next/image ' +
+    'will refuse all storage.googleapis.com URLs. Set GCS_BUCKET via ' +
+    '--build-arg to allow scoped GCS images.'
   );
 }
 const gcsPatterns = gcsBucket
