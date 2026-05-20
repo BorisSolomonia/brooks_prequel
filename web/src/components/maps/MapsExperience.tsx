@@ -1272,21 +1272,91 @@ export default function MapsExperience({
   }, [token, currentBounds, activeLayers.memories]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Deep-link support: `/maps?memory=<id>` from the notification bell or a
-  // tapped Android push opens the matching memory card the moment memories
-  // load. A ref sentinel ensures we only auto-select ONCE per id — if the
-  // user closes the card we don't keep re-opening it.
+  // tapped Android push opens the matching memory card. Two paths:
+  //   1. Memory is already in the local `memories` array (in viewport)
+  //      → setSelectedMemory immediately with the existing pin shape.
+  //   2. Memory is NOT in the local array (shared from a different city,
+  //      page-cold-load, etc.) → fetch /api/memories/{id} and project the
+  //      MemoryResponse onto a MemoryMapPin so the existing detail card
+  //      can render it.
+  // A ref sentinel ensures we only auto-select ONCE per id — if the user
+  // dismisses the card we don't keep re-opening it on every re-render.
   const autoSelectedMemoryRef = useRef<string | null>(null);
   useEffect(() => {
     const memoryParam = searchParams.get('memory');
     if (!memoryParam) return;
     if (autoSelectedMemoryRef.current === memoryParam) return;
-    if (memories.length === 0) return;
-    const match = memories.find((m) => m.id === memoryParam);
-    if (!match) return;
+
+    const localMatch = memories.find((m) => m.id === memoryParam);
+    if (localMatch) {
+      autoSelectedMemoryRef.current = memoryParam;
+      setSelectedMemory(localMatch);
+      setSelectedPin(null);
+      return;
+    }
+
+    // Fall back to fetching the memory by id. Need a token, otherwise the
+    // endpoint will 401; we wait for the auth hook to populate it.
+    if (!token) return;
+    let cancelled = false;
     autoSelectedMemoryRef.current = memoryParam;
-    setSelectedMemory(match);
-    setSelectedPin(null);
-  }, [searchParams, memories]);
+    type RemoteMemory = {
+      id: string;
+      creatorId: string;
+      creatorUsername: string | null;
+      creatorDisplayName: string | null;
+      creatorAvatarUrl: string | null;
+      textContent: string;
+      latitude: number;
+      longitude: number;
+      placeLabel: string | null;
+      visibility: MemoryVisibility;
+      ownedByViewer: boolean;
+      createdAt: string;
+      media?: Array<{ kind: string }>;
+    };
+    api.get<RemoteMemory>(`/api/memories/${encodeURIComponent(memoryParam)}`, token)
+      .then((m) => {
+        if (cancelled) return;
+        const text = m.textContent ?? '';
+        const projected: MemoryMapPin = {
+          id: m.id,
+          creatorId: m.creatorId,
+          creatorUsername: m.creatorUsername,
+          creatorDisplayName: m.creatorDisplayName ?? m.creatorUsername ?? 'Someone',
+          creatorAvatarUrl: m.creatorAvatarUrl,
+          textPreview: text.length > 120 ? text.slice(0, 117) + '…' : text,
+          latitude: m.latitude,
+          longitude: m.longitude,
+          placeLabel: m.placeLabel,
+          visibility: m.visibility,
+          ownedByViewer: m.ownedByViewer,
+          sharedWithViewer: !m.ownedByViewer,
+          hasImage: (m.media ?? []).some((x) => x.kind === 'IMAGE'),
+          hasAudio: (m.media ?? []).some((x) => x.kind === 'AUDIO'),
+          createdAt: m.createdAt,
+        };
+        setSelectedMemory(projected);
+        setSelectedPin(null);
+        // Re-center the map on the memory so the user has context for where
+        // it was left. flyTo only if the map already exists.
+        mapRef.current?.flyTo({
+          center: [projected.longitude, projected.latitude],
+          zoom: 14,
+          essential: true,
+        });
+      })
+      .catch((err) => {
+        // Reset the sentinel so a retry (e.g. user re-taps the notification)
+        // can fetch again. Logging keeps the failure visible during debug.
+        autoSelectedMemoryRef.current = null;
+        console.warn('[maps] deep-link memory fetch failed:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, memories, token]);
 
   useEffect(() => {
     if (!fallbackCenter || typeof window === 'undefined') {

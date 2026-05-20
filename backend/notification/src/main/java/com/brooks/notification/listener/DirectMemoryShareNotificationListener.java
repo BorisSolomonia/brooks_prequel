@@ -2,6 +2,8 @@ package com.brooks.notification.listener;
 
 import com.brooks.common.event.DirectMemoryShareCreatedEvent;
 import com.brooks.notification.service.NotificationService;
+import com.brooks.notification.util.DisplayLabel;
+import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,11 +36,11 @@ public class DirectMemoryShareNotificationListener {
     @EventListener
     public void onDirectShare(DirectMemoryShareCreatedEvent event) {
         try {
-            String creatorName = userService.findById(event.creatorUserId()).getUsername();
-            String displayName = (creatorName == null || creatorName.isBlank())
-                    ? "Someone"
-                    : "@" + creatorName;
-            String title = displayName + " shared a memory with you";
+            User creator = userService.findById(event.creatorUserId());
+            // Same fallback ladder as the follow listener (username →
+            // email-local-part → "Someone"), so a brand-new account with no
+            // handle still gets a real-looking name in the push title.
+            String title = DisplayLabel.forUser(creator) + " shared a memory with you";
             String body = event.memoryTextPreview() == null || event.memoryTextPreview().isBlank()
                     ? "Open Brooks to see what's nearby."
                     : event.memoryTextPreview();

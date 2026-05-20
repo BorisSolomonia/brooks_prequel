@@ -99,10 +99,13 @@ export default function NotificationBell() {
           break;
         case 'follow':
           // followerUsername is the source of truth for deep-linking; the
-          // /creators/[username] route is name-based. Fall back to /maps if
-          // backend sent no username (very rare — user without a handle yet).
+          // /creators/[username] route is name-based. Fall back to the
+          // creator search index (a useful page) instead of /maps (a dead
+          // end where the user can't find the new follower) if the backend
+          // couldn't supply a username — only happens for accounts that
+          // haven't picked a handle yet.
           if (data.followerUsername) router.push(`/creators/${encodeURIComponent(data.followerUsername)}`);
-          else router.push('/maps');
+          else router.push('/search/creators');
           break;
         case 'test':
           router.push('/maps');

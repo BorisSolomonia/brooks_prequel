@@ -1,7 +1,9 @@
 package com.brooks.notification.listener;
 
 import com.brooks.notification.service.NotificationService;
+import com.brooks.notification.util.DisplayLabel;
 import com.brooks.social.event.FollowEvent;
+import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,19 +35,21 @@ public class FollowNotificationListener {
             return;
         }
         try {
-            String followerName = userService.findById(event.getFollowerId()).getUsername();
-            String displayName = (followerName == null || followerName.isBlank())
-                    ? "Someone"
-                    : "@" + followerName;
-            // followerUsername is included so the in-app bell tap and the
-            // system-tray push tap can both deep-link to /creators/{username}
-            // without a second backend round-trip. Falls back to "" when the
-            // user has no username yet (rare, but possible during onboarding);
-            // the frontend handles the empty case by routing to /maps.
-            String safeUsername = followerName == null ? "" : followerName;
+            User follower = userService.findById(event.getFollowerId());
+            // Title prefers @username; if the follower hasn't set one yet,
+            // fall back to the email prefix (the part before @) so the
+            // notification reads "@borissolomonia started following you"
+            // instead of the previous unhelpful "Someone started following
+            // you". DisplayLabel centralises this so memory-share + future
+            // listeners share the same fallback ladder.
+            String title = DisplayLabel.forUser(follower) + " started following you";
+            // followerUsername is the source of truth for deep-linking. Empty
+            // when the user truly has no username — frontend then routes to
+            // /search/creators (a useful page) rather than /maps (a dead end).
+            String safeUsername = follower.getUsername() == null ? "" : follower.getUsername();
             notificationService.notifyUser(
                     event.getFollowingId(),
-                    displayName + " started following you",
+                    title,
                     "Tap to view their profile.",
                     Map.of(
                             "type", "follow",
