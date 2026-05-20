@@ -80,8 +80,17 @@ public class MediaStorageService {
             throw new BusinessException("Could not save media locally: " + ex.getMessage());
         }
         log.debug("Saved media locally: {}", filePath);
+        // Return a RELATIVE URL so the response is reachable from whatever
+        // origin the client is loaded from. The previous absolute form
+        // (appBaseUrl + path) silently broke uploads whenever APP_BASE_URL
+        // wasn't explicitly overridden — Spring's @Value default is
+        // `http://localhost:8080`, which the Android WebView (loaded from
+        // brooksweb.uk) can never reach, leaving the post-upload preview
+        // broken even though the file saved fine on disk. Caddy routes
+        // /api/* to the backend so the relative path resolves correctly
+        // from both the web build and the Capacitor WebView.
         return MediaUploadResponse.builder()
-                .url(appBaseUrl + "/api/media/local/" + relativePath)
+                .url("/api/media/local/" + relativePath)
                 .objectName(relativePath)
                 .contentType(contentType)
                 .sizeBytes(file.getSize())
