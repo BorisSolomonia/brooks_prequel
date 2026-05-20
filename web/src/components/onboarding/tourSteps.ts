@@ -38,17 +38,32 @@ export type CenteredStep = {
 
 export type TourStep = WelcomeStep | SpotlightStep | CenteredStep;
 
+// Step order matches the user-visible "Stage N" numbering in the in-app tour.
+// Stage 1 = welcome (index 0). Spotlights run on /maps then fan out to
+// /search → /creators/[username] → /trips/preview → /guides/new → /profile
+// → /settings. Reordering or selector edits MUST be checked against the
+// data-tour anchors in the matching component files.
 export const tourSteps: TourStep[] = [
+  // Stage 1
   {
     kind: 'welcome',
     id: 'welcome',
     title: 'Welcome to Brooks',
     body: 'Quick tour. Skip anytime.',
   },
+  // Stage 2 — theme toggle (Bright / Dark). Anchored to the Navbar icon
+  // that's visible at the current breakpoint; both desktop and mobile
+  // navbars render <ThemeToggle/>, only the visible one matches.
   {
-    // NEW — highlight the hamburger BEFORE the drawer opens, so the user
-    // sees where the panel comes from. MapsExperience's tour effect keeps
-    // the drawer closed while this step is active.
+    kind: 'spotlight',
+    id: 'theme-toggle',
+    selector: '[data-tour="theme-toggle"]',
+    placement: 'bottom',
+    title: 'Bright or dark',
+    body: 'Tap the sun / moon icon to switch the theme. The whole app follows.',
+  },
+  // Stage 3 — burger / drawer trigger on /maps.
+  {
     kind: 'spotlight',
     id: 'memory-drawer-trigger',
     route: '/maps',
@@ -57,6 +72,10 @@ export const tourSteps: TourStep[] = [
     title: 'Open the guides + filters menu',
     body: 'Tap this button (top-left of the map) to open the panel with map layers, filter chips, and the list of nearby guides + memories.',
   },
+  // Stage 4 — guides + filters panel; the Memories and Guides toggles
+  // INSIDE the panel pulse to direct attention. MapsExperience opens the
+  // drawer on this step id (700 ms delay) — sequentialHighlight polls
+  // for the container so the pulse fires after the panel slides in.
   {
     kind: 'spotlight',
     id: 'memory-intro',
@@ -64,11 +83,11 @@ export const tourSteps: TourStep[] = [
     selector: '[data-tour="memory-panel"]',
     placement: 'auto',
     title: 'Guides + filters panel',
-    body: 'This is the panel that just opened. It holds map layers, filter chips, and the list of nearby guides and memories.',
+    body: 'This is the panel that just opened. Toggle Memories and Guides on the map; pick filters; browse the list of nearby items.',
+    sideEffect: { kind: 'sequentialHighlight', selector: '[data-tour="layer-toggles-container"]' },
   },
+  // Stage 5 — "+ Create a memory" pill at the bottom of the map.
   {
-    // NEW — highlight the bottom "+ Create a memory" pill BEFORE the
-    // composer modal opens. Same pattern as memory-drawer-trigger.
     kind: 'spotlight',
     id: 'memory-button',
     route: '/maps',
@@ -77,6 +96,11 @@ export const tourSteps: TourStep[] = [
     title: 'Create a hidden memory',
     body: 'Tap this button to drop a memory at your current map location. A full-screen composer opens next.',
   },
+  // Stage 6 — composer modal; Share-via-link + Share-with-followers
+  // pulse to make the two delivery modes obvious. MapsExperience opens
+  // the composer for this step id. The container is near the BOTTOM of
+  // the composer scroll area, so sequentialHighlight scrolls it into
+  // view before pulsing (see OnboardingTour.tsx).
   {
     kind: 'spotlight',
     id: 'memory-form',
@@ -84,10 +108,10 @@ export const tourSteps: TourStep[] = [
     selector: '[data-tour="memory-form"]',
     placement: 'top',
     title: 'New memory composer',
-    body: 'Fill in your message, add an optional photo or voice, choose visibility, then Save. Share the link — friends unlock it only when they arrive at this spot.',
-    // The composer is opened idempotently by MapsExperience based on step.id — no click side-effect
-    // (a toggle click would CLOSE the form when the user goes back to this step).
+    body: 'Write the message, optional photo or voice, then choose how to deliver: link people can unlock at the spot, or share with a specific follower.',
+    sideEffect: { kind: 'sequentialHighlight', selector: '[data-tour="share-mode-container"]' },
   },
+  // Stage 7 — global search.
   {
     kind: 'spotlight',
     id: 'search',
@@ -97,6 +121,7 @@ export const tourSteps: TourStep[] = [
     title: 'Search',
     body: 'Find guides or creators by city or topic.',
   },
+  // Stage 8 — sample creator card.
   {
     kind: 'spotlight',
     id: 'creators',
@@ -104,10 +129,9 @@ export const tourSteps: TourStep[] = [
     placement: 'bottom',
     title: 'Sample creator',
     body: 'This is a creator on Brooks. Tap a card to visit their profile.',
-    // Discover any real creator on prod and route to /search/creators?q=<that creator's
-    // username> so the search ALWAYS returns at least one result regardless of seed state.
     sideEffect: { kind: 'discoverCreator', route: '/search/creators?q={username}' },
   },
+  // Stage 9 — creator profile header.
   {
     kind: 'spotlight',
     id: 'creator-profile',
@@ -117,15 +141,19 @@ export const tourSteps: TourStep[] = [
     body: 'Every creator has a profile with their guides for sale below.',
     sideEffect: { kind: 'discoverCreator' },
   },
+  // Stage 10 — single guide card (was the whole list, which forced
+  // large-target / centered mode and hid the spotlight outline). The
+  // first card's data-tour anchor keeps the target small so the
+  // tooltip stays on-screen and only ONE guide is outlined.
   {
     kind: 'spotlight',
     id: 'creator-guides',
-    selector: '[data-tour="creator-guides-list"]',
+    selector: '[data-tour="first-creator-guide-card"]',
     placement: 'top',
     title: 'Their guides',
-    body: 'Sample guide cards light up one by one. Tap a card to preview, then Buy via Bank of Georgia iPay.',
-    sideEffect: { kind: 'sequentialHighlight', selector: '[data-tour="creator-guides-list"]' },
+    body: 'Tap a card to preview, then buy via Bank of Georgia iPay.',
   },
+  // Stage 11 — add-to-calendar on the preview trip.
   {
     kind: 'spotlight',
     id: 'add-to-calendar',
@@ -135,6 +163,7 @@ export const tourSteps: TourStep[] = [
     title: 'Add to Calendar',
     body: 'Tap here to sync this trip with Google Calendar or download an .ics file.',
   },
+  // Stage 12 — AI button inside the guide editor.
   {
     kind: 'spotlight',
     id: 'ai-button',
@@ -144,6 +173,7 @@ export const tourSteps: TourStep[] = [
     title: 'Create with AI',
     body: 'Every guide editor has a Create with AI button. Once you connect an AI key, it drafts and refines guides for you.',
   },
+  // Stage 13 — connect AI keys panel inside the profile.
   {
     kind: 'spotlight',
     id: 'ai-keys',
@@ -153,10 +183,8 @@ export const tourSteps: TourStep[] = [
     title: 'Connect AI',
     body: 'Paste your provider API key here (OpenAI, Anthropic, Gemini). The AI button in the editor lights up the moment you save.',
   },
+  // Stage 14 — help / replay entry in settings.
   {
-    // Updated May 2026 — the Footer is hidden on mobile, so the old
-    // [data-tour="help-link"] target no longer renders. Redirect the tour
-    // to Settings → Help & tour where the same action lives now.
     kind: 'spotlight',
     id: 'help',
     route: '/settings',

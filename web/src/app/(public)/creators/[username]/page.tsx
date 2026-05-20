@@ -254,9 +254,10 @@ export default function CreatorProfilePage({ params }: { params: { username: str
           </div>
         ) : (
           <div data-tour="creator-guides-list" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {guides.map((guide) => (
+            {guides.map((guide, idx) => (
               <div
                 key={guide.id}
+                data-tour={idx === 0 ? 'first-creator-guide-card' : undefined}
                 draggable={isOwnProfile}
                 onDragStart={isOwnProfile ? () => handleDragStart(guide.id) : undefined}
                 onDragOver={isOwnProfile ? (event) => event.preventDefault() : undefined}

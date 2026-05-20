@@ -71,6 +71,7 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
       onClick={() => setTheme(next)}
       aria-label={aria}
       title={aria}
+      data-tour="theme-toggle"
       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
     >
       {current === 'light' ? <SunIcon /> : <MoonIcon />}

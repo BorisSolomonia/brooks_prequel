@@ -123,10 +123,32 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
       return () => clearTimeout(t);
     }
     if (sideEffect.kind === 'sequentialHighlight' && sideEffect.selector) {
+      const selector = sideEffect.selector;
       const timers: ReturnType<typeof setTimeout>[] = [];
-      const launch = setTimeout(() => {
-        const container = document.querySelector(sideEffect.selector!);
-        if (!container) return;
+      // The container often mounts AFTER this effect fires (drawer slide-in,
+      // composer modal). Poll for up to ~1.5 s, then scrollIntoView so the
+      // pulsed buttons are actually visible (the share-mode container is at
+      // the bottom of the memory composer scroll area). Falls back silently
+      // if the container never appears.
+      let pollAttempts = 0;
+      const POLL_MAX = 30; // 30 × 50 ms = 1500 ms
+      const tryStart = () => {
+        const container = document.querySelector(selector) as HTMLElement | null;
+        if (!container) {
+          pollAttempts += 1;
+          if (pollAttempts < POLL_MAX) {
+            const next = setTimeout(tryStart, 50);
+            timers.push(next);
+          }
+          return;
+        }
+        // Bring the container into view before pulsing — sequentialHighlight
+        // is decorative, so if the user can't see it, it's wasted.
+        try {
+          container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch {
+          /* older WebView fallback — ignore, pulse still fires */
+        }
         const children = Array.from(container.children) as HTMLElement[];
         children.forEach((child, i) => {
           const startTimer = setTimeout(() => {
@@ -136,11 +158,12 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
           }, i * 380);
           timers.push(startTimer);
         });
-      }, 300);
+      };
+      const launch = setTimeout(tryStart, 200);
       timers.push(launch);
       return () => {
         timers.forEach((t) => clearTimeout(t));
-        const container = document.querySelector(sideEffect.selector!);
+        const container = document.querySelector(selector);
         if (container) {
           Array.from(container.children).forEach((child) =>
             (child as HTMLElement).removeAttribute('data-onboard-highlight'),

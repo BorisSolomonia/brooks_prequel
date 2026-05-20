@@ -1897,10 +1897,11 @@ export default function MapsExperience({
                   <p className="mw-eyebrow text-[11px]">Map layers</p>
                   <span className="text-xs text-ig-text-tertiary">{layerLabel(activeLayers)}</span>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
+                <div data-tour="layer-toggles-container" className="mt-3 grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => toggleLayer('memories')}
+                    data-tour="layer-toggle-memories"
                     className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
                       activeLayers.memories
                         ? 'border-brand-500/50 bg-brand-500/15 text-brand-500'
@@ -1912,6 +1913,7 @@ export default function MapsExperience({
                   <button
                     type="button"
                     onClick={() => toggleLayer('guides')}
+                    data-tour="layer-toggle-guides"
                     className={`min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
                       activeLayers.guides
                         ? 'border-brand-500/50 bg-brand-500/15 text-brand-500'
@@ -2295,10 +2297,11 @@ export default function MapsExperience({
             <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
               How to share
             </label>
-            <div className="mt-1 grid grid-cols-2 gap-2">
+            <div data-tour="share-mode-container" className="mt-1 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setShareMode('link')}
+                data-tour="share-mode-link"
                 className={`min-h-touch rounded-2xl border-2 px-3 py-2 text-xs font-semibold transition ${
                   shareMode === 'link'
                     ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
@@ -2310,6 +2313,7 @@ export default function MapsExperience({
               <button
                 type="button"
                 onClick={() => setShareMode('follower')}
+                data-tour="share-mode-follower"
                 className={`min-h-touch rounded-2xl border-2 px-3 py-2 text-xs font-semibold transition ${
                   shareMode === 'follower'
                     ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
