@@ -12,13 +12,20 @@ const SPOTLIGHT_PADDING = 10;
 const TOOLTIP_OFFSET = 14;
 const TOOLTIP_WIDTH = 280;
 const TOOLTIP_HEIGHT_ESTIMATE = 180;
-// 5 s ceiling (was 2 s) — paired with MutationObserver fast-path + visible "Locating…"
-// hint, so a longer ceiling no longer translates to longer perceived freeze.
-const POLL_MAX_ATTEMPTS = 300;
+// 1 s ceiling (was 5 s). On /maps the previous MutationObserver fast-path was
+// adding a per-frame measure() that compounded with Mapbox's 60-120 Hz DOM
+// churn — saturating the main thread and freezing input for the full 5 s.
+// The observer was removed; rAF polling alone reliably finds targets within
+// 1-2 frames of their mount, so 60 attempts (1 s) is the right ceiling.
+// Steps whose target genuinely takes longer than 1 s to mount fall back to
+// the centered-overlay layout, which is the desired behaviour for that case.
+const POLL_MAX_ATTEMPTS = 60;
 // How long the spotlight effect waits before showing the "Locating…" hint.
 const LOCATING_HINT_DELAY_MS = 350;
-// Safety net for `isAdvancing` — if the next step never mounts, release the button.
-const ADVANCE_SAFETY_TIMEOUT_MS = 4000;
+// Safety net for `isAdvancing` — if the next step never mounts, release the
+// button. 1500 ms is enough for any normal navigation + paint cycle and short
+// enough that a stuck spinner stops feeling like a crash.
+const ADVANCE_SAFETY_TIMEOUT_MS = 1500;
 
 export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   const step = tourSteps[stepIndex];
@@ -160,8 +167,6 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     let scrolled = false;
     let observedEl: HTMLElement | null = null;
     let resizeObserver: ResizeObserver | null = null;
-    let mutationObserver: MutationObserver | null = null;
-    let mutationPending = false;
     let found = false;
 
     const measure = () => {
@@ -190,17 +195,16 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
         width: rect.width + SPOTLIGHT_PADDING * 2,
         height: rect.height + SPOTLIGHT_PADDING * 2,
       });
-      // Found it — stop the rAF poll and the mutation observer to spare CPU.
-      // Mapbox mutates the DOM dozens of times per second on /maps; an idle
-      // MutationObserver here would be a perf catastrophe.
+      // Found it — stop the rAF poll to spare CPU. The previous version of
+      // this code also kept a MutationObserver on document.body; on /maps
+      // that observer fired per-frame against Mapbox's animation mutations
+      // and stacked on top of this rAF poll, saturating the main thread.
+      // Removed entirely — the rAF poll finds targets within 1-2 frames of
+      // mount, and the resize listener below covers post-mount layout shifts.
       found = true;
       if (frame !== null) {
         cancelAnimationFrame(frame);
         frame = null;
-      }
-      if (mutationObserver) {
-        mutationObserver.disconnect();
-        mutationObserver = null;
       }
       // Keep the rect fresh when the target itself resizes (e.g. a panel that slides open
       // after the first measure already succeeded on its collapsed state).
@@ -231,22 +235,6 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
       }
     };
 
-    // Event-driven fast path: the moment the DOM gains the selector's element
-    // (a route just mounted, a panel just opened), measure() succeeds instantly
-    // instead of waiting for the next rAF tick. Throttled to one call per frame
-    // because /maps mutates constantly — we coalesce a burst into one measure.
-    if (typeof MutationObserver !== 'undefined') {
-      mutationObserver = new MutationObserver(() => {
-        if (found || mutationPending) return;
-        mutationPending = true;
-        requestAnimationFrame(() => {
-          mutationPending = false;
-          if (!found) measure();
-        });
-      });
-      mutationObserver.observe(document.body, { childList: true, subtree: true });
-    }
-
     poll();
 
     // Show a subtle "Locating…" hint if we still don't have a rect after the delay.
@@ -260,7 +248,6 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
       if (resizeObserver) resizeObserver.disconnect();
-      if (mutationObserver) mutationObserver.disconnect();
       clearTimeout(locatingTimer);
       window.removeEventListener('resize', onChange);
       window.removeEventListener('scroll', onChange, true);

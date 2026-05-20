@@ -43,14 +43,6 @@ export function useOnboarding() {
   return ctx;
 }
 
-type AuthMeResponse = {
-  id: string;
-  email: string;
-  username: string | null;
-  onboardingCompleted: boolean;
-  createdAt: string;
-};
-
 export default function OnboardingProvider({ children }: { children: ReactNode }) {
   const { user, isLoading: userLoading } = useUser();
   const { token, loading: tokenLoading } = useAccessToken();
@@ -102,6 +94,12 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   }, [sampleCreatorUsername, router]);
 
   useEffect(() => {
+    // Tour gate is LOCAL-FIRST: a fresh install (no localStorage key) shows the
+    // tour even if the user previously completed it on another install. This
+    // matches user expectation that deleting + reinstalling the app shows the
+    // walkthrough again — the prior backend-completed shortcut killed that flow.
+    // We still POST /api/me/onboarding/complete on completion for analytics
+    // (see persistComplete below), but we don't READ that flag here.
     if (typeof window !== 'undefined' && window.localStorage.getItem(LOCAL_STORAGE_KEY) === 'true') {
       setStatus('completed');
       return;
@@ -111,27 +109,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
       setStatus('unknown');
       return;
     }
-    let cancelled = false;
-    api.get<AuthMeResponse>('/api/auth/me', token)
-      .then((me) => {
-        if (cancelled) return;
-        if (me.onboardingCompleted) {
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(LOCAL_STORAGE_KEY, 'true');
-          }
-          setStatus('completed');
-        } else {
-          setStatus('pending');
-        }
-      })
-      .catch(() => {
-        if (cancelled) return;
-        // Fail safe: don't pester the user on a backend hiccup.
-        setStatus('completed');
-      });
-    return () => {
-      cancelled = true;
-    };
+    setStatus('pending');
   }, [user, token, userLoading, tokenLoading]);
 
   useEffect(() => {
