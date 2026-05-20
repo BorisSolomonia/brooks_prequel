@@ -316,9 +316,25 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   const isCenteredOverlay = step.kind !== 'spotlight' || !targetRect || isLargeTarget;
 
   return (
-    <div className="fixed inset-0 z-[9999]" role="dialog" aria-modal="true" aria-label="Onboarding tour">
+    // The wrapper is pointer-events:none so spotlighted elements underneath
+    // STAY interactive. Without this, the wrapper (z-[9999], full viewport)
+    // absorbs every tap — including taps on the highlighted button — and
+    // the only thing that actually works is the tour tooltip's Next/Skip.
+    // Users perceive that as a freeze ("I tapped the button, nothing
+    // happened"). Children that DO need to receive clicks (the centered
+    // dim background, the tooltip itself) opt in explicitly with
+    // pointer-events:auto below.
+    <div
+      className="pointer-events-none fixed inset-0 z-[9999]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Onboarding tour"
+    >
       {isCenteredOverlay ? (
-        <div className="absolute inset-0 bg-black/55" />
+        // Centered mode = target is too large for a useful spotlight, so
+        // we dim everything and force the user to read the tooltip. The
+        // dim layer NEEDS pointer-events:auto to absorb underlying clicks.
+        <div className="pointer-events-auto absolute inset-0 bg-black/55" />
       ) : (
         <>
           <div
@@ -345,7 +361,7 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
       )}
 
       <div
-        className="absolute rounded-2xl border-2 border-ig-border bg-ig-elevated p-3.5 shadow-2xl ring-1 ring-black/10"
+        className="pointer-events-auto absolute rounded-2xl border-2 border-ig-border bg-ig-elevated p-3.5 shadow-2xl ring-1 ring-black/10"
         style={{
           ...tooltipPosition,
           // Always clamp so the tooltip is fully visible regardless of which

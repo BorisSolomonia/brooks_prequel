@@ -1347,10 +1347,16 @@ export default function MapsExperience({
         });
       })
       .catch((err) => {
-        // Reset the sentinel so a retry (e.g. user re-taps the notification)
-        // can fetch again. Logging keeps the failure visible during debug.
-        autoSelectedMemoryRef.current = null;
-        console.warn('[maps] deep-link memory fetch failed:', err);
+        // CRITICAL: do NOT reset autoSelectedMemoryRef here. The effect
+        // depends on `memories`, which refreshes on every map pan/zoom.
+        // If the fetch fails (404 stale memory, 403 access lost, 500
+        // backend hiccup) and we reset the sentinel, the next bounds
+        // change re-fires the same failing fetch — and Mapbox's normal
+        // viewport churn produces a request per second, saturating the
+        // WebView renderer until it freezes. One attempt per id is the
+        // contract; failures stay failures until the user navigates
+        // explicitly (which gives the URL a new value).
+        console.warn('[maps] deep-link memory fetch failed (will not retry):', err);
       });
 
     return () => {
