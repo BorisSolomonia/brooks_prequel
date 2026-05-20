@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -40,7 +41,13 @@ public class InAppNotificationController {
         ));
     }
 
+    // @Transactional is REQUIRED here. Spring Data JPA's @Modifying queries
+    // need a writable transaction to commit; without it the UPDATE either
+    // silently no-ops or throws TransactionRequiredException — the symptom
+    // was the bell badge "reappearing" after the user had opened the
+    // dropdown, because the read-marking wasn't persisting.
     @PostMapping("/read-all")
+    @Transactional
     public ResponseEntity<Map<String, Integer>> markAllRead(Authentication authentication) {
         UUID userId = userId(authentication);
         int updated = inAppRepo.markAllReadForUser(userId, Instant.now());

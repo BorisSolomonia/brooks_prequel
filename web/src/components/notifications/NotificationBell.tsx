@@ -69,12 +69,21 @@ export default function NotificationBell() {
   }, [open]);
 
   const handleOpen = async () => {
+    const wasOpen = open;
     setOpen((v) => !v);
-    if (!open && unread > 0 && token) {
-      // Mark all read the moment the dropdown opens. Optimistic UI: drop
-      // the badge immediately, fire the POST without awaiting.
+    if (!wasOpen && unread > 0 && token) {
+      // Mark all read the moment the dropdown opens. We OPTIMISTICALLY drop
+      // the badge, then await the POST. If it fails (network, auth, missing
+      // @Transactional on the backend, etc.), the next poll will resurrect
+      // the badge — but at least we'll have logged the failure instead of
+      // silently swallowing it. Previously this was fire-and-forget with a
+      // bare .catch() that ate every error, masking the read-all bug.
       setUnread(0);
-      void api.post('/api/me/notifications/read-all', undefined, token).catch(() => undefined);
+      try {
+        await api.post('/api/me/notifications/read-all', undefined, token);
+      } catch (err) {
+        console.warn('[notifications] read-all failed:', err);
+      }
     }
   };
 
@@ -86,6 +95,13 @@ export default function NotificationBell() {
       switch (data.type) {
         case 'memory.direct-share':
           if (data.memoryId) router.push(`/maps?memory=${encodeURIComponent(data.memoryId)}`);
+          else router.push('/maps');
+          break;
+        case 'follow':
+          // followerUsername is the source of truth for deep-linking; the
+          // /creators/[username] route is name-based. Fall back to /maps if
+          // backend sent no username (very rare — user without a handle yet).
+          if (data.followerUsername) router.push(`/creators/${encodeURIComponent(data.followerUsername)}`);
           else router.push('/maps');
           break;
         case 'test':
@@ -121,7 +137,19 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-32px)] overflow-hidden rounded-xl border-2 border-ig-border bg-ig-elevated shadow-2xl">
+        // FIXED positioning anchored to the viewport's right edge — not
+        // absolute-to-the-bell. Previously `absolute right-0` anchored the
+        // dropdown's right edge to the bell button, but on mobile the bell
+        // isn't at the screen's right (theme toggle + menu sit to its right),
+        // so a 320 px-wide dropdown going LEFT from the bell overflowed
+        // past the screen's left edge on narrow phones. `fixed right-3`
+        // pins the dropdown 12 px from the viewport's right edge, which
+        // matches the navbar's horizontal padding (px-3).
+        // top = navbar bottom (h-16) + safe-area-top + small gap.
+        <div
+          className="fixed right-3 z-50 w-80 max-w-[calc(100vw-24px)] overflow-hidden rounded-xl border-2 border-ig-border bg-ig-elevated shadow-2xl"
+          style={{ top: 'calc(env(safe-area-inset-top) + 4rem + 0.5rem)' }}
+        >
           <div className="border-b-2 border-ig-border bg-ig-secondary px-4 py-2.5">
             <p className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-primary">
               Notifications

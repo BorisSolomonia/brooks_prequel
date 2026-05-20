@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { isNative, platform as detectPlatform } from '@/lib/capacitor';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
@@ -34,6 +35,7 @@ const PERM_BOOTSTRAP_KEY = 'brooks.permissionsBootstrap.v2';
 const FCM_TOKEN_KEY = 'brooks.fcmToken.v1';
 
 export default function PermissionsBootstrap() {
+  const router = useRouter();
   const { token: authToken } = useAccessToken();
   const [fcmToken, setFcmToken] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -102,6 +104,32 @@ export default function PermissionsBootstrap() {
           console.error('[PermissionsBootstrap] registration error:', err);
         });
 
+        // System-tray push tap → deep-link into the matching in-app screen.
+        // The data payload mirrors the in-app bell's switch (NotificationBell.tsx)
+        // so behaviour is identical whether the user taps the OS notification
+        // or the in-app row. The payload comes through as data.notification.data
+        // on Android; @capacitor/push-notifications also flattens fields onto
+        // the top-level notification object on iOS — we read both shapes.
+        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          if (cancelled) return;
+          const raw = (action.notification as { data?: Record<string, string> }).data ?? {};
+          const type = raw.type;
+          console.info('[PermissionsBootstrap] push tap type=', type, 'data=', raw);
+          try {
+            if (type === 'memory.direct-share') {
+              if (raw.memoryId) router.push(`/maps?memory=${encodeURIComponent(raw.memoryId)}`);
+              else router.push('/maps');
+            } else if (type === 'follow') {
+              if (raw.followerUsername) router.push(`/creators/${encodeURIComponent(raw.followerUsername)}`);
+              else router.push('/maps');
+            } else {
+              router.push('/maps');
+            }
+          } catch (err) {
+            console.warn('[PermissionsBootstrap] push tap routing failed:', err);
+          }
+        });
+
         let permission = await PushNotifications.checkPermissions();
         console.info('[PermissionsBootstrap] notifications current:', permission.receive);
         if (permission.receive !== 'granted' && permission.receive !== 'denied') {
@@ -128,6 +156,10 @@ export default function PermissionsBootstrap() {
     return () => {
       cancelled = true;
     };
+    // router is intentionally omitted: registration must fire once per cold
+    // start, and Next.js's useRouter return value is stable for the lifetime
+    // of the component.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // POST the FCM token whenever we have BOTH the auth token AND the FCM

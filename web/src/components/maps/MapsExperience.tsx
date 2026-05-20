@@ -1271,6 +1271,23 @@ export default function MapsExperience({
     refreshMemories();
   }, [token, currentBounds, activeLayers.memories]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Deep-link support: `/maps?memory=<id>` from the notification bell or a
+  // tapped Android push opens the matching memory card the moment memories
+  // load. A ref sentinel ensures we only auto-select ONCE per id — if the
+  // user closes the card we don't keep re-opening it.
+  const autoSelectedMemoryRef = useRef<string | null>(null);
+  useEffect(() => {
+    const memoryParam = searchParams.get('memory');
+    if (!memoryParam) return;
+    if (autoSelectedMemoryRef.current === memoryParam) return;
+    if (memories.length === 0) return;
+    const match = memories.find((m) => m.id === memoryParam);
+    if (!match) return;
+    autoSelectedMemoryRef.current = memoryParam;
+    setSelectedMemory(match);
+    setSelectedPin(null);
+  }, [searchParams, memories]);
+
   useEffect(() => {
     if (!fallbackCenter || typeof window === 'undefined') {
       setLocationState('fallback');

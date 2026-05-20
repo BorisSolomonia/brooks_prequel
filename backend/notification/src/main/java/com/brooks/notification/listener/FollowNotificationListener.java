@@ -37,13 +37,20 @@ public class FollowNotificationListener {
             String displayName = (followerName == null || followerName.isBlank())
                     ? "Someone"
                     : "@" + followerName;
+            // followerUsername is included so the in-app bell tap and the
+            // system-tray push tap can both deep-link to /creators/{username}
+            // without a second backend round-trip. Falls back to "" when the
+            // user has no username yet (rare, but possible during onboarding);
+            // the frontend handles the empty case by routing to /maps.
+            String safeUsername = followerName == null ? "" : followerName;
             notificationService.notifyUser(
                     event.getFollowingId(),
                     displayName + " started following you",
                     "Tap to view their profile.",
                     Map.of(
                             "type", "follow",
-                            "followerId", event.getFollowerId().toString()
+                            "followerId", event.getFollowerId().toString(),
+                            "followerUsername", safeUsername
                     )
             );
         } catch (Exception ex) {
