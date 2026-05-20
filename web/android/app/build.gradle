@@ -51,8 +51,13 @@ android {
             if (keystoreProperties['storeFile']) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 minification + obfuscation for release builds. Required for
+            // Play Store policy and to make sensitive strings (API endpoints,
+            // logic) less trivial to reverse-engineer from the APK. Debug
+            // builds stay unminified for chrome://inspect WebView debugging.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

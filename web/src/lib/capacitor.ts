@@ -120,7 +120,7 @@ export async function setupNativeAuthListener(): Promise<() => void> {
       try {
         const url = new URL(data.url);
         // Only handle our OAuth callback scheme; ignore other deep links.
-        if (url.protocol.replace(':', '') !== 'uk.brooksweb.app') {
+        if (url.protocol !== 'uk.brooksweb.app:') {
           console.info('[capacitor] ignoring non-auth scheme:', url.protocol);
           return;
         }

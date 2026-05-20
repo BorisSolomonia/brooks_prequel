@@ -133,6 +133,14 @@ jobs:
             grep -E "^${key}=" .env.production | head -n 1 | cut -d'=' -f2-
           }
           echo "Building ${IMAGE_PATH}:${GITHUB_SHA}"
+          # Fail loudly if GCS_BUCKET isn't in Secret Manager. next.config.js
+          # now throws at production build time without it — surfacing the gap
+          # here in CI logs is faster than the resulting opaque docker error.
+          GCS_BUCKET_VALUE="$(get_env GCS_BUCKET)"
+          if [ -z "$GCS_BUCKET_VALUE" ]; then
+            echo "ERROR: GCS_BUCKET missing from .env.production — add it to Secret Manager"
+            exit 1
+          fi
           docker build \
             --progress=plain \
             --build-arg NEXT_PUBLIC_API_BASE_URL="$(get_env NEXT_PUBLIC_API_BASE_URL)" \
@@ -142,6 +150,7 @@ jobs:
             --build-arg NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN="$(get_env NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN)" \
             --build-arg NEXT_PUBLIC_MAPBOX_STYLE="$(get_env NEXT_PUBLIC_MAPBOX_STYLE)" \
             --build-arg NEXT_PUBLIC_PATHWAY_VIEW_ENABLED="$(get_env NEXT_PUBLIC_PATHWAY_VIEW_ENABLED || true)" \
+            --build-arg GCS_BUCKET="${GCS_BUCKET_VALUE}" \
             -t "${IMAGE_PATH}:${GITHUB_SHA}" \
             -t "${IMAGE_PATH}:latest" \
             web/

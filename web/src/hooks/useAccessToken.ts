@@ -64,6 +64,7 @@ export function useAccessToken(): UseAccessTokenResult {
       .then((t) => {
         setToken(t);
         if (!t) setError('Failed to fetch access token');
+        else setError(null);
       })
       .finally(() => setLoading(false));
   }, []);

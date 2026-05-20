@@ -25,6 +25,9 @@ export default function MyMemoriesPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Lazy fetch per tab — only hit the API when the tab is selected.
+  // created/shared deliberately excluded from deps: the in-effect null
+  // check already prevents refetch, and including them caused redundant
+  // re-runs (and a duplicate-request race on rapid tab switches).
   useEffect(() => {
     if (tokenLoading || !token) return;
     if (tab === 'created' && created === null) {
@@ -37,7 +40,8 @@ export default function MyMemoriesPage() {
         .then(setShared)
         .catch((err) => setError(err instanceof Error ? err.message : 'Failed'));
     }
-  }, [tab, token, tokenLoading, created, shared]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, token, tokenLoading]);
 
   const items = tab === 'created' ? created : shared;
   const loading = tokenLoading || items === null;

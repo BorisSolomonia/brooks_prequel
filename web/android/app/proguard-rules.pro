@@ -1,21 +1,48 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# Brooks ProGuard / R8 rules
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Release builds run with `minifyEnabled true` (build.gradle release block).
+# Without explicit keep rules, R8 strips/renames classes that Capacitor,
+# Auth0, Firebase, and the WebView JS bridge look up reflectively — leading
+# to silent runtime failures (plugin not found, push not delivered, OAuth
+# callback dead) that ONLY appear in release builds.
+#
+# Add a new -keep rule whenever you add a plugin that gets called from the
+# WebView side via Capacitor's @PluginMethod bridge or any reflective
+# lookup. Keep the rule and a 1-line reason for it.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Capacitor core + plugins
+# Capacitor uses reflection to discover @CapacitorPlugin classes and route
+# JS calls to @PluginMethod handlers. Everything under com.getcapacitor
+# must stay reachable.
+-keep class com.getcapacitor.** { *; }
+-keep class com.getcapacitor.plugin.** { *; }
+-keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
+-keepclassmembers class * {
+    @com.getcapacitor.PluginMethod *;
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Cordova plugins bridged through Capacitor's cordova compatibility
+-keep class org.apache.cordova.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Auth0 — OAuth deep-link callback path goes through these
+-keep class com.auth0.** { *; }
+
+# Firebase / FCM — push notification reception
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keepclassmembers class * extends com.google.firebase.messaging.FirebaseMessagingService {
+    *;
+}
+
+# WebView JS interface — Capacitor injects window.Capacitor.*
+# Without this, @JavascriptInterface methods can be renamed.
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Keep stack traces meaningful for crash reports
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# Don't obfuscate annotations (some libs read them at runtime)
+-keepattributes *Annotation*,Signature,Exceptions,InnerClasses,EnclosingMethod

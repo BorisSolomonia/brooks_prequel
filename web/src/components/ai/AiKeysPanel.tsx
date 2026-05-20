@@ -46,7 +46,9 @@ export function AiKeysPanel() {
 
   useEffect(() => {
     if (!token) return;
-    api.get<AiKeyResponse[]>('/api/me/ai-keys', token).then(setKeys);
+    api.get<AiKeyResponse[]>('/api/me/ai-keys', token)
+      .then(setKeys)
+      .catch((err) => console.error('[aiKeys] load failed', err));
   }, [token]);
 
   function startEdit(provider: Provider, existingModel: string | null) {

@@ -22,6 +22,7 @@ export default function MyGuidesPage() {
   const { confirm } = useConfirm();
   const [library, setLibrary] = useState<GuideLibraryResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<LibraryTab>('created');
   const [deletingGuideId, setDeletingGuideId] = useState<string | null>(null);
   const [calendarTripId, setCalendarTripId] = useState<string | null>(null);
@@ -58,12 +59,30 @@ export default function MyGuidesPage() {
           purchased,
         });
       })
-      .catch((err) => console.error('[guides] library load failed:', err))
+      .catch((err) => {
+        console.error('[guides] library load failed:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load guides');
+      })
       .finally(() => setLoading(false));
   }, [token, tokenLoading, router]);
 
   if (tokenLoading || loading) {
     return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12 text-center">
+        <p className="text-sm text-ig-error">{error}</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-3 text-sm text-ig-text-secondary underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   const tabs: { key: LibraryTab; label: string; items: GuideLibraryItem[] }[] = [
