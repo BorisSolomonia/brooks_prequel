@@ -35,7 +35,18 @@ public class UserService {
     @CacheEvict(value = "usersBySubject", key = "#auth0Subject")
     public User findOrCreateUser(String auth0Subject, String email, boolean emailVerified) {
         return userRepository.findByAuth0Subject(auth0Subject)
-                .map(user -> syncAdminRole(user, email, emailVerified))
+                .map(user -> {
+                    // Self-heal: an account that never picked a handle gets one
+                    // auto-assigned on its next login. Without this the user
+                    // shows up in notifications as the gibberish auth0 subject
+                    // (the previous fallback ladder leaked synthetic-email
+                    // local-parts like "google-oauth2_<id>" into the bell).
+                    if (user.getUsername() == null || user.getUsername().isBlank()) {
+                        user.setUsername(generateUniqueUsername(user.getEmail(), user.getAuth0Subject()));
+                        userRepository.save(user);
+                    }
+                    return syncAdminRole(user, email, emailVerified);
+                })
                 .orElseGet(() -> {
                     // The users.email column is UNIQUE NOT NULL, so a blank fallback collides as
                     // soon as a second emailless user signs in. Derive a deterministic per-subject
@@ -43,8 +54,51 @@ public class UserService {
                     String safeEmail = (email == null || email.isBlank())
                             ? auth0Subject.replace("|", "_") + "@noemail.brooks.local"
                             : email;
-                    return userRepository.save(syncAdminRole(new User(auth0Subject, safeEmail), safeEmail, emailVerified));
+                    User created = new User(auth0Subject, safeEmail);
+                    // Auto-assign a username on creation so every new account
+                    // already has a handle. The user can change it later via
+                    // the profile editor — this just ensures the field is
+                    // never null in production data going forward.
+                    created.setUsername(generateUniqueUsername(safeEmail, auth0Subject));
+                    return userRepository.save(syncAdminRole(created, safeEmail, emailVerified));
                 });
+    }
+
+    // Generates a username that is guaranteed unique among the users table.
+    // Strategy:
+    //   1. If the email is real (not the synthesised @noemail.brooks.local
+    //      placeholder), sanitise its local part — lowercase, ASCII-only,
+    //      max 30 chars — and use that.
+    //   2. Otherwise derive a stable "user_<hash>" from the Auth0 subject so
+    //      handle-less Google-OAuth users still get a readable handle
+    //      instead of leaking subject IDs into the UI.
+    // Collisions resolved by appending _1, _2, ...; the upper bound is
+    // pathological-only — we'd need thousands of identical email prefixes.
+    private String generateUniqueUsername(String email, String auth0Subject) {
+        String base;
+        if (email != null && !email.endsWith("@noemail.brooks.local")) {
+            String prefix = email.contains("@") ? email.substring(0, email.indexOf('@')) : email;
+            base = prefix.toLowerCase().replaceAll("[^a-z0-9_-]+", "_");
+            if (base.length() > 30) base = base.substring(0, 30);
+        } else {
+            String hash = Integer.toHexString(auth0Subject == null ? 0 : auth0Subject.hashCode());
+            base = "user_" + hash;
+        }
+        if (base.isBlank() || base.equals("_")) base = "user";
+
+        String candidate = base;
+        int suffix = 0;
+        while (userRepository.existsByUsername(candidate)) {
+            suffix++;
+            candidate = base + "_" + suffix;
+            if (suffix > 9_999) {
+                // Defensive: give up the sequential walk and use a hash suffix
+                // so we can never spin forever on a pathologically common base.
+                candidate = base + "_" + Integer.toHexString((auth0Subject + suffix).hashCode());
+                break;
+            }
+        }
+        return candidate;
     }
 
     // Backwards-compatible overload; callers that don't yet pass email_verified are treated as unverified
