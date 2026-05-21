@@ -50,8 +50,13 @@ public class Guide extends BaseEntity {
     @Min(0)
     private int priceCents = 0;
 
+    // GEL by default — Brooks's only payment processor (BOG iPay) accepts
+    // GEL exclusively, and PurchaseService refuses to start a checkout
+    // session for any non-GEL guide. Earlier USD default was a leftover
+    // from a generic template; switching to GEL means new guides are
+    // immediately purchasable. V53 backfills existing USD rows.
     @Column(name = "currency", nullable = false, length = 3)
-    private String currency = "USD";
+    private String currency = "GEL";
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)

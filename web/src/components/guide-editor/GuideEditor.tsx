@@ -35,7 +35,10 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     priceCents: initialGuide?.priceCents || 0,
     salePriceCents: initialGuide?.salePriceCents ?? null,
     saleEndsAt: initialGuide?.saleEndsAt ?? null,
-    currency: initialGuide?.currency || 'USD',
+    // GEL — Brooks's payment processor (BOG iPay) is GEL-only; matches
+    // backend Guide entity default. Was USD which made every freshly-created
+    // guide non-purchasable via iPay.
+    currency: initialGuide?.currency || 'GEL',
     tags: initialGuide?.tags || [],
     travelerStage: initialGuide?.travelerStage ?? undefined,
     personas: initialGuide?.personas ?? [],

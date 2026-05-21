@@ -46,7 +46,10 @@ export default function GuideCard({
   placeCount,
   priceCents,
   effectivePriceCents,
-  currency = 'USD',
+  // GEL fallback — matches backend Guide entity default. The display
+  // layer pins to GEL anyway via useCurrency, but a sensible fallback
+  // here keeps the prop semantically aligned.
+  currency = 'GEL',
   averageRating = 0,
   reviewCount = 0,
   popularThisWeek,
