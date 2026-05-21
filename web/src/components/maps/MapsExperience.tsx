@@ -26,6 +26,17 @@ import type {
 // CSS scoped to the map components so non-map pages don't pay for it.
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+// Warm the mapbox-gl chunk download the moment THIS module is parsed —
+// in parallel with React hydration — instead of waiting until the map-init
+// useEffect runs. The inside-effect `await import('mapbox-gl')` then
+// resolves instantly from the module cache. The browser-only guard prevents
+// the import body from executing on the server (mapbox-gl touches `window`
+// at module load and SSR crashes without it). See mapbox-ssr-lessons.md
+// Rule #1 — this pattern is exactly what that lesson prescribed.
+if (typeof window !== 'undefined') {
+  void import('mapbox-gl');
+}
+
 // Module-level pins cache — survives navigation (component unmount/remount).
 let _cachedPins: InfluencerMapPin[] | null = null;
 let _pinsCacheExpiry = 0;
