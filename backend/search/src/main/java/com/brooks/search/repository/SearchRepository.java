@@ -18,6 +18,12 @@ public class SearchRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
+    // Trigram similarity threshold for fuzzy matches. Default pg_trgm
+    // threshold is 0.3; 0.25 catches one more typo class (e.g. "Tbilsi"
+    // → "Tbilisi" sits at ~0.66 anyway, but "ttbilisi" sits at ~0.31).
+    // Tuned conservatively — too low and unrelated cities pollute results.
+    private static final double FUZZY_THRESHOLD = 0.25;
+
     // ── Creator search ──────────────────────────────────────────
 
     public List<CreatorSearchResult> searchCreators(String tsQuery, int limit, int offset) {
@@ -39,6 +45,10 @@ public class SearchRepository {
               AND (
                   (p.search_vector IS NOT NULL AND p.search_vector @@ plainto_tsquery('english', ?))
                   OR LOWER(u.username) LIKE LOWER('%' || ? || '%')
+                  -- Fuzzy region match via pg_trgm (see V52 migration).
+                  -- Catches typos like "Tblisi" / "Georga" without
+                  -- requiring exact substring of the city/region.
+                  OR similarity(LOWER(COALESCE(p.region, '')), LOWER(?)) >= ?
               )
             ORDER BY COALESCE(ts_rank(p.search_vector, plainto_tsquery('english', ?)), 0) DESC,
                      COALESCE(p.follower_count, 0) DESC
@@ -54,7 +64,7 @@ public class SearchRepository {
                 .guideCount(rs.getInt("guide_count"))
                 .verified(rs.getBoolean("is_verified"))
                 .build(),
-            tsQuery, tsQuery, tsQuery, limit, offset
+            tsQuery, tsQuery, tsQuery, FUZZY_THRESHOLD, tsQuery, limit, offset
         );
     }
 
@@ -67,8 +77,9 @@ public class SearchRepository {
               AND (
                   (p.search_vector IS NOT NULL AND p.search_vector @@ plainto_tsquery('english', ?))
                   OR LOWER(u.username) LIKE LOWER('%' || ? || '%')
+                  OR similarity(LOWER(COALESCE(p.region, '')), LOWER(?)) >= ?
               )
-            """, Long.class, tsQuery, tsQuery);
+            """, Long.class, tsQuery, tsQuery, tsQuery, FUZZY_THRESHOLD);
         return count != null ? count : 0;
     }
 
@@ -109,11 +120,23 @@ public class SearchRepository {
             LEFT JOIN guide_reviews gr ON gr.guide_id = g.id
             LEFT JOIN guide_purchases gp ON gp.guide_id = g.id
             LEFT JOIN saved_guides sg ON sg.guide_id = g.id
-            WHERE g.search_vector @@ plainto_tsquery('english', ?)
+            WHERE (
+                  g.search_vector @@ plainto_tsquery('english', ?)
+                  -- Fuzzy city / region / country match for typo
+                  -- tolerance (V52 trigram indexes). Caught alongside
+                  -- the FTS clause so exact words still rank higher
+                  -- via ts_rank in the ORDER BY below.
+                  OR similarity(LOWER(COALESCE(g.primary_city, '')), LOWER(?)) >= ?
+                  OR similarity(LOWER(COALESCE(g.region, '')), LOWER(?)) >= ?
+                  OR similarity(LOWER(COALESCE(g.country, '')), LOWER(?)) >= ?
+              )
               AND g.status = 'PUBLISHED'
             """);
         List<Object> params = new ArrayList<>();
         params.add(tsQuery);
+        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
         if (stage != null && !stage.isBlank()) {
             sql.append(" AND g.traveler_stage = ?");
             params.add(stage);
@@ -168,11 +191,19 @@ public class SearchRepository {
         StringBuilder sql = new StringBuilder("""
             SELECT COUNT(*)
             FROM guides g
-            WHERE g.search_vector @@ plainto_tsquery('english', ?)
+            WHERE (
+                  g.search_vector @@ plainto_tsquery('english', ?)
+                  OR similarity(LOWER(COALESCE(g.primary_city, '')), LOWER(?)) >= ?
+                  OR similarity(LOWER(COALESCE(g.region, '')), LOWER(?)) >= ?
+                  OR similarity(LOWER(COALESCE(g.country, '')), LOWER(?)) >= ?
+              )
               AND g.status = 'PUBLISHED'
             """);
         List<Object> params = new ArrayList<>();
         params.add(tsQuery);
+        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
         if (stage != null && !stage.isBlank()) {
             sql.append(" AND g.traveler_stage = ?");
             params.add(stage);
@@ -269,7 +300,14 @@ public class SearchRepository {
             JOIN guide_blocks gb ON gb.id = gp.block_id
             JOIN guide_days gd ON gd.id = gb.day_id
             JOIN guides g ON g.id = gd.guide_id
-            WHERE gp.search_vector @@ plainto_tsquery('english', ?)
+            WHERE (
+                  gp.search_vector @@ plainto_tsquery('english', ?)
+                  -- Fuzzy address + name match for typo tolerance
+                  -- (V52 trigram indexes). Exact-word hits still
+                  -- rank higher via ts_rank in the ORDER BY.
+                  OR similarity(LOWER(COALESCE(gp.address, '')), LOWER(?)) >= ?
+                  OR similarity(LOWER(COALESCE(gp.name, '')), LOWER(?)) >= ?
+              )
               AND g.status = 'PUBLISHED'
             ORDER BY ts_rank(gp.search_vector, plainto_tsquery('english', ?)) DESC
             LIMIT ? OFFSET ?
@@ -285,7 +323,7 @@ public class SearchRepository {
                 .guideTitle(rs.getString("guide_title"))
                 .guideRegion(rs.getString("guide_region"))
                 .build(),
-            tsQuery, tsQuery, limit, offset
+            tsQuery, tsQuery, FUZZY_THRESHOLD, tsQuery, FUZZY_THRESHOLD, tsQuery, limit, offset
         );
     }
 
@@ -296,9 +334,13 @@ public class SearchRepository {
             JOIN guide_blocks gb ON gb.id = gp.block_id
             JOIN guide_days gd ON gd.id = gb.day_id
             JOIN guides g ON g.id = gd.guide_id
-            WHERE gp.search_vector @@ plainto_tsquery('english', ?)
+            WHERE (
+                  gp.search_vector @@ plainto_tsquery('english', ?)
+                  OR similarity(LOWER(COALESCE(gp.address, '')), LOWER(?)) >= ?
+                  OR similarity(LOWER(COALESCE(gp.name, '')), LOWER(?)) >= ?
+              )
               AND g.status = 'PUBLISHED'
-            """, Long.class, tsQuery);
+            """, Long.class, tsQuery, tsQuery, FUZZY_THRESHOLD, tsQuery, FUZZY_THRESHOLD);
         return count != null ? count : 0;
     }
 

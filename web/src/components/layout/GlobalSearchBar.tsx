@@ -248,7 +248,18 @@ export default function GlobalSearchBar() {
       </div>
 
       {open && inputValue.trim() && (
-        <div className="mw-panel fixed inset-x-3 top-[76px] z-50 max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl p-3 pb-4 backdrop-blur md:absolute md:inset-x-0 md:top-[calc(100%+10px)] md:max-h-[70vh] md:rounded-[28px]">
+        <div
+          className="mw-panel fixed inset-x-3 z-50 overflow-y-auto rounded-2xl p-3 pb-4 backdrop-blur md:absolute md:inset-x-0 md:top-[calc(100%+10px)] md:max-h-[70vh] md:rounded-[28px]"
+          // top + max-height computed from the actual navbar height
+          // (h-16 = 4rem) + safe-area-inset-top + small gap, so the
+          // popup never starts BEHIND the navbar (or its search input)
+          // on notched phones. Was a hard-coded 76px which overlapped
+          // the input on devices with > 12px top inset.
+          style={{
+            top: 'calc(env(safe-area-inset-top) + 4.5rem)',
+            maxHeight: 'calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 5.5rem)',
+          }}
+        >
           {error ? (
             <div className="rounded-2xl border-2 border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-secondary">
               {error}
