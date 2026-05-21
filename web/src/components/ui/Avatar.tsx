@@ -1,4 +1,15 @@
-import Image from 'next/image';
+// Plain <img> on purpose — not next/image. The Avatar shows a 24-96 px
+// circle, so image-optimization (WebP/AVIF, automatic resizing) buys
+// almost nothing visible. Earlier this component used <Image> from
+// next/image, which routes the URL through /_next/image and validates
+// it against next.config.js `images.remotePatterns`. That meant the
+// GCS_BUCKET build-arg had to be set correctly at web-image build
+// time, and any drift between the bucket the backend writes to and
+// the one baked into the build silently broke /profile (avatars on
+// the map / drawer worked because those use plain <img>). Plain img
+// has no allowlist — any reachable URL works. Other surfaces (guide
+// covers, hero images) still use next/image where the optimization
+// payoff is real.
 
 interface AvatarProps {
   src?: string | null;
@@ -22,11 +33,15 @@ export default function Avatar({ src, name, size = 'md', verified = false }: Ava
   return (
     <div className="relative inline-block">
       {src ? (
-        <Image
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={src}
           alt={name || ''}
           width={sizePx[size]}
           height={sizePx[size]}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
           className={`${sizeClasses[size]} rounded-full border-2 border-ig-border object-cover saturate-[0.92] contrast-[1.04]`}
         />
       ) : (
