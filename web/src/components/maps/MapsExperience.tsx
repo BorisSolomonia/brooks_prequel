@@ -26,6 +26,31 @@ import type {
 // CSS scoped to the map components so non-map pages don't pay for it.
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+// Bounds-quantization grid for the memory map API. Map pans get snapped
+// to a 0.05° (~5.5 km at the equator) grid before being sent to the
+// backend, so small pans within a grid cell reuse the previous response
+// rather than hammering /api/memories/map. A normal zoom-12 viewport
+// spans ~4-8 cells, so cell-edge pans still trigger a fresh fetch.
+const BOUNDS_QUANTIZATION_DEGREES = 0.05;
+
+function quantizeBoundsForFetch(bounds: { north: number; south: number; east: number; west: number }) {
+  const g = BOUNDS_QUANTIZATION_DEGREES;
+  return {
+    north: Math.ceil(bounds.north / g) * g,
+    south: Math.floor(bounds.south / g) * g,
+    east: Math.ceil(bounds.east / g) * g,
+    west: Math.floor(bounds.west / g) * g,
+  };
+}
+
+function boundsCacheKey(bounds: { north: number; south: number; east: number; west: number }) {
+  // Round to 6 decimals so floating-point noise from the quantize math
+  // can't make two equivalent cells look different.
+  return [bounds.north, bounds.south, bounds.east, bounds.west]
+    .map((n) => n.toFixed(6))
+    .join('|');
+}
+
 // Warm the mapbox-gl chunk download the moment THIS module is parsed —
 // in parallel with React hydration — instead of waiting until the map-init
 // useEffect runs. The inside-effect `await import('mapbox-gl')` then
@@ -1148,8 +1173,9 @@ export default function MapsExperience({
 
     // Reconcile: server returned the real id. Refresh authoritative list,
     // which will replace the optimistic pin (we filter by id so duplicates
-    // can't accumulate even if the server response races).
-    refreshMemories();
+    // can't accumulate even if the server response races). Force-refresh
+    // so the bounds cache (added for #6 audit fix) doesn't skip this.
+    refreshMemories(true);
 
     // Branch on share path. Both are fire-and-forget — memory is saved
     // regardless of share success.
@@ -1206,7 +1232,7 @@ export default function MapsExperience({
         await navigator.clipboard.writeText(share.shareUrl);
         setPageError('Share link copied');
       }
-      refreshMemories();
+      refreshMemories(true);
     } catch (error) {
       setPageError(error instanceof Error ? error.message : 'Could not share memory');
     } finally {
@@ -1220,7 +1246,7 @@ export default function MapsExperience({
     try {
       await api.delete(path, token);
       setSelectedMemory(null);
-      refreshMemories();
+      refreshMemories(true);
     } catch (error) {
       setPageError(error instanceof Error ? error.message : errorMsg);
     } finally {
@@ -1250,16 +1276,31 @@ export default function MapsExperience({
       .finally(() => setPinsLoading(false));
   }, [token]);
 
-  const refreshMemories = () => {
+  // Cache key for the LAST quantized bounds we fetched. Skips the network
+  // round-trip when the user's pan stays inside the same grid cell.
+  // Reset by callers that need a force-refresh (memory created/deleted/shared).
+  const lastFetchedBoundsKeyRef = useRef<string | null>(null);
+
+  const refreshMemories = (force = false) => {
     if (!token || !currentBounds || !activeLayers.memories) {
       return;
     }
 
+    // Snap to the quantization grid so small pans reuse the same cache key.
+    // The backend gets a slightly larger bounding box, so client-side
+    // filtering (visibleMemories) still trims to the actual viewport.
+    const quantized = quantizeBoundsForFetch(currentBounds);
+    const key = boundsCacheKey(quantized);
+    if (!force && lastFetchedBoundsKeyRef.current === key) {
+      return; // same grid cell as last fetch — reuse cached memories state
+    }
+    lastFetchedBoundsKeyRef.current = key;
+
     const params = new URLSearchParams({
-      north: String(currentBounds.north),
-      south: String(currentBounds.south),
-      east: String(currentBounds.east),
-      west: String(currentBounds.west),
+      north: String(quantized.north),
+      south: String(quantized.south),
+      east: String(quantized.east),
+      west: String(quantized.west),
     });
 
     setMemoriesLoading(true);
