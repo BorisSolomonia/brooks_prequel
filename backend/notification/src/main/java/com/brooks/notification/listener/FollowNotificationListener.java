@@ -2,6 +2,8 @@ package com.brooks.notification.listener;
 
 import com.brooks.notification.service.NotificationService;
 import com.brooks.notification.util.DisplayLabel;
+import com.brooks.profile.domain.UserProfile;
+import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.social.event.FollowEvent;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
@@ -10,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -27,6 +30,7 @@ public class FollowNotificationListener {
 
     private final NotificationService notificationService;
     private final UserService userService;
+    private final UserProfileRepository userProfileRepository;
 
     @EventListener
     public void onFollow(FollowEvent event) {
@@ -36,26 +40,31 @@ public class FollowNotificationListener {
         }
         try {
             User follower = userService.findById(event.getFollowerId());
-            // Title prefers @username; if the follower hasn't set one yet,
-            // fall back to the email prefix (the part before @) so the
-            // notification reads "@borissolomonia started following you"
-            // instead of the previous unhelpful "Someone started following
-            // you". DisplayLabel centralises this so memory-share + future
-            // listeners share the same fallback ladder.
-            String title = DisplayLabel.forUser(follower) + " started following you";
-            // followerUsername is the source of truth for deep-linking. Empty
-            // when the user truly has no username — frontend then routes to
-            // /search/creators (a useful page) rather than /maps (a dead end).
-            String safeUsername = follower.getUsername() == null ? "" : follower.getUsername();
+            UserProfile followerProfile =
+                    userProfileRepository.findByUserId(event.getFollowerId()).orElse(null);
+            // Title prefers UserProfile.displayName (a real human name),
+            // then @username, then email-prefix, then "Someone".
+            // DisplayLabel centralises the ladder.
+            String label = DisplayLabel.forUser(follower, followerProfile);
+            String title = label + " started following you";
+
+            // Data payload: include both the routable username (for
+            // /creators/<username> deep-links) and the displayed name
+            // (in case the client wants to render it elsewhere).
+            Map<String, String> data = new HashMap<>();
+            data.put("type", "follow");
+            data.put("followerId", event.getFollowerId().toString());
+            String username = follower.getUsername();
+            data.put("followerUsername", username == null ? "" : username);
+            String displayName = followerProfile != null ? followerProfile.getDisplayName() : null;
+            if (displayName != null && !displayName.isBlank()) {
+                data.put("followerDisplayName", displayName);
+            }
             notificationService.notifyUser(
                     event.getFollowingId(),
                     title,
                     "Tap to view their profile.",
-                    Map.of(
-                            "type", "follow",
-                            "followerId", event.getFollowerId().toString(),
-                            "followerUsername", safeUsername
-                    )
+                    data
             );
         } catch (Exception ex) {
             log.warn("Failed to enqueue follow notification: {}", ex.getMessage());

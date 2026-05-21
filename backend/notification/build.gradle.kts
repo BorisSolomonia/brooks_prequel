@@ -3,6 +3,10 @@ dependencies {
     implementation(project(":auth"))
     implementation(project(":user"))
     implementation(project(":social"))
+    // Listeners use UserProfile.displayName as the highest-priority signal
+    // when building notification titles — so a real Auth0 name takes
+    // precedence over a generated @username or an email-prefix fallback.
+    implementation(project(":profile"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
