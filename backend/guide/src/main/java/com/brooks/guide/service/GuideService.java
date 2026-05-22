@@ -102,6 +102,17 @@ public class GuideService {
             guide.setSalePriceCents(request.getSalePriceCents() == 0 ? null : request.getSalePriceCents());
             guide.setSaleEndsAt(request.getSalePriceCents() == 0 ? null : request.getSaleEndsAt());
         }
+        // V54 — pricing mode (PAID / FREE_PUBLIC / FREE_FOR_FOLLOWERS).
+        // Throws a clear 400 if the client sends a value outside the enum.
+        if (request.getPricingMode() != null && !request.getPricingMode().isBlank()) {
+            try {
+                guide.setPricingMode(com.brooks.guide.domain.GuidePricingMode.valueOf(
+                        request.getPricingMode().trim().toUpperCase()));
+            } catch (IllegalArgumentException ex) {
+                throw new com.brooks.common.exception.BusinessException(
+                        "Invalid pricingMode: must be PAID, FREE_PUBLIC, or FREE_FOR_FOLLOWERS");
+            }
+        }
         if (request.getTags() != null) replaceTags(guide, request.getTags());
         if (request.getSortOrder() != null) guide.setSortOrder(request.getSortOrder());
         if (request.getBestSeasonStartMonth() != null) guide.setBestSeasonStartMonth(request.getBestSeasonStartMonth());

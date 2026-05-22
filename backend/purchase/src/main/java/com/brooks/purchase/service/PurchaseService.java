@@ -5,9 +5,11 @@ import com.brooks.common.exception.BusinessException;
 import com.brooks.common.exception.ResourceNotFoundException;
 import com.brooks.common.util.BusinessConstants;
 import com.brooks.guide.domain.Guide;
+import com.brooks.guide.domain.GuidePricingMode;
 import com.brooks.guide.domain.GuideStatus;
 import com.brooks.guide.repository.GuideRepository;
 import com.brooks.profile.repository.UserProfileRepository;
+import com.brooks.social.repository.FollowRepository;
 import com.brooks.purchase.domain.Purchase;
 import com.brooks.purchase.domain.PurchaseStatus;
 import com.brooks.purchase.dto.CheckoutRequest;
@@ -50,6 +52,7 @@ public class PurchaseService {
     private final TransactionTemplate transactionTemplate;
     private final PurchaseAuditWriter auditWriter;
     private final CreatorEarningsRecorder earningsRecorder;
+    private final FollowRepository followRepository;
 
     public PurchaseService(
             PurchaseRepository purchaseRepository,
@@ -58,6 +61,7 @@ public class PurchaseService {
             UserService userService,
             BogIpayClient bogIpayClient,
             CommissionRateResolver commissionRateResolver,
+            FollowRepository followRepository,
             ApplicationEventPublisher eventPublisher,
             PlatformTransactionManager transactionManager,
             PurchaseAuditWriter auditWriter,
@@ -73,6 +77,7 @@ public class PurchaseService {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.auditWriter = auditWriter;
         this.earningsRecorder = earningsRecorder;
+        this.followRepository = followRepository;
     }
 
     /**
@@ -84,6 +89,17 @@ public class PurchaseService {
      * BOG failure leaves no orphan PENDING row in our DB.
      */
     public CheckoutResponse createCheckout(String auth0Subject, CheckoutRequest request) {
+        // Free-pricing-mode short circuit (V54). Before doing ANY iPay work,
+        // check whether the guide is FREE_PUBLIC or FREE_FOR_FOLLOWERS and
+        // the buyer is eligible. Eligible buyers skip iPay entirely and get
+        // a COMPLETED purchase row materialised on the spot. The buyer
+        // lands on /trips/{purchaseId} with full access.
+        CheckoutResponse freeResponse = transactionTemplate.execute(status ->
+                tryFreeCheckout(auth0Subject, request));
+        if (freeResponse != null) {
+            return freeResponse;
+        }
+
         CheckoutPreflight pre = transactionTemplate.execute(status -> preflight(auth0Subject, request));
 
         BogIpayClient.CreatedOrder order;
@@ -114,6 +130,87 @@ public class PurchaseService {
             int commissionRateBps,
             String shopOrderId
     ) {}
+
+    /**
+     * Short-circuit a paid checkout if the guide is in a FREE pricing mode
+     * and the buyer is eligible. Returns null when the regular (iPay) flow
+     * should run; returns a populated CheckoutResponse pointing directly at
+     * the newly materialised trip when free.
+     *
+     * Eligibility:
+     *   FREE_PUBLIC          — any signed-in buyer.
+     *   FREE_FOR_FOLLOWERS   — buyer must already follow the creator.
+     *                          Non-followers fall through to paid flow
+     *                          (which will then complain via the "not in
+     *                          GEL" check or proceed if priced in GEL).
+     *
+     * Side effects when free path runs:
+     *   • One Purchase row with status=COMPLETED, priceCentsPaid=0,
+     *     bogOrderId=null (it's not an iPay order).
+     *   • Audit event "FREE_CHECKOUT_COMPLETED".
+     *   • PurchaseCompletedEvent published → existing trip-materialisation
+     *     listener creates the trip items just like a paid checkout.
+     */
+    private CheckoutResponse tryFreeCheckout(String auth0Subject, CheckoutRequest request) {
+        User buyer = userService.findByAuth0Subject(auth0Subject);
+        Guide guide = guideRepository.findById(request.getGuideId())
+                .orElseThrow(() -> new ResourceNotFoundException("Guide", request.getGuideId()));
+
+        if (guide.getStatus() != GuideStatus.PUBLISHED) {
+            return null;
+        }
+        GuidePricingMode mode = guide.getPricingMode();
+        if (mode == null || mode == GuidePricingMode.PAID) {
+            return null;
+        }
+        if (guide.getCreatorId().equals(buyer.getId())) {
+            // Creator-owns-guide check is enforced in the paid preflight too.
+            // Returning null here lets that path emit the standard error.
+            return null;
+        }
+        if (mode == GuidePricingMode.FREE_FOR_FOLLOWERS
+                && !followRepository.existsByFollowerIdAndFollowingId(buyer.getId(), guide.getCreatorId())) {
+            return null; // not a follower — fall through to paid checkout
+        }
+
+        // Already owned? Take them to their existing trip.
+        var existing = purchaseRepository.findByBuyerIdAndGuideIdAndStatus(
+                buyer.getId(), guide.getId(), PurchaseStatus.COMPLETED);
+        if (existing.isPresent()) {
+            Purchase p = existing.get();
+            return new CheckoutResponse("/trips/" + p.getId(), "free-already-owned-" + p.getId());
+        }
+
+        Purchase purchase = new Purchase();
+        purchase.setBuyerId(buyer.getId());
+        purchase.setGuideId(guide.getId());
+        purchase.setGuideVersionNumber(guide.getVersionNumber());
+        purchase.setPriceCentsPaid(0);
+        purchase.setCurrency(BusinessConstants.CURRENCY_GEL);
+        purchase.setPlatformFeeCents(0);
+        purchase.setCommissionRateBps(0);
+        purchase.setStatus(PurchaseStatus.COMPLETED);
+        purchase.setTermsAcceptedAt(Instant.now());
+        purchase.setGuideTitleAtPurchase(guide.getTitle());
+        purchase.setCoverImageUrlAtPurchase(guide.getCoverImageUrl());
+        purchase.setRegionAtPurchase(guide.getRegion());
+        purchaseRepository.save(purchase);
+
+        auditWriter.record(purchase.getId(), "FREE_CHECKOUT_COMPLETED", payload(
+                "pricingMode", mode.name(),
+                "guideId", guide.getId().toString()));
+
+        eventPublisher.publishEvent(new PurchaseCompletedEvent(
+                purchase.getId(),
+                purchase.getBuyerId(),
+                purchase.getGuideId(),
+                purchase.getGuideVersionNumber(),
+                0,
+                BusinessConstants.CURRENCY_GEL
+        ));
+
+        return new CheckoutResponse("/trips/" + purchase.getId(), "free-" + purchase.getId());
+    }
 
     private CheckoutPreflight preflight(String auth0Subject, CheckoutRequest request) {
         User buyer = userService.findByAuth0Subject(auth0Subject);

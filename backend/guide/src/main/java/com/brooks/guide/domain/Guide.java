@@ -62,6 +62,13 @@ public class Guide extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private GuideStatus status = GuideStatus.DRAFT;
 
+    // Pricing model — drives the checkout path in GuidePurchaseService.
+    // Default PAID preserves the existing iPay flow for all guides
+    // created before V54. Creators opt into a free mode explicitly.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pricing_mode", nullable = false, length = 32)
+    private GuidePricingMode pricingMode = GuidePricingMode.PAID;
+
     @Column(name = "version_number", nullable = false)
     private int versionNumber = 0;
 

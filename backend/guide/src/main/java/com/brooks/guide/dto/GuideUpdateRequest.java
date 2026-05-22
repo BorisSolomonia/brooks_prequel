@@ -33,6 +33,9 @@ public class GuideUpdateRequest {
     private String currency;
     private Integer salePriceCents;
     private Instant saleEndsAt;
+    // V54 — optional pricing mode override. Null = no change.
+    // Accepted: "PAID" | "FREE_PUBLIC" | "FREE_FOR_FOLLOWERS".
+    private String pricingMode;
     private List<String> tags;
     private List<String> categoryIds;
     private Integer sortOrder;

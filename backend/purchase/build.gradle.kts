@@ -4,6 +4,10 @@ dependencies {
     implementation(project(":user"))
     implementation(project(":profile"))
     implementation(project(":guide"))
+    // PurchaseService needs FollowRepository to short-circuit checkout when
+    // a guide is in FREE_FOR_FOLLOWERS mode and the buyer already follows
+    // the creator. See V54 migration + GuidePricingMode enum.
+    implementation(project(":social"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")

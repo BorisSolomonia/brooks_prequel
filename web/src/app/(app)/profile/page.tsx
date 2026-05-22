@@ -127,8 +127,22 @@ function ProfilePageInner() {
                     className="group flex items-center justify-between rounded-xl border border-ig-border bg-ig-primary p-4 transition-colors hover:border-brand-500/50"
                   >
                     <div>
-                      <p className="text-sm font-semibold text-ig-text-primary">Purchases</p>
+                      <p className="text-sm font-semibold text-ig-text-primary">Purchased guides</p>
                       <p className="mt-0.5 text-xs text-ig-text-tertiary">Open the guides you have bought</p>
+                    </div>
+                    <span aria-hidden className="text-ig-text-tertiary transition-colors group-hover:text-brand-500">→</span>
+                  </Link>
+                  {/* TODO N1 — surface /purchases (order history with payment
+                      receipts) inside the profile section instead of the top
+                      nav. /purchases URL stays as-is because BOG iPay's
+                      post-checkout redirect points at it. */}
+                  <Link
+                    href="/purchases"
+                    className="group flex items-center justify-between rounded-xl border border-ig-border bg-ig-primary p-4 transition-colors hover:border-brand-500/50"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-ig-text-primary">Order history</p>
+                      <p className="mt-0.5 text-xs text-ig-text-tertiary">Payment receipts and order status</p>
                     </div>
                     <span aria-hidden className="text-ig-text-tertiary transition-colors group-hover:text-brand-500">→</span>
                   </Link>
