@@ -1575,8 +1575,16 @@ export default function MapsExperience({
       // ~55%, materially lowering the chance of the watchPosition-
       // triggered OOM cascade we've seen (renderer killed ~4s after
       // proximity-notifier's watch starts).
-      if (typeof window !== 'undefined' && typeof map.setPixelRatio === 'function') {
-        map.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      //
+      // setPixelRatio() landed in mapbox-gl 2.13 but the @types
+      // package we depend on still has the older signature, so the
+      // method isn't on the static type. Cast to any for the runtime
+      // check — the typeof guard ensures we don't call it if missing.
+      {
+        const mapAny = map as unknown as { setPixelRatio?: (ratio: number) => void };
+        if (typeof window !== 'undefined' && typeof mapAny.setPixelRatio === 'function') {
+          mapAny.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        }
       }
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
