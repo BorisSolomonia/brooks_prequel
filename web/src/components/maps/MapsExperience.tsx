@@ -907,8 +907,21 @@ export default function MapsExperience({
   // location grant already in place. Background detection (phone in pocket)
   // is intentionally v2 — would need @capacitor-community/background-
   // geolocation + ACCESS_BACKGROUND_LOCATION permission.
+  //
+  // Activation is gated on `mapReady` AND a 3-second post-mount delay
+  // so we DON'T start a second GPS subscriber while Mapbox is doing its
+  // first tile cycle + initial memory marker render. Logs from 2026-05-22
+  // showed watchPosition firing during peak renderer memory pressure,
+  // followed ~4s later by an OOM kill. Delaying past the busy window
+  // gives the renderer time to settle before adding native GPS work.
+  const [proximityArmed, setProximityArmed] = useState(false);
+  useEffect(() => {
+    if (!mapReady) return;
+    const timer = setTimeout(() => setProximityArmed(true), 3000);
+    return () => clearTimeout(timer);
+  }, [mapReady]);
   useProximityNotifier({
-    enabled: Boolean(token) && memories.length > 0,
+    enabled: proximityArmed && Boolean(token) && memories.length > 0,
     memories,
   });
 
@@ -1423,9 +1436,40 @@ export default function MapsExperience({
     }
 
     let cancelled = false;
+    // Track the LAST coords we pushed to React state. GPS chips emit
+    // small jitter even when the phone is stationary; without this we
+    // would trigger a full /maps re-render + Mapbox flyTo for every
+    // single fix. The 22-second freeze on 2026-05-22 happened after
+    // two geolocation calls fired back-to-back at the same instant,
+    // and the cascading re-renders / animations are the prime suspect.
+    // 5m threshold filters typical GPS noise without missing real motion.
+    let lastPushedLng: number | null = null;
+    let lastPushedLat: number | null = null;
+    const COORDS_DEDUP_METERS = 5;
+
+    const haversineQuick = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const R = 6_371_000;
+      const toRad = (d: number) => (d * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2
+              + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
 
     const handleCoords = (lng: number, lat: number) => {
       if (cancelled) return;
+      // Dedup: skip the state update if the new fix is essentially the
+      // same point as the previous one. setUserCoordinates triggers a
+      // full re-render of the /maps subtree + a Mapbox flyTo animation
+      // (via the effect with deps [mapReady, userCoordinates]) — both
+      // expensive on Android WebView.
+      if (lastPushedLng !== null && lastPushedLat !== null) {
+        const delta = haversineQuick(lastPushedLat, lastPushedLng, lat, lng);
+        if (delta < COORDS_DEDUP_METERS) return;
+      }
+      lastPushedLng = lng;
+      lastPushedLat = lat;
       setUserCoordinates([lng, lat]);
       setLocationState('current');
     };
@@ -1449,6 +1493,24 @@ export default function MapsExperience({
             enableHighAccuracy: true,
             timeout: 8000,
           });
+          // Defensive null check — the plugin can RESOLVE (not reject)
+          // with a position object whose `coords` is undefined when the
+          // OS permission race is still in flight (PermissionsBootstrap
+          // requests the dialog at roughly the same moment this effect
+          // fires; Android can't process two permission requests at once
+          // and returns a stale empty result). Reading `.longitude` from
+          // undefined was throwing "Cannot read properties of undefined"
+          // and dropping the user to fallback coords with a misleading
+          // stack trace. Now we just go to fallback silently and let
+          // PermissionsBootstrap's dialog finish; the watchPosition
+          // started elsewhere will deliver the real coords once they
+          // arrive.
+          if (!pos?.coords
+                || typeof pos.coords.longitude !== 'number'
+                || typeof pos.coords.latitude !== 'number') {
+            handleFail();
+            return;
+          }
           handleCoords(pos.coords.longitude, pos.coords.latitude);
         } catch (err) {
           console.error('[MapsExperience] native geolocation failed:', err);
@@ -1506,6 +1568,16 @@ export default function MapsExperience({
         maxTileCacheSize: 50,
       });
 
+      // Cap rendered pixel density. The Pixel 6/7/8/9 reports DPR ~3,
+      // meaning Mapbox renders every tile at 3× the visible resolution
+      // = 9× the memory per tile bitmap. Capping to 2.0 keeps the map
+      // visually crisp but cuts the renderer's bitmap footprint by
+      // ~55%, materially lowering the chance of the watchPosition-
+      // triggered OOM cascade we've seen (renderer killed ~4s after
+      // proximity-notifier's watch starts).
+      if (typeof window !== 'undefined' && typeof map.setPixelRatio === 'function') {
+        map.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      }
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
       // Record the style we just initialized with so the theme-swap effect

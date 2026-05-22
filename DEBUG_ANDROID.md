@@ -1,597 +1,328 @@
-# Debug the Brooks Android App — Step by Step
+# Debug the Brooks Android App — PowerShell Edition
 
-A linear walkthrough from "phone is in box" to "I can see every API call,
-every console.log, and every backend stack trace in real time."
+One terminal. One command. Every log line — Java, Capacitor plugin
+calls, every JS `console.log`, Mapbox warnings, Chromium renderer
+crashes — all streamed live to PowerShell. No Chrome DevTools
+attachment needed. No SSH to the VM.
 
-**Tested:** Pixel 9a, Android 14/15, Windows 11 laptop, Chrome 122+,
-GCP VM running docker compose for the backend. Last updated 2026-05-19.
-
----
-
-## What you'll have at the end
-
-Three windows open side-by-side:
-
-1. **Chrome DevTools** — attached to the live WebView on your phone.
-   Console, Network, Sources, Performance — everything you have on a
-   desktop site, but pointed at the Brooks app running on the phone.
-2. **PowerShell window with adb logcat** — streaming the Brooks app's
-   native Android logs (Capacitor plugins, crashes, FCM events).
-3. **SSH terminal into the GCP VM** — tailing the backend container's
-   logs (`docker logs -f brooks-backend`).
-
-When something breaks on the phone, you see the JS error (#1), the
-native trace if there is one (#2), and the backend's view of the
-request (#3). Most bugs are diagnosed in under 30 seconds with that rig.
+**Tested:** Pixel 9a, Android 14/15, Windows 11, last updated 2026-05-22.
 
 ---
 
-## Section 1 — One-time setup (~30 minutes, do once per laptop)
+## Step 1 — One-time setup (do once per laptop)
 
-### 1.1 Install Android Studio (gives you `adb`)
+### 1.1 Install Android Studio
+
+Just for the bundled `adb.exe`. You won't open the IDE.
 
 1. Download from <https://developer.android.com/studio>
-2. Run installer, choose **Standard** install (not Custom)
-3. Wait for the first-run SDK download (~5 min)
-4. Close Android Studio when done — you only need it for the bundled
-   `adb`. You won't open the IDE.
+2. Run installer. Pick **Standard** install. Wait ~5 minutes for the SDK download.
+3. Close Android Studio when it finishes.
 
-ADB ends up at:
+ADB lands at:
 
-- Windows: `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`
-- macOS: `~/Library/Android/sdk/platform-tools/adb`
-- Linux: `~/Android/Sdk/platform-tools/adb`
+```
+%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe
+```
 
-Verify by running:
+Verify:
 
 ```powershell
 & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" version
 ```
 
-You should see `Android Debug Bridge version 1.0.x`.
+Output should start with `Android Debug Bridge version 1.0.x`.
 
-### 1.2 Add ADB to your PATH (optional but recommended)
+### 1.2 Enable USB debugging on the phone
 
-So you can just type `adb` from any terminal:
+1. Settings → **About phone** → tap **Build number** seven times.
+2. Toast says "You are now a developer."
+3. Back out → Settings → **System** → **Developer options** now exists.
+4. In Developer options, toggle **USB debugging** ON.
+5. (Recommended) also toggle **Stay awake** ON so the screen doesn't sleep while plugged in.
 
-**Windows (PowerShell, run once):**
+### 1.3 Use a data-carrying USB cable
 
-```powershell
-[Environment]::SetEnvironmentVariable(
-  "Path",
-  [Environment]::GetEnvironmentVariable("Path","User") + ";$env:LOCALAPPDATA\Android\Sdk\platform-tools",
-  "User")
-```
-
-Close every open PowerShell window. Open a new one. `adb version`
-should work without the full path.
-
-### 1.3 Allow unsigned PowerShell scripts (once)
-
-The Brooks repo ships `scripts/adb-debug.ps1`. PowerShell blocks
-unsigned local scripts by default:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
-
-### 1.4 Phone: enable Developer Options
-
-1. Settings → **About phone**
-2. Tap **Build number** 7 times
-3. "You are now a developer" toast
-4. Back out → Settings → **System** → **Developer options** now exists
-
-### 1.5 Phone: enable USB debugging
-
-1. Settings → System → Developer options
-2. Toggle **USB debugging** ON
-3. (Recommended) toggle **Stay awake** ON — screen won't sleep while plugged in
-
-### 1.6 Pick a data-carrying USB cable
-
-This trips up everyone. Many USB cables only carry power, not data.
-The cable that shipped with your phone is always a data cable. Random
-cables from a drawer have a 30% chance of being charge-only.
-
-If `adb devices` later shows nothing → try a different cable.
-
-### 1.7 Install Chrome on the laptop
-
-You need Chrome (or any Chromium browser like Edge) for the URL
-`chrome://inspect/#devices`, which is where you attach DevTools to
-the WebView.
-
-### 1.8 Install scrcpy (optional — phone screen mirror)
-
-For visual debugging it's useful to see the phone screen on your laptop.
-
-1. Download from <https://github.com/Genymobile/scrcpy/releases>
-2. Extract `scrcpy-win64-vXX.zip` to e.g. `C:\Tools\scrcpy\`
-3. With phone plugged in: `C:\Tools\scrcpy\scrcpy.exe`
-4. Phone screen appears as a window. Mouse + keyboard route to the phone.
+Many random cables are charge-only. Use the cable that came with the
+phone, or a known-good data cable. If `adb devices` later shows
+nothing, swap the cable.
 
 ---
 
-## Section 2 — Each session: connect the phone (~60 seconds)
+## Step 2 — Connect the phone (every session, ~30 seconds)
 
-### 2.1 Plug in the cable
+### 2.1 Plug the phone in
 
-USB-C end to phone, USB-A or USB-C to laptop.
+USB-C to phone, USB-A or USB-C to laptop.
 
-### 2.2 Pick the right USB mode on the phone
+### 2.2 Set the phone's USB mode to "File transfer"
 
-Pull down notification shade on the phone. Look for "Charging this device
-via USB" → tap it → choose **File transfer**. (Choose this even though
-you're not transferring files — it's what makes ADB visible. "No data
-transfer" / "Charging only" hides ADB.)
+Pull the notification shade down on the phone. Tap "Charging this
+device via USB" → choose **File transfer**. (Yes, even though you're
+not transferring files — that's the mode that makes ADB visible.
+"Charging only" mode hides ADB.)
 
-### 2.3 Start the ADB server
+### 2.3 Open PowerShell and define `$adb`
+
+Paste these two lines:
 
 ```powershell
 $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
-& $adb start-server
-```
-
-If Windows Firewall pops up: click **Allow access** for both Private
-and Public networks. (Safe — it's just ADB on localhost.)
-
-### 2.4 List devices
-
-```powershell
 & $adb devices
 ```
 
-What you'll see (and what to do for each):
+What you want to see:
 
-| Output | Meaning | Action |
-|---|---|---|
-| (empty after header) | Phone not seen | Bad cable, wrong USB mode, or missing driver — see 2.5 |
-| `58051... unauthorized` | Phone sees ADB but needs your OK | Look at phone — tap **Allow USB debugging** dialog. Check "Always allow" |
-| `58051... offline` | Stale session | `& $adb kill-server` then `& $adb start-server` |
-| `58051... device` | ✓ Fully connected | Continue to Section 3 |
-
-### 2.5 If `adb devices` is empty
-
-In order of likelihood:
-
-- **Wrong USB mode** — pull notification shade, change to "File transfer"
-- **Charge-only cable** — try a different cable
-- **USB debugging got disabled** — Settings → Developer options → toggle USB debugging
-- **Driver missing (Windows)** — install Google USB driver from
-  <https://developer.android.com/studio/run/win-usb>, right-click
-  `android_winusb.inf` → Install. Replug.
-
-### 2.6 If the "Allow USB debugging" dialog doesn't appear
-
-- Unlock the phone first (some Android versions hide it until unlocked)
-- Phone → Settings → Developer options → **Revoke USB debugging
-  authorizations** → tap. Then unplug + replug the cable. Dialog will
-  appear fresh.
-
-### 2.7 Wireless mode (optional, after one wired auth)
-
-Once you've authorized USB debugging on the cable once, you can run
-without a cable:
-
-```powershell
-& $adb tcpip 5555
-# Note the phone's IP (Settings → About phone → Status → IP address)
-# Unplug cable
-& $adb connect 192.168.x.x:5555
-& $adb devices
 ```
+List of devices attached
+58051JEBF08550  device
+```
+
+If you see `unauthorized` instead of `device`: look at the phone — a
+"Allow USB debugging" dialog is waiting. Tap **Allow** (tick "Always
+allow from this computer").
+
+If the list is empty: bad cable, wrong USB mode, or driver issue. See
+**Step 6 — Troubleshooting** at the bottom.
 
 ---
 
-## Section 3 — Install a DEBUG build to enable WebView DevTools
+## Step 3 — Install the debug build (every fresh code change)
 
-**Critical step that most people skip.** The release AAB you upload to
-Play Store has WebView debugging **disabled** for security. Chrome's
-`chrome://inspect` will see your phone but NOT see "WebView in
-uk.brooksweb.app" — there's nothing to click.
-
-You need a **debug APK** installed instead. Debug builds have
-`WebView.setWebContentsDebuggingEnabled(true)` baked in.
-
-### 3.1 Build the debug APK on your laptop
+The **release** APK from Play Store has WebView debugging disabled
+AND its console messages can't be read via logcat. You need the
+**debug** APK — Capacitor pipes every `console.log` into logcat under
+the tag `Capacitor/Console` in debug builds.
 
 ```powershell
 cd C:\Users\Boris\Dell\Projects\APPS\Brooks_prequel\web\android
 .\gradlew assembleDebug
-```
-
-Takes ~2 minutes the first time, ~30 seconds after. The APK lands at:
-
-```
-web\android\app\build\outputs\apk\debug\app-debug.apk
-```
-
-### 3.2 Uninstall the release version first
-
-Release and debug builds have different signatures — they can't
-overwrite each other:
-
-```powershell
 & $adb uninstall uk.brooksweb.app
-```
-
-### 3.3 Install the debug APK
-
-```powershell
 & $adb install -r app\build\outputs\apk\debug\app-debug.apk
 ```
 
-You should see `Success`.
+Expected output ends with `Success`.
 
-### 3.4 Sign in again
-
-The uninstall wiped your Auth0 session. Open Brooks, tap Get Started,
-sign in.
-
-> **When you're done debugging:** reinstall the release AAB from Play
-> Store internal testing to get back to the production-signed version
-> (or just keep using the debug build — it works, just isn't
-> production-signed).
+You'll need to sign into Brooks again (uninstall wiped the Auth0 session).
 
 ---
 
-## Section 4 — Open Chrome DevTools (the main event)
+## ⭐ Step 4 — THE MAIN COMMAND: stream every log
 
-### 4.1 Open the app
-
-Brooks must be in the **foreground** on the phone for the WebView to
-appear in the inspect listing.
-
-### 4.2 Open chrome://inspect on your laptop
-
-In Chrome, type into the address bar:
-
-```
-chrome://inspect/#devices
-```
-
-Within 5 seconds you should see:
-
-```
-Remote Target
-  #LOCALHOST
-  Pixel 9a
-  #58051JEBF08550
-    WebView in uk.brooksweb.app
-    https://brooksweb.uk/maps                    [inspect] [pause]
-```
-
-Click **inspect**. DevTools opens, pointed at the live WebView.
-
-### 4.3 If you see the phone but NO "WebView in uk.brooksweb.app"
-
-- You're on the release APK, not the debug build. Go back to Section 3.
-- App isn't running on the phone → open it.
-- App is in background → bring it foreground.
-
-### 4.4 If you see "Pending authentication"
-
-- Look at the phone — the "Allow USB debugging" dialog is waiting.
-- Or: re-do Section 2.6 (revoke + replug).
-
----
-
-## Section 5 — Useful DevTools panels for Brooks bugs
-
-### 5.1 Console — read app log lines
-
-Brooks logs use bracketed prefixes:
-
-- `[PermissionsBootstrap]` — permission dialogs, FCM token capture, device token POST
-- `[memory]` — memory save flow
-- `[tour]` — onboarding tour navigation
-- `[Brooks]` — root error boundary
-
-Filter the console by typing one of these into the filter box.
-
-### 5.2 Network — see every API call
-
-Filter by URL substring:
-
-- `device-tokens` — FCM token registration
-- `notifications` — bell dropdown fetch
-- `memories` — map memory fetches + save
-- `auth` — Auth0 callback
-
-For each request: click it → Headers tab shows status + headers,
-Response tab shows the body. If status is non-200, the response body
-usually has the backend error message.
-
-### 5.3 Application → Local Storage → https://brooksweb.uk
-
-Useful keys:
-
-- `brooks.fcmToken.v1` — the FCM token your device registered (long
-  string starting with letters/numbers, ending with a colon).
-  If `null` → the app never got a token from Firebase.
-- `brooks.permissionsBootstrap.v2` — `'1'` means we already asked for
-  permissions on this install.
-- `brooks.onboarding.completed` — `'true'` after the tour finishes.
-- `brooks.proximityFired.YYYY-MM-DD` — list of memory IDs that fired
-  proximity notifications today.
-
-### 5.4 Performance — record a slow interaction
-
-Click the record dot, do the slow thing on the phone, click stop. You
-get a frame-by-frame breakdown of what the main thread was doing.
-Most useful for tour freezes or map performance bugs.
-
----
-
-## Section 6 — Native logs (the second window)
-
-Some things never appear in DevTools because they happen below the
-WebView (Capacitor plugins, FCM delivery, Android crashes). For those,
-tail `logcat`:
-
-### 6.1 Brooks-only filtered logs
+This is what you came here for. Paste these four lines into
+PowerShell, in order:
 
 ```powershell
-.\scripts\adb-debug.ps1 logs
+# 1. Make sure Brooks is running on the phone
+& $adb shell am start -n uk.brooksweb.app/.MainActivity
+
+# 2. Capture Brooks's process ID. ($pid is reserved in PowerShell —
+#    that's why we use $brooksPid.)
+$brooksPid = (& $adb shell pidof uk.brooksweb.app).Trim()
+Write-Host "Brooks PID = $brooksPid"
+
+# 3. Optional: clear the logcat buffer so old noise doesn't appear
+& $adb logcat -c
+
+# 4. STREAM EVERY LOG LINE THE BROOKS PROCESS EMITS — and save it
+#    to a file at the same time. Press Ctrl+C to stop.
+& $adb logcat --pid=$brooksPid -v threadtime *:V | Tee-Object -FilePath brooks-debug.log
 ```
 
-(From `web\` directory.) Filters to just the Brooks app's process.
-Ctrl+C to stop.
+What you'll see in PowerShell looks like this:
 
-### 6.2 Just Capacitor + Chromium console
-
-```powershell
-.\scripts\adb-debug.ps1 console
+```
+05-22 14:03:21.456 28733 28733 I Capacitor/Console: File: https://brooksweb.uk/_next/static/... - Msg: [tour] step memory-form
+05-22 14:03:21.612 28733 28912 D Capacitor/PluginRequest: To native: pluginId: Geolocation, methodName: getCurrentPosition
+05-22 14:03:21.789 28733 28733 E chromium: Renderer process (28912) crash detected (code -1).
 ```
 
-Same content as the DevTools Console tab but in the terminal — useful
-when DevTools won't attach.
+That single command gives you:
 
-### 6.3 What to look for
+- ✅ Every `console.log` / `console.warn` / `console.error` from your
+  JavaScript code (tag `Capacitor/Console`)
+- ✅ Every Capacitor plugin call (Geolocation, PushNotifications,
+  Browser, Share, etc.) with the JSON arguments
+- ✅ Every Mapbox warning
+- ✅ Every Chromium renderer crash / OOM
+- ✅ Every `FATAL EXCEPTION` from the Java side
+- ✅ Every FCM token registration event
 
-- `Capacitor: To Native -> Geolocation requestPermissions` → location
-  dialog is firing
-- `Capacitor: Plugin <X> not implemented on android` → the plugin's
-  native Java isn't bundled (forgot `npx cap sync android`)
-- `FATAL EXCEPTION` → app crashed. Next 20 lines are the stack trace.
+In ONE PowerShell window. Ctrl+C to stop. The file `brooks-debug.log`
+sits in your current directory with the whole thing for later search.
 
 ---
 
-## Section 7 — Backend logs (the third window)
+## Step 5 — Reproducing a freeze cleanly
 
-For the full picture, SSH into the GCP VM and tail the backend logs
-while doing things on the phone:
+For freezes specifically, this is the recipe:
 
-### 7.1 Connect to the VM
+```powershell
+# Reset everything so old noise doesn't pollute
+& $adb logcat -c
 
-```bash
-ssh <your-user>@<vm-host>
+# Re-fetch the PID (it changes whenever Brooks restarts)
+$brooksPid = (& $adb shell pidof uk.brooksweb.app).Trim()
+
+# Stream + save
+& $adb logcat --pid=$brooksPid -v threadtime *:V | Tee-Object -FilePath brooks-freeze.log
 ```
 
-### 7.2 Tail the backend container
+Then on the phone: **do the thing that causes the freeze.** Watch
+the terminal. The last ~30 lines before the screen locks up are
+your suspects. Ctrl+C the stream after the freeze.
 
-```bash
-docker logs -f brooks-backend
-```
+### Freeze patterns — what to look for in the output
 
-Leave this running. Press Ctrl+C when done.
+| Log line | What it means |
+|---|---|
+| `Skipped NN frames!` | Main thread blocked for NN × 16 ms. Usually Mapbox or heavy JS. |
+| `Renderer process (PID) crash detected (code -1)` | WebView renderer hit OOM. Killed by the OS. |
+| `kill (OOM or update) ... killing application` | App about to be force-stopped by Android. |
+| `FATAL EXCEPTION` | Java-side crash. Stack trace in the next ~20 lines. |
+| `Choreographer: Skipped` | UI thread stutter — slow useEffect or layout. |
+| `Capacitor/Console ... [tour] ...` | One of your JS log lines. Anchor for "where in the code we are." |
+| `[Violation] 'requestAnimationFrame' handler took NNms` | Single rAF callback ran longer than the frame budget. Usually Mapbox. |
 
-### 7.3 Useful searches in past logs
-
-Find every error in the last 500 lines:
-
-```bash
-docker logs --tail 500 brooks-backend 2>&1 | grep -B 2 -A 20 "ERROR"
-```
-
-Find every device-token POST:
-
-```bash
-docker logs --tail 500 brooks-backend 2>&1 | grep -A 30 "device-tokens"
-```
-
-Confirm Firebase initialized at startup:
-
-```bash
-docker logs brooks-backend 2>&1 | grep -i firebase
-```
-
-Expected: `"Firebase initialized from class path resource [firebase-admin.json]"`
-
-If it says `"Firebase credentials not found"` → push notifications
-are disabled because the JSON wasn't mounted into the container.
-
-### 7.4 Dump to file for offline reading
-
-```bash
-docker logs --tail 2000 brooks-backend > /tmp/backend.log
-less /tmp/backend.log
-# In less: type /searchterm and Enter, n to find next, q to quit
-```
+If your `brooks-freeze.log` has any of these in the last 30 lines
+before the freeze, paste those 30 lines back to me and we can pin
+the exact cause.
 
 ---
 
-## Section 8 — Brooks-specific debug recipes
+## Step 6 — Useful filter recipes
 
-### 8.1 "Notification never arrives when someone follows me"
+The unfiltered stream is verbose. When you want to narrow it down:
 
-Run this checklist in order — stop at the first failure.
-
-**Phone side** (laptop terminal):
+### Only your JS console.log lines
 
 ```powershell
-$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
-& $adb shell dumpsys package uk.brooksweb.app | Select-String 'versionCode|granted=|POST_NOTIFICATIONS'
+& $adb logcat --pid=$brooksPid Capacitor/Console:V *:S
 ```
 
-Look for:
+`*:S` silences every tag except the ones you listed. Cleanest view
+of just your JavaScript output.
 
-- `versionCode=N` — should match your latest build
-- `android.permission.POST_NOTIFICATIONS: granted=true` — if `false`,
-  Android silently drops every push. Fix in Settings → Apps → Brooks
-  → Notifications.
-
-**FCM token captured?** In DevTools Console (Section 5.3):
-
-```javascript
-localStorage.getItem('brooks.fcmToken.v1')
-```
-
-- Non-null string → token captured ✓
-- `null` → google-services.json wasn't in the AAB. Rebuild.
-
-**Token registered with backend?** DevTools Network tab → filter
-"device-tokens" → look for `POST /api/me/device-tokens` → status 204
-= success. 500 = backend error (see Section 8.2).
-
-**Self-send a test push** in DevTools Console:
-
-```javascript
-const r = await fetch('/api/me/test-notification', { method: 'POST' });
-console.log(r.status, await r.json());
-```
-
-Within 5 sec, phone shows "Brooks test" push. If yes → FCM pipeline
-works end-to-end; the follow-event listener is the issue.
-
-**Backend log when friend follows you** (VM terminal):
-
-```bash
-docker logs -f brooks-backend
-# Friend taps Follow on your profile
-# Look for: "FCM sent (id=...) to <masked-token>"
-```
-
-If you see that line → backend pushed. If push didn't reach phone:
-- POST_NOTIFICATIONS denied (check above)
-- Token in DB is stale (force-stop + reopen app to re-register)
-
-If you DON'T see that line → `FollowNotificationListener` never ran.
-Means the notification module isn't deployed. Check:
-
-```bash
-docker exec brooks-backend find /app -name "notification-*.jar"
-```
-
-If empty → module wasn't in the deploy. Trigger a fresh deploy:
-
-```bash
-git commit --allow-empty -m "Rebuild backend"
-git push
-```
-
-### 8.2 "/api/me/device-tokens returns 500"
-
-If backend logs show:
-
-```
-NoResourceFoundException: No static resource api/me/device-tokens
-```
-
-This means Spring has no controller mapped for that path → notification
-module isn't in the deployed JAR. Run:
-
-```bash
-docker exec brooks-backend find /app -name "notification-*.jar"
-```
-
-If empty → fresh deploy needed. The image was built before the module
-was added.
-
-If the JAR IS there but you still get the error → component scan
-isn't picking it up. Check Spring's startup banner for:
-
-```bash
-docker logs brooks-backend 2>&1 | grep -i "Mapped.*device-tokens"
-```
-
-Should show: `Mapped "{POST [/api/me/device-tokens]}" onto DeviceTokenController#register`
-
-### 8.3 "Memory upload fails"
-
-DevTools Console while uploading:
-
-- `[memory] save POST failed: ...` — backend rejected. The error
-  message is in the catch.
-- `[ImageUploadField] upload failed: ...` — media upload failed.
-  Most common: GCS credentials missing (backend log says
-  `Could not save media locally`).
-
-Backend log:
-
-```bash
-docker logs --tail 100 brooks-backend 2>&1 | grep -i "Could not save\|GCS"
-```
-
-### 8.4 "App crashes on first launch"
-
-DevTools won't attach to a crashed app. Use logcat:
+### Only Capacitor plugin calls (no JS log noise)
 
 ```powershell
-.\scripts\adb-debug.ps1 logs
+& $adb logcat --pid=$brooksPid Capacitor/PluginRequest:V Capacitor:V *:S
 ```
 
-Open the app. If it crashes, look for `FATAL EXCEPTION` in the
-output. The next 20 lines are the Java stack trace.
-
-If the app reaches React but errors out, the root error boundary
-catches it. After a reload, in DevTools Console:
-
-```javascript
-window.__brooksErrors
-```
-
-Array of every caught error with timestamps + stack traces.
-
-### 8.5 "Tour / onboarding step freezes"
-
-DevTools Console → filter `[tour]` → see which step entered, which
-selector it's polling for.
-
-DevTools Performance → record while clicking Next on the slow step →
-see what the main thread was doing.
-
-### 8.6 "Icon shows wrong on home screen"
-
-Pixel launcher caches icons aggressively:
+### Only crashes and errors
 
 ```powershell
-& $adb shell pm clear com.google.android.apps.nexuslauncher
-& $adb reboot
+& $adb logcat --pid=$brooksPid chromium:E AndroidRuntime:E *:S
 ```
 
-Wait for phone to come back up. Icon should now be correct.
+### Brooks JS console + Firebase (for push-notification debugging)
+
+```powershell
+& $adb logcat Capacitor/Console:V FirebaseMessaging:V FA:V *:S
+```
+
+(Firebase messaging happens outside the Brooks process so we drop
+`--pid` for this one.)
+
+### Save the stream to a file with timestamp in the name
+
+```powershell
+$stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+& $adb logcat --pid=$brooksPid -v threadtime *:V | Tee-Object -FilePath "brooks-$stamp.log"
+```
+
+Each run creates a new file you can compare side-by-side.
 
 ---
 
-## Quick reference — the commands you'll use 80% of the time
+## Step 7 — Troubleshooting
+
+### `& $adb devices` shows nothing
+
+In order of likelihood:
+
+1. **Wrong USB mode on the phone.** Pull notification shade, change
+   to "File transfer."
+2. **Charge-only cable.** Swap to a known data cable.
+3. **USB debugging turned itself off.** Settings → Developer options
+   → toggle USB debugging.
+4. **Missing Google USB driver (Windows).** Download from
+   <https://developer.android.com/studio/run/win-usb>, right-click
+   `android_winusb.inf` → Install. Unplug + replug the phone.
+
+### `& $adb devices` shows `unauthorized`
+
+Look at the phone — the "Allow USB debugging" dialog is waiting.
+Tap **Allow**, tick "Always allow." If you don't see the dialog:
+
+```powershell
+# Phone → Settings → Developer options → "Revoke USB debugging authorizations"
+# Then unplug, replug. Dialog reappears fresh.
+```
+
+### `pidof uk.brooksweb.app` returns nothing
+
+The app isn't running on the phone. Tap the Brooks icon to open it,
+then re-fetch:
+
+```powershell
+$brooksPid = (& $adb shell pidof uk.brooksweb.app).Trim()
+```
+
+### Logcat stream went silent
+
+The PID changed — Brooks was force-stopped, crashed, or swiped from
+recents. Ctrl+C, then re-grab the PID and restart the stream:
+
+```powershell
+$brooksPid = (& $adb shell pidof uk.brooksweb.app).Trim()
+& $adb logcat --pid=$brooksPid -v threadtime *:V | Tee-Object -Append brooks-debug.log
+```
+
+`-Append` keeps both PIDs in one file across the restart.
+
+### `assembleDebug` fails
+
+Common causes:
+
+- **Java not installed / wrong version.** Brooks needs JDK 17+. Get
+  it from <https://adoptium.net> if needed.
+- **AGP 8.2.1 / compileSdk 35 warning** — ignore, build still
+  succeeds (you saw this exact warning in your last build log).
+
+### "Cannot find `.\scripts\adb-debug.ps1`"
+
+That convenience script is at `web\scripts\adb-debug.ps1` (the
+`web/` directory, not `web/android/`). Just use the direct `& $adb`
+commands in this doc — they don't depend on the script.
+
+---
+
+## Quick reference card
 
 | Goal | Command |
 |---|---|
-| Start ADB | `& $adb start-server` |
-| Check phone is connected | `& $adb devices` |
-| Open Chrome DevTools | `chrome://inspect/#devices` (in Chrome) |
-| Build debug APK | `cd web\android; .\gradlew assembleDebug` |
+| Find adb | `$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"` |
+| List devices | `& $adb devices` |
+| Build debug APK | `cd C:\Users\Boris\Dell\Projects\APPS\Brooks_prequel\web\android; .\gradlew assembleDebug` |
 | Install debug APK | `& $adb install -r app\build\outputs\apk\debug\app-debug.apk` |
-| Tail Brooks native logs | `.\scripts\adb-debug.ps1 logs` |
-| Tail just JS console | `.\scripts\adb-debug.ps1 console` |
-| Check installed version + permissions | `& $adb shell dumpsys package uk.brooksweb.app \| Select-String 'versionCode\|granted='` |
-| Backend tail | `docker logs -f brooks-backend` (on VM) |
-| Backend search | `docker logs --tail 500 brooks-backend 2>&1 \| grep -A 20 "<term>"` (on VM) |
-| Force-stop app | `.\scripts\adb-debug.ps1 stop` |
-| Clear app data (force fresh state) | `.\scripts\adb-debug.ps1 clear` |
-| Screenshot | `.\scripts\adb-debug.ps1 screenshot` |
-| Screen mirror | `scrcpy` (from scrcpy folder) |
+| Launch Brooks on phone | `& $adb shell am start -n uk.brooksweb.app/.MainActivity` |
+| Get Brooks PID | `$brooksPid = (& $adb shell pidof uk.brooksweb.app).Trim()` |
+| Stream every log + save | `& $adb logcat --pid=$brooksPid -v threadtime *:V \| Tee-Object brooks-debug.log` |
+| Only JS console.log lines | `& $adb logcat --pid=$brooksPid Capacitor/Console:V *:S` |
+| Only crashes / errors | `& $adb logcat --pid=$brooksPid chromium:E AndroidRuntime:E *:S` |
+| Force-stop Brooks | `& $adb shell am force-stop uk.brooksweb.app` |
+| Clear app data (full reset) | `& $adb shell pm clear uk.brooksweb.app` |
+| Uninstall | `& $adb uninstall uk.brooksweb.app` |
+| Clear logcat buffer | `& $adb logcat -c` |
+| Screenshot to laptop | `& $adb exec-out screencap -p > screenshot.png` |
 
 ---
 
-## When you're really stuck
+## When you're stuck — share these three things
 
-Send me three things:
+1. The output of `& $adb devices`
+2. The output of `& $adb shell dumpsys package uk.brooksweb.app | Select-String 'versionCode|granted='`
+3. The last 100 lines of `brooks-debug.log` from a freeze reproduction
 
-1. The output of `& $adb shell dumpsys package uk.brooksweb.app | Select-String 'versionCode|granted='`
-2. The DevTools Console output for the last 30 seconds (right-click → Save as → paste)
-3. The relevant chunk of `docker logs --tail 200 brooks-backend` from the VM
-
-Between those three I can pinpoint any remaining bug in one pass.
+Paste those back and I can pin almost any bug in one pass.
