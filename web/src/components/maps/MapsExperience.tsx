@@ -1432,11 +1432,12 @@ export default function MapsExperience({
         setSelectedMemory(projected);
         setSelectedPin(null);
         // Re-center the map on the memory so the user has context for where
-        // it was left. flyTo only if the map already exists.
-        mapRef.current?.flyTo({
+        // it was left. jumpTo (instant), not flyTo: a fly animation loads tiles
+        // all along the camera path = extra GPU textures during the heavy load
+        // window; an instant jump loads only the destination tiles, once.
+        mapRef.current?.jumpTo({
           center: [projected.longitude, projected.latitude],
           zoom: 14,
-          essential: true,
         });
       })
       .catch((err) => {
@@ -1572,41 +1573,14 @@ export default function MapsExperience({
 
     let cancelled = false;
 
-    // ---- Render-resolution cap (mapbox-gl v3 OOM mitigation), NATIVE ONLY ----
-    // mapbox-gl v3 removed BOTH the v2 `pixelRatio` constructor option and the
-    // `map.setPixelRatio()` setter, so the only way to stop the renderer drawing
-    // every tile at the device's full DPR (~2.6 on Pixel 9a → ~7x tile-bitmap
-    // memory, the LMK-killing balloon) is to shadow window.devicePixelRatio with
-    // a capped getter for the map's lifetime, then restore it on unmount. mapbox
-    // reads window.devicePixelRatio live (at construction AND on resize), so the
-    // shadow must persist while mounted — not just at init.
-    //
-    // Native WebViews only: desktop browsers don't hit the OOM and shouldn't be
-    // blurred. Cap 1.2 cuts tile pixels ~5x vs native DPR; if map labels look
-    // too soft on device, raise toward 1.5 (one-number change).
-    const DPR_CAP = 1.2;
-    const dprDescriptor = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
-    let dprShadowed = false;
-    if (isNative() && (window.devicePixelRatio || 1) > DPR_CAP) {
-      try {
-        Object.defineProperty(window, 'devicePixelRatio', {
-          configurable: true,
-          get: () => DPR_CAP,
-        });
-        dprShadowed = true;
-      } catch {
-        // Some engines mark devicePixelRatio non-configurable — skip silently.
-      }
-    }
-    const restoreDevicePixelRatio = () => {
-      if (!dprShadowed) return;
-      if (dprDescriptor) {
-        Object.defineProperty(window, 'devicePixelRatio', dprDescriptor);
-      } else {
-        delete (window as { devicePixelRatio?: number }).devicePixelRatio;
-      }
-      dprShadowed = false;
-    };
+    // NOTE: render resolution is NOT capped here. Verified 2026-05-24 that
+    // neither mapbox-gl v3.21 NOR v2.15 exposes a pixel-ratio cap (no `pixelRatio`
+    // Map option, no setPixelRatio), and a window.devicePixelRatio JS shadow did
+    // not reduce GL mtrack in the WebView (the native GL surface renders at the
+    // device density regardless — measured: shadow active, GL mtrack still 3.2 GB).
+    // The GPU-memory runaway is being addressed via texture-lifecycle fixes
+    // (avoid the theme setStyle reload, jumpTo over flyTo, tighter tile cache)
+    // and, if needed, a native map. See DEBUG_MEMORY.md / the maps OOM thread.
 
     const initializeMap = async () => {
       const mapboxglModule = await import('mapbox-gl');
@@ -1634,15 +1608,11 @@ export default function MapsExperience({
         center: fallbackCenter,
         zoom: fallbackZoom ?? undefined,
         // Cap tile cache to fight Android WebView renderer OOM kills.
-        // Default is unbounded; on Pixel devices with DPR ~3, the
-        // unbounded cache pushed the renderer past its quota within
-        // a few zoom/pan cycles. 50 keeps recent context without
-        // accumulating forever. Reproduced 2026-05-20 with PID
-        // 13979 renderer OOM in aw_browser_terminator.cc.
-        // We set maxTileCacheSize to 15 on mobile native to lower memory
-        // footprint. Kept at 15 (not lowered to 8): the devicePixelRatio cap
-        // above already shrinks each tile bitmap ~5x, so a smaller cache saves
-        // little and risks visible-tile re-fetch/decode thrash on every pan.
+        // Default is unbounded; on Pixel devices with DPR ~3, the unbounded
+        // cache pushed the renderer past its quota within a few zoom/pan cycles.
+        // Reproduced 2026-05-20 with PID 13979 renderer OOM in
+        // aw_browser_terminator.cc. Native is tightened to 15 to evict GPU tile
+        // textures aggressively (the measured GL-mtrack runaway), desktop 50.
         maxTileCacheSize: isNative() ? 15 : 50,
         // GPU-memory hygiene — both are already the mapbox defaults; set
         // explicitly so they can't silently regress. No MSAA buffer, and don't
@@ -1765,9 +1735,6 @@ export default function MapsExperience({
 
     return () => {
       cancelled = true;
-      // Restore the real devicePixelRatio so the native cap never leaks to
-      // other pages (it only applied while this map was mounted).
-      restoreDevicePixelRatio();
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
       markerElementsRef.current.clear();
@@ -2092,10 +2059,13 @@ export default function MapsExperience({
       return;
     }
 
-    map.flyTo({
+    // jumpTo (instant), not flyTo: this auto-centres on the user the moment
+    // geolocation resolves — mid-load. A fly animation here loads tiles across
+    // the whole camera path and coincided with the measured GPU-memory second
+    // surge (~t10); an instant jump loads only the destination tiles.
+    map.jumpTo({
       center: userCoordinates,
       zoom: Math.max(map.getZoom(), fallbackZoom ?? 9, 10),
-      essential: true,
     });
   }, [fallbackZoom, mapReady, userCoordinates]);
 
