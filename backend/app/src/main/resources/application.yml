@@ -99,6 +99,11 @@ app:
   place-image-max-count: ${PLACE_IMAGE_MAX_COUNT:5}
   payout-schedule-cron: ${PAYOUT_SCHEDULE_CRON:0 0 2 * * MON}
   ranking-refresh-cron: ${RANKING_REFRESH_CRON:0 0 3 * * *}
+  maps:
+    # Hard cap on creator pins returned by /api/maps/influencers. Bounds the
+    # client's DOM-marker + avatar-image set so the Android WebView can't OOM.
+    influencer-pins:
+      max: ${MAPS_INFLUENCER_PINS_MAX:500}
   memory:
     unlock-radius-meters: ${MEMORY_UNLOCK_RADIUS_METERS:100}
     daily-create-limit: ${MEMORY_DAILY_CREATE_LIMIT:25}

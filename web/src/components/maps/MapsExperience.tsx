@@ -72,6 +72,13 @@ let _memoriesCacheExpiry = 0;
 const MEMORIES_CACHE_TTL = 60 * 1000;
 const LAYER_STORAGE_KEY = 'brooks.maps.layers';
 
+// Upper bound on simultaneously-rendered creator HTML markers. Each marker is a
+// DOM node plus a decoded avatar bitmap, so this directly caps the map's marker
+// memory footprint on the Android WebView. Off-screen / lower-ranked creators
+// are represented by the GL cluster layer instead. ~80 comfortably fills a
+// zoomed-in viewport without approaching the WebView's bitmap budget.
+const MAX_RENDERED_MARKERS = 80;
+
 interface MapsExperienceProps {
   mapboxToken: string;
   mapStyle: string;
@@ -867,6 +874,19 @@ export default function MapsExperience({
     return visibleGuidePins.filter((pin) => isPinWithinBounds(pin, currentBounds));
   }, [currentBounds, visibleGuidePins]);
 
+  // Pins that actually get a DOM marker + avatar <img>. Bounded two ways so the
+  // Android WebView never accumulates an unbounded set of decoded bitmaps:
+  //   1. viewport-filtered (off-screen creators get no marker), and
+  //   2. hard-capped to the top-ranked MAX_RENDERED_MARKERS within the viewport.
+  // At low zoom a wide viewport can still contain hundreds of pins; the cluster
+  // layer represents those, so we only ever materialise the strongest few as
+  // HTML markers. pins arrive rank-sorted from the API, so a prefix is the
+  // top-ranked slice.
+  const viewportMarkerPins = useMemo(
+    () => viewportPins.slice(0, MAX_RENDERED_MARKERS),
+    [viewportPins],
+  );
+
   const viewportMemories = useMemo(() => {
     return visibleMemories.filter((memory) => isMemoryWithinBounds(memory, currentBounds));
   }, [currentBounds, visibleMemories]);
@@ -1598,6 +1618,16 @@ export default function MapsExperience({
 
       mapboxgl.accessToken = mapboxToken;
 
+      // Native WebView memory hygiene (globals, must be set before construction):
+      // each tile-worker is its own thread with decode buffers, and the default
+      // 16 parallel image requests let tile + avatar fetches decode concurrently.
+      // Trimming both lowers peak memory on the Android renderer. Desktop keeps
+      // the mapbox defaults (it doesn't hit the OOM ceiling).
+      if (isNative()) {
+        (mapboxgl as unknown as { workerCount: number }).workerCount = 2;
+        (mapboxgl as unknown as { maxParallelImageRequests: number }).maxParallelImageRequests = 4;
+      }
+
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: themedStyle,
@@ -1799,7 +1829,13 @@ export default function MapsExperience({
         });
       }
 
-      visibleGuidePins.forEach((pin) => {
+      // Only the pins currently inside the viewport get a DOM marker (+ avatar
+      // image). The cluster GeoJSON source above still carries the full pin set
+      // so low-zoom density is correct; but rendering an HTML Marker for every
+      // creator globally is what OOM-killed the Android WebView (hundreds of
+      // decoded avatar bitmaps held resident). Bounding markers to the visible
+      // bounds keeps the resident DOM/image set proportional to the screen.
+      viewportMarkerPins.forEach((pin) => {
         const markerElement = document.createElement('button');
         markerElement.type = 'button';
         markerElement.setAttribute('aria-label', `${pin.displayName} influencer pin`);
@@ -1841,6 +1877,15 @@ export default function MapsExperience({
 
         if (pin.avatarUrl) {
           const img = document.createElement('img');
+          // lazy + async decode keep avatar bitmaps off the critical path and
+          // let the WebView skip decoding markers that are scrolled out of the
+          // map canvas — a meaningful cut to peak bitmap memory on Android.
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          // The marker renders at ~44px; hint the intrinsic size so the WebView
+          // can downscale-on-decode instead of holding a full-resolution bitmap.
+          img.width = 48;
+          img.height = 48;
           img.src = pin.avatarUrl;
           img.alt = pin.displayName;
           img.style.width = '100%';
@@ -1887,7 +1932,7 @@ export default function MapsExperience({
     renderPins().catch(() => {
       setPageError('Failed to render influencer pins');
     });
-  }, [visibleGuidePins, mapReady]);
+  }, [visibleGuidePins, viewportMarkerPins, mapReady]);
 
   useEffect(() => {
     const activeIds = new Set<string>();

@@ -11,6 +11,7 @@ import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,13 @@ public class ProfileService {
 
     private final UserProfileRepository profileRepository;
     private final UserService userService;
+
+    // Hard cap on creator pins returned to the map. The web client renders one DOM
+    // marker (+ avatar image) per pin and the Android WebView OOMs on an unbounded
+    // set, so bound it here too — defence in depth alongside the client-side
+    // viewport limiting. Configurable; default 500 is generous for a regional map.
+    @Value("${app.maps.influencer-pins.max:500}")
+    private int maxInfluencerPins;
 
     @Transactional
     public ProfileResponse getOrCreateProfile(String auth0Subject) {
@@ -77,7 +85,7 @@ public class ProfileService {
     @Cacheable(value = "rankings", key = "'pins:' + (#region == null || #region.isBlank() ? 'global' : #region)")
     public InfluencerMapResponse getInfluencerMap(String region) {
         String regionParam = (region != null && !region.isBlank()) ? region : null;
-        List<InfluencerMapPinResponse> pins = profileRepository.findInfluencerPins(regionParam).stream()
+        List<InfluencerMapPinResponse> pins = profileRepository.findInfluencerPins(regionParam, maxInfluencerPins).stream()
                 .map(row -> InfluencerMapPinResponse.builder()
                         .userId(row.getUserId())
                         .username(row.getUsername())

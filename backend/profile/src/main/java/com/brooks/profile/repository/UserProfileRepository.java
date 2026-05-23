@@ -48,8 +48,10 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, UUID> 
           AND (:region IS NULL OR p.region = :region)
         ORDER BY p.follower_count DESC, p.guide_count DESC,
                  p.is_verified DESC, u.created_at ASC
+        LIMIT :maxPins
         """, nativeQuery = true)
-    List<InfluencerMapProjection> findInfluencerPins(@Param("region") String region);
+    List<InfluencerMapProjection> findInfluencerPins(@Param("region") String region,
+                                                     @Param("maxPins") int maxPins);
 
     @Modifying
     @Query("""

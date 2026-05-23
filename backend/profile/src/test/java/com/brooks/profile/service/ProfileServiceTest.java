@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,7 +43,7 @@ class ProfileServiceTest {
         InfluencerMapProjection secondCreator = projection(
                 UUID.randomUUID(), "second-user", "Second", 40.17, 44.51, 90, 5, false, 2
         );
-        when(profileRepository.findInfluencerPins(null))
+        when(profileRepository.findInfluencerPins(isNull(), anyInt()))
                 .thenReturn(List.of(topCreator, secondCreator));
 
         InfluencerMapResponse response = profileService.getInfluencerMap(null);
