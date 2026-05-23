@@ -7,9 +7,9 @@ const config: CapacitorConfig = {
   appName: 'Brooks',
   webDir: 'capacitor-fallback',
   server: {
-    url: 'https://brooksweb.uk',
-    cleartext: false,
-    androidScheme: 'https',
+    url: 'http://localhost:3000',
+    cleartext: true,
+    androidScheme: 'http',
     // Domains the WebView is allowed to navigate to without leaving the app.
     // Auth0 + Google + iPay + Mapbox tiles + GCS media all need to load here.
     allowNavigation: [

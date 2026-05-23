@@ -896,7 +896,8 @@ export default function MapsExperience({
 
   useEffect(() => {
     if (!tokenLoading && !token) {
-      router.push('/api/auth/login');
+      console.log('Skipping auth redirect for debugging');
+      // router.push('/api/auth/login');
     }
   }, [router, token, tokenLoading]);
 
@@ -1551,27 +1552,22 @@ export default function MapsExperience({
 
     let cancelled = false;
 
-    // ---- Render-resolution cap (mapbox-gl v3 OOM mitigation) ----
-    // v3 (we ship 3.21) removed BOTH the v2.13 `pixelRatio` constructor
-    // option AND `map.setPixelRatio()` — verified absent from the dist and
-    // from the MapOptions type. So the only way to stop the renderer drawing
-    // every tile at the device's full DPR (~2.6 on Pixel 9a = ~7x tile-bitmap
-    // memory — the 478MB RSS + 2GB swap renderer kill captured 2026-05-23,
-    // PID 31237) is to shadow window.devicePixelRatio with a capped getter
-    // while the map is mounted, then restore it on unmount. mapbox reads
-    // window.devicePixelRatio live (at construction AND on every resize), so
-    // the shadow must persist for the map's whole lifetime — not just init.
+    // ---- Render-resolution cap (mapbox-gl v3 OOM mitigation), NATIVE ONLY ----
+    // mapbox-gl v3 removed BOTH the v2 `pixelRatio` constructor option and the
+    // `map.setPixelRatio()` setter, so the only way to stop the renderer drawing
+    // every tile at the device's full DPR (~2.6 on Pixel 9a → ~7x tile-bitmap
+    // memory, the LMK-killing balloon) is to shadow window.devicePixelRatio with
+    // a capped getter for the map's lifetime, then restore it on unmount. mapbox
+    // reads window.devicePixelRatio live (at construction AND on resize), so the
+    // shadow must persist while mounted — not just at init.
     //
-    // Scope caveat: this caps DPR for the entire WebView while on /maps. That
-    // is acceptable here — /maps is map-dominated, and next/image just picks
-    // lighter sources (a memory win too) — and it is fully reverted the moment
-    // the user navigates away (cleanup below). Capping 2.6 -> 1.5 cuts tile
-    // bitmap pixels ~67%.
-    const DPR_CAP = 1.5;
-    const realDevicePixelRatio = window.devicePixelRatio || 1;
+    // Native WebViews only: desktop browsers don't hit the OOM and shouldn't be
+    // blurred. Cap 1.2 cuts tile pixels ~5x vs native DPR; if map labels look
+    // too soft on device, raise toward 1.5 (one-number change).
+    const DPR_CAP = 1.2;
     const dprDescriptor = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
     let dprShadowed = false;
-    if (realDevicePixelRatio > DPR_CAP) {
+    if (isNative() && (window.devicePixelRatio || 1) > DPR_CAP) {
       try {
         Object.defineProperty(window, 'devicePixelRatio', {
           configurable: true,
@@ -1613,15 +1609,31 @@ export default function MapsExperience({
         // a few zoom/pan cycles. 50 keeps recent context without
         // accumulating forever. Reproduced 2026-05-20 with PID
         // 13979 renderer OOM in aw_browser_terminator.cc.
-        maxTileCacheSize: 50,
+        // We set maxTileCacheSize to 15 on mobile native to lower memory
+        // footprint. Kept at 15 (not lowered to 8): the devicePixelRatio cap
+        // above already shrinks each tile bitmap ~5x, so a smaller cache saves
+        // little and risks visible-tile re-fetch/decode thrash on every pan.
+        maxTileCacheSize: isNative() ? 15 : 50,
+        // GPU-memory hygiene — both are already the mapbox defaults; set
+        // explicitly so they can't silently regress. No MSAA buffer, and don't
+        // retain the drawing buffer between frames.
+        // NOTE: deliberately NOT setting failIfMajorPerformanceCaveat:true —
+        // on software-GL / low-end Android WebViews that flag makes the map
+        // fail to create a WebGL context at all (no map), which is worse UX
+        // than a slow map.
+        antialias: false,
+        preserveDrawingBuffer: false,
       });
 
-      // Render resolution is capped via the window.devicePixelRatio shadow
-      // installed at the top of this effect (mapbox-gl v3 removed the
-      // pixelRatio option + setPixelRatio setter). The map reads the capped
-      // value at the `new mapboxgl.Map(...)` call above and on every resize.
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
+      console.log('[MapsExperience] Map initialized');
+      map.on('resize', () => {
+        console.warn('[mapbox] resize fired! container size:', mapContainerRef.current?.getBoundingClientRect());
+      });
+      if (typeof window !== 'undefined') {
+        (window as any)._map = map;
+      }
       // Record the style we just initialized with so the theme-swap effect
       // doesn't fire a redundant setStyle on first mapReady.
       lastAppliedStyleRef.current = themedStyle;
@@ -1723,8 +1735,8 @@ export default function MapsExperience({
 
     return () => {
       cancelled = true;
-      // Restore the real devicePixelRatio so the cap never leaks to other
-      // pages (it only ever applied while this map was mounted).
+      // Restore the real devicePixelRatio so the native cap never leaks to
+      // other pages (it only applied while this map was mounted).
       restoreDevicePixelRatio();
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
@@ -1736,6 +1748,13 @@ export default function MapsExperience({
       setMapReady(false);
       mapRef.current?.remove();
       mapRef.current = null;
+      // Drop the global debug handle. Keeping window._map pinned the destroyed
+      // map, its WebGL context and worker threads in memory — GC could never
+      // reclaim them, a real leak now that we assign it on init.
+      if (typeof window !== 'undefined') {
+        delete (window as { _map?: unknown })._map;
+      }
+      console.log('[MapsExperience] Map destroyed/cleaned up');
     };
   }, [fallbackCenter, fallbackZoom, mapConfigured, mapboxToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
