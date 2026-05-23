@@ -1544,6 +1544,47 @@ export default function MapsExperience({
 
     let cancelled = false;
 
+    // ---- Render-resolution cap (mapbox-gl v3 OOM mitigation) ----
+    // v3 (we ship 3.21) removed BOTH the v2.13 `pixelRatio` constructor
+    // option AND `map.setPixelRatio()` — verified absent from the dist and
+    // from the MapOptions type. So the only way to stop the renderer drawing
+    // every tile at the device's full DPR (~2.6 on Pixel 9a = ~7x tile-bitmap
+    // memory — the 478MB RSS + 2GB swap renderer kill captured 2026-05-23,
+    // PID 31237) is to shadow window.devicePixelRatio with a capped getter
+    // while the map is mounted, then restore it on unmount. mapbox reads
+    // window.devicePixelRatio live (at construction AND on every resize), so
+    // the shadow must persist for the map's whole lifetime — not just init.
+    //
+    // Scope caveat: this caps DPR for the entire WebView while on /maps. That
+    // is acceptable here — /maps is map-dominated, and next/image just picks
+    // lighter sources (a memory win too) — and it is fully reverted the moment
+    // the user navigates away (cleanup below). Capping 2.6 -> 1.5 cuts tile
+    // bitmap pixels ~67%.
+    const DPR_CAP = 1.5;
+    const realDevicePixelRatio = window.devicePixelRatio || 1;
+    const dprDescriptor = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
+    let dprShadowed = false;
+    if (realDevicePixelRatio > DPR_CAP) {
+      try {
+        Object.defineProperty(window, 'devicePixelRatio', {
+          configurable: true,
+          get: () => DPR_CAP,
+        });
+        dprShadowed = true;
+      } catch {
+        // Some engines mark devicePixelRatio non-configurable — skip silently.
+      }
+    }
+    const restoreDevicePixelRatio = () => {
+      if (!dprShadowed) return;
+      if (dprDescriptor) {
+        Object.defineProperty(window, 'devicePixelRatio', dprDescriptor);
+      } else {
+        delete (window as { devicePixelRatio?: number }).devicePixelRatio;
+      }
+      dprShadowed = false;
+    };
+
     const initializeMap = async () => {
       const mapboxglModule = await import('mapbox-gl');
       const mapboxgl = mapboxglModule.default;
@@ -1568,24 +1609,10 @@ export default function MapsExperience({
         maxTileCacheSize: 50,
       });
 
-      // Cap rendered pixel density. The Pixel 6/7/8/9 reports DPR ~3,
-      // meaning Mapbox renders every tile at 3× the visible resolution
-      // = 9× the memory per tile bitmap. Capping to 2.0 keeps the map
-      // visually crisp but cuts the renderer's bitmap footprint by
-      // ~55%, materially lowering the chance of the watchPosition-
-      // triggered OOM cascade we've seen (renderer killed ~4s after
-      // proximity-notifier's watch starts).
-      //
-      // setPixelRatio() landed in mapbox-gl 2.13 but the @types
-      // package we depend on still has the older signature, so the
-      // method isn't on the static type. Cast to any for the runtime
-      // check — the typeof guard ensures we don't call it if missing.
-      {
-        const mapAny = map as unknown as { setPixelRatio?: (ratio: number) => void };
-        if (typeof window !== 'undefined' && typeof mapAny.setPixelRatio === 'function') {
-          mapAny.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        }
-      }
+      // Render resolution is capped via the window.devicePixelRatio shadow
+      // installed at the top of this effect (mapbox-gl v3 removed the
+      // pixelRatio option + setPixelRatio setter). The map reads the capped
+      // value at the `new mapboxgl.Map(...)` call above and on every resize.
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
       // Record the style we just initialized with so the theme-swap effect
@@ -1689,6 +1716,9 @@ export default function MapsExperience({
 
     return () => {
       cancelled = true;
+      // Restore the real devicePixelRatio so the cap never leaks to other
+      // pages (it only ever applied while this map was mounted).
+      restoreDevicePixelRatio();
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
       markerElementsRef.current.clear();
