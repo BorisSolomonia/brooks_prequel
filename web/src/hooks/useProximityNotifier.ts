@@ -132,6 +132,16 @@ export function useProximityNotifier({ enabled, memories, onFire }: ProximityNot
             if (pos?.coords) handlePosition(pos.coords.latitude, pos.coords.longitude);
           },
         );
+        // watchPosition is an async bridge call. If the effect was torn down
+        // while it was in flight, the cleanup below already ran and found
+        // `cleanupNative` still null — so it could NOT clear THIS watch.
+        // Clear it here and bail; otherwise the native watch leaks. Leaked
+        // GPS watchers accumulating across enabled-toggles/unmounts was the
+        // unbounded RSS growth that drove the Android LMK kill.
+        if (cancelled) {
+          mod.Geolocation.clearWatch({ id: watchId }).catch(() => undefined);
+          return;
+        }
         cleanupNative = () => {
           mod.Geolocation.clearWatch({ id: watchId }).catch(() => undefined);
         };

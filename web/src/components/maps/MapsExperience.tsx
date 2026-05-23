@@ -920,8 +920,15 @@ export default function MapsExperience({
     const timer = setTimeout(() => setProximityArmed(true), 3000);
     return () => clearTimeout(timer);
   }, [mapReady]);
+  // Gate ONLY on stable booleans (armed + token). Deliberately NOT on
+  // memories.length: panning into/out of empty areas flips memories to []
+  // and back, which would tear down and restart the geolocation watcher on
+  // every cell change. Each restart is another chance to hit the async
+  // watchPosition leak — so we keep the watcher steady once armed and let
+  // its callback read the live memories list via memoriesRef. With zero
+  // shared memories the watcher simply fires nothing (cheap).
   useProximityNotifier({
-    enabled: proximityArmed && Boolean(token) && memories.length > 0,
+    enabled: proximityArmed && Boolean(token),
     memories,
   });
 
