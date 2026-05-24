@@ -684,8 +684,10 @@ export default function MapsExperience({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markersRef = useRef<MapboxMarker[]>([]);
+  const markersMapRef = useRef<Map<string, MapboxMarker>>(new Map());
   const markerElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const memoryMarkersRef = useRef<MapboxMarker[]>([]);
+  const memoryMarkersMapRef = useRef<Map<string, MapboxMarker>>(new Map());
   const userLocationMarkerRef = useRef<MapboxMarker | null>(null);
   // Tracks the style URL currently applied to the map so we don't re-call
   // setStyle on the first mapReady event (the map already initialized with
@@ -916,8 +918,7 @@ export default function MapsExperience({
 
   useEffect(() => {
     if (!tokenLoading && !token) {
-      console.log('Skipping auth redirect for debugging');
-      // router.push('/api/auth/login');
+      router.push('/api/auth/login');
     }
   }, [router, token, tokenLoading]);
 
@@ -1573,14 +1574,19 @@ export default function MapsExperience({
 
     let cancelled = false;
 
-    // NOTE: render resolution is NOT capped here. Verified 2026-05-24 that
-    // neither mapbox-gl v3.21 NOR v2.15 exposes a pixel-ratio cap (no `pixelRatio`
-    // Map option, no setPixelRatio), and a window.devicePixelRatio JS shadow did
-    // not reduce GL mtrack in the WebView (the native GL surface renders at the
-    // device density regardless — measured: shadow active, GL mtrack still 3.2 GB).
-    // The GPU-memory runaway is being addressed via texture-lifecycle fixes
-    // (avoid the theme setStyle reload, jumpTo over flyTo, tighter tile cache)
-    // and, if needed, a native map. See DEBUG_MEMORY.md / the maps OOM thread.
+    // Cap window.devicePixelRatio to 1.5 on native WebViews (matches the known-good
+    // build). Lowers canvas render resolution; restored on unmount (cleanup below).
+    // 1.5 stays legible — 1.0 was needlessly blurry.
+    if (isNative() && typeof window !== 'undefined') {
+      try {
+        Object.defineProperty(window, 'devicePixelRatio', {
+          get: () => 1.5,
+          configurable: true,
+        });
+      } catch {
+        // Some engines mark devicePixelRatio non-configurable — skip silently.
+      }
+    }
 
     const initializeMap = async () => {
       const mapboxglModule = await import('mapbox-gl');
@@ -1592,45 +1598,33 @@ export default function MapsExperience({
 
       mapboxgl.accessToken = mapboxToken;
 
-      // Native WebView memory hygiene (globals, must be set before construction):
-      // each tile-worker is its own thread with decode buffers, and the default
-      // 16 parallel image requests let tile + avatar fetches decode concurrently.
-      // Trimming both lowers peak memory on the Android renderer. Desktop keeps
-      // the mapbox defaults (it doesn't hit the OOM ceiling).
-      if (isNative()) {
-        (mapboxgl as unknown as { workerCount: number }).workerCount = 2;
-        (mapboxgl as unknown as { maxParallelImageRequests: number }).maxParallelImageRequests = 4;
-      }
+      // Do NOT throttle workerCount / maxParallelImageRequests. Trimming them
+      // (we had tried workerCount:1, maxParallelImageRequests:3) starves tile
+      // processing so the map never finishes loading the viewport and keeps
+      // re-rendering. The known-good build (brooks_prequel-alter_2305) that does
+      // NOT freeze leaves these at the mapbox defaults — match it.
 
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: themedStyle,
         center: fallbackCenter,
         zoom: fallbackZoom ?? undefined,
-        // Cap tile cache to fight Android WebView renderer OOM kills.
-        // Default is unbounded; on Pixel devices with DPR ~3, the unbounded
-        // cache pushed the renderer past its quota within a few zoom/pan cycles.
-        // Reproduced 2026-05-20 with PID 13979 renderer OOM in
-        // aw_browser_terminator.cc. Native is tightened to 15 to evict GPU tile
-        // textures aggressively (the measured GL-mtrack runaway), desktop 50.
-        maxTileCacheSize: isNative() ? 15 : 50,
-        // GPU-memory hygiene — both are already the mapbox defaults; set
-        // explicitly so they can't silently regress. No MSAA buffer, and don't
-        // retain the drawing buffer between frames.
-        // NOTE: deliberately NOT setting failIfMajorPerformanceCaveat:true —
-        // on software-GL / low-end Android WebViews that flag makes the map
-        // fail to create a WebGL context at all (no map), which is worse UX
-        // than a slow map.
+        // maxTileCacheSize: 50 — matches the known-good build that doesn't freeze.
+        // Do NOT lower this on native: a cache too small to hold the visible
+        // viewport (~6-12 tiles) forces mapbox to evict + re-rasterize tiles every
+        // frame = perpetual GPU re-raster (the "GPU overwhelm"/freeze). We had
+        // tightened it to 4 (and 15) "to save memory" — that CAUSED the thrash.
+        maxTileCacheSize: 50,
+        // GPU hygiene (mapbox defaults, set explicitly so they can't regress).
+        // Deliberately NOT failIfMajorPerformanceCaveat:true — that flag makes the
+        // map fail to create a WebGL context on software-GL / low-end Android (no
+        // map at all), which is worse than a slow map. The known-good build omits it.
         antialias: false,
         preserveDrawingBuffer: false,
       });
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
-      console.log('[MapsExperience] Map initialized');
-      if (typeof window !== 'undefined') {
-        (window as any)._map = map;
-      }
       // Record the style we just initialized with so the theme-swap effect
       // doesn't fire a redundant setStyle on first mapReady.
       lastAppliedStyleRef.current = themedStyle;
@@ -1732,23 +1726,26 @@ export default function MapsExperience({
 
     return () => {
       cancelled = true;
-      markersRef.current.forEach((marker) => marker.remove());
+      markersMapRef.current.forEach((marker) => marker.remove());
+      markersMapRef.current.clear();
       markersRef.current = [];
       markerElementsRef.current.clear();
-      memoryMarkersRef.current.forEach((marker) => marker.remove());
+      memoryMarkersMapRef.current.forEach((marker) => marker.remove());
+      memoryMarkersMapRef.current.clear();
       memoryMarkersRef.current = [];
       userLocationMarkerRef.current?.remove();
       userLocationMarkerRef.current = null;
       setMapReady(false);
       mapRef.current?.remove();
       mapRef.current = null;
-      // Drop the global debug handle. Keeping window._map pinned the destroyed
-      // map, its WebGL context and worker threads in memory — GC could never
-      // reclaim them, a real leak now that we assign it on init.
-      if (typeof window !== 'undefined') {
-        delete (window as { _map?: unknown })._map;
+      // Restore the real devicePixelRatio — the native cap only applies on /maps.
+      if (isNative() && typeof window !== 'undefined') {
+        try {
+          delete (window as { devicePixelRatio?: number }).devicePixelRatio;
+        } catch {
+          /* non-configurable — ignore */
+        }
       }
-      console.log('[MapsExperience] Map destroyed/cleaned up');
     };
   }, [fallbackCenter, fallbackZoom, mapConfigured, mapboxToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1776,10 +1773,6 @@ export default function MapsExperience({
       const mapboxglModule = await import('mapbox-gl');
       const mapboxgl = mapboxglModule.default;
 
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
-      markerElementsRef.current.clear();
-
       // Update cluster GeoJSON source when pins change
       const clusterSource = map.getSource('creator-clusters') as GeoJSONSource | undefined;
       if (clusterSource) {
@@ -1793,13 +1786,24 @@ export default function MapsExperience({
         });
       }
 
-      // Only the pins currently inside the viewport get a DOM marker (+ avatar
-      // image). The cluster GeoJSON source above still carries the full pin set
-      // so low-zoom density is correct; but rendering an HTML Marker for every
-      // creator globally is what OOM-killed the Android WebView (hundreds of
-      // decoded avatar bitmaps held resident). Bounding markers to the visible
-      // bounds keeps the resident DOM/image set proportional to the screen.
+      // Determine which markers need to be added, kept, or removed.
+      const currentIds = new Set(viewportMarkerPins.map((pin) => pin.userId));
+
+      // 1. Remove markers for pins that are no longer in the viewport
+      markersMapRef.current.forEach((marker, userId) => {
+        if (!currentIds.has(userId)) {
+          marker.remove();
+          markersMapRef.current.delete(userId);
+          markerElementsRef.current.delete(userId);
+        }
+      });
+
+      // 2. Create markers for new pins that entered the viewport
       viewportMarkerPins.forEach((pin) => {
+        if (markersMapRef.current.has(pin.userId)) {
+          return; // Already has a marker, keep it as is
+        }
+
         const markerElement = document.createElement('button');
         markerElement.type = 'button';
         markerElement.setAttribute('aria-label', `${pin.displayName} influencer pin`);
@@ -1884,11 +1888,14 @@ export default function MapsExperience({
           .setLngLat([pin.longitude, pin.latitude])
           .addTo(map);
 
-        markersRef.current.push(marker);
+        markersMapRef.current.set(pin.userId, marker);
         markerElementsRef.current.set(pin.userId, outerRing);
       });
 
-      // Apply current zoom visibility to newly created markers
+      // Synchronize markersRef.current array for compatibility with other effects/handlers
+      markersRef.current = Array.from(markersMapRef.current.values());
+
+      // Apply current zoom visibility to markers
       const showHtml = map.getZoom() >= 10;
       markersRef.current.forEach((m) => { m.getElement().style.display = showHtml ? '' : 'none'; });
     };
@@ -1922,10 +1929,23 @@ export default function MapsExperience({
       const mapboxglModule = await import('mapbox-gl');
       const mapboxgl = mapboxglModule.default;
 
-      memoryMarkersRef.current.forEach((marker) => marker.remove());
-      memoryMarkersRef.current = [];
+      // Determine which memory markers need to be added, kept, or removed.
+      const currentMemoryIds = new Set(visibleMemories.map((m) => m.id));
 
+      // 1. Remove markers for memories that are no longer visible
+      memoryMarkersMapRef.current.forEach((marker, memoryId) => {
+        if (!currentMemoryIds.has(memoryId)) {
+          marker.remove();
+          memoryMarkersMapRef.current.delete(memoryId);
+        }
+      });
+
+      // 2. Create markers for new memories
       visibleMemories.forEach((memory) => {
+        if (memoryMarkersMapRef.current.has(memory.id)) {
+          return; // Keep existing marker
+        }
+
         const markerElement = document.createElement('button');
         markerElement.type = 'button';
         const appearance = getMemoryPinAppearance(memory);
@@ -1953,8 +1973,12 @@ export default function MapsExperience({
         const marker = new mapboxgl.Marker({ element: markerElement, anchor: 'center' })
           .setLngLat([memory.longitude, memory.latitude])
           .addTo(map);
-        memoryMarkersRef.current.push(marker);
+
+        memoryMarkersMapRef.current.set(memory.id, marker);
       });
+
+      // Synchronize memoryMarkersRef.current array for compatibility with other handlers
+      memoryMarkersRef.current = Array.from(memoryMarkersMapRef.current.values());
     };
 
     renderMemoryPins().catch(() => {
