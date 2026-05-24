@@ -2059,14 +2059,18 @@ export default function MapsExperience({
       return;
     }
 
-    // jumpTo (instant), not flyTo: this auto-centres on the user the moment
-    // geolocation resolves — mid-load. A fly animation here loads tiles across
-    // the whole camera path and coincided with the measured GPU-memory second
-    // surge (~t10); an instant jump loads only the destination tiles.
-    map.jumpTo({
-      center: userCoordinates,
-      zoom: Math.max(map.getZoom(), fallbackZoom ?? 9, 10),
-    });
+    // ⚠️ TEMPORARY DIAGNOSTIC (2026-05-24) — auto-centre-on-user is DISABLED to
+    // isolate the GPU second-surge. With this off, the map stays at the fallback
+    // centre and loads only ONE tile set. If GL mtrack then plateaus (~1.1 GB, no
+    // ~t9 surge), the surge was the unreclaimed SECOND viewport loaded by this
+    // camera move → targeted fix = init the map at the user's coords + evict on
+    // move. If it STILL surges → the leak isn't the camera move → native map.
+    // REVERT: delete this return + the comment, re-enable the jumpTo below.
+    return;
+    // map.jumpTo({
+    //   center: userCoordinates,
+    //   zoom: Math.max(map.getZoom(), fallbackZoom ?? 9, 10),
+    // });
   }, [fallbackZoom, mapReady, userCoordinates]);
 
   if (!mapConfigured) {
