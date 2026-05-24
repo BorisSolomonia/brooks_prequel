@@ -39,6 +39,15 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapSty
   const [mapReady, setMapReady] = useState(false);
   const themedStyle = useMapboxStyle();
 
+  const initialCenterRef = useRef<[number, number] | null>(null);
+  const initialZoomRef = useRef<number>(3);
+  if (!initialCenterRef.current) {
+    const validItems = items.filter((item) => item.latitude !== null && item.longitude !== null && !item.skipped);
+    const firstItem = validItems[0];
+    initialCenterRef.current = firstItem ? [firstItem.longitude as number, firstItem.latitude as number] : [44.8014, 41.6938];
+    initialZoomRef.current = firstItem ? 10 : 3;
+  }
+
   const filteredItems = activeCategory === 'ALL'
     ? items
     : items.filter((item) => item.blockCategory === activeCategory);
@@ -60,14 +69,12 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapSty
         return;
       }
 
-      const validItems = items.filter((item) => item.latitude !== null && item.longitude !== null && !item.skipped);
-      const firstItem = validItems[0];
-
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: themedStyle,
-        center: firstItem ? [firstItem.longitude as number, firstItem.latitude as number] : [44.8014, 41.6938],
-        zoom: firstItem ? 10 : 3,
+        center: initialCenterRef.current!,
+        zoom: initialZoomRef.current,
+        maxTileCacheSize: 50,
       });
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
@@ -106,7 +113,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapSty
       mapboxModuleRef.current = null;
       setMapReady(false);
     };
-  }, [items, themedStyle, mapboxToken]);
+  }, [themedStyle, mapboxToken]);
 
   useEffect(() => {
     const map = mapRef.current;

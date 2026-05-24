@@ -45,6 +45,7 @@ function ProfileLocationMap({ lat, lng, onChange }: { lat: string; lng: string; 
         style: mapboxStyle,
         center,
         zoom: hasCoords ? 8 : 1,
+        maxTileCacheSize: 50,
       });
       mapRef.current = map;
 

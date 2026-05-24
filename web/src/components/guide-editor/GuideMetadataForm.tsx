@@ -49,6 +49,7 @@ function DestinationMap({ lat, lng, onChange }: { lat: number | null | undefined
         style: mapboxStyle,
         center,
         zoom: lat != null ? 8 : 1,
+        maxTileCacheSize: 50,
       });
       mapRef.current = map;
 

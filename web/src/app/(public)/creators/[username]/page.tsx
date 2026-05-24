@@ -84,12 +84,17 @@ export default function CreatorProfilePage({ params }: { params: { username: str
 
   useEffect(() => {
     if (activeTab !== 'about' || !profile?.latitude || !profile?.longitude || mapInitRef.current) return;
-    mapInitRef.current = true;
     const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN;
+    // Check prerequisites BEFORE arming the guard, so an early bail doesn't
+    // strand mapInitRef=true (which would block the map from ever initializing).
     if (!mapboxToken || !mapContainerRef.current) return;
+    mapInitRef.current = true;
 
+    // `cancelled` prevents the async import from creating a map after the effect
+    // was cleaned up (fast tab switch / theme change) — that would orphan a context.
+    let cancelled = false;
     import('mapbox-gl').then(({ default: mapboxgl }) => {
-      if (!mapContainerRef.current) return;
+      if (cancelled || !mapContainerRef.current) return;
       mapboxgl.accessToken = mapboxToken;
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
@@ -97,10 +102,20 @@ export default function CreatorProfilePage({ params }: { params: { username: str
         center: [profile.longitude!, profile.latitude!],
         zoom: 10,
         interactive: false,
+        maxTileCacheSize: 50,
       });
       mapRef.current = map;
       new mapboxgl.Marker().setLngLat([profile.longitude!, profile.latitude!]).addTo(map);
     }).catch(() => {});
+
+    return () => {
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      mapInitRef.current = false;
+    };
   }, [activeTab, profile, mapboxStyle]);
 
   const reloadReviews = async () => {
