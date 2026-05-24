@@ -78,6 +78,7 @@ const LAYER_STORAGE_KEY = 'brooks.maps.layers';
 // are represented by the GL cluster layer instead. ~80 comfortably fills a
 // zoomed-in viewport without approaching the WebView's bitmap budget.
 const MAX_RENDERED_MARKERS = 80;
+const MAX_RENDERED_MEMORY_MARKERS = 100;
 
 interface MapsExperienceProps {
   mapboxToken: string;
@@ -893,6 +894,14 @@ export default function MapsExperience({
     return visibleMemories.filter((memory) => isMemoryWithinBounds(memory, currentBounds));
   }, [currentBounds, visibleMemories]);
 
+  // Memory markers actually rendered to the map: scoped to the current viewport
+  // AND hard-capped, so a dense area can't mount hundreds of DOM markers (the LMK
+  // trigger). `viewportMemories` (uncapped) still backs the list counts.
+  const viewportMemoryPins = useMemo(
+    () => viewportMemories.slice(0, MAX_RENDERED_MEMORY_MARKERS),
+    [viewportMemories],
+  );
+
   // Sorted-and-scored viewport memories for the drawer list. Density
   // intelligence: closest first, then "shared with me" boost, then
   // "has rich media" boost. Distance computed via haversine when the
@@ -918,7 +927,10 @@ export default function MapsExperience({
 
   useEffect(() => {
     if (!tokenLoading && !token) {
-      router.push('/api/auth/login');
+      // Native must use the Capacitor deep-link universal-login flow
+      // (/login -> startAuthFlow). /api/auth/login is the web Auth0 SDK server
+      // route and fails inside the WebView (CORS + missing state cookie -> 400).
+      router.push(isNative() ? '/login' : '/api/auth/login');
     }
   }, [router, token, tokenLoading]);
 
@@ -1930,9 +1942,11 @@ export default function MapsExperience({
       const mapboxgl = mapboxglModule.default;
 
       // Determine which memory markers need to be added, kept, or removed.
-      const currentMemoryIds = new Set(visibleMemories.map((m) => m.id));
+      // viewportMemoryPins = viewport-scoped + capped, so off-screen / excess
+      // memories never get a DOM marker (prevents the marker-flood LMK crash).
+      const currentMemoryIds = new Set(viewportMemoryPins.map((m) => m.id));
 
-      // 1. Remove markers for memories that are no longer visible
+      // 1. Remove markers for memories no longer in the (capped) viewport set
       memoryMarkersMapRef.current.forEach((marker, memoryId) => {
         if (!currentMemoryIds.has(memoryId)) {
           marker.remove();
@@ -1941,7 +1955,7 @@ export default function MapsExperience({
       });
 
       // 2. Create markers for new memories
-      visibleMemories.forEach((memory) => {
+      viewportMemoryPins.forEach((memory) => {
         if (memoryMarkersMapRef.current.has(memory.id)) {
           return; // Keep existing marker
         }
@@ -1984,7 +1998,7 @@ export default function MapsExperience({
     renderMemoryPins().catch(() => {
       setPageError('Failed to render memory pins');
     });
-  }, [mapReady, visibleMemories]);
+  }, [mapReady, viewportMemoryPins]);
 
   useEffect(() => {
     if (!selectedPin) {
