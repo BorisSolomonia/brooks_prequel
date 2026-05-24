@@ -79,15 +79,6 @@ const LAYER_STORAGE_KEY = 'brooks.maps.layers';
 // zoomed-in viewport without approaching the WebView's bitmap budget.
 const MAX_RENDERED_MARKERS = 80;
 
-// Native GPU-memory mitigation (the last JS-level lever — neither mapbox-gl v2
-// nor v3 exposes a pixelRatio cap, and a window.devicePixelRatio shadow doesn't
-// reach the native GL surface). Mapbox sizes its WebGL drawing buffer to the map
-// container's CSS pixels, so on native we lay the container out at this fraction
-// of the viewport and CSS-scale it back up to fill — fewer canvas pixels ≈
-// MAP_RENDER_SCALE² the GL-texture memory (0.65 → ~42% of full-res GPU use).
-// Slightly softer map on device; desktop renders at full resolution.
-const MAP_RENDER_SCALE = 0.65;
-
 interface MapsExperienceProps {
   mapboxToken: string;
   mapStyle: string;
@@ -2682,27 +2673,7 @@ export default function MapsExperience({
         </div>
       )}
 
-      {/* Reduced-resolution canvas wrapper (see MAP_RENDER_SCALE). On native the
-          inner container is laid out at MAP_RENDER_SCALE of the viewport and
-          CSS-scaled back up to fill, so mapbox's GL drawing buffer is smaller.
-          Mapbox maps pointer coords via getBoundingClientRect, so taps still
-          land correctly on the scaled canvas. Desktop = full resolution. */}
-      <div className="relative h-full w-full overflow-hidden">
-        <div
-          ref={mapContainerRef}
-          className="absolute left-0 top-0"
-          style={
-            isNative()
-              ? {
-                  width: `${MAP_RENDER_SCALE * 100}%`,
-                  height: `${MAP_RENDER_SCALE * 100}%`,
-                  transform: `scale(${1 / MAP_RENDER_SCALE})`,
-                  transformOrigin: 'top left',
-                }
-              : { width: '100%', height: '100%' }
-          }
-        />
-      </div>
+      <div ref={mapContainerRef} className="h-full w-full" />
 
       {selectedPin && <SelectedPinCard pin={selectedPin} onClose={() => setSelectedPin(null)} />}
       {selectedMemory && (
