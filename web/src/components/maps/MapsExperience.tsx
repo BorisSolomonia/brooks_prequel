@@ -1628,9 +1628,6 @@ export default function MapsExperience({
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
       console.log('[MapsExperience] Map initialized');
-      map.on('resize', () => {
-        console.warn('[mapbox] resize fired! container size:', mapContainerRef.current?.getBoundingClientRect());
-      });
       if (typeof window !== 'undefined') {
         (window as any)._map = map;
       }
@@ -2081,8 +2078,10 @@ export default function MapsExperience({
     );
   }
 
+  // Root height uses svh (static), NOT dvh: dvh recomputes with the viewport and fed an
+  // infinite resize->render loop (heights shrank 602->203px) that drove the GPU runaway.
   return (
-    <div className="relative h-[calc(100dvh_-_9rem_-_env(safe-area-inset-bottom))] min-h-[420px] w-full overflow-hidden bg-ig-primary md:h-[calc(100dvh_-_60px)] md:min-h-0">
+    <div className="relative h-[calc(100svh_-_9rem_-_env(safe-area-inset-bottom))] min-h-[420px] w-full overflow-hidden bg-ig-primary md:h-[calc(100svh_-_60px)] md:min-h-0">
       {(tokenLoading || !token) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-ig-primary">
           <p className="text-ig-text-tertiary">Loading map experience...</p>

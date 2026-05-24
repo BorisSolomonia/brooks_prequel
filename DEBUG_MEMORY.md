@@ -4,6 +4,25 @@
 because `/maps` drives memory to ~3–6 GB. This is a **GPU-texture leak**, not a JavaScript
 problem. This playbook is the rigorous method to localize and kill it.
 
+## 🔥 LEADING ROOT CAUSE (2026-05-24) — a `dvh` resize→render loop (NOT a fundamental WebView leak)
+
+DevTools logs (desktop + persisting after the canvas-wrapper revert) showed `[mapbox] resize
+fired!` **repeating with the container height shrinking 602→592→…→203 px**, plus an endless
+`requestAnimationFrame→triggerRepaint→_render` chain. That is an **infinite resize→render loop** —
+and it is the most plausible *engine* of the GPU runaway: every resize re-renders + re-rasterizes
+tiles → GPU textures accumulate without bound.
+
+Root: the `/maps` root container height was `calc(100dvh - …)`. **`dvh` (dynamic viewport height)
+recomputes whenever the viewport changes** (mobile URL bar showing/hiding; on desktop, a docked
+DevTools console that the per-frame `console.warn` spam kept growing). Each recompute resized the
+map → mapbox re-rendered → reflowed → recomputed `dvh` → loop.
+
+**Fix shipped:** `dvh` → **`svh`** (static small-viewport height — can't recompute, can't feed
+back) on the map root container, and removed the per-frame debug `console.warn` resize handler.
+**Status: pending on-device confirmation** — redeploy, then verify the resize loop is gone AND
+`GL mtrack` plateaus instead of ratcheting. If confirmed, this resolves it with **no native
+rewrite** — the earlier "WebView GL is unfixable / go native" conclusion was premature.
+
 ## What we have ALREADY proven (don't re-litigate these)
 - It's **GPU memory**: `adb dumpsys meminfo` shows `GL mtrack` / `Graphics` climbing 19 MB →
   1.1 → 2.4 → 3.3 GB, **ratchets up on every pan, never freed even after leaving /maps**.
