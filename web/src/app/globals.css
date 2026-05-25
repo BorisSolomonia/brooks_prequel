@@ -343,3 +343,24 @@ textarea {
       linear-gradient(135deg, color-mix(in srgb, var(--mw-orange) 70%, #111), color-mix(in srgb, var(--mw-blue) 68%, #111));
   }
 }
+
+/* ───────── Leaflet stacking cap ─────────
+   Leaflet defaults its panes to z-index 200–700 and its controls (zoom /
+   attribution) to 1000. Those values are high enough that, in the Android
+   System WebView, the map's GPU-composited layers paint OVER the sticky app
+   navbar (`sticky top-0 z-50` in Navbar.tsx) while the page scrolls — the map
+   "covers the header." Containing the map in its own stacking context
+   (`isolate` on the map container) is not honoured reliably by the WebView, so
+   we additionally cap Leaflet's OWN z-indexes to single digits. This keeps the
+   panes/controls in their original relative order (tiles below markers below
+   popups below controls) while guaranteeing the whole map stays beneath the
+   navbar (z-50), the chrome overlays (z-10…z-30) and modals (z-60). Applies to
+   every Leaflet map in the app; none need to stack above page chrome. */
+.leaflet-tile-pane { z-index: 1 !important; }
+.leaflet-overlay-pane { z-index: 2 !important; }
+.leaflet-shadow-pane { z-index: 3 !important; }
+.leaflet-marker-pane { z-index: 4 !important; }
+.leaflet-tooltip-pane { z-index: 5 !important; }
+.leaflet-popup-pane { z-index: 6 !important; }
+.leaflet-top,
+.leaflet-bottom { z-index: 7 !important; }

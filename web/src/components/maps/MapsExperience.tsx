@@ -2686,13 +2686,12 @@ export default function MapsExperience({
         </div>
       )}
 
-      {/* z-0 + position + isolate makes this its OWN isolated stacking context,
-          so Leaflet's internal panes/controls (z-index 200–1000) — and the GPU
-          compositing layers Leaflet promotes via translate3d — stay BELOW the
-          app chrome overlays (z-10…z-60) AND below the sticky app navbar (z-50).
-          `isolate` is the key for the scroll case: without it, Leaflet's
-          translate3d layers could paint OVER the sticky header on scroll in the
-          Android WebView; isolation pins the whole map subtree to this layer. */}
+      {/* z-0 + position + isolate keeps the map its own low stacking context so
+          Leaflet stays below the app chrome overlays (z-10…z-60). NOTE: the
+          Android WebView did NOT honour this for the sticky navbar on scroll —
+          the actual guarantee that Leaflet stays under the header is the
+          single-digit z-index cap on .leaflet-* panes/controls in globals.css
+          (Leaflet's defaults of 200–1000 were painting over the navbar). */}
       <div ref={mapContainerRef} className="absolute inset-0 z-0 isolate" />
 
       {selectedPin && <SelectedPinCard pin={selectedPin} onClose={() => setSelectedPin(null)} />}
