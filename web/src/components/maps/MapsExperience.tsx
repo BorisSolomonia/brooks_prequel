@@ -2100,12 +2100,13 @@ export default function MapsExperience({
           <p className="text-ig-text-tertiary">Loading map experience...</p>
         </div>
       )}
-      {/* ───────── Top-LEFT hamburger trigger ─────────
+      {/* ───────── Top-RIGHT hamburger trigger ─────────
           Opens the right-side drawer holding layer toggles, filters and the
-          viewport result list. Placed top-LEFT because Mapbox renders its
-          zoom in/out + compass + geolocate controls top-right by default.
+          viewport result list. Placed top-RIGHT because Leaflet renders its
+          zoom in/out controls top-LEFT by default — keeping the burger on the
+          opposite corner avoids overlapping the zoom buttons.
           The 2 px ink-coloured border (instead of the lighter ig-border)
-          gives strong contrast against any Mapbox tile background — pale
+          gives strong contrast against any map tile background — pale
           parchment streets, dark satellite, green parks, blue water. The
           data-tour attr lets the onboarding tour spotlight this button
           before the drawer opens. */}
@@ -2115,7 +2116,7 @@ export default function MapsExperience({
         onClick={() => setDrawerOpen((open) => !open)}
         aria-label="Open guides, filters and layers"
         aria-expanded={drawerOpen}
-        className="absolute left-3 top-3 z-30 inline-flex h-touch w-touch items-center justify-center rounded-full border-2 border-ig-text-primary bg-ig-elevated text-ig-text-primary shadow-[0_4px_16px_rgba(15,23,42,0.28)] transition active:scale-95 md:left-4 md:top-4"
+        className="absolute right-3 top-3 z-30 inline-flex h-touch w-touch items-center justify-center rounded-full border-2 border-ig-text-primary bg-ig-elevated text-ig-text-primary shadow-[0_4px_16px_rgba(15,23,42,0.28)] transition active:scale-95 md:right-4 md:top-4"
       >
         <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <line x1="4" y1="7" x2="20" y2="7" />
@@ -2685,10 +2686,14 @@ export default function MapsExperience({
         </div>
       )}
 
-      {/* z-0 + position makes this its own stacking context, so Leaflet's
-          internal panes/controls (z-index 200–1000) stay BELOW the app chrome
-          overlays (z-10…z-60) instead of painting over the nav/drawer/buttons. */}
-      <div ref={mapContainerRef} className="absolute inset-0 z-0" />
+      {/* z-0 + position + isolate makes this its OWN isolated stacking context,
+          so Leaflet's internal panes/controls (z-index 200–1000) — and the GPU
+          compositing layers Leaflet promotes via translate3d — stay BELOW the
+          app chrome overlays (z-10…z-60) AND below the sticky app navbar (z-50).
+          `isolate` is the key for the scroll case: without it, Leaflet's
+          translate3d layers could paint OVER the sticky header on scroll in the
+          Android WebView; isolation pins the whole map subtree to this layer. */}
+      <div ref={mapContainerRef} className="absolute inset-0 z-0 isolate" />
 
       {selectedPin && <SelectedPinCard pin={selectedPin} onClose={() => setSelectedPin(null)} />}
       {selectedMemory && (
