@@ -1,8 +1,95 @@
 # Debugging the Brooks `/maps` GPU-Memory OOM — Research-Grade Playbook
 
-**Last updated 2026-05-24.** The app's WebView is killed by the Android Low-Memory-Killer
-because `/maps` drives memory to ~3–6 GB. This is a **GPU-texture leak**, not a JavaScript
-problem. This playbook is the rigorous method to localize and kill it.
+**Last updated 2026-05-25.** The app's WebView is killed by the Android Low-Memory-Killer
+because `/maps` drives memory up. This playbook is the rigorous method to localize and kill it.
+
+## ✅ CONFIRMED ROOT CAUSE (2026-05-25, FINAL — supersedes earlier sections)
+
+Isolated by enabling WebView debugging (debug APK), connecting CDP, and reading the **detailed
+`dumpsys` graphics breakdown** on a Pixel 9a. The runaway is **`GL mtrack` (GPU textures)** —
+host process: `GL mtrack 3.73 GB`, EGL 90 MB, Java Heap 420 K, Native 140 K. NOT JS heap
+(`performance.memory` reported a bogus 3.6 GB — used>limit, ignore it), NOT DOM (171 nodes),
+NOT markers/data (pins failed to fetch; map was dataless), NOT a render loop (CDP `raf/sec = 0`).
+
+**Decisive isolation — stock mapbox-gl 3.21 (NO Brooks code/React/auth/data), panned:**
+- **In Chrome on the device:** `GL mtrack` FLAT ~104 MB. ✅
+- **In the Brooks Android System WebView (Capacitor):** `GL mtrack` 5 MB → 1.1 → 2.4 → 3.2 →
+  4.0 GB → **process killed.** ❌
+
+⇒ **The Android System WebView's GPU layer does not free mapbox-gl's evicted tile GL textures
+on pan** (Chrome does). This is a **WebView/Chromium-GPU issue, NOT Brooks code** — a dataless
+stock map crashes it. Every JS fix failed because the code was never the cause.
+
+**Mitigations tested (via `/data/local/tmp/webview-command-line`, debug WebView):**
+- `--force-gpu-mem-available-mb=384 --enable-low-end-device-mode` → `GL mtrack` **plateaus
+  ~3.2 GB and survives** (vs unbounded→crash). Helps but still too high.
+- `--force-device-scale-factor=1` (shrink tile textures ~7× at this DPR) → **UNTESTED** (device
+  USB-disconnected mid-test — likely from the repeated 4 GB OOM cycles). This is the next lever:
+  the JS `devicePixelRatio` shadow never affected the native GL surface, but this WebView flag
+  forces the actual render scale.
+
+**Fix options (in order):** (1) force a low render scale + GPU-mem cap at the WebView level
+(needs the flags set *programmatically* for production — Capacitor WebView init / a native shim,
+since `/data/local/tmp/webview-command-line` is debug-only); (2) reduce tile churn (cap maxzoom,
+keep `maxTileCacheSize: 50`); (3) **native map plugin** = the only structural fix that removes
+WebView-GL entirely. JS-level changes cannot fix this — confirmed by the stock-map repro.
+
+## 📟 ON-DEVICE USB PROFILING (2026-05-25) — engine exonerated; cause is our code
+
+Live USB session on a **Pixel 9a** (WSL → Windows `adb.exe`; drove the map with
+`adb shell input swipe`, sampled `dumpsys meminfo` GL mtrack per batch, read `logcat`).
+
+**LIVE LOGGED-IN /maps — crash REPRODUCED + root cause confirmed:**
+- On the real `/maps`, process `Graphics` = **2.5 GB baseline → 2.77 GB → 3.81 GB after 2 pan
+  batches → process KILLED** (LMK). The OOM is real and reproducible.
+- **A FRESH app launch is only ~88 MB Graphics.** So the 2.5 GB is **accumulated across
+  navigation**, not a single `/maps` load — i.e. **un-disposed WebGL contexts piling up** as the
+  user moves between map-bearing screens (Creator-profile map, trip map, repeated `/maps` mounts).
+  This is the OOM root cause; the fix is disposing every map's GL context on unmount.
+- **✅ FIX PROVEN on-device (controlled mount/unmount experiment, production-grade stock mapbox in
+  Chrome — no StrictMode, no auth):** cycling map create/destroy ~16× —
+  `dispose=0` (no `map.remove()`) **ratcheted GPU Graphics to ~505 MB and climbing**;
+  `dispose=1` (`map.remove()` each cycle, == our fix) **stayed FLAT at 66 MB**. Disposing the
+  WebGL context on unmount keeps memory bounded regardless of navigation count. This also makes
+  the dev-vs-prod/StrictMode question moot: double-mounting is harmless **when each mount is
+  disposed**, which our Creator-map cleanup + PurchasedTrip no-rebuild + /maps disposal now do.
+- **Marker cost ruled out:** memory pins are pure-CSS `<button>` glyphs (no images); creator-pin
+  avatars are 48×48 + lazy/async + capped at 80. Markers are cheap — not the GB driver.
+- **DEV-BUILD CONFOUND:** the installed APK points at `http://localhost:3000` (capacitor.config),
+  i.e. the `next dev` build, which runs **React StrictMode → double-mounts every component**,
+  creating *two* map/WebGL contexts per mount and roughly doubling the leak. The dev numbers are
+  worst-case; a production build (`next start` / brooksweb.uk) will be lower. Test prod to get a
+  representative number. **PENDING:** final prod-build on-device measurement to confirm the fixes
+  keep memory bounded across navigation (gated on a prod server running on `:3000`).
+- Deployed `/maps` bundle (chunk `08f32a4…`) was verified to contain `100svh`,
+  `maxTileCacheSize:50`, no `failIfMajorPerformanceCaveat`, no `workerCount` throttle.
+- adb-host gotcha: `adb reverse tcp:3000` forwards device→**Windows** localhost:3000 (adb.exe is
+  a Windows process), NOT WSL's localhost — so a WSL `curl localhost:3000` returning 000 does NOT
+  mean the server is down. The dev server must run on the Windows side (or via WSL2 localhost relay).
+
+**Decisive control — stock mapbox-gl 3.21 (dark-v11, `maxTileCacheSize:50`, NO Brooks
+code/markers/auth) in the device's Chrome, panned 30×:**
+- **GPU-process `GL mtrack` held FLAT ~104 MB** (104 → oscillated 100–113 → 104). No ratchet.
+  Renderer PSS settled ~180 MB; browser graphics constant 64 MB.
+- **mapbox-in-WebView does NOT leak GPU on this device.** The multi-GB runaway was **our code**,
+  not the engine — the "go native" theory is empirically dead. `maxTileCacheSize:50` confirmed
+  correct (stable under heavy panning).
+
+**Two distinct symptoms, now separated:**
+1. **FREEZE** = render-thread lockup — the `dvh` resize→render loop + the tiny
+   `maxTileCacheSize:4` tile thrash. Fixed: `svh` + cache `50`.
+2. **OOM / LMK (GL mtrack → GB)** = GPU-texture accumulation — **leaked WebGL contexts**
+   (missing `map.remove()` on the Creator map; PurchasedTripMap rebuilding its context on every
+   `items` change) + **hundreds of simultaneous DOM markers**. Fixed: unmount cleanup + drop
+   `items` from init deps + viewport-scoped & capped markers.
+
+**Device context:** phone had only **~520 MB free of 7.75 GB** (Instagram et al. resident);
+`lowmemorykiller` was reaping *other* apps ("low watermark breached"). A loaded device kills
+aggressively regardless — the app must stay lean (it now does).
+
+**Method note:** `am start <url>` won't navigate Chrome if it's already foreground ("intent
+delivered to top-most instance") — `force-stop` first; and poll `dumpsys` until GL mtrack > 0
+before sampling (textures take seconds to allocate).
 
 ## 🔥 LEADING ROOT CAUSE (2026-05-24) — a `dvh` resize→render loop (NOT a fundamental WebView leak)
 

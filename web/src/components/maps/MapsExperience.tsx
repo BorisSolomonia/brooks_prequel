@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type { GeoJSONSource, LngLatBounds, LngLatLike, Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
+import type { Map as LeafletMap, Marker as LeafletMarker, LayerGroup, TileLayer, LatLngBounds, MarkerClusterGroup } from 'leaflet';
+
+// [lng, lat] tuple (kept lng-first to match the existing API/data shapes and
+// avoid touching every call site). Convert to Leaflet's [lat, lng] at use.
+type LngLat = [number, number];
 import StarRating from '@/components/reviews/StarRating';
 import { api } from '@/lib/api';
 import { scoreSearchMatch } from '@/lib/fuzzySearch';
@@ -24,7 +28,13 @@ import type {
   MemoryVisibility,
 } from '@/types';
 // CSS scoped to the map components so non-map pages don't pay for it.
-import 'mapbox-gl/dist/mapbox-gl.css';
+// Leaflet renders with raster tiles (no WebGL) — the Android System WebView
+// does not free mapbox-gl's evicted tile GL textures on pan (proven: stock
+// mapbox flat ~104 MB in Chrome, ratchets to ~4 GB → LMK kill in the WebView),
+// so we render the map with Leaflet to avoid WebGL entirely.
+import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 // Bounds-quantization grid for the memory map API. Map pans get snapped
 // to a 0.05° (~5.5 km at the equator) grid before being sent to the
@@ -51,15 +61,11 @@ function boundsCacheKey(bounds: { north: number; south: number; east: number; we
     .join('|');
 }
 
-// Warm the mapbox-gl chunk download the moment THIS module is parsed —
-// in parallel with React hydration — instead of waiting until the map-init
-// useEffect runs. The inside-effect `await import('mapbox-gl')` then
-// resolves instantly from the module cache. The browser-only guard prevents
-// the import body from executing on the server (mapbox-gl touches `window`
-// at module load and SSR crashes without it). See mapbox-ssr-lessons.md
-// Rule #1 — this pattern is exactly what that lesson prescribed.
+// Warm the Leaflet chunk download the moment THIS module is parsed, in parallel
+// with React hydration, so the map-init effect's `await import('leaflet')`
+// resolves from cache. Browser-only guard: Leaflet touches `window` at load.
 if (typeof window !== 'undefined') {
-  void import('mapbox-gl');
+  void import('leaflet');
 }
 
 // Module-level pins cache — survives navigation (component unmount/remount).
@@ -207,13 +213,21 @@ function getMarkerTransform(isActive: boolean): string {
   return isActive ? 'translateY(-4px) scale(1.04)' : 'translateY(0) scale(1)';
 }
 
-function getBoundsState(bounds: LngLatBounds): MapBoundsState {
+function getBoundsState(bounds: LatLngBounds): MapBoundsState {
   return {
     north: bounds.getNorth(),
     south: bounds.getSouth(),
     east: bounds.getEast(),
     west: bounds.getWest(),
   };
+}
+
+// Convert the mapbox style URL (mapbox://styles/<user>/<style>) the theme hook
+// returns into a Mapbox *raster* tiles endpoint for Leaflet (512px @2x tiles).
+// Raster tiles are plain <img> the WebView GCs normally — no WebGL textures.
+function rasterTileUrl(themedStyle: string, token: string): string {
+  const path = themedStyle.replace('mapbox://styles/', '').trim() || 'mapbox/dark-v11';
+  return `https://api.mapbox.com/styles/v1/${path}/tiles/512/{z}/{x}/{y}@2x?access_token=${token}`;
 }
 
 function isPinWithinBounds(pin: InfluencerMapPin, bounds: MapBoundsState | null): boolean {
@@ -481,7 +495,7 @@ function InfluencerViewportSlice({ pin, onHoverStart, onHoverEnd }: InfluencerVi
 
   return (
     <div
-      className="flex items-center gap-3 rounded-full border border-ig-border bg-ig-primary/90 px-3 py-2 shadow-[0_8px_21px_rgba(15,23,42,0.08)] backdrop-blur transition-transform duration-150 hover:-translate-y-0.5"
+      className="flex items-center gap-3 rounded-full border border-ig-border bg-ig-primary px-3 py-2 shadow-[0_8px_21px_rgba(15,23,42,0.08)] transition-transform duration-150 hover:-translate-y-0.5"
       onMouseEnter={() => onHoverStart(pin.userId)}
       onMouseLeave={onHoverEnd}
     >
@@ -534,7 +548,7 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
     <button
       type="button"
       onClick={() => onSelect(memory)}
-      className="flex w-full items-center gap-3 rounded-[24px] border border-ig-border bg-ig-primary/90 px-3 py-2 text-left shadow-[0_8px_21px_rgba(15,23,42,0.08)] backdrop-blur transition-transform duration-150 hover:-translate-y-0.5"
+      className="flex w-full items-center gap-3 rounded-[24px] border border-ig-border bg-ig-primary px-3 py-2 text-left shadow-[0_8px_21px_rgba(15,23,42,0.08)] transition-transform duration-150 hover:-translate-y-0.5"
     >
       <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-black text-white shadow-[0_0_0_2px_rgba(255,255,255,0.9)]">
         M
@@ -553,7 +567,7 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
 
 function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy }: SelectedMemoryCardProps) {
   return (
-    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
+    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
@@ -618,7 +632,7 @@ function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy
 
 function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
   return (
-    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated/95 p-4 shadow-2xl backdrop-blur md:bottom-4">
+    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-3">
           <div className="h-14 w-14 overflow-hidden rounded-full border border-white/90 bg-ig-secondary shadow-[0_0_0_2px_var(--brand-primary)]">
@@ -683,13 +697,16 @@ export default function MapsExperience({
   const { token, loading: tokenLoading, error: tokenError } = useAccessToken();
   const themedStyle = useMapboxStyle();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<MapboxMap | null>(null);
-  const markersRef = useRef<MapboxMarker[]>([]);
-  const markersMapRef = useRef<Map<string, MapboxMarker>>(new Map());
+  const mapRef = useRef<LeafletMap | null>(null);
+  const tileLayerRef = useRef<TileLayer | null>(null);
+  const clusterGroupRef = useRef<MarkerClusterGroup | null>(null);
+  const memoryLayerRef = useRef<LayerGroup | null>(null);
+  const markersRef = useRef<LeafletMarker[]>([]);
+  const markersMapRef = useRef<Map<string, LeafletMarker>>(new Map());
   const markerElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
-  const memoryMarkersRef = useRef<MapboxMarker[]>([]);
-  const memoryMarkersMapRef = useRef<Map<string, MapboxMarker>>(new Map());
-  const userLocationMarkerRef = useRef<MapboxMarker | null>(null);
+  const memoryMarkersRef = useRef<LeafletMarker[]>([]);
+  const memoryMarkersMapRef = useRef<Map<string, LeafletMarker>>(new Map());
+  const userLocationMarkerRef = useRef<LeafletMarker | null>(null);
   // Tracks the style URL currently applied to the map so we don't re-call
   // setStyle on the first mapReady event (the map already initialized with
   // this style; calling setStyle again would needlessly reload tiles).
@@ -711,7 +728,7 @@ export default function MapsExperience({
   const [selectedPin, setSelectedPin] = useState<InfluencerMapPin | null>(null);
   const [selectedMemory, setSelectedMemory] = useState<MemoryMapPin | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('locating');
-  const [userCoordinates, setUserCoordinates] = useState<LngLatLike | null>(null);
+  const [userCoordinates, setUserCoordinates] = useState<LngLat | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [currentBounds, setCurrentBounds] = useState<MapBoundsState | null>(null);
   const [hoveredSlicePinId, setHoveredSlicePinId] = useState<string | null>(null);
@@ -822,7 +839,7 @@ export default function MapsExperience({
     fallbackZoom !== null,
   );
 
-  const fallbackCenter = useMemo<LngLatLike | null>(() => {
+  const fallbackCenter = useMemo<LngLat | null>(() => {
     if (fallbackLatitude === null || fallbackLongitude === null) {
       return null;
     }
@@ -1444,14 +1461,8 @@ export default function MapsExperience({
         };
         setSelectedMemory(projected);
         setSelectedPin(null);
-        // Re-center the map on the memory so the user has context for where
-        // it was left. jumpTo (instant), not flyTo: a fly animation loads tiles
-        // all along the camera path = extra GPU textures during the heavy load
-        // window; an instant jump loads only the destination tiles, once.
-        mapRef.current?.jumpTo({
-          center: [projected.longitude, projected.latitude],
-          zoom: 14,
-        });
+        // Re-center the map on the memory (instant setView, no fly animation).
+        mapRef.current?.setView([projected.latitude, projected.longitude], 14, { animate: false });
       })
       .catch((err) => {
         // CRITICAL: do NOT reset autoSelectedMemoryRef here. The effect
@@ -1586,149 +1597,69 @@ export default function MapsExperience({
 
     let cancelled = false;
 
-    // Cap window.devicePixelRatio to 1.5 on native WebViews (matches the known-good
-    // build). Lowers canvas render resolution; restored on unmount (cleanup below).
-    // 1.5 stays legible — 1.0 was needlessly blurry.
-    if (isNative() && typeof window !== 'undefined') {
-      try {
-        Object.defineProperty(window, 'devicePixelRatio', {
-          get: () => 1.5,
-          configurable: true,
-        });
-      } catch {
-        // Some engines mark devicePixelRatio non-configurable — skip silently.
-      }
-    }
-
     const initializeMap = async () => {
-      const mapboxglModule = await import('mapbox-gl');
-      const mapboxgl = mapboxglModule.default;
-
+      const L = (await import('leaflet')).default;
+      await import('leaflet.markercluster'); // augments L with markerClusterGroup
       if (cancelled || !mapContainerRef.current) {
         return;
       }
 
-      mapboxgl.accessToken = mapboxToken;
-
-      // Do NOT throttle workerCount / maxParallelImageRequests. Trimming them
-      // (we had tried workerCount:1, maxParallelImageRequests:3) starves tile
-      // processing so the map never finishes loading the viewport and keeps
-      // re-rendering. The known-good build (brooks_prequel-alter_2305) that does
-      // NOT freeze leaves these at the mapbox defaults — match it.
-
-      const map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: themedStyle,
-        center: fallbackCenter,
-        zoom: fallbackZoom ?? undefined,
-        // maxTileCacheSize: 50 — matches the known-good build that doesn't freeze.
-        // Do NOT lower this on native: a cache too small to hold the visible
-        // viewport (~6-12 tiles) forces mapbox to evict + re-rasterize tiles every
-        // frame = perpetual GPU re-raster (the "GPU overwhelm"/freeze). We had
-        // tightened it to 4 (and 15) "to save memory" — that CAUSED the thrash.
-        maxTileCacheSize: 50,
-        // GPU hygiene (mapbox defaults, set explicitly so they can't regress).
-        // Deliberately NOT failIfMajorPerformanceCaveat:true — that flag makes the
-        // map fail to create a WebGL context on software-GL / low-end Android (no
-        // map at all), which is worse than a slow map. The known-good build omits it.
-        antialias: false,
-        preserveDrawingBuffer: false,
+      const [lng, lat] = fallbackCenter;
+      const map = L.map(mapContainerRef.current, {
+        center: [lat, lng],
+        zoom: fallbackZoom ?? 9,
+        zoomControl: true,
+        attributionControl: true,
+        // Animated flyTo loads tiles along the whole path; keep zoom snappy.
+        zoomSnap: 0.5,
       });
-
-      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
-      // Record the style we just initialized with so the theme-swap effect
-      // doesn't fire a redundant setStyle on first mapReady.
+
+      const tiles = L.tileLayer(rasterTileUrl(themedStyle, mapboxToken), {
+        tileSize: 512,
+        zoomOffset: -1,
+        minZoom: 1,
+        maxZoom: 20,
+        crossOrigin: true,
+        attribution: '© Mapbox © OpenStreetMap',
+      }).addTo(map);
+      tileLayerRef.current = tiles;
       lastAppliedStyleRef.current = themedStyle;
 
-      // Source + layer setup extracted so it can also re-run after a
-      // theme-driven style swap (Mapbox clears custom sources/layers on
-      // setStyle). Idempotent via getSource check.
-      const installClusterLayers = () => {
-        if (map.getSource('creator-clusters')) return;
-        map.addSource('creator-clusters', {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features: [] },
-          cluster: true,
-          clusterMaxZoom: 9,
-          clusterRadius: 50,
-        });
-        map.addLayer({
-          id: 'cluster-circles',
-          type: 'circle',
-          source: 'creator-clusters',
-          filter: ['has', 'point_count'],
-          paint: {
-            'circle-color': '#c084fc',
-            'circle-radius': ['step', ['get', 'point_count'], 20, 10, 28, 50, 36],
-            'circle-opacity': 0.92,
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#ffffff',
-          },
-        });
-        map.addLayer({
-          id: 'cluster-count',
-          type: 'symbol',
-          source: 'creator-clusters',
-          filter: ['has', 'point_count'],
-          layout: {
-            'text-field': '{point_count_abbreviated}',
-            'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-            'text-size': 13,
-          },
-          paint: { 'text-color': '#ffffff' },
-        });
+      // Creator pins live in a marker-cluster group: it auto-clusters below
+      // ~zoom 10 and shows individual avatar markers above it — this replaces
+      // mapbox's manual cluster source/layers + the syncMarkerVisibility toggle.
+      const clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        disableClusteringAtZoom: 10,
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: false,
+        iconCreateFunction: (cluster) => L.divIcon({
+          html: `<div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:9999px;background:#c084fc;color:#fff;font-weight:800;border:2px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,0.24)">${cluster.getChildCount()}</div>`,
+          className: '',
+          iconSize: [40, 40],
+        }),
+      }).addTo(map);
+      clusterGroupRef.current = clusterGroup;
+
+      // Memory pins: a plain layer group of glyph markers.
+      const memoryLayer = L.layerGroup().addTo(map);
+      memoryLayerRef.current = memoryLayer;
+
+      const syncBounds = () => {
+        const b = map.getBounds();
+        if (b) setCurrentBounds(getBoundsState(b));
       };
-
-      map.on('style.load', installClusterLayers);
-
-      map.on('load', () => {
+      map.on('moveend', syncBounds);
+      map.whenReady(() => {
+        if (cancelled) return;
+        // Leaflet measures the container at init; if it wasn't fully laid out
+        // yet the map renders blank/half. Re-measure now and next frame (the
+        // svh container can settle a tick late).
+        map.invalidateSize();
+        requestAnimationFrame(() => { if (!cancelled) map.invalidateSize(); });
         setMapReady(true);
-        const initialBounds = map.getBounds();
-        if (initialBounds) {
-          setCurrentBounds(getBoundsState(initialBounds));
-        }
-
-        installClusterLayers();
-
-        map.on('click', 'cluster-circles', (e) => {
-          const features = map.queryRenderedFeatures(e.point, { layers: ['cluster-circles'] });
-          const feature = features[0];
-          if (!feature?.geometry || feature.geometry.type !== 'Point') return;
-          const point = feature.geometry as GeoJSON.Point;
-          const clusterId = feature.properties?.cluster_id as number | undefined;
-          if (clusterId == null) return;
-          const src = map.getSource('creator-clusters') as GeoJSONSource;
-          src.getClusterExpansionZoom(clusterId, (err, zoom) => {
-            if (err || zoom == null) return;
-            map.flyTo({
-              center: point.coordinates as [number, number],
-              zoom: zoom + 0.5,
-              essential: true,
-            });
-          });
-        });
-
-        map.on('mouseenter', 'cluster-circles', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'cluster-circles', () => { map.getCanvas().style.cursor = ''; });
-
-        const syncMarkerVisibility = () => {
-          const showHtml = map.getZoom() >= 10;
-          markersRef.current.forEach((m) => { m.getElement().style.display = showHtml ? '' : 'none'; });
-          if (map.getLayer('cluster-circles')) {
-            map.setLayoutProperty('cluster-circles', 'visibility', showHtml ? 'none' : 'visible');
-            map.setLayoutProperty('cluster-count', 'visibility', showHtml ? 'none' : 'visible');
-          }
-        };
-        map.on('zoom', syncMarkerVisibility);
-        syncMarkerVisibility();
-      });
-
-      map.on('moveend', () => {
-        const nextBounds = map.getBounds();
-        if (nextBounds) {
-          setCurrentBounds(getBoundsState(nextBounds));
-        }
+        syncBounds();
       });
     };
 
@@ -1747,17 +1678,12 @@ export default function MapsExperience({
       memoryMarkersRef.current = [];
       userLocationMarkerRef.current?.remove();
       userLocationMarkerRef.current = null;
+      clusterGroupRef.current = null;
+      memoryLayerRef.current = null;
+      tileLayerRef.current = null;
       setMapReady(false);
       mapRef.current?.remove();
       mapRef.current = null;
-      // Restore the real devicePixelRatio — the native cap only applies on /maps.
-      if (isNative() && typeof window !== 'undefined') {
-        try {
-          delete (window as { devicePixelRatio?: number }).devicePixelRatio;
-        } catch {
-          /* non-configurable — ignore */
-        }
-      }
     };
   }, [fallbackCenter, fallbackZoom, mapConfigured, mapboxToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1768,12 +1694,13 @@ export default function MapsExperience({
   // pins, memory pins, user location) persist through setStyle and need
   // no re-attach.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
+    const tiles = tileLayerRef.current;
+    if (!mapRef.current || !mapReady || !tiles) return;
     if (lastAppliedStyleRef.current === themedStyle) return;
     lastAppliedStyleRef.current = themedStyle;
-    map.setStyle(themedStyle);
-  }, [themedStyle, mapReady]);
+    // Swap raster tiles in place (no WebGL style reload, no context churn).
+    tiles.setUrl(rasterTileUrl(themedStyle, mapboxToken));
+  }, [themedStyle, mapReady, mapboxToken]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1782,21 +1709,9 @@ export default function MapsExperience({
     }
 
     const renderPins = async () => {
-      const mapboxglModule = await import('mapbox-gl');
-      const mapboxgl = mapboxglModule.default;
-
-      // Update cluster GeoJSON source when pins change
-      const clusterSource = map.getSource('creator-clusters') as GeoJSONSource | undefined;
-      if (clusterSource) {
-        clusterSource.setData({
-          type: 'FeatureCollection',
-          features: visibleGuidePins.map((pin) => ({
-            type: 'Feature' as const,
-            geometry: { type: 'Point' as const, coordinates: [pin.longitude, pin.latitude] },
-            properties: { userId: pin.userId },
-          })),
-        });
-      }
+      const L = (await import('leaflet')).default;
+      const cg = clusterGroupRef.current;
+      if (!cg) return;
 
       // Determine which markers need to be added, kept, or removed.
       const currentIds = new Set(viewportMarkerPins.map((pin) => pin.userId));
@@ -1804,7 +1719,7 @@ export default function MapsExperience({
       // 1. Remove markers for pins that are no longer in the viewport
       markersMapRef.current.forEach((marker, userId) => {
         if (!currentIds.has(userId)) {
-          marker.remove();
+          cg.removeLayer(marker);
           markersMapRef.current.delete(userId);
           markerElementsRef.current.delete(userId);
         }
@@ -1889,27 +1804,24 @@ export default function MapsExperience({
         markerElement.addEventListener('click', () => {
           setSelectedPin(pin);
           setSelectedMemory(null);
-          map.flyTo({
-            center: [pin.longitude, pin.latitude],
-            zoom: Math.max(map.getZoom(), 11),
-            essential: true,
-          });
+          map.flyTo([pin.latitude, pin.longitude], Math.max(map.getZoom(), 11));
         });
 
-        const marker = new mapboxgl.Marker({ element: markerElement, anchor: 'center' })
-          .setLngLat([pin.longitude, pin.latitude])
-          .addTo(map);
+        const icon = L.divIcon({
+          html: markerElement,
+          className: '',
+          iconSize: [outerSize, outerSize],
+          iconAnchor: [outerSize / 2, outerSize / 2],
+        });
+        const marker = L.marker([pin.latitude, pin.longitude], { icon, keyboard: false });
+        cg.addLayer(marker);
 
         markersMapRef.current.set(pin.userId, marker);
         markerElementsRef.current.set(pin.userId, outerRing);
       });
 
-      // Synchronize markersRef.current array for compatibility with other effects/handlers
+      // Keep markersRef in sync for the hover-transform effect.
       markersRef.current = Array.from(markersMapRef.current.values());
-
-      // Apply current zoom visibility to markers
-      const showHtml = map.getZoom() >= 10;
-      markersRef.current.forEach((m) => { m.getElement().style.display = showHtml ? '' : 'none'; });
     };
 
     renderPins().catch(() => {
@@ -1938,8 +1850,9 @@ export default function MapsExperience({
     }
 
     const renderMemoryPins = async () => {
-      const mapboxglModule = await import('mapbox-gl');
-      const mapboxgl = mapboxglModule.default;
+      const L = (await import('leaflet')).default;
+      const layer = memoryLayerRef.current;
+      if (!layer) return;
 
       // Determine which memory markers need to be added, kept, or removed.
       // viewportMemoryPins = viewport-scoped + capped, so off-screen / excess
@@ -1949,7 +1862,7 @@ export default function MapsExperience({
       // 1. Remove markers for memories no longer in the (capped) viewport set
       memoryMarkersMapRef.current.forEach((marker, memoryId) => {
         if (!currentMemoryIds.has(memoryId)) {
-          marker.remove();
+          layer.removeLayer(marker);
           memoryMarkersMapRef.current.delete(memoryId);
         }
       });
@@ -1977,16 +1890,17 @@ export default function MapsExperience({
         markerElement.addEventListener('click', () => {
           setSelectedMemory(memory);
           setSelectedPin(null);
-          map.flyTo({
-            center: [memory.longitude, memory.latitude],
-            zoom: Math.max(map.getZoom(), 12),
-            essential: true,
-          });
+          map.flyTo([memory.latitude, memory.longitude], Math.max(map.getZoom(), 12));
         });
 
-        const marker = new mapboxgl.Marker({ element: markerElement, anchor: 'center' })
-          .setLngLat([memory.longitude, memory.latitude])
-          .addTo(map);
+        const icon = L.divIcon({
+          html: markerElement,
+          className: '',
+          iconSize: [38, 38],
+          iconAnchor: [19, 19],
+        });
+        const marker = L.marker([memory.latitude, memory.longitude], { icon, keyboard: false });
+        layer.addLayer(marker);
 
         memoryMarkersMapRef.current.set(memory.id, marker);
       });
@@ -2068,8 +1982,7 @@ export default function MapsExperience({
         return;
       }
 
-      const mapboxglModule = await import('mapbox-gl');
-      const mapboxgl = mapboxglModule.default;
+      const L = (await import('leaflet')).default;
       const markerElement = document.createElement('div');
       markerElement.style.width = '18px';
       markerElement.style.height = '18px';
@@ -2078,9 +1991,9 @@ export default function MapsExperience({
       markerElement.style.border = '3px solid #ffffff';
       markerElement.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.18)';
 
-      userLocationMarkerRef.current = new mapboxgl.Marker({ element: markerElement })
-        .setLngLat(userCoordinates)
-        .addTo(map);
+      const [uLng, uLat] = userCoordinates;
+      const icon = L.divIcon({ html: markerElement, className: '', iconSize: [18, 18], iconAnchor: [9, 9] });
+      userLocationMarkerRef.current = L.marker([uLat, uLng], { icon, interactive: false, keyboard: false }).addTo(map);
     };
 
     renderUserMarker().catch(() => {
@@ -2094,12 +2007,10 @@ export default function MapsExperience({
       return;
     }
 
-    // jumpTo (instant), not flyTo: auto-centres on the user once geolocation
+    // Instant setView (no animation): auto-centres on the user once geolocation
     // resolves without animating tiles across the whole camera path.
-    map.jumpTo({
-      center: userCoordinates,
-      zoom: Math.max(map.getZoom(), fallbackZoom ?? 9, 10),
-    });
+    const [uLng, uLat] = userCoordinates;
+    map.setView([uLat, uLng], Math.max(map.getZoom(), fallbackZoom ?? 9, 10), { animate: false });
   }, [fallbackZoom, mapReady, userCoordinates]);
 
   if (!mapConfigured) {
@@ -2191,7 +2102,7 @@ export default function MapsExperience({
             type="button"
             aria-label="Close drawer"
             onClick={() => setDrawerOpen(false)}
-            className="absolute inset-0 bg-black/55 backdrop-blur-[3px]"
+            className="absolute inset-0 bg-black/75"
           />
           <div
             data-tour="memory-panel"
@@ -2705,12 +2616,15 @@ export default function MapsExperience({
       )}
 
       {pageError && (
-        <div className="absolute inset-x-4 top-28 z-10 mx-auto max-w-2xl rounded-xl border border-ig-error/40 bg-ig-elevated/95 px-4 py-3 text-sm text-ig-error shadow-lg backdrop-blur">
+        <div className="absolute inset-x-4 top-28 z-10 mx-auto max-w-2xl rounded-xl border border-ig-error/40 bg-ig-elevated px-4 py-3 text-sm text-ig-error shadow-lg">
           {pageError}
         </div>
       )}
 
-      <div ref={mapContainerRef} className="h-full w-full" />
+      {/* z-0 + position makes this its own stacking context, so Leaflet's
+          internal panes/controls (z-index 200–1000) stay BELOW the app chrome
+          overlays (z-10…z-60) instead of painting over the nav/drawer/buttons. */}
+      <div ref={mapContainerRef} className="absolute inset-0 z-0" />
 
       {selectedPin && <SelectedPinCard pin={selectedPin} onClose={() => setSelectedPin(null)} />}
       {selectedMemory && (
