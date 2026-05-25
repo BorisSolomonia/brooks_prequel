@@ -24,6 +24,7 @@ import type {
   MemoryMapPin,
   MemoryMapResponse,
   MemoryMediaRequest,
+  MemoryRevealResponse,
   MemoryShareResponse,
   MemoryVisibility,
 } from '@/types';
@@ -150,6 +151,7 @@ type SelectedMemoryCardProps = {
   onShare: (memoryId: string) => void;
   onDelete: (memoryId: string) => void;
   onRemove: (memoryId: string) => void;
+  onReveal: (memory: MemoryMapPin) => void;
   busy: boolean;
 };
 
@@ -554,7 +556,7 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
         M
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold text-ig-text-primary">{memory.textPreview}</p>
+        <p className="truncate text-[13px] font-semibold text-ig-text-primary">{memory.textPreview ?? '🔒 Hidden — go there to unlock'}</p>
         <p className="mt-1 truncate text-[11px] leading-4 text-ig-text-tertiary">
           {memory.placeLabel || `By ${memory.creatorDisplayName}`} · {visibilityLabel}
           {memory.hasAudio ? ' · Audio' : ''}
@@ -565,18 +567,28 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
   );
 }
 
-function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy }: SelectedMemoryCardProps) {
+function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, onReveal, busy }: SelectedMemoryCardProps) {
+  // A share the viewer hasn't reached yet: contents are withheld by the server
+  // (textPreview is null). Show a locked teaser that points them to the spot.
+  const locked = memory.sharedWithViewer && !memory.ownedByViewer && !memory.revealed;
   return (
     <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
-            {memory.sharedWithViewer ? 'Shared with you' : 'Memory pin'}
+            {locked ? 'Shared with you · Locked' : memory.sharedWithViewer ? 'Shared with you' : 'Memory pin'}
           </p>
-          <h2 className="mt-1 text-base font-semibold text-ig-text-primary">{memory.textPreview}</h2>
+          <h2 className="mt-1 text-base font-semibold text-ig-text-primary">
+            {locked ? '🔒 Hidden until you arrive' : memory.textPreview}
+          </h2>
           <p className="mt-2 text-sm text-ig-text-secondary">
             {memory.placeLabel || 'Hidden at this location'} · by {memory.creatorDisplayName}
           </p>
+          {locked && (
+            <p className="mt-2 text-sm text-ig-text-tertiary">
+              Go to this location to unlock the message{memory.hasImage || memory.hasAudio ? ' and media' : ''}.
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap gap-2 text-xs text-ig-text-tertiary">
             <span className="rounded-pill border border-ig-border px-2 py-1">{memory.visibility}</span>
             {memory.hasImage && <span className="rounded-pill border border-ig-border px-2 py-1">Photo</span>}
@@ -615,6 +627,17 @@ function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, busy
       )}
       {memory.sharedWithViewer && !memory.ownedByViewer && (
         <div className="mt-4 flex flex-wrap gap-2">
+          {locked && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onReveal(memory)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+            >
+              {busy && <Spinner />}
+              Unlock here
+            </button>
+          )}
           <button
             type="button"
             disabled={busy}
@@ -1178,6 +1201,7 @@ export default function MapsExperience({
       visibility: memoryVisibility,
       ownedByViewer: true,
       sharedWithViewer: false,
+      revealed: true, // own memory — always visible to its creator
       hasImage: !!memoryPhoto,
       hasAudio: !!memoryAudio,
       createdAt: new Date().toISOString(),
@@ -1331,6 +1355,44 @@ export default function MapsExperience({
   const handleRemoveSharedMemory = (memoryId: string) =>
     runMemoryDeletion(`/api/memory-grants/${memoryId}`, 'Could not remove shared memory');
 
+  // Unlock a directly-shared memory by proving the viewer is at the location.
+  // Sends current coordinates; the backend reveals (and returns contents) only
+  // when within the unlock radius, otherwise tells us how far away we are.
+  const handleRevealMemory = async (memory: MemoryMapPin) => {
+    if (!token) return;
+    if (!userCoordinates || !Array.isArray(userCoordinates)) {
+      setPageError('Turn on location to unlock this memory at the spot.');
+      return;
+    }
+    setMemoryBusy(true);
+    try {
+      const res = await api.post<MemoryRevealResponse>(
+        `/api/memories/${memory.id}/reveal`,
+        { latitude: userCoordinates[1], longitude: userCoordinates[0] },
+        token,
+      );
+      if (res.revealed && res.memory) {
+        const text = res.memory.textContent ?? '';
+        setSelectedMemory({
+          ...memory,
+          revealed: true,
+          textPreview: text.length > 200 ? `${text.slice(0, 197)}…` : text,
+          hasImage: res.memory.media.some((m) => m.mediaType === 'IMAGE'),
+          hasAudio: res.memory.media.some((m) => m.mediaType === 'AUDIO'),
+        });
+        refreshMemories(true);
+      } else {
+        setPageError(
+          `You are about ${Math.round(res.distanceMeters)}m away. Come within ${Math.round(res.unlockRadiusMeters)}m to unlock it.`,
+        );
+      }
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : 'Could not unlock memory');
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
   useEffect(() => {
     if (!token) {
       return;
@@ -1435,6 +1497,7 @@ export default function MapsExperience({
       placeLabel: string | null;
       visibility: MemoryVisibility;
       ownedByViewer: boolean;
+      revealed?: boolean;
       createdAt: string;
       media?: Array<{ kind: string }>;
     };
@@ -1455,6 +1518,7 @@ export default function MapsExperience({
           visibility: m.visibility,
           ownedByViewer: m.ownedByViewer,
           sharedWithViewer: !m.ownedByViewer,
+          revealed: m.revealed ?? m.ownedByViewer,
           hasImage: (m.media ?? []).some((x) => x.kind === 'IMAGE'),
           hasAudio: (m.media ?? []).some((x) => x.kind === 'AUDIO'),
           createdAt: m.createdAt,
@@ -2632,6 +2696,7 @@ export default function MapsExperience({
           memory={selectedMemory}
           onClose={() => setSelectedMemory(null)}
           onShare={handleShareMemory}
+          onReveal={handleRevealMemory}
           onDelete={handleDeleteMemory}
           onRemove={handleRemoveSharedMemory}
           busy={memoryBusy}

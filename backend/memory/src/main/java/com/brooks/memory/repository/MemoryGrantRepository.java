@@ -26,4 +26,21 @@ public interface MemoryGrantRepository extends JpaRepository<MemoryGrant, UUID> 
     List<UUID> findActiveGrantedMemoryIdsForBeneficiary(
             @Param("viewerId") UUID viewerId,
             @Param("memoryIds") Collection<UUID> memoryIds);
+
+    /**
+     * Of the given memories, which ones this viewer has an active grant for that
+     * is ALSO revealed (unlocked by reaching the location). Used to decide which
+     * shared memories may expose their contents vs. stay a locked teaser.
+     */
+    @Query(value = """
+        SELECT g.memory_id
+        FROM memory_grants g
+        WHERE g.beneficiary_user_id = :viewerId
+          AND g.removed_at IS NULL
+          AND g.revealed_at IS NOT NULL
+          AND g.memory_id IN :memoryIds
+        """, nativeQuery = true)
+    List<UUID> findRevealedGrantedMemoryIdsForBeneficiary(
+            @Param("viewerId") UUID viewerId,
+            @Param("memoryIds") Collection<UUID> memoryIds);
 }

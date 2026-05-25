@@ -50,9 +50,10 @@ public class DirectMemoryShareNotificationListener {
                     userProfileRepository.findByUserId(event.creatorUserId()).orElse(null);
             String sharerLabel = DisplayLabel.forUser(creator, creatorProfile);
             String title = sharerLabel + " shared a memory with you";
-            String body = event.memoryTextPreview() == null || event.memoryTextPreview().isBlank()
-                    ? "Open Brooks to see what's nearby."
-                    : event.memoryTextPreview();
+            // Do NOT leak the memory text here — a direct share is geo-locked and
+            // its contents must stay hidden until the recipient reaches the spot.
+            // The push only nudges them to open the map and go unlock it.
+            String body = "Tap to find it on your map, then go there to unlock it.";
 
             // Data payload mirrors the follow notification — we ship the
             // sharer's username explicitly so the in-app bell and the

@@ -96,6 +96,19 @@ public class MemoryController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Reveal a DIRECT in-app share (no token) by memory id. The caller must hold
+     * a grant for the memory and be within the unlock radius; only then are the
+     * contents returned and the grant marked revealed. Mirrors the token reveal.
+     */
+    @PostMapping("/memories/{memoryId}/reveal")
+    public ResponseEntity<MemoryRevealResponse> revealDirectShare(
+            Authentication authentication,
+            @PathVariable UUID memoryId,
+            @Valid @RequestBody MemoryRevealRequest request) {
+        return ResponseEntity.ok(memoryService.revealDirectShare(subject(authentication), memoryId, request));
+    }
+
     @GetMapping("/memory-shares/{token}")
     public ResponseEntity<MemoryShareTeaserResponse> getShareTeaser(@PathVariable String token) {
         return ResponseEntity.ok(memoryService.getShareTeaser(token));

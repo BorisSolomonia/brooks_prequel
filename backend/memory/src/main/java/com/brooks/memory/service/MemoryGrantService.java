@@ -26,6 +26,12 @@ public class MemoryGrantService {
                     if (existing.getRemovedAt() != null) {
                         existing.setRemovedAt(null);
                     }
+                    // A reveal always unlocks: if this grant was a locked DIRECT
+                    // share (revealed_at NULL), passing the distance check now
+                    // reveals it.
+                    if (existing.getRevealedAt() == null) {
+                        existing.setRevealedAt(Instant.now());
+                    }
                 }, () -> {
                     try {
                         memoryGrantRepository.save(new MemoryGrant(memoryId, beneficiaryUserId, shareId));

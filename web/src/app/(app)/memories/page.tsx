@@ -7,11 +7,13 @@ import { api } from '@/lib/api';
 
 type Memory = {
   id: string;
-  textContent: string;
+  textContent: string | null;
   placeLabel: string | null;
   visibility: string;
   latitude: number;
   longitude: number;
+  // False for a memory shared with me that I haven't unlocked at its location.
+  revealed: boolean;
   createdAt: string;
 };
 
@@ -103,7 +105,9 @@ export default function MyMemoriesPage() {
                 href={`/maps?memory=${encodeURIComponent(m.id)}`}
                 className="mw-card block p-4 transition-colors hover:bg-ig-hover"
               >
-                <p className="line-clamp-3 text-sm text-ig-text-primary">{m.textContent}</p>
+                <p className="line-clamp-3 text-sm text-ig-text-primary">
+                  {m.revealed ? m.textContent : '🔒 Hidden — go to the location to unlock it'}
+                </p>
                 <div className="mt-2 flex items-center gap-3 text-xs text-ig-text-tertiary">
                   {m.placeLabel && <span>{m.placeLabel}</span>}
                   <span>{new Date(m.createdAt).toLocaleDateString()}</span>

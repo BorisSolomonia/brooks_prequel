@@ -22,6 +22,13 @@ public class MemoryMapPinResponse {
     private MemoryVisibility visibility;
     private boolean ownedByViewer;
     private boolean sharedWithViewer;
+    /**
+     * True if the viewer may see this memory's contents: owned, a public
+     * followers memory, or a share they have unlocked by reaching the location.
+     * When false (a shared memory not yet reached), textPreview/hasImage/hasAudio
+     * are redacted and the client shows a locked teaser.
+     */
+    private boolean revealed;
     private boolean hasImage;
     private boolean hasAudio;
     private Instant createdAt;

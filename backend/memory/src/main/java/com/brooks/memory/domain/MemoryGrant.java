@@ -40,19 +40,37 @@ public class MemoryGrant extends BaseEntity {
     @Column(name = "removed_at")
     private Instant removedAt;
 
+    /**
+     * When the beneficiary confirmed they were within the unlock radius and the
+     * memory's contents became readable. NULL = locked / pending reveal — the
+     * grant exists (so the memory shows on the recipient's map as a teaser) but
+     * content MUST be redacted until this is set. LINK_REDEMPTION grants only
+     * ever exist after a successful reveal, so they are created already-revealed.
+     */
+    @Column(name = "revealed_at")
+    private Instant revealedAt;
+
     public MemoryGrant(UUID memoryId, UUID beneficiaryUserId, UUID shareId) {
         this.memoryId = memoryId;
         this.beneficiaryUserId = beneficiaryUserId;
         this.shareId = shareId;
         this.source = MemoryGrantSource.LINK_REDEMPTION;
+        // Link grants are minted only on a passed distance check — revealed now.
+        this.revealedAt = Instant.now();
     }
 
-    /** Construct a DIRECT grant (no share token). */
+    /** Construct a DIRECT grant (no share token). Locked until reveal. */
     public static MemoryGrant direct(UUID memoryId, UUID beneficiaryUserId) {
         MemoryGrant grant = new MemoryGrant();
         grant.memoryId = memoryId;
         grant.beneficiaryUserId = beneficiaryUserId;
         grant.source = MemoryGrantSource.DIRECT;
+        grant.revealedAt = null; // pending reveal — content stays hidden
         return grant;
+    }
+
+    /** True once the beneficiary has unlocked the memory by reaching it. */
+    public boolean isRevealed() {
+        return revealedAt != null;
     }
 }

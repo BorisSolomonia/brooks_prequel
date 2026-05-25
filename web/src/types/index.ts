@@ -100,13 +100,16 @@ export interface MemoryMapPin {
   creatorUsername: string | null;
   creatorDisplayName: string;
   creatorAvatarUrl: string | null;
-  textPreview: string;
+  /** Null when the memory is a shared teaser not yet unlocked by reaching it. */
+  textPreview: string | null;
   latitude: number;
   longitude: number;
   placeLabel: string | null;
   visibility: MemoryVisibility;
   ownedByViewer: boolean;
   sharedWithViewer: boolean;
+  /** False for a shared memory the viewer hasn't unlocked at the location. */
+  revealed: boolean;
   hasImage: boolean;
   hasAudio: boolean;
   createdAt: string;
@@ -122,7 +125,8 @@ export interface Memory {
   creatorUsername: string | null;
   creatorDisplayName: string;
   creatorAvatarUrl: string | null;
-  textContent: string;
+  /** Null when shared with the viewer but not yet unlocked at the location. */
+  textContent: string | null;
   latitude: number;
   longitude: number;
   placeLabel: string | null;
@@ -130,6 +134,8 @@ export interface Memory {
   expiresAt: string | null;
   media: MemoryMedia[];
   ownedByViewer: boolean;
+  /** False for a shared memory the viewer hasn't unlocked at the location. */
+  revealed: boolean;
   createdAt: string;
   updatedAt: string;
 }

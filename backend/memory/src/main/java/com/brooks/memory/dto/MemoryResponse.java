@@ -24,6 +24,11 @@ public class MemoryResponse {
     private Instant expiresAt;
     private List<MemoryMediaResponse> media;
     private boolean ownedByViewer;
+    /**
+     * True if the viewer may see contents. When false (a shared memory not yet
+     * unlocked by reaching its location), textContent and media are redacted.
+     */
+    private boolean revealed;
     private Instant createdAt;
     private Instant updatedAt;
 }

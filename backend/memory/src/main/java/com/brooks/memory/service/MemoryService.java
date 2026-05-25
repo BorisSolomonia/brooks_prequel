@@ -105,8 +105,16 @@ public class MemoryService {
     @Transactional(readOnly = true)
     public List<MemoryResponse> listMemoriesSharedWithMe(String auth0Subject) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
-        return memoryRepository.findMemoriesSharedWithMe(viewer.getId()).stream()
-                .map(m -> toResponse(m, viewer.getId()))
+        List<Memory> memories = memoryRepository.findMemoriesSharedWithMe(viewer.getId());
+        if (memories.isEmpty()) {
+            return List.of();
+        }
+        // Redact contents for shares not yet unlocked by reaching the location.
+        List<UUID> memoryIds = memories.stream().map(Memory::getId).toList();
+        Set<UUID> revealedIds = new HashSet<>(
+                memoryGrantRepository.findRevealedGrantedMemoryIdsForBeneficiary(viewer.getId(), memoryIds));
+        return memories.stream()
+                .map(m -> toResponse(m, viewer.getId(), contentVisible(m, viewer.getId(), revealedIds)))
                 .toList();
     }
 
@@ -242,6 +250,47 @@ public class MemoryService {
                 .build();
     }
 
+    /**
+     * Reveal a DIRECT in-app share by memory id (these have no share token).
+     * Mirrors {@link #revealShare}: the recipient must hold an active grant for
+     * the memory and be within the unlock radius. Only then is revealed_at set
+     * and the contents returned. An already-unlocked grant stays unlocked.
+     */
+    @Transactional
+    public MemoryRevealResponse revealDirectShare(String auth0Subject, UUID memoryId, MemoryRevealRequest request) {
+        User viewer = userService.findByAuth0Subject(auth0Subject);
+        Memory memory = memoryRepository.findById(memoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Memory", memoryId));
+        if (!isActive(memory)) {
+            throw new BusinessException("Memory is unavailable");
+        }
+        // Must have been shared with this viewer — no grant, nothing to reveal.
+        MemoryGrant grant = memoryGrantRepository
+                .findByMemoryIdAndBeneficiaryUserId(memoryId, viewer.getId())
+                .filter(g -> g.getRemovedAt() == null)
+                .orElseThrow(() -> new ResourceNotFoundException("Memory grant", memoryId));
+
+        double distance = distanceMeters(request.getLatitude(), request.getLongitude(),
+                memory.getLatitude(), memory.getLongitude());
+        boolean withinRange = distance <= unlockRadiusMeters;
+        revealRepository.save(new MemoryReveal(
+                memory.getId(), grant.getShareId(), viewer.getId(), withinRange, distanceBucket(distance)));
+        if (withinRange && grant.getRevealedAt() == null) {
+            grant.setRevealedAt(Instant.now());
+        }
+        // Once unlocked, it stays unlocked even if the viewer later moves away.
+        boolean revealed = grant.getRevealedAt() != null;
+        productEventService.record(withinRange ? "MEMORY_REVEALED" : "REVEAL_ATTEMPTED",
+                viewer.getId(), memory.getId(), null, null);
+
+        return MemoryRevealResponse.builder()
+                .revealed(revealed)
+                .distanceMeters(distance)
+                .unlockRadiusMeters(unlockRadiusMeters)
+                .memory(revealed ? toResponse(memory, viewer.getId()) : null)
+                .build();
+    }
+
     @Transactional
     public void hideCreatorPublicMemories(String auth0Subject, UUID creatorId) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
@@ -322,6 +371,7 @@ public class MemoryService {
         }
         List<UUID> memoryIds = memories.stream().map(Memory::getId).toList();
         Set<UUID> grantedIds = new HashSet<>(memoryGrantRepository.findActiveGrantedMemoryIdsForBeneficiary(viewerId, memoryIds));
+        Set<UUID> revealedIds = new HashSet<>(memoryGrantRepository.findRevealedGrantedMemoryIdsForBeneficiary(viewerId, memoryIds));
         Set<UUID> creatorIds = memories.stream().map(Memory::getCreatorId).collect(Collectors.toSet());
         Map<UUID, User> users = userService.findAllByIds(creatorIds);
         Map<UUID, UserProfile> profiles = profileRepository.findAllByUserIdIn(creatorIds).stream()
@@ -330,27 +380,45 @@ public class MemoryService {
         return memories.stream()
                 .map(memory -> {
                     CreatorSummary creator = creatorSummary(memory.getCreatorId(), users, profiles);
-                    boolean hasImage = memory.getMedia().stream().anyMatch(media -> media.getMediaType() == MemoryMediaType.IMAGE);
-                    boolean hasAudio = memory.getMedia().stream().anyMatch(media -> media.getMediaType() == MemoryMediaType.AUDIO);
+                    // Content is shown only when the viewer is entitled WITHOUT a
+                    // location gate (owns it, or it's a public followers memory) or
+                    // has unlocked the share by reaching it. A granted-but-unrevealed
+                    // share stays a locked teaser: redact text + media indicators.
+                    boolean revealed = contentVisible(memory, viewerId, revealedIds);
+                    boolean hasImage = revealed && memory.getMedia().stream().anyMatch(media -> media.getMediaType() == MemoryMediaType.IMAGE);
+                    boolean hasAudio = revealed && memory.getMedia().stream().anyMatch(media -> media.getMediaType() == MemoryMediaType.AUDIO);
                     return MemoryMapPinResponse.builder()
                             .id(memory.getId())
                             .creatorId(memory.getCreatorId())
                             .creatorUsername(creator.username())
                             .creatorDisplayName(creator.displayName())
                             .creatorAvatarUrl(creator.avatarUrl())
-                            .textPreview(preview(memory.getTextContent()))
+                            .textPreview(revealed ? preview(memory.getTextContent()) : null)
                             .latitude(memory.getLatitude())
                             .longitude(memory.getLongitude())
                             .placeLabel(memory.getPlaceLabel())
                             .visibility(memory.getVisibility())
                             .ownedByViewer(memory.getCreatorId().equals(viewerId))
                             .sharedWithViewer(grantedIds.contains(memory.getId()))
+                            .revealed(revealed)
                             .hasImage(hasImage)
                             .hasAudio(hasAudio)
                             .createdAt(memory.getCreatedAt())
                             .build();
                 })
                 .toList();
+    }
+
+    /**
+     * Whether {@code viewer} may see this memory's contents. True when they own
+     * it, when it's a public followers memory (never geo-locked), or when they
+     * hold a revealed grant (unlocked by reaching the location). A granted-but-
+     * unrevealed direct share returns false → contents are redacted.
+     */
+    private boolean contentVisible(Memory memory, UUID viewerId, Set<UUID> revealedGrantIds) {
+        return memory.getCreatorId().equals(viewerId)
+                || memory.getVisibility() == MemoryVisibility.FOLLOWERS_PUBLIC
+                || revealedGrantIds.contains(memory.getId());
     }
 
     private static List<Memory> orderByIds(List<Memory> memories, List<UUID> orderedIds) {
@@ -361,7 +429,18 @@ public class MemoryService {
                 .toList();
     }
 
+    /** Full response — for owner-only paths where content is always visible. */
     private MemoryResponse toResponse(Memory memory, UUID viewerId) {
+        return toResponse(memory, viewerId, true);
+    }
+
+    /**
+     * Build a memory response, redacting contents when {@code contentVisible} is
+     * false (a shared memory not yet unlocked by reaching its location). Location
+     * and creator stay visible so the recipient can navigate there; textContent
+     * and media are withheld until reveal.
+     */
+    private MemoryResponse toResponse(Memory memory, UUID viewerId, boolean contentVisible) {
         CreatorSummary creator = creatorSummary(memory.getCreatorId());
         return MemoryResponse.builder()
                 .id(memory.getId())
@@ -369,14 +448,17 @@ public class MemoryService {
                 .creatorUsername(creator.username())
                 .creatorDisplayName(creator.displayName())
                 .creatorAvatarUrl(creator.avatarUrl())
-                .textContent(memory.getTextContent())
+                .textContent(contentVisible ? memory.getTextContent() : null)
                 .latitude(memory.getLatitude())
                 .longitude(memory.getLongitude())
                 .placeLabel(memory.getPlaceLabel())
                 .visibility(memory.getVisibility())
                 .expiresAt(memory.getExpiresAt())
-                .media(memory.getMedia().stream().map(this::toMediaResponse).toList())
+                .media(contentVisible
+                        ? memory.getMedia().stream().map(this::toMediaResponse).toList()
+                        : List.of())
                 .ownedByViewer(memory.getCreatorId().equals(viewerId))
+                .revealed(contentVisible)
                 .createdAt(memory.getCreatedAt())
                 .updatedAt(memory.getUpdatedAt())
                 .build();
