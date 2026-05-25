@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { Map as MapboxMap } from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { useMapboxStyle } from '@/lib/mapboxStyle';
+import type { Map as LeafletMap, TileLayer as LeafletTileLayer } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
 import Avatar from '@/components/ui/Avatar';
 import FollowButton from '@/components/ui/FollowButton';
 import GuideCard from '@/components/ui/GuideCard';
@@ -33,14 +33,16 @@ export default function CreatorProfilePage({ params }: { params: { username: str
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<MapboxMap | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const tileLayerRef = useRef<LeafletTileLayer | null>(null);
   const mapInitRef = useRef(false);
   const mapboxStyle = useMapboxStyle();
 
+  // Live theme switch: swap the raster tile URL rather than rebuilding the map.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    map.setStyle(mapboxStyle);
+    const token = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN;
+    if (!token) return;
+    tileLayerRef.current?.setUrl(rasterTileUrl(mapboxStyle, token));
   }, [mapboxStyle]);
 
   useEffect(() => {
@@ -92,20 +94,50 @@ export default function CreatorProfilePage({ params }: { params: { username: str
 
     // `cancelled` prevents the async import from creating a map after the effect
     // was cleaned up (fast tab switch / theme change) — that would orphan a context.
+    // Leaflet + Mapbox RASTER tiles (no WebGL): mapbox-gl's tile GL textures are
+    // never freed by the Android System WebView's GPU layer on pan (→ ~4 GB → LMK
+    // kill). This page is high-traffic (every creator-profile view), so it must
+    // not leak. See POSTMORTEM_MAPS_GPU_OOM.md.
     let cancelled = false;
-    import('mapbox-gl').then(({ default: mapboxgl }) => {
+    import('leaflet').then(({ default: L }) => {
       if (cancelled || !mapContainerRef.current) return;
-      mapboxgl.accessToken = mapboxToken;
-      const map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: mapboxStyle,
-        center: [profile.longitude!, profile.latitude!],
+      // interactive:false equivalent — a static locator map, no pan/zoom.
+      const map = L.map(mapContainerRef.current, {
+        center: [profile.latitude!, profile.longitude!],
         zoom: 10,
-        interactive: false,
-        maxTileCacheSize: 50,
+        zoomControl: false,
+        attributionControl: true,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        touchZoom: false,
       });
       mapRef.current = map;
-      new mapboxgl.Marker().setLngLat([profile.longitude!, profile.latitude!]).addTo(map);
+
+      tileLayerRef.current = L.tileLayer(rasterTileUrl(mapboxStyle, mapboxToken), {
+        tileSize: 512,
+        zoomOffset: -1,
+        minZoom: 1,
+        maxZoom: 20,
+        crossOrigin: true,
+        attribution: '© Mapbox © OpenStreetMap',
+      }).addTo(map);
+
+      const icon = L.divIcon({
+        html: '<div style="width:22px;height:22px;border-radius:9999px;background:#3b82f6;border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,0.35)"></div>',
+        className: '',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+      L.marker([profile.latitude!, profile.longitude!], { icon, interactive: false }).addTo(map);
+
+      map.whenReady(() => {
+        if (cancelled) return;
+        map.invalidateSize();
+        requestAnimationFrame(() => { if (!cancelled) map.invalidateSize(); });
+      });
     }).catch(() => {});
 
     return () => {
@@ -114,6 +146,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
         mapRef.current.remove();
         mapRef.current = null;
       }
+      tileLayerRef.current = null;
       mapInitRef.current = false;
     };
   }, [activeTab, profile, mapboxStyle]);

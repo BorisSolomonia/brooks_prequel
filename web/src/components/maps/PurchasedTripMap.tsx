@@ -1,10 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { GeoJSONSource, Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { useMapboxStyle } from '@/lib/mapboxStyle';
+import type { Map as LeafletMap, Marker as LeafletMarker, Polyline as LeafletPolyline } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
 import type { MyTripItem } from '@/types';
+
+// Renders purchased-guide places on a map. Uses Leaflet + Mapbox RASTER tiles
+// (plain <img>, no WebGL) instead of mapbox-gl: the Android System WebView's
+// GPU layer never frees mapbox-gl's evicted tile GL textures on pan, which
+// ratchets memory to ~4 GB → LMK kill. With raster tiles there are no GL
+// textures to leak, so this stays bounded even with many guides/places open
+// across the app. See POSTMORTEM_MAPS_GPU_OOM.md.
 
 const CATEGORY_FILTERS = [
   { value: 'ALL', label: 'All' },
@@ -14,9 +21,6 @@ const CATEGORY_FILTERS = [
   { value: 'ACCOMMODATION', label: 'Stay' },
   { value: 'SHOPPING', label: 'Shopping' },
 ];
-
-const TRIP_ROUTE_SOURCE_ID = 'trip-route';
-const TRIP_ROUTE_LAYER_ID = 'trip-route-line';
 
 interface Props {
   items: MyTripItem[];
@@ -32,9 +36,9 @@ function chronologicalSort(a: MyTripItem, b: MyTripItem): number {
 
 export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapStylePropIgnored }: Props) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<MapboxMap | null>(null);
-  const markersRef = useRef<MapboxMarker[]>([]);
-  const mapboxModuleRef = useRef<typeof import('mapbox-gl') | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const markersRef = useRef<LeafletMarker[]>([]);
+  const routeRef = useRef<LeafletPolyline | null>(null);
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [mapReady, setMapReady] = useState(false);
   const themedStyle = useMapboxStyle();
@@ -44,7 +48,10 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapSty
   if (!initialCenterRef.current) {
     const validItems = items.filter((item) => item.latitude !== null && item.longitude !== null && !item.skipped);
     const firstItem = validItems[0];
-    initialCenterRef.current = firstItem ? [firstItem.longitude as number, firstItem.latitude as number] : [44.8014, 41.6938];
+    // [lat, lng] for Leaflet. Default to Tbilisi when there are no points yet.
+    initialCenterRef.current = firstItem
+      ? [firstItem.latitude as number, firstItem.longitude as number]
+      : [41.6938, 44.8014];
     initialZoomRef.current = firstItem ? 10 : 3;
   }
 
@@ -60,44 +67,35 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapSty
     let cancelled = false;
 
     const initialize = async () => {
-      const mapboxglModule = await import('mapbox-gl');
-      const mapboxgl = mapboxglModule.default;
-      mapboxModuleRef.current = mapboxglModule;
-      mapboxgl.accessToken = mapboxToken;
-
+      const L = (await import('leaflet')).default;
       if (cancelled || !mapContainerRef.current) {
         return;
       }
 
-      const map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: themedStyle,
+      const map = L.map(mapContainerRef.current, {
         center: initialCenterRef.current!,
         zoom: initialZoomRef.current,
-        maxTileCacheSize: 50,
+        zoomControl: true,
+        attributionControl: true,
+        zoomSnap: 0.5,
       });
-
-      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       mapRef.current = map;
 
-      map.on('load', () => {
+      L.tileLayer(rasterTileUrl(themedStyle, mapboxToken), {
+        tileSize: 512,
+        zoomOffset: -1,
+        minZoom: 1,
+        maxZoom: 20,
+        crossOrigin: true,
+        attribution: '© Mapbox © OpenStreetMap',
+      }).addTo(map);
+
+      map.whenReady(() => {
         if (cancelled) return;
-        map.addSource(TRIP_ROUTE_SOURCE_ID, {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features: [] },
-        });
-        map.addLayer({
-          id: TRIP_ROUTE_LAYER_ID,
-          type: 'line',
-          source: TRIP_ROUTE_SOURCE_ID,
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#ef2f6d',
-            'line-width': 3,
-            'line-dasharray': [2, 2],
-            'line-opacity': 0.85,
-          },
-        });
+        // Leaflet measures the container at init; re-measure now and next frame
+        // in case the surrounding layout settled a tick late (blank/half map).
+        map.invalidateSize();
+        requestAnimationFrame(() => { if (!cancelled) map.invalidateSize(); });
         setMapReady(true);
       });
     };
@@ -108,78 +106,72 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapSty
       cancelled = true;
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
+      routeRef.current?.remove();
+      routeRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
-      mapboxModuleRef.current = null;
       setMapReady(false);
     };
   }, [themedStyle, mapboxToken]);
 
   useEffect(() => {
     const map = mapRef.current;
-    const mapboxglModule = mapboxModuleRef.current;
-    if (!map || !mapboxglModule || !mapReady) {
+    if (!map || !mapReady) {
       return;
     }
 
-    const mapboxgl = mapboxglModule.default;
-    const validItems = filteredItems
-      .filter((item) => item.latitude !== null && item.longitude !== null && !item.skipped)
-      .slice()
-      .sort(chronologicalSort);
+    let cancelled = false;
 
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
+    (async () => {
+      const L = (await import('leaflet')).default;
+      if (cancelled || !mapRef.current) return;
 
-    validItems.forEach((item, index) => {
-      const markerElement = document.createElement('div');
-      markerElement.style.width = '32px';
-      markerElement.style.height = '32px';
-      markerElement.style.borderRadius = '9999px';
-      markerElement.style.background = 'var(--brand-primary)';
-      markerElement.style.color = '#ffffff';
-      markerElement.style.display = 'flex';
-      markerElement.style.alignItems = 'center';
-      markerElement.style.justifyContent = 'center';
-      markerElement.style.fontSize = '13px';
-      markerElement.style.fontWeight = '800';
-      markerElement.style.border = '2px solid rgba(255,255,255,0.95)';
-      markerElement.style.boxShadow = '0 6px 14px rgba(0,0,0,0.25)';
-      markerElement.textContent = String(index + 1);
+      const validItems = filteredItems
+        .filter((item) => item.latitude !== null && item.longitude !== null && !item.skipped)
+        .slice()
+        .sort(chronologicalSort);
 
-      const marker = new mapboxgl.Marker({ element: markerElement })
-        .setLngLat([item.longitude as number, item.latitude as number])
-        .setPopup(new mapboxgl.Popup({ offset: 14 }).setHTML(
-          `<div style="color:#111827;font-weight:700;font-size:13px;line-height:1.3;padding:2px 0;">${index + 1}. ${item.placeName.replace(/</g, '&lt;')}</div>`
-        ))
-        .addTo(map);
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
 
-      markersRef.current.push(marker);
-    });
-
-    const source = map.getSource(TRIP_ROUTE_SOURCE_ID) as GeoJSONSource | undefined;
-    if (source) {
-      const coordinates = validItems.map((item) => [item.longitude as number, item.latitude as number]);
-      const features = coordinates.length >= 2
-        ? [{
-            type: 'Feature' as const,
-            geometry: { type: 'LineString' as const, coordinates },
-            properties: {},
-          }]
-        : [];
-      source.setData({ type: 'FeatureCollection', features });
-    }
-
-    if (validItems.length > 1) {
-      const bounds = new mapboxgl.LngLatBounds();
-      validItems.forEach((item) => bounds.extend([item.longitude as number, item.latitude as number]));
-      map.fitBounds(bounds, { padding: 48, maxZoom: 12 });
-    } else if (validItems.length === 1) {
-      map.flyTo({
-        center: [validItems[0].longitude as number, validItems[0].latitude as number],
-        zoom: 12,
+      validItems.forEach((item, index) => {
+        const html = `<div style="width:32px;height:32px;border-radius:9999px;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;border:2px solid rgba(255,255,255,0.95);box-shadow:0 6px 14px rgba(0,0,0,0.25)">${index + 1}</div>`;
+        const icon = L.divIcon({ html, className: '', iconSize: [32, 32], iconAnchor: [16, 16] });
+        const marker = L.marker([item.latitude as number, item.longitude as number], { icon })
+          .bindPopup(
+            `<div style="color:#111827;font-weight:700;font-size:13px;line-height:1.3;padding:2px 0;">${index + 1}. ${item.placeName.replace(/</g, '&lt;')}</div>`,
+            { offset: [0, -14] },
+          )
+          .addTo(map);
+        markersRef.current.push(marker);
       });
-    }
+
+      // Dashed route line connecting the places in order.
+      routeRef.current?.remove();
+      routeRef.current = null;
+      if (validItems.length >= 2) {
+        const latlngs = validItems.map((item) => [item.latitude as number, item.longitude as number] as [number, number]);
+        routeRef.current = L.polyline(latlngs, {
+          color: '#ef2f6d',
+          weight: 3,
+          dashArray: '6 6',
+          opacity: 0.85,
+        }).addTo(map);
+      }
+
+      if (validItems.length > 1) {
+        const bounds = L.latLngBounds(
+          validItems.map((item) => [item.latitude as number, item.longitude as number] as [number, number]),
+        );
+        map.fitBounds(bounds, { padding: [48, 48], maxZoom: 12 });
+      } else if (validItems.length === 1) {
+        map.setView([validItems[0].latitude as number, validItems[0].longitude as number], 12, { animate: false });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [filteredItems, mapReady]);
 
   if (!mapboxToken || !themedStyle) {

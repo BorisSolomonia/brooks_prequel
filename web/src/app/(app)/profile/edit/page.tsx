@@ -1,28 +1,32 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { Map as MapboxMap, Marker as MapboxMarker } from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import type { Map as LeafletMap, Marker as LeafletMarker, TileLayer as LeafletTileLayer, LeafletMouseEvent } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useRouter } from 'next/navigation';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
-import { useMapboxStyle } from '@/lib/mapboxStyle';
+import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
 import Spinner from '@/components/ui/Spinner';
 import type { Profile, ProfileUpdateRequest } from '@/types';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? '';
 
+// Profile-location pin-picker. Leaflet + Mapbox RASTER tiles (no WebGL): the
+// Android System WebView's GPU layer never frees mapbox-gl's tile GL textures
+// on pan (→ ~4 GB → LMK kill). Raster <img> tiles have nothing to leak.
+// See POSTMORTEM_MAPS_GPU_OOM.md.
 function ProfileLocationMap({ lat, lng, onChange }: { lat: string; lng: string; onChange: (lat: string, lng: string) => void }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<MapboxMap | null>(null);
-  const markerRef = useRef<MapboxMarker | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const markerRef = useRef<LeafletMarker | null>(null);
+  const tileLayerRef = useRef<LeafletTileLayer | null>(null);
   const mapboxStyle = useMapboxStyle();
 
+  // Live theme switch: swap the raster tile URL rather than rebuilding the map.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    map.setStyle(mapboxStyle);
+    tileLayerRef.current?.setUrl(rasterTileUrl(mapboxStyle, MAPBOX_TOKEN));
   }, [mapboxStyle]);
 
   useEffect(() => {
@@ -32,36 +36,54 @@ function ProfileLocationMap({ lat, lng, onChange }: { lat: string; lng: string; 
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
     const hasCoords = !isNaN(latNum) && !isNaN(lngNum);
-    const center: [number, number] = hasCoords ? [lngNum, latNum] : [0, 20];
+    // Leaflet uses [lat, lng]. Default to a world view when coords are unset.
+    const center: [number, number] = hasCoords ? [latNum, lngNum] : [20, 0];
 
     const init = async () => {
-      const mapboxglModule = await import('mapbox-gl');
-      const mapboxgl = mapboxglModule.default;
-      mapboxgl.accessToken = MAPBOX_TOKEN;
+      const L = (await import('leaflet')).default;
       if (cancelled || !containerRef.current) return;
 
-      const map = new mapboxgl.Map({
-        container: containerRef.current,
-        style: mapboxStyle,
+      const map = L.map(containerRef.current, {
         center,
         zoom: hasCoords ? 8 : 1,
-        maxTileCacheSize: 50,
+        zoomControl: true,
+        attributionControl: true,
+        zoomSnap: 0.5,
       });
       mapRef.current = map;
 
-      const marker = new mapboxgl.Marker({ draggable: true, color: '#3b82f6' })
-        .setLngLat(center)
-        .addTo(map);
+      tileLayerRef.current = L.tileLayer(rasterTileUrl(mapboxStyle, MAPBOX_TOKEN), {
+        tileSize: 512,
+        zoomOffset: -1,
+        minZoom: 1,
+        maxZoom: 20,
+        crossOrigin: true,
+        attribution: '© Mapbox © OpenStreetMap',
+      }).addTo(map);
+
+      const icon = L.divIcon({
+        html: '<div style="width:22px;height:22px;border-radius:9999px;background:#3b82f6;border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,0.35)"></div>',
+        className: '',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+      const marker = L.marker(center, { draggable: true, icon }).addTo(map);
       markerRef.current = marker;
 
+      const round = (n: number) => Math.round(n * 1e6) / 1e6;
       marker.on('dragend', () => {
-        const pos = marker.getLngLat();
-        onChange(String(Math.round(pos.lat * 1e6) / 1e6), String(Math.round(pos.lng * 1e6) / 1e6));
+        const pos = marker.getLatLng();
+        onChange(String(round(pos.lat)), String(round(pos.lng)));
+      });
+      map.on('click', (e: LeafletMouseEvent) => {
+        marker.setLatLng(e.latlng);
+        onChange(String(round(e.latlng.lat)), String(round(e.latlng.lng)));
       });
 
-      map.on('click', (e) => {
-        marker.setLngLat(e.lngLat);
-        onChange(String(Math.round(e.lngLat.lat * 1e6) / 1e6), String(Math.round(e.lngLat.lng * 1e6) / 1e6));
+      map.whenReady(() => {
+        if (cancelled) return;
+        map.invalidateSize();
+        requestAnimationFrame(() => { if (!cancelled) map.invalidateSize(); });
       });
     };
 
@@ -69,6 +91,8 @@ function ProfileLocationMap({ lat, lng, onChange }: { lat: string; lng: string; 
     return () => {
       cancelled = true;
       markerRef.current?.remove();
+      markerRef.current = null;
+      tileLayerRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
     };

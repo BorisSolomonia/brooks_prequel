@@ -22,3 +22,15 @@ export function useMapboxStyle(): string {
 export function getMapboxStyleForResolvedTheme(resolvedTheme: string | undefined): string {
   return resolvedTheme === 'light' ? LIGHT_STYLE : DARK_STYLE;
 }
+
+// Convert the mapbox style URL (mapbox://styles/<user>/<style>) into a Mapbox
+// *raster* tiles endpoint (512px @2x) for Leaflet. Raster tiles are plain
+// <img> elements the WebView garbage-collects normally — unlike mapbox-gl's
+// WebGL tile textures, which the Android System WebView's GPU layer never frees
+// on pan (it ratchets to ~4 GB → LMK kill). Every map in the app must render
+// through Leaflet + this URL, never mapbox-gl, to stay inside the WebView's
+// memory budget. See POSTMORTEM_MAPS_GPU_OOM.md.
+export function rasterTileUrl(themedStyle: string, token: string): string {
+  const path = themedStyle.replace('mapbox://styles/', '').trim() || 'mapbox/dark-v11';
+  return `https://api.mapbox.com/styles/v1/${path}/tiles/512/{z}/{x}/{y}@2x?access_token=${token}`;
+}
