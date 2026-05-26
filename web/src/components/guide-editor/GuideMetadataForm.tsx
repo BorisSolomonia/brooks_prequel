@@ -105,7 +105,6 @@ function DestinationMap({ lat, lng, onChange, onResolvePlace }: {
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<LeafletMarker | null>(null);
   const tileLayerRef = useRef<LeafletTileLayer | null>(null);
-  const [locating, setLocating] = useState(false);
   const mapboxStyle = useMapboxStyle();
 
   // Keep the latest callbacks in refs so the init effect (deps []) never calls a
@@ -207,28 +206,10 @@ function DestinationMap({ lat, lng, onChange, onResolvePlace }: {
     map.setView([lat, lng], Math.max(map.getZoom(), 10), { animate: false });
   }, [lat, lng]);
 
-  const useMyLocation = async () => {
-    setLocating(true);
-    const coords = await getCurrentCoords();
-    setLocating(false);
-    if (coords) applyCoords(coords.latitude, coords.longitude, true);
-  };
-
   if (!MAPBOX_TOKEN) return null;
-  return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        onClick={useMyLocation}
-        disabled={locating}
-        className="inline-flex min-h-11 items-center gap-2 rounded-md border border-ig-border bg-ig-elevated px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:opacity-60"
-      >
-        <span aria-hidden>📍</span>
-        {locating ? 'Locating…' : 'Use my current location'}
-      </button>
-      <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-lg border border-ig-border md:h-44" />
-    </div>
-  );
+  // "Use my current location" lives at the form level (between Description and
+  // Region); when it sets lat/lng, the recenter effect above moves this pin.
+  return <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-lg border border-ig-border md:h-44" />;
 }
 
 export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, onTagInputChange, onAddTag, onRemoveTag, token }: Props) {
@@ -261,6 +242,19 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
   };
 
   const guideData = data as GuideUpdateRequest;
+
+  // One-tap geolocate: set coords (the destination map recenters via its prop
+  // effect) and reverse-geocode to prefill city/region/country.
+  const [locating, setLocating] = useState(false);
+  const useMyLocation = async () => {
+    setLocating(true);
+    const coords = await getCurrentCoords();
+    setLocating(false);
+    if (!coords) return;
+    onPatch({ latitude: roundCoord(coords.latitude), longitude: roundCoord(coords.longitude) });
+    const place = await reverseGeocode(coords.latitude, coords.longitude);
+    if (place) applyPlaceLabels(place);
+  };
 
   const description = data.description ?? '';
   const descWordCount = description.trim().split(/\s+/).filter(Boolean).length;
@@ -308,6 +302,18 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
           </div>
         )}
       </div>
+
+      {MAPBOX_TOKEN && (
+        <button
+          type="button"
+          onClick={useMyLocation}
+          disabled={locating}
+          className="inline-flex min-h-11 items-center gap-2 rounded-md border border-ig-border bg-ig-elevated px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:opacity-60"
+        >
+          <span aria-hidden>📍</span>
+          {locating ? 'Locating…' : 'Use my current location'}
+        </button>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
