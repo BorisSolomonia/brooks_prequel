@@ -151,9 +151,20 @@ export default function BlockPanel({ dayId, block }: Props) {
       </div>
 
       <div className="space-y-2">
-        {block.places.map((place) => (
-          <PlaceCard key={place.id} blockId={block.id} place={place} />
-        ))}
+        {(() => {
+          // Running end-time cursor so each place's Start Time pre-fills from the
+          // previous place's end (block start for the first place).
+          let cursor: number | null = block.suggestedStartMinute ?? null;
+          return block.places.map((place) => {
+            const defaultStart = cursor;
+            const dur = place.suggestedDurationMinutes ?? 60;
+            const start = place.suggestedStartMinute ?? cursor;
+            cursor = start != null ? start + dur : cursor;
+            return (
+              <PlaceCard key={place.id} blockId={block.id} place={place} defaultStartMinute={defaultStart} />
+            );
+          });
+        })()}
       </div>
 
       {addingPlace ? (

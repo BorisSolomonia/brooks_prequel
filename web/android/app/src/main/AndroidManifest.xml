@@ -84,4 +84,13 @@
     -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!--
+      Camera for the guide place-photo "Capture" option (@capacitor/camera).
+      The plugin requests this at first use; declaring it here lets the system
+      prompt appear. The feature is marked NOT required so the app still installs
+      on camera-less devices — capture just falls back to the library/web picker.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>
