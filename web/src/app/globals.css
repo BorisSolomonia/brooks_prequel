@@ -364,3 +364,20 @@ textarea {
 .leaflet-popup-pane { z-index: 6 !important; }
 .leaflet-top,
 .leaflet-bottom { z-index: 7 !important; }
+
+/* ───────── Leaflet compositing containment ─────────
+   On in-flow maps inside a SCROLLING page (guide editor's destination pin,
+   purchased-guide trip map, profile/creator maps) the z-index cap above is not
+   enough on the Android System WebView: Leaflet promotes its tile/pane to GPU
+   layers via translate3d, and while the page scrolls those composited layers
+   ESCAPE the container's overflow clip and paint over the sticky header/search
+   bar — even though the map box itself scrolls under correctly. Promoting the
+   `.leaflet-container` to its OWN compositing layer (translateZ + contain:paint)
+   forces the WebView to clip the tile layers to the map box and composite them
+   at the container's normal-flow position, i.e. beneath the sticky header.
+   `/maps` doesn't scroll the document so it never hit this; the rule is
+   harmless there. */
+.leaflet-container {
+  transform: translateZ(0);
+  contain: paint;
+}
