@@ -55,16 +55,28 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
   );
   const [showGiftModal, setShowGiftModal] = useState(false);
 
+  // Merge a partial change into the LATEST metadata. Using the functional
+  // updater (prev => …) is what fixes the "fields disappear on image upload"
+  // bug: ImageUploadField awaits the async upload, then fires onChange with the
+  // `data` snapshot captured when the upload STARTED — any field set meanwhile
+  // (location prefill, typing) was clobbered. Merging into `prev` instead of a
+  // stale snapshot makes every update safe regardless of async ordering.
+  const patchMetadata = useCallback((patch: Partial<GuideUpdateRequest>) => {
+    setMetadata((prev) => ({ ...prev, ...patch }));
+  }, []);
+
   const handleAddTag = () => {
     const tag = tagInput.trim();
-    if (tag && !(metadata.tags || []).includes(tag)) {
-      setMetadata({ ...metadata, tags: [...(metadata.tags || []), tag] });
+    if (tag) {
+      setMetadata((prev) =>
+        (prev.tags || []).includes(tag) ? prev : { ...prev, tags: [...(prev.tags || []), tag] },
+      );
       setTagInput('');
     }
   };
 
   const handleRemoveTag = (tag: string) => {
-    setMetadata({ ...metadata, tags: (metadata.tags || []).filter((t) => t !== tag) });
+    setMetadata((prev) => ({ ...prev, tags: (prev.tags || []).filter((t) => t !== tag) }));
   };
 
   const handleSaveMetadata = async () => {
@@ -233,6 +245,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
             <GuideMetadataForm
               data={metadata}
               onChange={(d) => setMetadata(d as GuideUpdateRequest)}
+              onPatch={patchMetadata}
               tagInput={tagInput}
               onTagInputChange={setTagInput}
               onAddTag={handleAddTag}

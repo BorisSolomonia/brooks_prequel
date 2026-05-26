@@ -1,10 +1,12 @@
 'use client';
 
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import type { Map as LeafletMap, Marker as LeafletMarker, TileLayer as LeafletTileLayer, LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
 import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
+import { reverseGeocode, searchCities, type GeoPlace } from '@/lib/geocode';
+import { getCurrentCoords } from '@/lib/geolocation';
 import type { GuideCreateRequest, GuideUpdateRequest } from '@/types';
 
 const GENERIC_ADJECTIVES = /\b(beautiful|nice|amazing|great|wonderful|awesome|fantastic|incredible|gorgeous|lovely|perfect|excellent)\b/gi;
@@ -12,6 +14,10 @@ const GENERIC_ADJECTIVES = /\b(beautiful|nice|amazing|great|wonderful|awesome|fa
 interface Props {
   data: GuideCreateRequest | GuideUpdateRequest;
   onChange: (data: GuideCreateRequest | GuideUpdateRequest) => void;
+  // Merge a partial change into the LATEST state (functional update). Preferred
+  // over onChange for any field write — it's immune to stale snapshots, which is
+  // what fixes fields vanishing after an async image upload or location prefill.
+  onPatch: (patch: Partial<GuideUpdateRequest>) => void;
   tagInput: string;
   onTagInputChange: (value: string) => void;
   onAddTag: () => void;
@@ -21,16 +27,103 @@ interface Props {
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? '';
 
+const roundCoord = (n: number) => Math.round(n * 1e6) / 1e6;
+
+// City typeahead backed by Mapbox forward geocoding. Typing keeps primaryCity in
+// sync (onType); picking a suggestion fills city + region + country + coords
+// (onSelect), which also moves the destination pin via the shared lat/lng state.
+function CityAutocomplete({ value, onType, onSelect }: {
+  value: string;
+  onType: (text: string) => void;
+  onSelect: (place: GeoPlace) => void;
+}) {
+  const [suggestions, setSuggestions] = useState<GeoPlace[]>([]);
+  const [open, setOpen] = useState(false);
+  const debounceRef = useRef<number | null>(null);
+
+  const handleInput = (text: string) => {
+    onType(text);
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    if (text.trim().length < 2) {
+      setSuggestions([]);
+      setOpen(false);
+      return;
+    }
+    debounceRef.current = window.setTimeout(async () => {
+      const results = await searchCities(text);
+      setSuggestions(results);
+      setOpen(results.length > 0);
+    }, 300);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={value}
+        autoComplete="off"
+        onChange={(e) => handleInput(e.target.value)}
+        onFocus={() => { if (suggestions.length) setOpen(true); }}
+        // Delay close so a suggestion's onMouseDown registers before blur.
+        onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+        placeholder="Start typing a city…"
+        className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
+      />
+      {open && suggestions.length > 0 && (
+        <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-ig-border bg-ig-elevated shadow-lg">
+          {suggestions.map((s) => (
+            <li key={`${s.placeName}-${s.latitude}-${s.longitude}`}>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onSelect(s); setOpen(false); }}
+                className="block w-full px-3 py-2 text-left text-sm text-ig-text-primary transition-colors hover:bg-ig-hover"
+              >
+                {s.placeName}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // Interactive destination pin-picker. Uses Leaflet + Mapbox RASTER tiles (no
 // WebGL): mapbox-gl's tile GL textures are never freed by the Android System
 // WebView's GPU layer on pan, ratcheting memory to ~4 GB → LMK kill. Raster
 // <img> tiles have no GL textures to leak. See POSTMORTEM_MAPS_GPU_OOM.md.
-function DestinationMap({ lat, lng, onChange }: { lat: number | null | undefined; lng: number | null | undefined; onChange: (lat: number, lng: number) => void }) {
+//
+// Adds a one-tap "Use my location" button (geolocate → center + pin) and reverse
+// geocodes any pin position to prefill city/region/country via onResolvePlace.
+function DestinationMap({ lat, lng, onChange, onResolvePlace }: {
+  lat: number | null | undefined;
+  lng: number | null | undefined;
+  onChange: (lat: number, lng: number) => void;
+  onResolvePlace: (place: GeoPlace) => void;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<LeafletMarker | null>(null);
   const tileLayerRef = useRef<LeafletTileLayer | null>(null);
+  const [locating, setLocating] = useState(false);
   const mapboxStyle = useMapboxStyle();
+
+  // Keep the latest callbacks in refs so the init effect (deps []) never calls a
+  // stale onChange/onResolvePlace.
+  const onChangeRef = useRef(onChange);
+  const onResolveRef = useRef(onResolvePlace);
+  useEffect(() => { onChangeRef.current = onChange; onResolveRef.current = onResolvePlace; });
+
+  // Commit a coordinate: update form state, move the pin (+ optionally recenter),
+  // then reverse-geocode to prefill the place fields.
+  const applyCoords = useCallback((la: number, lo: number, recenter: boolean) => {
+    onChangeRef.current(roundCoord(la), roundCoord(lo));
+    const map = mapRef.current;
+    const marker = markerRef.current;
+    if (marker) marker.setLatLng([la, lo]);
+    if (map && recenter) map.setView([la, lo], Math.max(map.getZoom(), 10), { animate: false });
+    void reverseGeocode(la, lo).then((place) => { if (place) onResolveRef.current(place); });
+  }, []);
 
   // Live theme switch: swap the raster tile URL rather than rebuilding the map.
   useEffect(() => {
@@ -76,14 +169,12 @@ function DestinationMap({ lat, lng, onChange }: { lat: number | null | undefined
       const marker = L.marker(center, { draggable: true, icon }).addTo(map);
       markerRef.current = marker;
 
-      const round = (n: number) => Math.round(n * 1e6) / 1e6;
       marker.on('dragend', () => {
         const pos = marker.getLatLng();
-        onChange(round(pos.lat), round(pos.lng));
+        applyCoords(pos.lat, pos.lng, false);
       });
       map.on('click', (e: LeafletMouseEvent) => {
-        marker.setLatLng(e.latlng);
-        onChange(round(e.latlng.lat), round(e.latlng.lng));
+        applyCoords(e.latlng.lat, e.latlng.lng, false);
       });
 
       map.whenReady(() => {
@@ -102,15 +193,71 @@ function DestinationMap({ lat, lng, onChange }: { lat: number | null | undefined
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [applyCoords]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Recenter the pin when coords are set from OUTSIDE (e.g. city autocomplete).
+  // Epsilon guard prevents a feedback loop with applyCoords' own onChange.
+  useEffect(() => {
+    const map = mapRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker || lat == null || lng == null) return;
+    const cur = marker.getLatLng();
+    if (Math.abs(cur.lat - lat) < 1e-6 && Math.abs(cur.lng - lng) < 1e-6) return;
+    marker.setLatLng([lat, lng]);
+    map.setView([lat, lng], Math.max(map.getZoom(), 10), { animate: false });
+  }, [lat, lng]);
+
+  const useMyLocation = async () => {
+    setLocating(true);
+    const coords = await getCurrentCoords();
+    setLocating(false);
+    if (coords) applyCoords(coords.latitude, coords.longitude, true);
+  };
 
   if (!MAPBOX_TOKEN) return null;
-  return <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-lg border border-ig-border md:h-44" />;
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={useMyLocation}
+        disabled={locating}
+        className="inline-flex min-h-11 items-center gap-2 rounded-md border border-ig-border bg-ig-elevated px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:opacity-60"
+      >
+        <span aria-hidden>📍</span>
+        {locating ? 'Locating…' : 'Use my current location'}
+      </button>
+      <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-lg border border-ig-border md:h-44" />
+    </div>
+  );
 }
 
-export default function GuideMetadataForm({ data, onChange, tagInput, onTagInputChange, onAddTag, onRemoveTag, token }: Props) {
+export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, onTagInputChange, onAddTag, onRemoveTag, token }: Props) {
+  // Single-field write via the functional patch (immune to stale snapshots).
   const update = (field: string, value: unknown) => {
-    onChange({ ...data, [field]: value });
+    onPatch({ [field]: value } as Partial<GuideUpdateRequest>);
+  };
+
+  // Reverse-geocode result → fill the LABEL fields only (city/region/country).
+  // Coords are intentionally left alone: the pin is already where the user
+  // clicked/dragged/located, and we don't want to snap it to the city centroid.
+  const applyPlaceLabels = (place: GeoPlace) => {
+    onPatch({
+      primaryCity: place.city ?? place.placeName,
+      ...(place.region ? { region: place.region } : {}),
+      ...(place.country ? { country: place.country } : {}),
+    });
+  };
+
+  // City autocomplete selection → fill labels AND move the pin to the city, in
+  // one merge.
+  const applyPlaceWithCoords = (place: GeoPlace) => {
+    onPatch({
+      primaryCity: place.city ?? place.placeName,
+      latitude: roundCoord(place.latitude),
+      longitude: roundCoord(place.longitude),
+      ...(place.region ? { region: place.region } : {}),
+      ...(place.country ? { country: place.country } : {}),
+    });
   };
 
   const guideData = data as GuideUpdateRequest;
@@ -175,12 +322,10 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
         </div>
         <div>
           <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Primary City</label>
-          <input
-            type="text"
+          <CityAutocomplete
             value={data.primaryCity || ''}
-            onChange={(e) => update('primaryCity', e.target.value)}
-            placeholder="e.g. Tokyo"
-            className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
+            onType={(text) => update('primaryCity', text)}
+            onSelect={applyPlaceWithCoords}
           />
         </div>
       </div>
@@ -225,7 +370,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
             {(data as GuideUpdateRequest).salePriceCents != null && (
               <button
                 type="button"
-                onClick={() => onChange({ ...data, salePriceCents: null, saleEndsAt: null })}
+                onClick={() => onPatch({ salePriceCents: null, saleEndsAt: null })}
                 className="text-xs text-ig-text-tertiary hover:text-ig-error transition-colors"
               >
                 Clear discount
@@ -240,7 +385,7 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
               onChange={(e) => {
                 const val = parseInt(e.target.value);
                 const price = isNaN(val) || val <= 0 ? null : val;
-                onChange({ ...data, salePriceCents: price, saleEndsAt: price == null ? null : (data as GuideUpdateRequest).saleEndsAt ?? null });
+                onPatch({ salePriceCents: price, saleEndsAt: price == null ? null : (data as GuideUpdateRequest).saleEndsAt ?? null });
               }}
               min={0}
               placeholder="e.g. 500 for $5.00"
@@ -355,11 +500,12 @@ export default function GuideMetadataForm({ data, onChange, tagInput, onTagInput
       {MAPBOX_TOKEN && (
         <div>
           <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Destination pin</label>
-          <p className="text-xs text-ig-text-tertiary mb-2">Click or drag the pin to set your guide&apos;s destination coordinates.</p>
+          <p className="text-xs text-ig-text-tertiary mb-2">Tap &ldquo;Use my current location&rdquo;, search a city above, or click/drag the pin. The city, region and country fill in automatically.</p>
           <DestinationMap
             lat={guideData.latitude}
             lng={guideData.longitude}
-            onChange={(lat, lng) => { update('latitude', lat); update('longitude', lng); }}
+            onChange={(lat, lng) => onPatch({ latitude: lat, longitude: lng })}
+            onResolvePlace={applyPlaceLabels}
           />
           {guideData.latitude != null && guideData.longitude != null && (
             <p className="text-xs text-ig-text-tertiary mt-1">{guideData.latitude}, {guideData.longitude}</p>
