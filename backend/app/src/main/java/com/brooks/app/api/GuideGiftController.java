@@ -55,6 +55,25 @@ public class GuideGiftController {
         return ResponseEntity.ok(followService.getMyFollowers(subject(authentication)));
     }
 
+    /** Pending free-gift offers awaiting this user's accept/decline. */
+    @GetMapping("/me/gifts")
+    public ResponseEntity<List<com.brooks.guide.dto.GiftOfferResponse>> myGifts(Authentication authentication) {
+        return ResponseEntity.ok(guidePurchaseService.listPendingGifts(subject(authentication)));
+    }
+
+    @PostMapping("/me/gifts/{purchaseId}/accept")
+    public ResponseEntity<GuideCheckoutSessionResponse> acceptGift(
+            Authentication authentication, @PathVariable UUID purchaseId) {
+        return ResponseEntity.ok(guidePurchaseService.acceptGift(subject(authentication), purchaseId));
+    }
+
+    @PostMapping("/me/gifts/{purchaseId}/decline")
+    public ResponseEntity<Void> declineGift(
+            Authentication authentication, @PathVariable UUID purchaseId) {
+        guidePurchaseService.declineGift(subject(authentication), purchaseId);
+        return ResponseEntity.noContent().build();
+    }
+
     private String subject(Authentication authentication) {
         return com.brooks.auth.util.AuthPrincipal.subject(authentication);
     }

@@ -97,6 +97,10 @@ export default function NotificationBell() {
           if (data.memoryId) router.push(`/maps?memory=${encodeURIComponent(data.memoryId)}`);
           else router.push('/maps');
           break;
+        case 'guide.gift':
+          // Pending free-gift offer → the gifts inbox where they accept/decline.
+          router.push('/gifts');
+          break;
         case 'follow':
           // followerUsername is the source of truth for deep-linking; the
           // /creators/[username] route is name-based. Fall back to the

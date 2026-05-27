@@ -1,5 +1,6 @@
 package com.brooks.guide.service;
 
+import com.brooks.common.event.GuideGiftedEvent;
 import com.brooks.common.exception.BusinessException;
 import com.brooks.common.exception.ResourceNotFoundException;
 import com.brooks.guide.domain.*;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class GuidePurchaseService {
     private final UserService userService;
     private final GuideService guideService;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher events;
 
     @Value("${app.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -118,9 +121,9 @@ public class GuidePurchaseService {
         GuideVersion version = guideVersionRepository.findByGuideIdAndVersionNumber(guideId, guide.getVersionNumber())
                 .orElseThrow(() -> new BusinessException("Published guide version snapshot is missing"));
 
+        // Block (with a notice) if they already own it — don't create a duplicate.
         Optional<GuidePurchase> existingPurchase = guidePurchaseRepository
                 .findByBuyerIdAndGuideVersionIdAndStatus(recipient.getId(), version.getId(), GuidePurchaseStatus.COMPLETED);
-
         if (existingPurchase.isPresent()) {
             GuidePurchase existing = existingPurchase.get();
             return GuideCheckoutSessionResponse.builder()
@@ -130,7 +133,16 @@ public class GuidePurchaseService {
                     .tripId(existing.getId())
                     .build();
         }
+        // Block if a gift to this person for this guide is already awaiting their reply.
+        Optional<GuidePurchase> pendingGift = guidePurchaseRepository
+                .findFirstByBuyerIdAndGuideIdAndProviderAndStatusOrderByCreatedAtDesc(
+                        recipient.getId(), guideId, "gift", GuidePurchaseStatus.PENDING);
+        if (pendingGift.isPresent()) {
+            throw new BusinessException("You've already gifted this guide — it's waiting for them to accept.");
+        }
 
+        // Create a PENDING gift OFFER — no trip / no access until accepted. Access
+        // checks everywhere require status=COMPLETED, so this grants nothing yet.
         GuidePurchase purchase = new GuidePurchase(
                 recipient.getId(),
                 guideId,
@@ -140,12 +152,65 @@ public class GuidePurchaseService {
                 0,
                 guide.getCurrency()
         );
-        purchase.setStatus(GuidePurchaseStatus.COMPLETED);
-        purchase.setTripTimezone(defaultTripTimezone(parseSnapshot(version)));
-        purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
+        purchase.setStatus(GuidePurchaseStatus.PENDING);
         purchase = guidePurchaseRepository.save(purchase);
 
-        seedTripItems(purchase, parseSnapshot(version));
+        // Notify the recipient (FCM + in-app bell) so they can accept/decline.
+        events.publishEvent(new GuideGiftedEvent(
+                guideId, purchase.getId(), creator.getId(), recipient.getId(), guide.getTitle()));
+
+        return GuideCheckoutSessionResponse.builder()
+                .provider("gift")
+                .alreadyOwned(false)
+                .build();
+    }
+
+    /** A recipient's pending free-gift offers, for the /gifts inbox. */
+    @Transactional(readOnly = true)
+    public List<GiftOfferResponse> listPendingGifts(String auth0Subject) {
+        User user = userService.findByAuth0Subject(auth0Subject);
+        return guidePurchaseRepository
+                .findByBuyerIdAndStatusOrderByCreatedAtDesc(user.getId(), GuidePurchaseStatus.PENDING)
+                .stream()
+                .filter(p -> "gift".equals(p.getProvider()))
+                .map(p -> {
+                    Guide guide = guideRepository.findById(p.getGuideId()).orElse(null);
+                    String gifterName = null;
+                    if (guide != null) {
+                        try {
+                            gifterName = userService.findById(guide.getCreatorId()).getUsername();
+                        } catch (RuntimeException ignored) { /* fall through */ }
+                    }
+                    return GiftOfferResponse.builder()
+                            .purchaseId(p.getId())
+                            .guideId(p.getGuideId())
+                            .guideTitle(guide != null ? guide.getTitle() : "Guide")
+                            .coverImageUrl(guide != null ? guide.getCoverImageUrl() : null)
+                            .gifterName(gifterName)
+                            .createdAt(p.getCreatedAt())
+                            .build();
+                })
+                .toList();
+    }
+
+    /** Accept a gift: grant access (COMPLETED) and materialize the trip. */
+    @Transactional
+    public GuideCheckoutSessionResponse acceptGift(String auth0Subject, UUID purchaseId) {
+        User user = userService.findByAuth0Subject(auth0Subject);
+        GuidePurchase purchase = guidePurchaseRepository.findByIdAndBuyerId(purchaseId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Gift", purchaseId));
+        if (!"gift".equals(purchase.getProvider()) || purchase.getStatus() != GuidePurchaseStatus.PENDING) {
+            throw new BusinessException("This gift is no longer available");
+        }
+        GuideVersion version = guideVersionRepository
+                .findByGuideIdAndVersionNumber(purchase.getGuideId(), purchase.getGuideVersionNumber())
+                .orElseThrow(() -> new BusinessException("Guide version snapshot is missing"));
+        GuideResponse snapshot = parseSnapshot(version);
+        purchase.setStatus(GuidePurchaseStatus.COMPLETED);
+        purchase.setTripTimezone(defaultTripTimezone(snapshot));
+        purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
+        guidePurchaseRepository.save(purchase);
+        seedTripItems(purchase, snapshot);
 
         return GuideCheckoutSessionResponse.builder()
                 .provider("gift")
@@ -153,6 +218,19 @@ public class GuidePurchaseService {
                 .alreadyOwned(false)
                 .tripId(purchase.getId())
                 .build();
+    }
+
+    /** Decline a gift offer. */
+    @Transactional
+    public void declineGift(String auth0Subject, UUID purchaseId) {
+        User user = userService.findByAuth0Subject(auth0Subject);
+        GuidePurchase purchase = guidePurchaseRepository.findByIdAndBuyerId(purchaseId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Gift", purchaseId));
+        if (!"gift".equals(purchase.getProvider()) || purchase.getStatus() != GuidePurchaseStatus.PENDING) {
+            throw new BusinessException("This gift is no longer available");
+        }
+        purchase.setStatus(GuidePurchaseStatus.CANCELED);
+        guidePurchaseRepository.save(purchase);
     }
 
     @Transactional

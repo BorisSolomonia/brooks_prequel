@@ -555,6 +555,15 @@ export interface GuideCheckoutSessionResponse {
   tripId: string | null;
 }
 
+export interface GiftOffer {
+  purchaseId: string;
+  guideId: string;
+  guideTitle: string;
+  coverImageUrl: string | null;
+  gifterName: string | null;
+  createdAt: string;
+}
+
 export interface MyTripSummary {
   id: string;
   guideId: string;

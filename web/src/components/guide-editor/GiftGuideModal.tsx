@@ -45,7 +45,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
       if (res.alreadyOwned) {
         setResult({ type: 'already_owned', message: `${selected.displayName ?? selected.username ?? 'They'} already have this guide.` });
       } else {
-        setResult({ type: 'success', message: `Guide gifted to ${selected.displayName ?? selected.username ?? 'follower'} successfully!` });
+        setResult({ type: 'success', message: `Gift sent to ${selected.displayName ?? selected.username ?? 'your follower'} — they'll be notified to accept it.` });
       }
     } catch (err) {
       setResult({ type: 'error', message: err instanceof Error ? err.message : 'Failed to gift guide' });
