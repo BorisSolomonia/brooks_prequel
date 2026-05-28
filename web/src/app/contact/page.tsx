@@ -1,8 +1,15 @@
+import Link from 'next/link';
 import { compliance } from '@/lib/compliance';
 
 export const metadata = {
   title: 'Contact Brooks',
 };
+
+// Pre-filled mailto so tapping opens the user's mail compose with the deletion
+// request ready to send.
+const DELETION_MAILTO = `mailto:${compliance.email}`
+  + `?subject=${encodeURIComponent('Data deletion request')}`
+  + `&body=${encodeURIComponent('Please delete my Brooks account and all associated data.\n\nAccount email: ')}`;
 
 export default function ContactPage() {
   return (
@@ -34,6 +41,40 @@ export default function ContactPage() {
             <dd className="mt-1 text-ig-text-primary">{compliance.businessHours}</dd>
           </div>
         </dl>
+      </div>
+
+      {/* Data deletion — surfaced on the support page so users who come here to
+          "contact us" can also request removal of their data. */}
+      <div className="mw-card mt-6 p-5">
+        <h2 className="mw-section-title text-xl">Delete your data</h2>
+        <p className="mt-2 text-sm leading-6 text-ig-text-secondary">
+          You can request deletion of your Brooks account and all associated data at any time.
+        </p>
+        <ul className="mt-4 space-y-3 text-sm text-ig-text-secondary">
+          <li>
+            <Link href="/account/delete" className="font-semibold text-brand-500 hover:text-brand-400">
+              Request data deletion →
+            </Link>
+            <span className="block text-ig-text-tertiary">Works even if you can&apos;t sign in — we email a confirmation link.</span>
+          </li>
+          <li>
+            <Link href="/settings/account/delete" className="font-semibold text-brand-500 hover:text-brand-400">
+              Delete from the app →
+            </Link>
+            <span className="block text-ig-text-tertiary">Signed in? Delete immediately in Settings → Account.</span>
+          </li>
+          <li>
+            <a href={DELETION_MAILTO} className="font-semibold text-brand-500 hover:text-brand-400">
+              Email a deletion request →
+            </a>
+            <span className="block text-ig-text-tertiary">Tap to open your mail app with the request pre-filled.</span>
+          </li>
+        </ul>
+        <p className="mt-4 text-xs text-ig-text-tertiary">
+          Deletion removes your profile, purchases, uploaded content and sign-in tokens; backups are purged within
+          30 days. Details in the{' '}
+          <Link href="/privacy" className="underline hover:text-brand-400">Privacy Policy</Link>.
+        </p>
       </div>
     </div>
   );
