@@ -128,6 +128,9 @@ public class BogIpayClient {
         String token = ensureToken();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        // BOG content-negotiates and defaults to application/xml; without this Accept header the
+        // create-order response comes back as <EntityModel> XML and JSON parsing fails.
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.setBearerAuth(token);
         headers.set("Accept-Language", properties.getLocale());
         headers.set("Idempotency-Key", createOrderIdempotencyKey(shopOrderId));
@@ -191,6 +194,8 @@ public class BogIpayClient {
     private PaymentDetails doGetPaymentDetails(String orderId) {
         String token = ensureToken();
         HttpHeaders headers = new HttpHeaders();
+        // BOG defaults to application/xml without an explicit JSON Accept header.
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.setBearerAuth(token);
 
         try {
@@ -200,7 +205,7 @@ public class BogIpayClient {
                     new HttpEntity<>(headers),
                     String.class
             );
-            JsonNode json = objectMapper.readTree(response.getBody());
+            JsonNode json = objectMapper.readTree(requireJsonBody("payment details", response));
             String amountStr = textPath(json, "purchase_units", "transfer_amount");
             if (amountStr == null) {
                 amountStr = textPath(json, "purchase_units", "request_amount");
@@ -238,6 +243,8 @@ public class BogIpayClient {
         String token = ensureToken();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        // BOG defaults to application/xml without an explicit JSON Accept header.
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.setBearerAuth(token);
         headers.set("Idempotency-Key", refundIdempotencyKey(orderId, amountMinorUnits));
 
@@ -253,7 +260,7 @@ public class BogIpayClient {
                     new HttpEntity<>(body, headers),
                     String.class
             );
-            JsonNode json = objectMapper.readTree(response.getBody());
+            JsonNode json = objectMapper.readTree(requireJsonBody("refund", response));
             return new RefundResult(
                     text(json, "key"),
                     text(json, "message"),
