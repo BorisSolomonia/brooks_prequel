@@ -13,12 +13,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class BogIpayClientTest {
 
+    // BOG types Idempotency-Key as a UUID, so the helpers emit a deterministic (name-based)
+    // UUID. We pin the UUID FORMAT + determinism + distinctness rather than a raw string.
+    private static final java.util.regex.Pattern UUID_PATTERN = java.util.regex.Pattern.compile(
+            "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
+
     @Test
     void createOrderIdempotencyKeyIsDeterministicFromShopOrderId() {
         String key1 = BogIpayClient.createOrderIdempotencyKey("ORDER-123");
         String key2 = BogIpayClient.createOrderIdempotencyKey("ORDER-123");
         assertThat(key1).isEqualTo(key2);
-        assertThat(key1).isEqualTo("create:ORDER-123");
+        assertThat(key1).matches(UUID_PATTERN);
     }
 
     @Test
@@ -31,8 +36,8 @@ class BogIpayClientTest {
     void refundIdempotencyKeyDistinguishesFullFromPartial() {
         String full = BogIpayClient.refundIdempotencyKey("ord-1", null);
         String partial = BogIpayClient.refundIdempotencyKey("ord-1", 100L);
-        assertThat(full).isEqualTo("refund:ord-1:full");
-        assertThat(partial).isEqualTo("refund:ord-1:100");
+        assertThat(full).matches(UUID_PATTERN);
+        assertThat(partial).matches(UUID_PATTERN);
         assertThat(full).isNotEqualTo(partial);
     }
 

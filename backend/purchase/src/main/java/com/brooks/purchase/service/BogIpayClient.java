@@ -132,7 +132,11 @@ public class BogIpayClient {
         headers.set("Accept-Language", properties.getLocale());
         headers.set("Idempotency-Key", createOrderIdempotencyKey(shopOrderId));
 
-        String amount = formatGel(amountMinorUnits);
+        // BOG order-create schema types total_amount/unit_price as JSON numbers, not strings
+        // (https://api.bog.ge/docs/payments/standard-process/create-order). A BigDecimal with
+        // scale 2 serializes as e.g. 1.00 — a valid JSON number. (The receipt RESPONSE amounts
+        // ARE strings per the docs, which is why the read side parses them as strings.)
+        java.math.BigDecimal amount = gelAmount(amountMinorUnits);
 
         Map<String, Object> basketItem = new LinkedHashMap<>();
         basketItem.put("product_id", productId);
@@ -239,7 +243,8 @@ public class BogIpayClient {
 
         Map<String, Object> body = new HashMap<>();
         if (amountMinorUnits != null) {
-            body.put("amount", formatGel(amountMinorUnits));
+            // Refund amount is a JSON number per the docs, same as the order-create amounts.
+            body.put("amount", gelAmount(amountMinorUnits));
         }
 
         try {
@@ -300,19 +305,26 @@ public class BogIpayClient {
     }
 
     // Idempotency keys are deterministic by operation + target so that BOG dedupes
-    // retries instead of opening a second order / issuing a duplicate refund.
+    // retries instead of opening a second order / issuing a duplicate refund. BOG's docs
+    // type Idempotency-Key as a UUID, so we hash the logical key into a deterministic
+    // (name-based, RFC-4122) UUID rather than sending a raw "create:<id>" string, which BOG
+    // can reject as malformed — and a rejected key silently disables dedup → double-charge.
     static String createOrderIdempotencyKey(String shopOrderId) {
-        return "create:" + shopOrderId;
+        return deterministicUuid("create:" + shopOrderId);
     }
 
     static String refundIdempotencyKey(String orderId, Long amountMinorUnits) {
-        return "refund:" + orderId + ":" + (amountMinorUnits == null ? "full" : amountMinorUnits);
+        return deterministicUuid("refund:" + orderId + ":" + (amountMinorUnits == null ? "full" : amountMinorUnits));
     }
 
-    private static String formatGel(long minorUnits) {
-        long whole = minorUnits / 100;
-        long fraction = Math.abs(minorUnits % 100);
-        return String.format("%d.%02d", whole, fraction);
+    private static String deterministicUuid(String logicalKey) {
+        return java.util.UUID.nameUUIDFromBytes(logicalKey.getBytes(StandardCharsets.UTF_8)).toString();
+    }
+
+    // GEL amount as a JSON number with scale 2 (e.g. 1234 minor units -> 12.34). Used for the
+    // order-create and refund REQUEST bodies, which the docs type as numbers.
+    private static java.math.BigDecimal gelAmount(long minorUnits) {
+        return java.math.BigDecimal.valueOf(minorUnits, 2);
     }
 
     /**

@@ -21,17 +21,26 @@
             </intent-filter>
 
             <!--
-              Android App Link for the Auth0 callback. Pairs with
-              /.well-known/assetlinks.json hosted at https://brooksweb.uk so
-              Android auto-opens the Brooks app instead of the system browser
-              when the user finishes Auth0 sign-in. autoVerify="true" causes
-              Android to fetch and validate the assetlinks file on install.
+              Android App Links for brooksweb.uk. Pairs with
+              /.well-known/assetlinks.json (real Play + upload SHA-256s) hosted
+              at https://brooksweb.uk so Android auto-opens the Brooks app
+              instead of the system browser whenever a brooksweb.uk URL is
+              opened (Auth0 sign-in callback, logout returnTo, shared links).
+              autoVerify="true" causes Android to fetch and validate the
+              assetlinks file on install.
+
+              We use `pathPrefix="/"` to cover EVERY brooksweb.uk path — the
+              previous narrow `pathPrefix="/api/auth/callback"` only caught the
+              login callback, so the post-logout returnTo to `https://brooksweb.uk`
+              would strand the user in Chrome on the web page instead of
+              returning to the app. The app is a wrapped-website client, so
+              owning every brooksweb.uk link is the correct behaviour.
             -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="brooksweb.uk" android:pathPrefix="/api/auth/callback" />
+                <data android:scheme="https" android:host="brooksweb.uk" android:pathPrefix="/" />
             </intent-filter>
 
             <!--

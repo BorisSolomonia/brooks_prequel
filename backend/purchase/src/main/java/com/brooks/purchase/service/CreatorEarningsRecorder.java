@@ -47,4 +47,69 @@ public class CreatorEarningsRecorder {
         earning.setRuleSource("STORED");
         creatorEarningRepository.save(earning);
     }
+
+    /** Result of reversing a creator earning when its purchase is refunded. */
+    public enum RefundOutcome {
+        /** No earning existed for this purchase (e.g. refund before completion). */
+        NO_EARNING,
+        /** Earning was already reversed/clawed/held — second refund delivery, no-op. */
+        ALREADY_RESOLVED,
+        /** Full refund, earning was still owed (PENDING) → marked REVERSED, no longer payable. */
+        REVERSED,
+        /** Full refund, but we had ALREADY paid the creator → marked CLAWBACK_DUE for recovery. */
+        CLAWBACK_DUE,
+        /** Partial refund on a still-owed earning → held out of auto-payout for manual reconciliation. */
+        FLAGGED_REVIEW
+    }
+
+    /**
+     * Reverses the creator earning for a refunded purchase so a refunded sale is no longer
+     * paid out (or is flagged for clawback if it already was). Without this, refunds silently
+     * over-pay creators while the buyer's money has been returned.
+     *
+     * <p>Idempotent for full refunds: once an earning leaves PENDING/PAID it stays put, so a
+     * re-delivered BOG refund callback is a no-op ({@link RefundOutcome#ALREADY_RESOLVED}).
+     *
+     * <p>Partial refunds: the fair gross/commission/net split is a policy decision and the
+     * amount math is not safely repeatable across duplicate callbacks, so instead of mutating
+     * amounts we move a still-owed (PENDING) earning to {@code REVIEW} — excluding it from the
+     * PENDING auto-payout query — and leave already-PAID earnings untouched but flagged via the
+     * returned outcome for manual reconciliation.
+     *
+     * @param purchaseId the refunded purchase
+     * @param partial    true for {@code refunded_partially}, false for a full {@code refunded}
+     */
+    public RefundOutcome reverseForRefund(java.util.UUID purchaseId, boolean partial) {
+        CreatorEarning earning = creatorEarningRepository.findByPurchaseId(purchaseId).orElse(null);
+        if (earning == null) {
+            return RefundOutcome.NO_EARNING;
+        }
+        String status = earning.getPayoutStatus();
+        boolean payable = "PENDING".equals(status);
+        boolean paid = "PAID".equals(status);
+        if (!payable && !paid) {
+            return RefundOutcome.ALREADY_RESOLVED;
+        }
+
+        if (partial) {
+            if (paid) {
+                // Already paid out in full; a partial refund means we should recover a portion.
+                // Don't overwrite the PAID record — surface it for manual reconciliation.
+                return RefundOutcome.CLAWBACK_DUE;
+            }
+            // Still owed: hold the remainder out of auto-payout until a human reconciles the split.
+            earning.setPayoutStatus("REVIEW");
+            creatorEarningRepository.save(earning);
+            return RefundOutcome.FLAGGED_REVIEW;
+        }
+
+        if (paid) {
+            earning.setPayoutStatus("CLAWBACK_DUE");
+            creatorEarningRepository.save(earning);
+            return RefundOutcome.CLAWBACK_DUE;
+        }
+        earning.setPayoutStatus("REVERSED");
+        creatorEarningRepository.save(earning);
+        return RefundOutcome.REVERSED;
+    }
 }

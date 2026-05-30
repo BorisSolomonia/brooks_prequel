@@ -306,6 +306,22 @@ public class PurchaseService {
                 partial ? "CHECKOUT_REFUNDED_PARTIALLY" : "CHECKOUT_REFUNDED",
                 payload("bogOrderId", bogOrderId,
                         "refundAmount", refundAmount == null ? "" : refundAmount));
+
+        // Reverse the creator earning so a refunded sale is no longer owed/paid. Without this,
+        // a refund returns the buyer's money while the creator's net stays payable (or is paid),
+        // and the platform silently eats the loss with no recovery trail.
+        CreatorEarningsRecorder.RefundOutcome outcome = earningsRecorder.reverseForRefund(purchase.getId(), partial);
+        switch (outcome) {
+            case REVERSED -> auditWriter.record(purchase.getId(), "EARNING_REVERSED",
+                    payload("bogOrderId", bogOrderId));
+            case CLAWBACK_DUE -> auditWriter.record(purchase.getId(), "EARNING_CLAWBACK_DUE",
+                    payload("bogOrderId", bogOrderId,
+                            "note", "earning already paid out before refund — recover from creator"));
+            case FLAGGED_REVIEW -> auditWriter.record(purchase.getId(), "EARNING_PAYOUT_HELD_FOR_REVIEW",
+                    payload("bogOrderId", bogOrderId,
+                            "note", "partial refund — remaining payout held for manual reconciliation"));
+            case NO_EARNING, ALREADY_RESOLVED -> { /* nothing payable to reverse */ }
+        }
     }
 
     /**
