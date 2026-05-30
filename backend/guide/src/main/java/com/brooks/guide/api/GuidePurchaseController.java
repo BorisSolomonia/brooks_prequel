@@ -41,6 +41,15 @@ public class GuidePurchaseController {
         return ResponseEntity.ok(guidePurchaseService.getTrip(subject(authentication), email(authentication), tripId));
     }
 
+    /** Remove a purchased guide from My Trips (soft — re-buying restores it free). */
+    @DeleteMapping("/me/trips/{tripId}")
+    public ResponseEntity<Void> removeTrip(
+            Authentication authentication,
+            @PathVariable(name = "tripId") UUID tripId) {
+        guidePurchaseService.removeTrip(subject(authentication), email(authentication), tripId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/me/trips/by-guide/{guideId}")
     public ResponseEntity<MyTripSummaryResponse> getTripByGuide(
             Authentication authentication,

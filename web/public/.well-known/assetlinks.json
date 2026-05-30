@@ -8,8 +8,8 @@
       "namespace": "android_app",
       "package_name": "uk.brooksweb.app",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_PLAY_APP_SIGNING_SHA256",
-        "REPLACE_WITH_UPLOAD_KEY_SHA256"
+        "9B:95:45:DB:F6:C3:EA:38:FF:AE:4A:73:83:35:0A:84:BE:7C:D8:59:54:D6:2B:EA:A0:36:A7:55:B1:57:30:5A",
+        "B7:CD:16:8B:0A:0C:E7:67:9A:53:A0:F5:9E:8C:20:17:07:25:B0:4C:81:AA:75:74:41:A0:9B:DE:94:A5:04:02"
       ]
     }
   }

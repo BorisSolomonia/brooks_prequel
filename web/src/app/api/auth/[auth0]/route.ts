@@ -1,4 +1,4 @@
-import { handleAuth, handleLogin, handleCallback } from '@auth0/nextjs-auth0';
+import { handleAuth, handleLogin, handleCallback, handleLogout } from '@auth0/nextjs-auth0';
 import type { AfterCallbackAppRoute } from '@auth0/nextjs-auth0';
 
 const API_INTERNAL = process.env.API_INTERNAL_BASE_URL ?? 'http://backend:8080';
@@ -90,5 +90,17 @@ export const GET = handleAuth({
         : (process.env.AUTH0_BASE_URL + '/api/auth/callback'),
       afterCallback,
     };
+  }),
+  // Professional logout: clears the local app session AND the Auth0 session via
+  // /v2/logout (NOT ?federated — we don't sign the user out of Google globally),
+  // then returns into the app. `returnTo` must be listed in Auth0 → Allowed
+  // Logout URLs (the base URL normally is). Reliability of the return:
+  //   • In-WebView: the /v2/logout → returnTo chain stays inside the app because
+  //     capacitor.config allowNavigation includes *.auth0.com + brooksweb.uk.
+  //   • If a logout ever completes in an external Chrome (e.g. a Google-federated
+  //     session), the verified App Link (assetlinks.json) sends the returnTo URL
+  //     back into the app — so this is "ready once assetlinks.json is fixed".
+  logout: handleLogout({
+    returnTo: process.env.AUTH0_BASE_URL,
   }),
 });

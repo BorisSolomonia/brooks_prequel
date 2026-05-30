@@ -9,6 +9,7 @@ import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -64,6 +65,12 @@ public class GuidePurchase extends BaseEntity {
 
     @Column(name = "trip_source", nullable = false, length = 30)
     private String tripSource = "PURCHASE";
+
+    // Soft-remove: when the buyer removes the guide from My Trips. The COMPLETED
+    // purchase (and its invoice record) is kept; it's just hidden. Re-buying the
+    // guide clears this (free restore) since they already own the version.
+    @Column(name = "removed_at")
+    private Instant removedAt;
 
     @Column(name = "guide_snapshot", columnDefinition = "JSONB")
     @JdbcTypeCode(SqlTypes.JSON)

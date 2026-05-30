@@ -71,6 +71,12 @@ public class GuidePurchaseService {
 
         if (existingPurchase.isPresent()) {
             GuidePurchase purchase = existingPurchase.get();
+            // Free restore: they already own this version but had removed it from
+            // My Trips. Un-hide it (its trip items are preserved) — no charge.
+            if (purchase.getRemovedAt() != null) {
+                purchase.setRemovedAt(null);
+                guidePurchaseRepository.save(purchase);
+            }
             return GuideCheckoutSessionResponse.builder()
                     .provider("mock")
                     .checkoutUrl(frontendBaseUrl + "/trips/" + purchase.getId())
@@ -314,6 +320,7 @@ public class GuidePurchaseService {
         List<MyTripSummaryResponse> trips = guidePurchaseRepository
                 .findByBuyerIdAndStatusOrderByCreatedAtDesc(buyer.getId(), GuidePurchaseStatus.COMPLETED)
                 .stream()
+                .filter(p -> p.getRemovedAt() == null) // hide buyer-removed guides
                 .map(this::toSummaryResponse)
                 .toList();
         return MyTripsResponse.builder().trips(trips).build();
@@ -324,6 +331,7 @@ public class GuidePurchaseService {
         User buyer = resolveBuyer(auth0Subject, email);
         GuidePurchase purchase = guidePurchaseRepository
                 .findFirstByBuyerIdAndGuideIdAndStatusOrderByCreatedAtDesc(buyer.getId(), guideId, GuidePurchaseStatus.COMPLETED)
+                .filter(p -> p.getRemovedAt() == null) // a removed guide reads as "not owned" so the page offers Get → restore
                 .orElseThrow(() -> new ResourceNotFoundException("Trip", guideId));
         return toSummaryResponse(purchase);
     }
@@ -501,8 +509,25 @@ public class GuidePurchaseService {
     }
 
     private GuidePurchase findOwnedTrip(UUID tripId, UUID buyerId) {
-        return guidePurchaseRepository.findByIdAndBuyerId(tripId, buyerId)
+        GuidePurchase purchase = guidePurchaseRepository.findByIdAndBuyerId(tripId, buyerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip", tripId));
+        // A removed trip is treated as gone (open/edit/calendar all 404).
+        if (purchase.getRemovedAt() != null) {
+            throw new ResourceNotFoundException("Trip", tripId);
+        }
+        return purchase;
+    }
+
+    /** Remove a purchased guide from My Trips (soft — keeps the purchase record). */
+    @Transactional
+    public void removeTrip(String auth0Subject, String email, UUID tripId) {
+        User buyer = resolveBuyer(auth0Subject, email);
+        GuidePurchase purchase = guidePurchaseRepository.findByIdAndBuyerId(tripId, buyer.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Trip", tripId));
+        if (purchase.getRemovedAt() == null) {
+            purchase.setRemovedAt(java.time.Instant.now());
+            guidePurchaseRepository.save(purchase);
+        }
     }
 
     private MyTripSummaryResponse toSummaryResponse(GuidePurchase purchase) {

@@ -13,6 +13,7 @@ import { useCurrency } from '@/hooks/useCurrency';
 import type { MyTripDetail, MyTripItem, MyTripItemUpdateRequest, MyTripSetupRequest, AiKeyResponse, GuidePlace } from '@/types';
 import { BuyerChatPanel } from '@/components/ai/BuyerChatPanel';
 import Spinner from '@/components/ui/Spinner';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 function toLocalInputValue(value: string | null): string {
   if (!value) return '';
@@ -93,6 +94,7 @@ interface ReviewFormState {
 export default function TripDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { confirm } = useConfirm();
   const tripId = params.id as string;
   const { token, loading: tokenLoading } = useAccessToken();
   const { formatAmount } = useCurrency();
@@ -106,6 +108,26 @@ export default function TripDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [aiKeys, setAiKeys] = useState<AiKeyResponse[]>([]);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const handleRemoveTrip = async () => {
+    if (!token || removing) return;
+    const ok = await confirm({
+      title: 'Remove this guide?',
+      body: 'It will be removed from your Purchased guides. You can add it back anytime for free — you already own this version.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (!ok) return;
+    setRemoving(true);
+    try {
+      await api.delete(`/api/me/trips/${tripId}`, token);
+      router.push('/trips');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not remove guide');
+      setRemoving(false);
+    }
+  };
   const [review, setReview] = useState<ReviewFormState>({
     rating: 0,
     reviewText: '',
@@ -299,6 +321,13 @@ export default function TripDetailPage() {
             className="mw-button-primary min-h-11 flex-1 rounded-md px-4 py-2 text-sm md:flex-none"
           >
             Add to Calendar
+          </button>
+          <button
+            onClick={handleRemoveTrip}
+            disabled={removing}
+            className="min-h-11 flex-1 rounded-md border border-ig-error/30 bg-ig-error/10 px-4 py-2 text-sm font-semibold text-ig-error transition-colors hover:bg-ig-error/15 disabled:opacity-60 md:flex-none"
+          >
+            {removing ? 'Removing…' : 'Remove guide'}
           </button>
         </div>
       </div>
