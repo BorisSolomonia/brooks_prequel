@@ -1,4 +1,4 @@
-# Brooks_prequel — iOS UX audit (May 2026)
+# Brooks_prequel — iOS UX audit (May 2026).
 
 **Scope:** Mobile Safari on iPhone (notched + non-notched). Web app, not Capacitor WebView. Audit covers the 6 priority routes and the cross-cutting infrastructure that all 37 routes inherit.
 
