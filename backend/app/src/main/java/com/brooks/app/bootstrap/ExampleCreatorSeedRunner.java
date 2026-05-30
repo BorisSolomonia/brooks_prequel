@@ -100,7 +100,10 @@ public class ExampleCreatorSeedRunner implements ApplicationRunner {
         guide.setPrimaryCity(properties.getGuideCity());
         guide.setCountry(properties.getGuideCountry());
         guide.setPriceCents(properties.getGuidePriceCents());
-        guide.setCurrency(properties.getGuideCurrency());
+        // GEL-only: force GEL regardless of the configured seed currency so the example guide
+        // is always purchasable via BOG iPay (GEL-only). This also re-corrects an existing demo
+        // row on the next boot if it was previously seeded in another currency (e.g. USD).
+        guide.setCurrency(com.brooks.common.util.BusinessConstants.CURRENCY_GEL);
         boolean existingGuide = guide.getId() != null;
         guide.setStatus(GuideStatus.PUBLISHED);
         if (existingGuide) {

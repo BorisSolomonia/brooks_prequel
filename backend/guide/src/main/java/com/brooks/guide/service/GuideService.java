@@ -69,7 +69,9 @@ public class GuideService {
         guide.setCountry(request.getCountry());
         guide.setTimezone(request.getTimezone());
         guide.setPriceCents(request.getPriceCents());
-        if (request.getCurrency() != null) guide.setCurrency(request.getCurrency());
+        // GEL-only: BOG iPay checkout settles only in GEL, so a non-GEL guide would be
+        // unpurchasable (checkout 400s). Ignore any client-supplied currency and keep the
+        // domain default (GEL) so every guide is always purchasable.
 
         guide = guideRepository.save(guide);
         replaceTags(guide, request.getTags());
@@ -97,7 +99,8 @@ public class GuideService {
         if (request.getCountry() != null) guide.setCountry(request.getCountry());
         if (request.getTimezone() != null) guide.setTimezone(request.getTimezone());
         if (request.getPriceCents() != null) guide.setPriceCents(request.getPriceCents());
-        if (request.getCurrency() != null) guide.setCurrency(request.getCurrency());
+        // GEL-only: currency is intentionally not editable — BOG iPay settles only in GEL,
+        // so guides must stay GEL to remain purchasable. Any client-supplied currency is ignored.
         if (request.getSalePriceCents() != null) {
             guide.setSalePriceCents(request.getSalePriceCents() == 0 ? null : request.getSalePriceCents());
             guide.setSaleEndsAt(request.getSalePriceCents() == 0 ? null : request.getSaleEndsAt());

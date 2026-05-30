@@ -215,12 +215,20 @@ function getMarkerTransform(isActive: boolean): string {
   return isActive ? 'translateY(-4px) scale(1.04)' : 'translateY(0) scale(1)';
 }
 
+// Leaflet returns world-wrapped coordinates (e.g. east = 199 or 382) when the map is
+// zoomed out far enough to show multiple world copies, or panned across the antimeridian.
+// The /api/memories/map endpoint validates bounds are within [-180,180]/[-90,90] and 400s
+// otherwise ("Invalid map bounds"). Clamp to the valid range so the fetch always succeeds —
+// a fully zoomed-out viewport then queries the whole world, which is the intended result.
+const clampLat = (v: number) => Math.max(-90, Math.min(90, v));
+const clampLng = (v: number) => Math.max(-180, Math.min(180, v));
+
 function getBoundsState(bounds: LatLngBounds): MapBoundsState {
   return {
-    north: bounds.getNorth(),
-    south: bounds.getSouth(),
-    east: bounds.getEast(),
-    west: bounds.getWest(),
+    north: clampLat(bounds.getNorth()),
+    south: clampLat(bounds.getSouth()),
+    east: clampLng(bounds.getEast()),
+    west: clampLng(bounds.getWest()),
   };
 }
 
