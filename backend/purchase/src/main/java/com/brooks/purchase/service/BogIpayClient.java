@@ -168,7 +168,7 @@ public class BogIpayClient {
                     new HttpEntity<>(body, headers),
                     String.class
             );
-            JsonNode json = objectMapper.readTree(response.getBody());
+            JsonNode json = objectMapper.readTree(requireJsonBody("create order", response));
             String orderId = text(json, "id");
             if (orderId == null) {
                 throw new IllegalStateException("BOG iPay create order response missing 'id'");
@@ -302,6 +302,32 @@ public class BogIpayClient {
             log.error("BOG iPay token response parse failed", e);
             throw new RuntimeException("Failed to parse BOG iPay token response", e);
         }
+    }
+
+    /**
+     * Returns the response body only when the call was 2xx AND the body is JSON. BOG — or an
+     * intermediary (reverse proxy, WAF, a misconfigured {@code BOG_IPAY_API_URL}, or a 3xx
+     * redirect to a login/consent page) — can answer with a 2xx/3xx HTML page. Feeding that to
+     * {@code readTree} produces an opaque "Unexpected character ('<')" parse error that hides what
+     * actually came back. This logs the status, content-type and a truncated body snippet so the
+     * real cause is visible, then fails with a clear message. The snippet is an error page, not
+     * sensitive data, but is still truncated to 300 chars.
+     */
+    private String requireJsonBody(String operation, ResponseEntity<String> response) {
+        String responseBody = response.getBody();
+        String trimmed = responseBody == null ? "" : responseBody.stripLeading();
+        boolean looksJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+        if (response.getStatusCode().is2xxSuccessful() && looksJson) {
+            return responseBody;
+        }
+        String snippet = responseBody == null ? "<null>" : responseBody.strip().replaceAll("\\s+", " ");
+        if (snippet.length() > 300) {
+            snippet = snippet.substring(0, 300) + "…";
+        }
+        log.error("BOG iPay {} returned a non-JSON/non-2xx response: status={} contentType={} bodySnippet=[{}]",
+                operation, response.getStatusCode(), response.getHeaders().getContentType(), snippet);
+        throw new IllegalStateException("BOG iPay " + operation
+                + " returned an unexpected (non-JSON) response, status=" + response.getStatusCode());
     }
 
     // Idempotency keys are deterministic by operation + target so that BOG dedupes
