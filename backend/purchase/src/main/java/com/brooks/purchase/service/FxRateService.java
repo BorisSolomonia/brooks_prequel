@@ -144,4 +144,22 @@ public class FxRateService {
     public boolean isSupported(String currency) {
         return currency != null && SUPPORTED.contains(currency.trim().toUpperCase());
     }
+
+    private static final Set<String> EUROZONE = Set.of(
+            "AT","BE","CY","EE","FI","FR","DE","GR","IE","IT","LV","LT","LU","MT","NL","PT","SK","SI","ES","HR");
+
+    /**
+     * Map an ISO-3166 country code to the display currency. Georgia → GEL, eurozone → EUR, UK → GBP,
+     * any other known country → USD. Returns null when the country is unknown so the client can fall
+     * back to its own signal (timezone). This is the AUTHORITATIVE "where is the buyer" signal when
+     * the edge/proxy provides a country header.
+     */
+    public String countryToCurrency(String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) return null;
+        String cc = countryCode.trim().toUpperCase();
+        if ("GE".equals(cc)) return BusinessConstants.CURRENCY_GEL;
+        if ("GB".equals(cc)) return BusinessConstants.CURRENCY_GBP;
+        if (EUROZONE.contains(cc)) return BusinessConstants.CURRENCY_EUR;
+        return BusinessConstants.CURRENCY_USD;
+    }
 }

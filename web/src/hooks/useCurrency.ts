@@ -13,43 +13,57 @@ const SYMBOLS: Record<string, string> = { GEL: '₾', USD: '$', EUR: '€', GBP:
 const SUPPORTED = ['GEL', 'USD', 'EUR', 'GBP'];
 const STORAGE_KEY = 'brooks.displayCurrency';
 
-// Module-level cache so every component shares one fetch.
-let ratesCache: Rates | null = null;
-let ratesPromise: Promise<Rates> | null = null;
+type FxResponse = { gelPerUnit: Rates; suggestedCurrency: string | null };
 
-function loadRates(): Promise<Rates> {
-  if (ratesCache) return Promise.resolve(ratesCache);
-  if (!ratesPromise) {
-    ratesPromise = api
-      .get<{ gelPerUnit: Rates }>('/api/fx/rates')
-      .then((r) => { ratesCache = r.gelPerUnit || { GEL: 1 }; return ratesCache; })
-      .catch(() => { ratesCache = { GEL: 1 }; return ratesCache; });
+// Module-level cache so every component shares one fetch.
+let fxCache: FxResponse | null = null;
+let fxPromise: Promise<FxResponse> | null = null;
+
+function loadFx(): Promise<FxResponse> {
+  if (fxCache) return Promise.resolve(fxCache);
+  if (!fxPromise) {
+    fxPromise = api
+      .get<{ gelPerUnit: Rates; suggestedCurrency?: string | null }>('/api/fx/rates')
+      .then((r) => { fxCache = { gelPerUnit: r.gelPerUnit || { GEL: 1 }, suggestedCurrency: r.suggestedCurrency ?? null }; return fxCache; })
+      .catch(() => { fxCache = { gelPerUnit: { GEL: 1 }, suggestedCurrency: null }; return fxCache; });
   }
-  return ratesPromise;
+  return fxPromise;
 }
 
-// Default display currency from the browser locale region: Georgia → GEL, EU → EUR, UK → GBP, else USD.
-// (A future enhancement is server-side IP geo; the user can always override via the selector.)
-function defaultDisplayCurrency(): string {
-  if (typeof navigator === 'undefined') return 'USD';
+// LOCATION (not language) based default. Timezone is a strong proxy for physical location: a device
+// in Georgia is Asia/Tbilisi regardless of its UI language — which is exactly why locale-based
+// detection was wrong (a Georgian phone set to English reported US → USD). The server's IP-country
+// suggestion (when present) takes priority over this.
+function timezoneCurrency(): string | null {
   try {
-    const region = new Intl.Locale(navigator.language).maximize().region || '';
-    if (region === 'GE') return 'GEL';
-    const EU = ['AT','BE','CY','EE','FI','FR','DE','GR','IE','IT','LV','LT','LU','MT','NL','PT','SK','SI','ES','HR'];
-    if (EU.includes(region)) return 'EUR';
-    if (region === 'GB') return 'GBP';
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (tz === 'Asia/Tbilisi') return 'GEL';
+    if (tz === 'Europe/London') return 'GBP';
+    if (tz.startsWith('Europe/')) return 'EUR';
   } catch { /* ignore */ }
-  return 'USD';
+  return null;
+}
+
+function clientDefaultCurrency(): string {
+  return timezoneCurrency() ?? 'USD';
 }
 
 export function useCurrency() {
-  const [rates, setRates] = useState<Rates | null>(ratesCache);
+  const [rates, setRates] = useState<Rates | null>(fxCache?.gelPerUnit ?? null);
   const [displayCurrency, setDisplayCurrencyState] = useState<string>('GEL');
 
   useEffect(() => {
-    loadRates().then(setRates);
     const saved = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
-    setDisplayCurrencyState(saved && SUPPORTED.includes(saved) ? saved : defaultDisplayCurrency());
+    const hasSaved = !!(saved && SUPPORTED.includes(saved));
+    // Set an immediate best-guess (timezone) so the UI isn't blank…
+    setDisplayCurrencyState(hasSaved ? saved! : clientDefaultCurrency());
+    // …then let the server's IP-country suggestion win (unless the user has manually chosen).
+    loadFx().then((fx) => {
+      setRates(fx.gelPerUnit);
+      if (!hasSaved && fx.suggestedCurrency && SUPPORTED.includes(fx.suggestedCurrency)) {
+        setDisplayCurrencyState(fx.suggestedCurrency);
+      }
+    });
   }, []);
 
   const setDisplayCurrency = useCallback((ccy: string) => {
