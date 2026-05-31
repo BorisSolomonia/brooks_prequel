@@ -31,9 +31,9 @@ public class GuideCreateRequest {
     private String timezone;
 
     private int priceCents = 0;
-    // GEL by default — BOG iPay is the only payment processor and accepts
-    // GEL exclusively. Matches Guide entity default.
-    private String currency = "GEL";
+    // Base/presentment currency the creator prices in (default USD). The buyer is charged in GEL,
+    // converted at checkout. Validated server-side against BusinessConstants.SUPPORTED_CURRENCIES.
+    private String currency = "USD";
     private List<String> tags;
     private List<String> categoryIds;
 }

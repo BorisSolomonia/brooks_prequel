@@ -56,6 +56,7 @@ public class PurchaseService {
     // Used to synchronously self-heal the access "trip" during verify-on-return, so a paid
     // purchase deterministically unlocks even if the AFTER_COMMIT event listener was lost/failed.
     private final com.brooks.guide.service.GuidePurchaseService guidePurchaseService;
+    private final FxRateService fxRateService;
 
     public PurchaseService(
             PurchaseRepository purchaseRepository,
@@ -69,7 +70,8 @@ public class PurchaseService {
             PlatformTransactionManager transactionManager,
             PurchaseAuditWriter auditWriter,
             CreatorEarningsRecorder earningsRecorder,
-            com.brooks.guide.service.GuidePurchaseService guidePurchaseService
+            com.brooks.guide.service.GuidePurchaseService guidePurchaseService,
+            FxRateService fxRateService
     ) {
         this.purchaseRepository = purchaseRepository;
         this.guideRepository = guideRepository;
@@ -83,6 +85,7 @@ public class PurchaseService {
         this.earningsRecorder = earningsRecorder;
         this.followRepository = followRepository;
         this.guidePurchaseService = guidePurchaseService;
+        this.fxRateService = fxRateService;
     }
 
     /**
@@ -320,9 +323,12 @@ public class PurchaseService {
             throw new BusinessException("You have already purchased this guide");
         }
 
-        // BOG iPay supports GEL only — verify guide is priced in GEL
-        if (!BusinessConstants.CURRENCY_GEL.equalsIgnoreCase(guide.getCurrency())) {
-            throw new BusinessException("This guide is not priced in GEL and cannot be purchased through BOG iPay");
+        // Multi-currency: the guide stores a BASE price + base currency (creator-set, e.g. USD).
+        // The buyer is always CHARGED in GEL (BOG settles GEL only), converted from the base at the
+        // current NBG rate + margin. Validate the base currency is one we can convert.
+        String baseCurrency = guide.getCurrency() == null ? BusinessConstants.CURRENCY_GEL : guide.getCurrency();
+        if (!fxRateService.isSupported(baseCurrency)) {
+            throw new BusinessException("This guide's currency is not supported for purchase: " + baseCurrency);
         }
 
         // A sale price equal to or above the regular price would mean the customer pays the
@@ -332,13 +338,16 @@ public class PurchaseService {
                 && guide.getSalePriceCents() >= guide.getPriceCents()) {
             throw new BusinessException("Sale price must be lower than the regular price");
         }
-        int effectivePrice = guide.effectivePrice();
+        int effectiveBase = guide.effectivePrice();                  // minor units in the base currency
+        // Binding charge: base → GEL at the current rate + margin (rounded up).
+        int effectivePrice = (int) fxRateService.toGelChargeMinor(effectiveBase, baseCurrency); // GEL tetri
 
         String creatorRegion = profileRepository.findByUserId(guide.getCreatorId())
                 .map(p -> p.getRegion())
                 .orElse(null);
         CommissionRateResolver.Resolution resolution =
                 commissionRateResolver.resolve(guide.getCreatorId(), creatorRegion);
+        // Commission is taken on the GEL amount we actually collect.
         int platformFee = (int) Math.ceil((long) effectivePrice * resolution.rateBps() / 10000.0);
 
         return new CheckoutPreflight(

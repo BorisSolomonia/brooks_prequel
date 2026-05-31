@@ -302,7 +302,7 @@ export default function GlobalSearchBar() {
                     title={guide.title}
                     subtitle={`by ${guide.creatorDisplayName || guide.creatorUsername}`}
                     meta={[guide.primaryCity || guide.region, `${guide.dayCount} days`, `${guide.placeCount} places`].filter(Boolean).join(' · ')}
-                    badge={formatAmount(guide.priceCents)}
+                    badge={formatAmount(guide.priceCents, guide.currency)}
                     onSelect={() => setOpen(false)}
                     icon={
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

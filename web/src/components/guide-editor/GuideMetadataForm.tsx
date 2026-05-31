@@ -487,14 +487,31 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Price (cents)</label>
-          <input
-            type="number"
-            value={data.priceCents || 0}
-            onChange={(e) => update('priceCents', parseInt(e.target.value) || 0)}
-            min={0}
-            className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none"
-          />
+          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Price</label>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              step="0.01"
+              min={0}
+              value={data.priceCents != null ? (data.priceCents / 100) : 0}
+              onChange={(e) => {
+                const major = parseFloat(e.target.value);
+                update('priceCents', isNaN(major) || major < 0 ? 0 : Math.round(major * 100));
+              }}
+              placeholder="e.g. 10.00"
+              className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none"
+            />
+            <select
+              value={(data.currency || 'USD').toUpperCase()}
+              onChange={(e) => update('currency', e.target.value)}
+              className="min-h-11 rounded-md border border-ig-border bg-ig-secondary px-2 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none"
+            >
+              {['USD', 'EUR', 'GBP', 'GEL'].map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <p className="mt-1 text-xs text-ig-text-tertiary">
+            Set your price in your currency. Buyers see it converted to their local currency; payment is charged in GEL.
+          </p>
         </div>
       </div>
 
@@ -513,17 +530,18 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
             )}
           </div>
           <div>
-            <label className="block text-xs text-ig-text-tertiary mb-1">Sale price (cents) — leave blank or 0 to disable</label>
+            <label className="block text-xs text-ig-text-tertiary mb-1">Sale price ({(data.currency || 'USD').toUpperCase()}) — leave blank or 0 to disable</label>
             <input
               type="number"
-              value={(data as GuideUpdateRequest).salePriceCents ?? ''}
+              step="0.01"
+              value={(data as GuideUpdateRequest).salePriceCents != null ? ((data as GuideUpdateRequest).salePriceCents! / 100) : ''}
               onChange={(e) => {
-                const val = parseInt(e.target.value);
-                const price = isNaN(val) || val <= 0 ? null : val;
+                const major = parseFloat(e.target.value);
+                const price = isNaN(major) || major <= 0 ? null : Math.round(major * 100);
                 onPatch({ salePriceCents: price, saleEndsAt: price == null ? null : (data as GuideUpdateRequest).saleEndsAt ?? null });
               }}
               min={0}
-              placeholder="e.g. 500 for $5.00"
+              placeholder="e.g. 5.00"
               className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
             />
           </div>

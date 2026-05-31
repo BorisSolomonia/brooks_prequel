@@ -95,7 +95,7 @@ export default function MyGuidesPage() {
 
   const formatPrice = (item: GuideLibraryItem) => {
     const cents = item.effectivePriceCents ?? item.priceCents;
-    return formatAmount(cents ?? 0);
+    return formatAmount(cents ?? 0, item.currency);
   };
 
   const formatDate = (value: string | null) => {

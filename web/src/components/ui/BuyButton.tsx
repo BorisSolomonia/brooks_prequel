@@ -110,11 +110,11 @@ export default function BuyButton({ guideId, priceCents, currency, salePriceCent
           className="mw-button-primary inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm disabled:opacity-50 sm:flex-none"
         >
           {loading && <Spinner />}
-          {loading ? 'Processing...' : isFree ? 'Get Guide Free' : `Buy for ${formatAmount(effectivePrice)}`}
+          {loading ? 'Processing...' : isFree ? 'Get Guide Free' : `Buy for ${formatAmount(effectivePrice, currency)}`}
         </button>
         {saleActive && (
           <span className="text-sm text-ig-text-tertiary line-through">
-            {formatAmount(priceCents)}
+            {formatAmount(priceCents, currency)}
           </span>
         )}
       </div>

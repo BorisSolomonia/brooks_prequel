@@ -37,7 +37,7 @@ export default function ViewGuidePage() {
   const guideId = params.id as string;
   const { token, loading: tokenLoading } = useAccessToken();
   const router = useRouter();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, displayCurrency, setDisplayCurrency, supported } = useCurrency();
   const toast = useToast();
 
   const [mode, setMode] = useState<ViewMode>('loading');
@@ -253,8 +253,16 @@ export default function ViewGuidePage() {
               <span>{displayGuide?.dayCount || displayPreview?.dayCount} days</span>
               <span>{displayGuide?.placeCount || displayPreview?.placeCount} places</span>
               {mode !== 'buyer' && (displayGuide?.priceCents || displayPreview?.priceCents || 0) > 0 && (
-                <span className="font-semibold text-ig-text-primary">
-                  {formatAmount((displayGuide?.priceCents ?? displayPreview?.priceCents) ?? 0)}
+                <span className="inline-flex items-center gap-1 font-semibold text-ig-text-primary">
+                  {formatAmount((displayGuide?.priceCents ?? displayPreview?.priceCents) ?? 0, displayGuide?.currency ?? displayPreview?.currency)}
+                  <select
+                    aria-label="Display currency"
+                    value={displayCurrency}
+                    onChange={(e) => setDisplayCurrency(e.target.value)}
+                    className="ml-1 rounded border border-ig-border bg-ig-secondary px-1 py-0.5 text-xs text-ig-text-secondary focus:outline-none"
+                  >
+                    {supported.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </span>
               )}
             </div>

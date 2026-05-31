@@ -132,7 +132,7 @@ export default function GuideCard({
             )}
           </div>
           <p className="font-display shrink-0 text-sm font-black text-accent-500">
-            {cardPrice <= 0 ? 'Free' : `From ${formatAmount(cardPrice, 0)}`}
+            {cardPrice <= 0 ? 'Free' : `From ${formatAmount(cardPrice, currency)}`}
           </p>
         </div>
       </Link>

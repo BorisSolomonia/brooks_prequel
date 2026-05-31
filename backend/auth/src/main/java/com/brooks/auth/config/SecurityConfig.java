@@ -56,6 +56,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/callback").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/creators/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/guides/*/preview").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/fx/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/guides/*/reviews").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/memory-shares/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()

@@ -93,10 +93,10 @@ export default function PricingPage() {
                 </span>
               </span>
               <span className="text-right font-display font-black text-accent-500">
-                {formatAmount(guide.effectivePriceCents ?? guide.priceCents)}
+                {formatAmount(guide.effectivePriceCents ?? guide.priceCents, guide.currency)}
                 {guide.salePriceCents != null && guide.salePriceCents !== guide.priceCents && (
                   <span className="block text-xs font-normal text-ig-text-tertiary line-through">
-                    {formatAmount(guide.priceCents)}
+                    {formatAmount(guide.priceCents, guide.currency)}
                   </span>
                 )}
               </span>
