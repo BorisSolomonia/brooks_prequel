@@ -48,6 +48,15 @@ public class PurchaseController {
         return ResponseEntity.ok(purchaseQueryService.getMyPurchaseByBogOrderId(subject(authentication), bogOrderId));
     }
 
+    // The BOG redirect carries our shop_order_id (external_order_id), not BOG's order id, so the
+    // post-payment return page resolves the purchase through this endpoint.
+    @GetMapping("/me/purchases/by-shop-order/{shopOrderId}")
+    public ResponseEntity<PurchaseResponse> getMyPurchaseByShopOrderId(
+            Authentication authentication,
+            @PathVariable(name = "shopOrderId") String shopOrderId) {
+        return ResponseEntity.ok(purchaseQueryService.getMyPurchaseByExternalOrderId(subject(authentication), shopOrderId));
+    }
+
     @GetMapping(value = "/purchases/{guideId}/content", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getPurchasedGuideContent(
             Authentication authentication,

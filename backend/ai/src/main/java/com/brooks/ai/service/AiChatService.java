@@ -53,6 +53,17 @@ public class AiChatService {
         return stream(req.provider(), dk.apiKey(), dk.model(), systemPrompt, req.history(), req.userMessage());
     }
 
+    // ── Guide hook (description generator) ──────────────────────────────────────
+    // Stateless: drafts/refines a guide description from the title. No guide is required, so this
+    // works during guide creation before the first save (unlike creatorSuggest, which needs a
+    // guideId). The edit-and-resend loop is driven by currentDraft + instruction in the request.
+
+    public SseEmitter guideHook(UUID userId, com.brooks.ai.dto.GuideHookRequest req) {
+        var dk = keyService.decryptKey(userId, req.provider());
+        return stream(req.provider(), dk.apiKey(), dk.model(),
+                GuideHookSystemPrompt.system(), List.of(), GuideHookSystemPrompt.user(req));
+    }
+
     // ── Shared streaming logic ────────────────────────────────────────────────
 
     private SseEmitter stream(AiProvider provider, String apiKey, String model, String systemPrompt,

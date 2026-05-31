@@ -64,6 +64,22 @@ public class PurchaseQueryService {
         return toResponse(purchase);
     }
 
+    /**
+     * Locates a purchase by the merchant-side external_order_id (shop_order_id) carried in the BOG
+     * post-payment redirect URL. This is what the success/fail return page must use — bog_order_id
+     * is BOG's id and isn't present in that redirect.
+     */
+    @Transactional(readOnly = true)
+    public PurchaseResponse getMyPurchaseByExternalOrderId(String auth0Subject, String externalOrderId) {
+        User buyer = userService.findByAuth0Subject(auth0Subject);
+        Purchase purchase = purchaseRepository.findByExternalOrderId(externalOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase", externalOrderId));
+        if (!purchase.getBuyerId().equals(buyer.getId())) {
+            throw new BusinessException("Purchase does not belong to this buyer");
+        }
+        return toResponse(purchase);
+    }
+
     @Transactional(readOnly = true)
     public String getPurchasedGuideSnapshot(String auth0Subject, UUID guideId) {
         User buyer = userService.findByAuth0Subject(auth0Subject);

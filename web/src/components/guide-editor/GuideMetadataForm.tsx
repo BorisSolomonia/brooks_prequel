@@ -7,7 +7,8 @@ import { ImageUploadField } from '@/components/media/ImageUploadField';
 import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
 import { reverseGeocode, searchCities, type GeoPlace } from '@/lib/geocode';
 import { getCurrentCoords } from '@/lib/geolocation';
-import type { GuideCreateRequest, GuideUpdateRequest } from '@/types';
+import { streamPost } from '@/lib/api';
+import type { AiKeyResponse, GuideCreateRequest, GuideUpdateRequest } from '@/types';
 
 const GENERIC_ADJECTIVES = /\b(beautiful|nice|amazing|great|wonderful|awesome|fantastic|incredible|gorgeous|lovely|perfect|excellent)\b/gi;
 
@@ -23,6 +24,8 @@ interface Props {
   onAddTag: () => void;
   onRemoveTag: (tag: string) => void;
   token: string;
+  // Used by the "Add a hook" AI description generator to pick a provider. Empty → button disabled.
+  aiKeys?: AiKeyResponse[];
 }
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? '';
@@ -212,7 +215,124 @@ function DestinationMap({ lat, lng, onChange, onResolvePlace }: {
   return <div ref={containerRef} className="h-64 w-full overflow-hidden rounded-lg border border-ig-border md:h-44" />;
 }
 
-export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, onTagInputChange, onAddTag, onRemoveTag, token }: Props) {
+// "Add a hook" — AI description generator. Stateless (POST /api/ai/guide-hook), so it works during
+// guide creation before the guide is saved. Streams a draft from the title; the user can edit the
+// draft and Resend (with an optional instruction) to refine, Regenerate from scratch, or Apply it
+// to the Description field. Disabled with a hint when no AI key is configured or the title is empty.
+function HookGenerator({ title, currentDescription, city, region, token, provider, onApply }: {
+  title: string;
+  currentDescription: string;
+  city: string;
+  region: string;
+  token: string;
+  provider: string | null;
+  onApply: (text: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [instruction, setInstruction] = useState('');
+  const [streaming, setStreaming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const accRef = useRef('');
+
+  const canGenerate = !!provider && title.trim().length > 0;
+  const disabledReason = !provider
+    ? 'Add an AI key in Settings → AI Keys to use this'
+    : title.trim().length === 0
+      ? 'Add a title first'
+      : undefined;
+
+  // baseDraft = the text the AI should improve (the user's current/edited draft, or '' for a fresh
+  // generation). withInstruction = an optional "make it bolder" style revision request.
+  const generate = useCallback(async (withInstruction: string, baseDraft: string) => {
+    if (!provider || !title.trim() || streaming) return;
+    setStreaming(true);
+    setError(null);
+    accRef.current = '';
+    setDraft('');
+    await streamPost(
+      '/api/ai/guide-hook',
+      {
+        provider,
+        title: title.trim(),
+        currentDraft: baseDraft.trim() || undefined,
+        instruction: withInstruction.trim() || undefined,
+        city: city.trim() || undefined,
+        region: region.trim() || undefined,
+      },
+      token,
+      (chunk) => { accRef.current += chunk; setDraft(accRef.current); },
+      undefined,
+      (status) => {
+        setError(
+          status === 400 ? 'No AI key configured. Add one in Settings → AI Keys.'
+          : status === 401 ? 'Your session expired. Please sign in again.'
+          : 'Could not generate a hook. Please try again.',
+        );
+      },
+    );
+    setStreaming(false);
+  }, [provider, title, city, region, token, streaming]);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        disabled={!canGenerate}
+        title={disabledReason}
+        onClick={() => { setOpen(true); setInstruction(''); generate('', currentDescription); }}
+        className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-ig-border px-3 py-1.5 text-xs font-semibold text-ig-text-secondary transition-colors hover:border-ig-blue hover:text-ig-blue disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <span aria-hidden>✨</span> Add a hook — what makes this guide unmissable?
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-2 rounded-md border border-ig-border bg-ig-secondary p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-ig-text-secondary">
+          <span aria-hidden>✨</span> AI hook
+        </span>
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-ig-text-tertiary hover:text-ig-text-primary">
+          Close
+        </button>
+      </div>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        rows={4}
+        placeholder={streaming ? 'Writing…' : 'The AI draft appears here — edit it freely, then Apply or Resend.'}
+        className="w-full resize-none rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-sm text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
+      />
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+          placeholder="Tell the AI what to change (optional)…"
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); generate(instruction, draft); } }}
+          className="min-w-0 flex-1 rounded-md border border-ig-border bg-ig-primary px-3 py-1.5 text-xs text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
+        />
+        <button type="button" disabled={streaming} onClick={() => generate(instruction, draft)}
+          className="rounded-md border border-ig-border px-3 py-1.5 text-xs font-semibold text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue disabled:opacity-50">
+          {streaming ? 'Generating…' : 'Resend'}
+        </button>
+        <button type="button" disabled={streaming} onClick={() => { setInstruction(''); generate('', ''); }}
+          className="rounded-md border border-ig-border px-3 py-1.5 text-xs font-semibold text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue disabled:opacity-50">
+          Regenerate
+        </button>
+        <button type="button" disabled={streaming || !draft.trim()} onClick={() => { onApply(draft.trim()); setOpen(false); }}
+          className="rounded-md bg-ig-blue px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+          Apply
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, onTagInputChange, onAddTag, onRemoveTag, token, aiKeys = [] }: Props) {
   // Single-field write via the functional patch (immune to stale snapshots).
   const update = (field: string, value: unknown) => {
     onPatch({ [field]: value } as Partial<GuideUpdateRequest>);
@@ -261,7 +381,7 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
 
   const descHints = useMemo(() => {
     const hints: string[] = [];
-    if (descWordCount < 30) hints.push('Add a hook — what makes this guide unmissable?');
+    // The "Add a hook" prompt is now the clickable AI generator below, not a passive hint.
     const match = description.match(GENERIC_ADJECTIVES);
     if (match) hints.push(`Replace "${match[0]}" with sensory detail — what does it smell/sound/feel like?`);
     const hasHook = /\?|why|secret|skip|instead|actually|surprising|unlike/i.test(description);
@@ -301,6 +421,15 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
             ))}
           </div>
         )}
+        <HookGenerator
+          title={data.title || ''}
+          currentDescription={data.description || ''}
+          city={data.primaryCity || ''}
+          region={data.region || ''}
+          token={token}
+          provider={aiKeys[0]?.provider ?? null}
+          onApply={(text) => onPatch({ description: text })}
+        />
       </div>
 
       {MAPBOX_TOKEN && (

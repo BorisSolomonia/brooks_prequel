@@ -104,6 +104,7 @@ public class WebhookController {
         try {
             switch (statusKey) {
                 case "completed" -> purchaseService.handleCheckoutCompleted(orderId, authCode, transactionId);
+                case "rejected" -> purchaseService.handleCheckoutRejected(orderId);
                 case "refunded" -> purchaseService.handleCheckoutRefunded(orderId, refundAmount, false);
                 case "refunded_partially" -> purchaseService.handleCheckoutRefunded(orderId, refundAmount, true);
                 default -> log.info("BOG iPay callback for order_id={} status={} — no action", orderId, statusKey);

@@ -2,6 +2,7 @@ package com.brooks.ai.controller;
 
 import com.brooks.ai.dto.BuyerChatRequest;
 import com.brooks.ai.dto.CreatorSuggestRequest;
+import com.brooks.ai.dto.GuideHookRequest;
 import com.brooks.ai.service.AiChatService;
 import com.brooks.auth.service.AuthService;
 import com.brooks.user.service.UserService;
@@ -36,6 +37,13 @@ public class AiChatController {
     public SseEmitter creatorSuggest(Authentication auth, @RequestBody @Valid CreatorSuggestRequest req) {
         UUID userId = resolveUserId(auth);
         return chatService.creatorSuggest(userId, req);
+    }
+
+    // "Add a hook" description generator — stateless, works during guide creation (no guideId).
+    @PostMapping(value = "/guide-hook", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter guideHook(Authentication auth, @RequestBody @Valid GuideHookRequest req) {
+        UUID userId = resolveUserId(auth);
+        return chatService.guideHook(userId, req);
     }
 
     private UUID resolveUserId(Authentication auth) {

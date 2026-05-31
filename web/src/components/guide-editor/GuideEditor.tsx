@@ -251,6 +251,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
               onAddTag={handleAddTag}
               onRemoveTag={handleRemoveTag}
               token={token}
+              aiKeys={aiKeys}
             />
           </div>
           <div className="sticky bottom-0 px-4 py-3 bg-ig-elevated border-t border-ig-border">

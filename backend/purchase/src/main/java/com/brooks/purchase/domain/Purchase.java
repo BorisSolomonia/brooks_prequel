@@ -44,6 +44,12 @@ public class Purchase {
     @Column(name = "bog_order_id", nullable = false, unique = true)
     private String bogOrderId;
 
+    // Our merchant-side id sent to BOG as external_order_id and echoed back in the redirect URL
+    // (shop_order_id). Used to locate the purchase from the post-payment return page, since BOG's
+    // own id (bog_order_id) isn't known when the redirect URLs are built. Null for free checkouts.
+    @Column(name = "external_order_id", unique = true)
+    private String externalOrderId;
+
     @Column(name = "bog_payment_hash")
     private String bogPaymentHash;
 

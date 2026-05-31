@@ -37,7 +37,7 @@ function PurchaseSuccessInner() {
     const fetchOnce = async () => {
       try {
         const result = await api.get<PurchaseResponse>(
-          `/api/me/purchases/by-bog-order/${encodeURIComponent(shopOrderId)}`,
+          `/api/me/purchases/by-shop-order/${encodeURIComponent(shopOrderId)}`,
           token,
         );
         if (cancelled) return;

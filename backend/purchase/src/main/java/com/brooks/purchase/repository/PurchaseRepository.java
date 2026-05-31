@@ -20,6 +20,8 @@ public interface PurchaseRepository extends JpaRepository<Purchase, UUID> {
 
     Optional<Purchase> findByBogOrderId(String bogOrderId);
 
+    Optional<Purchase> findByExternalOrderId(String externalOrderId);
+
     boolean existsByBuyerIdAndGuideIdAndStatus(UUID buyerId, UUID guideId, PurchaseStatus status);
 
     Optional<Purchase> findByBuyerIdAndGuideIdAndStatus(UUID buyerId, UUID guideId, PurchaseStatus status);

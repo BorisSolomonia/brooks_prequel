@@ -276,6 +276,8 @@ public class PurchaseService {
         purchase.setPlatformFeeCents(pre.platformFee);
         purchase.setCommissionRateBps(pre.commissionRateBps);
         purchase.setBogOrderId(order.orderId());
+        // Store the id carried in the BOG redirect URL so the return page can locate this purchase.
+        purchase.setExternalOrderId(pre.shopOrderId);
         purchase.setStatus(PurchaseStatus.PENDING);
         purchase.setTermsAcceptedAt(Instant.now());
         purchase.setGuideTitleAtPurchase(pre.guideTitle);
@@ -290,6 +292,25 @@ public class PurchaseService {
                 "guideId", pre.guideId.toString()));
 
         return new CheckoutResponse(order.redirectUrl(), order.orderId());
+    }
+
+    /**
+     * BOG reported the payment as rejected/declined. Transition the still-PENDING purchase to the
+     * terminal FAILED state so it doesn't linger as PENDING and the return page can show a clear
+     * status. Never grants access. Idempotent: only PENDING is moved, so a re-delivered callback
+     * (or one arriving after a completion) is a no-op.
+     */
+    @Transactional
+    public void handleCheckoutRejected(String bogOrderId) {
+        Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId).orElse(null);
+        if (purchase == null) {
+            log.warn("BOG iPay rejected callback for unknown order: {}", bogOrderId);
+            return;
+        }
+        if (purchase.getStatus() == PurchaseStatus.PENDING) {
+            purchase.setStatus(PurchaseStatus.FAILED);
+            auditWriter.record(purchase.getId(), "CHECKOUT_REJECTED", payload("bogOrderId", bogOrderId));
+        }
     }
 
     @Transactional

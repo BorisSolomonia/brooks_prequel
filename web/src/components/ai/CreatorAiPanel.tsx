@@ -67,6 +67,24 @@ type ActionPayload = UpdateGuideAction | AddDayAction | AddBlockAction | AddPlac
   | UpdateDayAction | UpdateBlockAction | UpdatePlaceAction
   | DeleteDayAction | DeleteBlockAction | DeletePlaceAction;
 
+// The backend `priceLevel` is an Integer (1–4), but the AI returns a label like "MID_RANGE".
+// Sending the raw label 400s ("Cannot deserialize Integer from String"). Map label/number → 1–4,
+// returning undefined for unknown values so the field is simply omitted.
+function toPriceLevelInt(value: unknown): number | undefined {
+  if (value == null) return undefined;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  const s = String(value).trim().toUpperCase();
+  if (!s) return undefined;
+  if (/^\d+$/.test(s)) return parseInt(s, 10);
+  const map: Record<string, number> = {
+    FREE: 1, BUDGET: 1, CHEAP: 1, INEXPENSIVE: 1, LOW: 1, '$': 1,
+    MID_RANGE: 2, MIDRANGE: 2, MODERATE: 2, MEDIUM: 2, '$$': 2,
+    UPSCALE: 3, PRICEY: 3, EXPENSIVE: 3, HIGH: 3, '$$$': 3,
+    LUXURY: 4, VERY_EXPENSIVE: 4, HIGH_END: 4, PREMIUM: 4, '$$$$': 4,
+  };
+  return map[s];
+}
+
 interface PendingAction {
   type: 'update_guide' | 'add_day' | 'add_block' | 'add_place'
     | 'update_day' | 'update_block' | 'update_place'
@@ -331,7 +349,7 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
             description: p.description,
             address: p.address,
             category: p.category,
-            priceLevel: p.priceLevel,
+            priceLevel: toPriceLevelInt(p.priceLevel),
             suggestedStartMinute: p.suggestedStartMinute,
             suggestedDurationMinutes: p.suggestedDurationMinutes,
             latitude: p.latitude,
@@ -362,7 +380,7 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
         const targetBlock = targetDay?.blocks?.find((b) => b.title?.toLowerCase() === p.blockTitle?.toLowerCase());
         const targetPlace = targetBlock?.places?.find((pl) => pl.name?.toLowerCase() === p.placeName?.toLowerCase());
         if (!targetPlace || !targetBlock || !targetDay) { console.warn('Place not found', p.placeName); return; }
-        const updatedPlace = await api.patch<GuidePlace>(`/api/guides/${guide.id}/places/${targetPlace.id}`, { name: p.name, description: p.description, address: p.address, category: p.category, priceLevel: p.priceLevel }, token);
+        const updatedPlace = await api.patch<GuidePlace>(`/api/guides/${guide.id}/places/${targetPlace.id}`, { name: p.name, description: p.description, address: p.address, category: p.category, priceLevel: toPriceLevelInt(p.priceLevel) }, token);
         onGuideUpdated({ days: guide.days?.map((d) => d.id === targetDay.id ? { ...d, blocks: d.blocks?.map((b) => b.id === targetBlock.id ? { ...b, places: b.places?.map((pl) => pl.id === targetPlace.id ? { ...pl, ...updatedPlace } : pl) } : b) } : d) });
 
       } else if (type === 'delete_day') {
