@@ -22,6 +22,11 @@ public interface PurchaseRepository extends JpaRepository<Purchase, UUID> {
 
     Optional<Purchase> findByExternalOrderId(String externalOrderId);
 
+    // Reconciliation sweep: PENDING orders in a time window (old enough that the webhook should have
+    // arrived, young enough to still be worth verifying with BOG). Capped to bound each run.
+    List<Purchase> findTop200ByStatusAndCreatedAtBetweenOrderByCreatedAtAsc(
+            PurchaseStatus status, Instant after, Instant before);
+
     boolean existsByBuyerIdAndGuideIdAndStatus(UUID buyerId, UUID guideId, PurchaseStatus status);
 
     Optional<Purchase> findByBuyerIdAndGuideIdAndStatus(UUID buyerId, UUID guideId, PurchaseStatus status);

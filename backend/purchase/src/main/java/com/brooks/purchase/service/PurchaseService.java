@@ -53,6 +53,9 @@ public class PurchaseService {
     private final PurchaseAuditWriter auditWriter;
     private final CreatorEarningsRecorder earningsRecorder;
     private final FollowRepository followRepository;
+    // Used to synchronously self-heal the access "trip" during verify-on-return, so a paid
+    // purchase deterministically unlocks even if the AFTER_COMMIT event listener was lost/failed.
+    private final com.brooks.guide.service.GuidePurchaseService guidePurchaseService;
 
     public PurchaseService(
             PurchaseRepository purchaseRepository,
@@ -65,7 +68,8 @@ public class PurchaseService {
             ApplicationEventPublisher eventPublisher,
             PlatformTransactionManager transactionManager,
             PurchaseAuditWriter auditWriter,
-            CreatorEarningsRecorder earningsRecorder
+            CreatorEarningsRecorder earningsRecorder,
+            com.brooks.guide.service.GuidePurchaseService guidePurchaseService
     ) {
         this.purchaseRepository = purchaseRepository;
         this.guideRepository = guideRepository;
@@ -78,6 +82,72 @@ public class PurchaseService {
         this.auditWriter = auditWriter;
         this.earningsRecorder = earningsRecorder;
         this.followRepository = followRepository;
+        this.guidePurchaseService = guidePurchaseService;
+    }
+
+    /**
+     * Verify-on-return / reconcile entry point. Called when the buyer lands on the success page (and
+     * by the reconciliation sweep). Drives unlock from the AUTHORITATIVE BOG payment status rather
+     * than trusting the (possibly lost or misreported) webhook:
+     *   - If already COMPLETED → just make sure the access trip exists (self-heal) and return.
+     *   - Else → run the same verified, idempotent completion path used by the webhook
+     *     ({@link #handleCheckoutCompleted}), which re-fetches BOG Payment Details and only completes
+     *     if BOG confirms the order is paid (+ amount/currency match). A charge that BOG does NOT
+     *     confirm as paid is left unfulfilled and audited — never unlocked.
+     * Safe to call repeatedly (idempotent).
+     */
+    public void verifyAndFulfill(String auth0Subject, String externalOrderId) {
+        User buyer = userService.findByAuth0Subject(auth0Subject);
+        Purchase purchase = purchaseRepository.findByExternalOrderId(externalOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase", externalOrderId));
+        if (!purchase.getBuyerId().equals(buyer.getId())) {
+            throw new BusinessException("Purchase does not belong to this buyer");
+        }
+        reconcilePurchase(purchase);
+    }
+
+    /**
+     * Re-verify a single purchase against BOG and fulfill if genuinely paid. Idempotent; never
+     * throws on a verification mismatch (it's audited inside {@link #handleCheckoutCompleted}).
+     * Used by both verify-on-return and the scheduled reconciliation sweep.
+     */
+    public void reconcilePurchase(Purchase purchase) {
+        if (purchase.getStatus() != PurchaseStatus.COMPLETED) {
+            if (purchase.getBogOrderId() == null) {
+                return; // free checkout or not an iPay order — nothing to verify
+            }
+            try {
+                handleCheckoutCompleted(purchase.getBogOrderId(), null, null);
+            } catch (BusinessException e) {
+                // amount/currency mismatch already audited; leave PENDING (do NOT unlock)
+                log.warn("Reconcile: BOG verification did not confirm payment for order_id={}: {}",
+                        purchase.getBogOrderId(), e.getMessage());
+                return;
+            } catch (Exception e) {
+                log.error("Reconcile: failed to verify order_id={}", purchase.getBogOrderId(), e);
+                return;
+            }
+        }
+        // Re-read and, if COMPLETED, ensure the access trip exists (deterministic self-heal).
+        Purchase fresh = purchaseRepository.findById(purchase.getId()).orElse(purchase);
+        if (fresh.getStatus() == PurchaseStatus.COMPLETED) {
+            ensureTripMaterialized(fresh);
+        }
+    }
+
+    /** Idempotently (re)create the access trip for a COMPLETED purchase. */
+    private void ensureTripMaterialized(Purchase purchase) {
+        try {
+            guidePurchaseService.materializeTripForPurchase(
+                    purchase.getBuyerId(),
+                    purchase.getGuideId(),
+                    purchase.getGuideVersionNumber(),
+                    purchase.getPriceCentsPaid(),
+                    purchase.getCurrency(),
+                    "bog_ipay");
+        } catch (Exception e) {
+            log.error("Failed to ensure trip for completed purchase {}", purchase.getId(), e);
+        }
     }
 
     /**

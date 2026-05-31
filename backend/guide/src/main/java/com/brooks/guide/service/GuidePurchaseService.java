@@ -247,6 +247,13 @@ public class GuidePurchaseService {
         Optional<GuidePurchase> existing = guidePurchaseRepository
                 .findByBuyerIdAndGuideVersionIdAndStatus(buyerId, version.getId(), GuidePurchaseStatus.COMPLETED);
         if (existing.isPresent()) {
+            // Idempotent. If the buyer had soft-removed this trip (V56) and bought again, restore
+            // access instead of leaving it hidden — otherwise a paid re-purchase stays locked.
+            GuidePurchase trip = existing.get();
+            if (trip.getRemovedAt() != null) {
+                trip.setRemovedAt(null);
+                guidePurchaseRepository.save(trip);
+            }
             return;
         }
 

@@ -36,8 +36,12 @@ function PurchaseSuccessInner() {
 
     const fetchOnce = async () => {
       try {
-        const result = await api.get<PurchaseResponse>(
-          `/api/me/purchases/by-shop-order/${encodeURIComponent(shopOrderId)}`,
+        // Verify-on-return: ask the server to re-check the payment with BOG and unlock if genuinely
+        // paid (idempotent). This is what makes the guide unlock even if the webhook was lost or
+        // misreported — access is driven by the BOG-confirmed status, never the client.
+        const result = await api.post<PurchaseResponse>(
+          `/api/me/purchases/by-shop-order/${encodeURIComponent(shopOrderId)}/verify`,
+          undefined,
           token,
         );
         if (cancelled) return;

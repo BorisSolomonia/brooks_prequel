@@ -57,6 +57,17 @@ public class PurchaseController {
         return ResponseEntity.ok(purchaseQueryService.getMyPurchaseByExternalOrderId(subject(authentication), shopOrderId));
     }
 
+    // Verify-on-return: re-checks the payment with BOG and unlocks (idempotently) if genuinely paid.
+    // The success page calls this so a purchase fulfills even when the webhook was lost/misreported.
+    @PostMapping("/me/purchases/by-shop-order/{shopOrderId}/verify")
+    public ResponseEntity<PurchaseResponse> verifyMyPurchaseByShopOrderId(
+            Authentication authentication,
+            @PathVariable(name = "shopOrderId") String shopOrderId) {
+        String subject = subject(authentication);
+        purchaseService.verifyAndFulfill(subject, shopOrderId);
+        return ResponseEntity.ok(purchaseQueryService.getMyPurchaseByExternalOrderId(subject, shopOrderId));
+    }
+
     @GetMapping(value = "/purchases/{guideId}/content", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getPurchasedGuideContent(
             Authentication authentication,
