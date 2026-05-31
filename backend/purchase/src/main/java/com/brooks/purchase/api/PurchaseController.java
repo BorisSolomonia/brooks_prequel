@@ -68,6 +68,17 @@ public class PurchaseController {
         return ResponseEntity.ok(purchaseQueryService.getMyPurchaseByExternalOrderId(subject, shopOrderId));
     }
 
+    // Self-heal on open: if the buyer owns a COMPLETED purchase for this guide but the access trip
+    // is missing, (re)create it. The guide view page calls this before showing a "Buy" button so a
+    // paid-but-not-yet-materialized guide unlocks immediately. Returns {"accessGranted": bool}.
+    @PostMapping("/me/purchases/by-guide/{guideId}/ensure-access")
+    public ResponseEntity<java.util.Map<String, Boolean>> ensureAccessForGuide(
+            Authentication authentication,
+            @PathVariable(name = "guideId") UUID guideId) {
+        boolean granted = purchaseService.ensureAccessForGuide(subject(authentication), guideId);
+        return ResponseEntity.ok(java.util.Map.of("accessGranted", granted));
+    }
+
     @GetMapping(value = "/purchases/{guideId}/content", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getPurchasedGuideContent(
             Authentication authentication,

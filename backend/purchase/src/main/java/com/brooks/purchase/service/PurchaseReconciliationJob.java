@@ -29,6 +29,7 @@ public class PurchaseReconciliationJob {
 
     private static final long MIN_AGE_MINUTES = 2;
     private static final long MAX_AGE_HOURS = 24;
+    private static final long COMPLETED_LOOKBACK_DAYS = 7;
 
     private final PurchaseRepository purchaseRepository;
     private final PurchaseService purchaseService;
@@ -36,19 +37,36 @@ public class PurchaseReconciliationJob {
     @Scheduled(fixedDelayString = "${bog-ipay.reconcile-interval-ms:300000}", initialDelay = 120_000)
     public void reconcilePendingPurchases() {
         Instant now = Instant.now();
+
+        // 1) PENDING orders the webhook may have missed/misreported → re-verify with BOG and fulfill.
         List<Purchase> pending = purchaseRepository.findTop200ByStatusAndCreatedAtBetweenOrderByCreatedAtAsc(
                 PurchaseStatus.PENDING,
                 now.minus(MAX_AGE_HOURS, ChronoUnit.HOURS),
                 now.minus(MIN_AGE_MINUTES, ChronoUnit.MINUTES));
-        if (pending.isEmpty()) {
+
+        // 2) Recently-COMPLETED orders whose access trip may not have materialized (e.g. completed
+        //    before the self-heal shipped, or a lost AFTER_COMMIT event) → ensure the trip exists.
+        List<Purchase> completed = purchaseRepository.findTop200ByStatusAndCreatedAtBetweenOrderByCreatedAtAsc(
+                PurchaseStatus.COMPLETED,
+                now.minus(COMPLETED_LOOKBACK_DAYS, ChronoUnit.DAYS),
+                now);
+
+        if (pending.isEmpty() && completed.isEmpty()) {
             return;
         }
-        log.info("Purchase reconcile: re-verifying {} pending order(s) against BOG", pending.size());
+        log.info("Purchase reconcile: {} pending to re-verify, {} completed to trip-check", pending.size(), completed.size());
         for (Purchase p : pending) {
             try {
                 purchaseService.reconcilePurchase(p);
             } catch (Exception e) {
-                log.error("Purchase reconcile failed for purchase {}", p.getId(), e);
+                log.error("Purchase reconcile (pending) failed for purchase {}", p.getId(), e);
+            }
+        }
+        for (Purchase p : completed) {
+            try {
+                purchaseService.reconcilePurchase(p); // idempotent: ensures the access trip exists
+            } catch (Exception e) {
+                log.error("Purchase reconcile (completed trip-check) failed for purchase {}", p.getId(), e);
             }
         }
     }

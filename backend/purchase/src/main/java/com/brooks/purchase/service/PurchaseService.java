@@ -135,6 +135,25 @@ public class PurchaseService {
         }
     }
 
+    /**
+     * Self-heal access when opening a guide: if the buyer has a COMPLETED purchase for this guide
+     * but the access trip is missing (e.g. it completed before this code shipped, or the materialize
+     * event was lost), (re)create the trip idempotently. Returns true if the buyer owns a completed
+     * purchase for the guide. Drives "open a purchased guide → it unlocks" without needing the
+     * success page.
+     */
+    public boolean ensureAccessForGuide(String auth0Subject, UUID guideId) {
+        User buyer = userService.findByAuth0Subject(auth0Subject);
+        Purchase purchase = purchaseRepository
+                .findByBuyerIdAndGuideIdAndStatus(buyer.getId(), guideId, PurchaseStatus.COMPLETED)
+                .orElse(null);
+        if (purchase == null) {
+            return false;
+        }
+        ensureTripMaterialized(purchase);
+        return true;
+    }
+
     /** Idempotently (re)create the access trip for a COMPLETED purchase. */
     private void ensureTripMaterialized(Purchase purchase) {
         try {

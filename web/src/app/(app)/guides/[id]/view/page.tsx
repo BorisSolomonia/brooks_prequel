@@ -82,7 +82,22 @@ export default function ViewGuidePage() {
           setLoading(false);
           return;
         } catch {
-          // Not buyer.
+          // No trip yet. If they actually paid (COMPLETED purchase) but the access trip wasn't
+          // materialized, self-heal it server-side and retry — so a paid guide unlocks on open
+          // instead of showing a "Buy" button.
+          try {
+            const ensured = await api.post<{ accessGranted: boolean }>(
+              `/api/me/purchases/by-guide/${guideId}/ensure-access`, undefined, token);
+            if (ensured.accessGranted) {
+              const tripSummary = await api.get<{ id: string }>(`/api/me/trips/by-guide/${guideId}`, token);
+              setTripId(tripSummary.id);
+              setMode('buyer');
+              setLoading(false);
+              return;
+            }
+          } catch {
+            // Not purchased / heal failed → fall through to preview (Buy).
+          }
         }
       }
 
