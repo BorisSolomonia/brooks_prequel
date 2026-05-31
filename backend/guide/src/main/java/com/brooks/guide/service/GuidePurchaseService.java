@@ -95,6 +95,9 @@ public class GuidePurchaseService {
                 guide.getCurrency()
         );
         purchase.setStatus(GuidePurchaseStatus.COMPLETED);
+        // Freeze the guide content onto the trip so the owner keeps it forever — independent of the
+        // guide being later deleted/unpublished by the creator (or the version row being cleaned up).
+        purchase.setGuideSnapshot(version.getSnapshot());
         purchase.setTripTimezone(defaultTripTimezone(parseSnapshot(version)));
         purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
         purchase = guidePurchaseRepository.save(purchase);
@@ -267,6 +270,9 @@ public class GuidePurchaseService {
                 currency
         );
         purchase.setStatus(GuidePurchaseStatus.COMPLETED);
+        // Freeze the guide content onto the trip so the owner keeps it forever — independent of the
+        // guide being later deleted/unpublished by the creator (or the version row being cleaned up).
+        purchase.setGuideSnapshot(version.getSnapshot());
         purchase.setTripTimezone(defaultTripTimezone(parseSnapshot(version)));
         purchase.setTripStartTime(DEFAULT_TRIP_START_TIME);
         purchase = guidePurchaseRepository.save(purchase);
@@ -331,6 +337,32 @@ public class GuidePurchaseService {
                 .map(this::toSummaryResponse)
                 .toList();
         return MyTripsResponse.builder().trips(trips).build();
+    }
+
+    /** Trips the buyer has hidden (removed_at set) — for the "Hidden" view, so they can unhide. */
+    @Transactional(readOnly = true)
+    public MyTripsResponse getHiddenTrips(String auth0Subject, String email) {
+        User buyer = resolveBuyer(auth0Subject, email);
+        List<MyTripSummaryResponse> trips = guidePurchaseRepository
+                .findByBuyerIdAndStatusOrderByCreatedAtDesc(buyer.getId(), GuidePurchaseStatus.COMPLETED)
+                .stream()
+                .filter(p -> p.getRemovedAt() != null)
+                .map(this::toSummaryResponse)
+                .toList();
+        return MyTripsResponse.builder().trips(trips).build();
+    }
+
+    /** Un-hide a previously hidden purchased guide (clears removed_at). Free — they already own it. */
+    @Transactional
+    public void restoreTrip(String auth0Subject, String email, UUID tripId) {
+        User buyer = resolveBuyer(auth0Subject, email);
+        // Not findOwnedTrip — that treats a hidden trip as gone; we need to fetch it to un-hide.
+        GuidePurchase purchase = guidePurchaseRepository.findByIdAndBuyerId(tripId, buyer.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Trip", tripId));
+        if (purchase.getRemovedAt() != null) {
+            purchase.setRemovedAt(null);
+            guidePurchaseRepository.save(purchase);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -539,7 +571,13 @@ public class GuidePurchaseService {
 
     private MyTripSummaryResponse toSummaryResponse(GuidePurchase purchase) {
         GuideResponse guide = parseSnapshot(purchase);
+        // "No longer sold" = the live guide is gone or deleted/unpublished by the creator.
+        boolean noLongerSold = guideRepository.findById(purchase.getGuideId())
+                .map(g -> g.getStatus() != GuideStatus.PUBLISHED)
+                .orElse(true);
         return MyTripSummaryResponse.builder()
+                .noLongerSold(noLongerSold)
+                .hidden(purchase.getRemovedAt() != null)
                 .id(purchase.getId())
                 .guideId(purchase.getGuideId())
                 .guideVersionId(purchase.getGuideVersionId())

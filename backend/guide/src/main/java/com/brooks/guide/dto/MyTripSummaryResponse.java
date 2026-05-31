@@ -30,4 +30,8 @@ public class MyTripSummaryResponse {
     private LocalTime tripStartTime;
     private LocalDate tripEndDate;
     private String tripSource;
+    // True when the creator has deleted/unpublished the guide — the buyer keeps it ("No longer sold").
+    private boolean noLongerSold;
+    // True when the buyer has hidden this purchased guide from their list.
+    private boolean hidden;
 }

@@ -19,7 +19,24 @@ import type {
   GuideReviewItem,
   GuideReviewListResponse,
   GuideSaveStatusResponse,
+  MyTripSummary,
 } from '@/types';
+
+// When a buyer owns a guide the creator has since deleted, the public preview is gone (404). Render
+// the buyer view from their (self-contained) trip summary instead, so a purchased guide is never lost.
+function tripSummaryToPreview(s: MyTripSummary): GuidePreview {
+  return {
+    title: s.title,
+    coverImageUrl: s.coverImageUrl,
+    region: s.region,
+    primaryCity: s.primaryCity,
+    country: s.country,
+    dayCount: s.dayCount,
+    placeCount: s.placeCount,
+    priceCents: s.amountCents,
+    currency: s.currency,
+  } as unknown as GuidePreview;
+}
 
 type ViewMode = 'loading' | 'owner' | 'buyer' | 'preview';
 
@@ -43,6 +60,7 @@ export default function ViewGuidePage() {
   const [mode, setMode] = useState<ViewMode>('loading');
   const [guide, setGuide] = useState<Guide | null>(null);
   const [preview, setPreview] = useState<GuidePreview | null>(null);
+  const [noLongerSold, setNoLongerSold] = useState(false);
   const [tripId, setTripId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -76,8 +94,10 @@ export default function ViewGuidePage() {
         }
 
         try {
-          const tripSummary = await api.get<{ id: string }>(`/api/me/trips/by-guide/${guideId}`, token);
+          const tripSummary = await api.get<MyTripSummary>(`/api/me/trips/by-guide/${guideId}`, token);
           setTripId(tripSummary.id);
+          if (!previewData) setPreview(tripSummaryToPreview(tripSummary)); // guide deleted → render from the trip
+          setNoLongerSold(!!tripSummary.noLongerSold || !previewData);
           setMode('buyer');
           setLoading(false);
           return;
@@ -89,8 +109,10 @@ export default function ViewGuidePage() {
             const ensured = await api.post<{ accessGranted: boolean }>(
               `/api/me/purchases/by-guide/${guideId}/ensure-access`, undefined, token);
             if (ensured.accessGranted) {
-              const tripSummary = await api.get<{ id: string }>(`/api/me/trips/by-guide/${guideId}`, token);
+              const tripSummary = await api.get<MyTripSummary>(`/api/me/trips/by-guide/${guideId}`, token);
               setTripId(tripSummary.id);
+              if (!previewData) setPreview(tripSummaryToPreview(tripSummary));
+              setNoLongerSold(!!tripSummary.noLongerSold || !previewData);
               setMode('buyer');
               setLoading(false);
               return;
@@ -243,6 +265,11 @@ export default function ViewGuidePage() {
             <h1 className="mw-section-title mb-1 text-2xl">
               {displayGuide?.title || displayPreview?.title}
             </h1>
+            {mode === 'buyer' && noLongerSold && (
+              <span className="mb-1 inline-block rounded-pill bg-ig-secondary px-2.5 py-1 text-xs font-semibold text-ig-text-secondary">
+                No longer sold — kept in your purchases
+              </span>
+            )}
             {displayGuide?.description && (
               <p className="text-sm text-ig-text-secondary">{displayGuide.description}</p>
             )}

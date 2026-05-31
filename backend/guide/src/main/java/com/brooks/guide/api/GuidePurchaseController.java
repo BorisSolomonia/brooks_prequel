@@ -41,12 +41,27 @@ public class GuidePurchaseController {
         return ResponseEntity.ok(guidePurchaseService.getTrip(subject(authentication), email(authentication), tripId));
     }
 
-    /** Remove a purchased guide from My Trips (soft — re-buying restores it free). */
+    /** Purchased guides the buyer has hidden — so they can find and un-hide them. */
+    @GetMapping("/me/trips/hidden")
+    public ResponseEntity<MyTripsResponse> getHiddenTrips(Authentication authentication) {
+        return ResponseEntity.ok(guidePurchaseService.getHiddenTrips(subject(authentication), email(authentication)));
+    }
+
+    /** Hide a purchased guide from My Trips (soft — re-buying or restore brings it back free). */
     @DeleteMapping("/me/trips/{tripId}")
     public ResponseEntity<Void> removeTrip(
             Authentication authentication,
             @PathVariable(name = "tripId") UUID tripId) {
         guidePurchaseService.removeTrip(subject(authentication), email(authentication), tripId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Un-hide a previously hidden purchased guide. */
+    @PostMapping("/me/trips/{tripId}/restore")
+    public ResponseEntity<Void> restoreTrip(
+            Authentication authentication,
+            @PathVariable(name = "tripId") UUID tripId) {
+        guidePurchaseService.restoreTrip(subject(authentication), email(authentication), tripId);
         return ResponseEntity.noContent().build();
     }
 

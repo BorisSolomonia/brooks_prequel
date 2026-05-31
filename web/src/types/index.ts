@@ -589,6 +589,8 @@ export interface MyTripSummary {
   tripStartTime: string | null;
   tripEndDate: string | null;
   tripSource?: string | null;
+  noLongerSold?: boolean;
+  hidden?: boolean;
 }
 
 export interface MyTripItem {
