@@ -31,7 +31,9 @@ public class GuideUpdateRequest {
 
     private Integer priceCents;
     private String currency;
-    private Integer salePriceCents;
+    // Discount as a percentage (0-95). Source of truth; salePriceCents is derived server-side.
+    private Integer discountPercent;
+    private Integer salePriceCents; // deprecated input; ignored in favour of discountPercent
     private Instant saleEndsAt;
     // V54 — optional pricing mode override. Null = no change.
     // Accepted: "PAID" | "FREE_PUBLIC" | "FREE_FOR_FOLLOWERS".

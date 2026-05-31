@@ -269,6 +269,7 @@ export interface Guide {
   timezone: string | null;
   priceCents: number;
   salePriceCents?: number | null;
+  discountPercent?: number | null;
   saleEndsAt?: string | null;
   effectivePriceCents?: number;
   currency: string;
@@ -390,6 +391,7 @@ export interface GuidePreview {
   currency: string;
   creatorId: string;
   salePriceCents?: number | null;
+  discountPercent?: number | null;
   saleEndsAt?: string | null;
   effectivePriceCents?: number;
   region?: string | null;
@@ -430,6 +432,7 @@ export interface GuideListItem {
   placeCount: number;
   priceCents: number;
   salePriceCents?: number | null;
+  discountPercent?: number | null;
   saleEndsAt?: string | null;
   effectivePriceCents?: number;
   currency: string;
@@ -453,6 +456,7 @@ export interface GuideLibraryItem {
   placeCount: number;
   priceCents: number;
   salePriceCents?: number | null;
+  discountPercent?: number | null;
   saleEndsAt?: string | null;
   effectivePriceCents?: number;
   currency: string;
@@ -498,6 +502,7 @@ export interface GuideUpdateRequest {
   timezone?: string;
   priceCents?: number;
   salePriceCents?: number | null;
+  discountPercent?: number | null;
   saleEndsAt?: string | null;
   currency?: string;
   tags?: string[];
@@ -698,6 +703,7 @@ export interface GuideSearchResult {
   placeCount: number;
   priceCents: number;
   salePriceCents?: number | null;
+  discountPercent?: number | null;
   effectivePriceCents?: number;
   currency: string;
   displayLocation?: string | null;

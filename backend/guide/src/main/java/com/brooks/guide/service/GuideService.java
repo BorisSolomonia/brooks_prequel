@@ -72,6 +72,8 @@ public class GuideService {
         // Multi-currency: the creator sets a BASE/presentment currency (default USD). The buyer is
         // always charged in GEL, converted at checkout. Validate the chosen currency is supported.
         guide.setCurrency(normalizeBaseCurrency(request.getCurrency()));
+        guide.setDiscountPercent(request.getDiscountPercent());
+        guide.recomputeSalePrice(); // derive salePriceCents from the percentage
 
         guide = guideRepository.save(guide);
         replaceTags(guide, request.getTags());
@@ -113,10 +115,15 @@ public class GuideService {
         if (request.getPriceCents() != null) guide.setPriceCents(request.getPriceCents());
         // Base/presentment currency is editable (validated); buyer is still charged in GEL.
         if (request.getCurrency() != null) guide.setCurrency(normalizeBaseCurrency(request.getCurrency()));
-        if (request.getSalePriceCents() != null) {
-            guide.setSalePriceCents(request.getSalePriceCents() == 0 ? null : request.getSalePriceCents());
-            guide.setSaleEndsAt(request.getSalePriceCents() == 0 ? null : request.getSaleEndsAt());
+        // Discount is a percentage (source of truth). salePriceCents is re-derived below so it always
+        // tracks the current price. saleEndsAt only applies when a discount is set.
+        if (request.getDiscountPercent() != null) {
+            int pct = request.getDiscountPercent();
+            guide.setDiscountPercent(pct <= 0 ? null : pct);
+            if (pct > 0) guide.setSaleEndsAt(request.getSaleEndsAt());
         }
+        // Re-derive salePriceCents from discountPercent + (possibly updated) priceCents.
+        guide.recomputeSalePrice();
         // V54 — pricing mode (PAID / FREE_PUBLIC / FREE_FOR_FOLLOWERS).
         // Throws a clear 400 if the client sends a value outside the enum.
         if (request.getPricingMode() != null && !request.getPricingMode().isBlank()) {
@@ -712,6 +719,7 @@ public class GuideService {
                 .timezone(guide.getTimezone())
                 .priceCents(guide.getPriceCents())
                 .salePriceCents(guide.getSalePriceCents())
+                .discountPercent(guide.getDiscountPercent())
                 .saleEndsAt(guide.getSaleEndsAt())
                 .effectivePriceCents(guide.effectivePrice())
                 .currency(guide.getCurrency())

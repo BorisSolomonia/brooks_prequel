@@ -519,10 +519,10 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
         <div className="rounded-lg border border-ig-border bg-ig-secondary/50 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-ig-text-secondary">Discount / Sale</span>
-            {(data as GuideUpdateRequest).salePriceCents != null && (
+            {(data as GuideUpdateRequest).discountPercent != null && (
               <button
                 type="button"
-                onClick={() => onPatch({ salePriceCents: null, saleEndsAt: null })}
+                onClick={() => onPatch({ discountPercent: null, salePriceCents: null, saleEndsAt: null })}
                 className="text-xs text-ig-text-tertiary hover:text-ig-error transition-colors"
               >
                 Clear discount
@@ -530,22 +530,36 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
             )}
           </div>
           <div>
-            <label className="block text-xs text-ig-text-tertiary mb-1">Sale price ({(data.currency || 'USD').toUpperCase()}) — leave blank or 0 to disable</label>
+            <label className="block text-xs text-ig-text-tertiary mb-1">Discount (%) — leave blank or 0 to disable</label>
             <input
               type="number"
-              step="0.01"
-              value={(data as GuideUpdateRequest).salePriceCents != null ? ((data as GuideUpdateRequest).salePriceCents! / 100) : ''}
-              onChange={(e) => {
-                const major = parseFloat(e.target.value);
-                const price = isNaN(major) || major <= 0 ? null : Math.round(major * 100);
-                onPatch({ salePriceCents: price, saleEndsAt: price == null ? null : (data as GuideUpdateRequest).saleEndsAt ?? null });
-              }}
+              step="1"
               min={0}
-              placeholder="e.g. 5.00"
+              max={95}
+              value={(data as GuideUpdateRequest).discountPercent ?? ''}
+              onChange={(e) => {
+                const pct = parseFloat(e.target.value);
+                if (isNaN(pct) || pct <= 0) {
+                  onPatch({ discountPercent: null, saleEndsAt: null });
+                  return;
+                }
+                onPatch({ discountPercent: Math.min(95, Math.round(pct)), saleEndsAt: (data as GuideUpdateRequest).saleEndsAt ?? null });
+              }}
+              placeholder="e.g. 20"
               className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
             />
+            {((data as GuideUpdateRequest).discountPercent ?? 0) > 0 && (data.priceCents ?? 0) > 0 && (() => {
+              const pct = Math.min(95, (data as GuideUpdateRequest).discountPercent!);
+              const sale = Math.max(1, Math.round((data.priceCents ?? 0) * (1 - pct / 100)));
+              const ccy = (data.currency || 'USD').toUpperCase();
+              return (
+                <p className="mt-1 text-xs text-ig-text-tertiary">
+                  {pct}% off → <span className="font-semibold text-ig-text-secondary">{(sale / 100).toFixed(2)} {ccy}</span> (was {((data.priceCents ?? 0) / 100).toFixed(2)})
+                </p>
+              );
+            })()}
           </div>
-          {(data as GuideUpdateRequest).salePriceCents != null && (data as GuideUpdateRequest).salePriceCents! > 0 && (
+          {((data as GuideUpdateRequest).discountPercent ?? 0) > 0 && (
             <div>
               <label className="block text-xs text-ig-text-tertiary mb-1">Sale ends (optional)</label>
               <input

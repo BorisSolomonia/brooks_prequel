@@ -21,6 +21,7 @@ public class GuideResponse {
     private String timezone;
     private int priceCents;
     private Integer salePriceCents;
+    private Integer discountPercent;
     private Instant saleEndsAt;
     private int effectivePriceCents;
     private String currency;

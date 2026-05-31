@@ -132,7 +132,16 @@ export default function GuideCard({
             )}
           </div>
           <p className="font-display shrink-0 text-sm font-black text-accent-500">
-            {cardPrice <= 0 ? 'Free' : `From ${formatAmount(cardPrice, currency)}`}
+            {cardPrice <= 0 ? 'Free' : (
+              (effectivePriceCents != null && (priceCents ?? 0) > effectivePriceCents) ? (
+                <>
+                  From {formatAmount(effectivePriceCents, currency)}{' '}
+                  <span className="text-xs font-normal text-ig-text-tertiary line-through">
+                    {formatAmount(priceCents ?? 0, currency)}
+                  </span>
+                </>
+              ) : `From ${formatAmount(cardPrice, currency)}`
+            )}
           </p>
         </div>
       </Link>

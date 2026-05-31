@@ -81,12 +81,18 @@ public class Guide extends BaseEntity {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder = 0;
 
+    // Derived from discountPercent on every save (kept so display/response code is unchanged).
     @Column(name = "sale_price_cents")
     @Min(0)
     private Integer salePriceCents;
 
     @Column(name = "sale_ends_at")
     private Instant saleEndsAt;
+
+    // Source of truth for discounts (0-95). Currency-agnostic and auto-tracks base-price edits.
+    @Column(name = "discount_percent")
+    @Min(0)
+    private Integer discountPercent;
 
     @Column(name = "best_season_start_month")
     @JdbcTypeCode(SqlTypes.SMALLINT)
@@ -142,5 +148,24 @@ public class Guide extends BaseEntity {
             return salePriceCents;
         }
         return priceCents;
+    }
+
+    /**
+     * Recompute the derived {@code salePriceCents} from {@code discountPercent} + {@code priceCents}.
+     * Call after any change to price or discount. A discount thus always tracks the current base
+     * price. Clamps the percent to 1-95; outside that (or null/0) clears the sale.
+     */
+    public void recomputeSalePrice() {
+        if (discountPercent != null && discountPercent <= 0) {
+            this.discountPercent = null; // 0/negative means "no discount"
+        }
+        if (discountPercent == null) {
+            this.salePriceCents = null;
+            this.saleEndsAt = null;
+            return;
+        }
+        int pct = Math.min(95, discountPercent);
+        this.discountPercent = pct;
+        this.salePriceCents = priceCents > 0 ? Math.max(1, priceCents - Math.round(priceCents * pct / 100f)) : null;
     }
 }

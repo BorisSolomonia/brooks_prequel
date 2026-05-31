@@ -34,6 +34,8 @@ public class GuideCreateRequest {
     // Base/presentment currency the creator prices in (default USD). The buyer is charged in GEL,
     // converted at checkout. Validated server-side against BusinessConstants.SUPPORTED_CURRENCIES.
     private String currency = "USD";
+    // Optional discount as a percentage (0-95). salePriceCents is derived server-side.
+    private Integer discountPercent;
     private List<String> tags;
     private List<String> categoryIds;
 }
