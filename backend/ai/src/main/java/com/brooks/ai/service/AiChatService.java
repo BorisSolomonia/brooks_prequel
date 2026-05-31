@@ -39,7 +39,8 @@ public class AiChatService {
         String systemPrompt = BuyerSystemPrompt.build(buildGuideContext(guide));
         var dk = keyService.decryptKey(userId, req.provider());
 
-        return stream(req.provider(), dk.apiKey(), dk.model(), systemPrompt, req.history(), req.userMessage());
+        // Buyers get no editing tools.
+        return stream(req.provider(), dk.apiKey(), dk.model(), systemPrompt, req.history(), req.userMessage(), null);
     }
 
     // ── Creator suggest ───────────────────────────────────────────────────────
@@ -50,7 +51,9 @@ public class AiChatService {
         String systemPrompt = CreatorSystemPrompt.build(req.context());
         var dk = keyService.decryptKey(userId, req.provider());
 
-        return stream(req.provider(), dk.apiKey(), dk.model(), systemPrompt, req.history(), req.userMessage());
+        // Native tool calling for guide edits (OpenAI today; other providers ignore + use text tags).
+        return stream(req.provider(), dk.apiKey(), dk.model(), systemPrompt, req.history(), req.userMessage(),
+                CreatorTools.specs());
     }
 
     // ── Guide hook (description generator) ──────────────────────────────────────
@@ -61,17 +64,18 @@ public class AiChatService {
     public SseEmitter guideHook(UUID userId, com.brooks.ai.dto.GuideHookRequest req) {
         var dk = keyService.decryptKey(userId, req.provider());
         return stream(req.provider(), dk.apiKey(), dk.model(),
-                GuideHookSystemPrompt.system(), List.of(), GuideHookSystemPrompt.user(req));
+                GuideHookSystemPrompt.system(), List.of(), GuideHookSystemPrompt.user(req), null);
     }
 
     // ── Shared streaming logic ────────────────────────────────────────────────
 
     private SseEmitter stream(AiProvider provider, String apiKey, String model, String systemPrompt,
-                              List<com.brooks.ai.dto.ChatMessage> history, String userMessage) {
+                              List<com.brooks.ai.dto.ChatMessage> history, String userMessage,
+                              List<com.brooks.ai.provider.ToolSpec> tools) {
         SseEmitter emitter = new SseEmitter(120_000L);
         CompletableFuture.runAsync(() -> {
             try {
-                getClient(provider).streamChat(apiKey, model, systemPrompt, history, userMessage, emitter);
+                getClient(provider).streamChat(apiKey, model, systemPrompt, history, userMessage, tools, emitter);
             } catch (Exception e) {
                 emitter.completeWithError(e);
             }

@@ -235,10 +235,14 @@ public final class CreatorSystemPrompt {
                 <action type="add_place">
                 {"dayNumber": 1, "blockTitle": "...", "name": "...", "description": "...", "address": "...", \
                 "category": "RESTAURANT", "priceLevel": "BUDGET", "suggestedStartMinute": 480, \
-                "suggestedDurationMinutes": 60, "latitude": null, "longitude": null}
+                "suggestedDurationMinutes": 60, "latitude": null, "longitude": null, \
+                "imageUrl": "https://images.unsplash.com/photo-..."}
                 </action>
                 category values: RESTAURANT, CAFE, ATTRACTION, MUSEUM, PARK, SHOPPING, ACCOMMODATION, TRANSPORT, OTHER
                 priceLevel values: FREE, BUDGET, MID_RANGE, UPSCALE, LUXURY
+                PHOTOS: include "imageUrl" with a real, working image URL (e.g. a relevant Unsplash \
+                photo) to give the place a photo. To set the guide's COVER photo, use update_guide \
+                with "coverImageUrl". Always propose a fitting photo when adding a place.
 
                 Update an existing day (dayNumber identifies it):
                 <action type="update_day">
@@ -253,7 +257,8 @@ public final class CreatorSystemPrompt {
                 Update an existing place (dayNumber + blockTitle + placeName identify it):
                 <action type="update_place">
                 {"dayNumber": 1, "blockTitle": "block title", "placeName": "current place name", \
-                "name": "...", "description": "...", "address": "...", "category": "RESTAURANT", "priceLevel": "BUDGET"}
+                "name": "...", "description": "...", "address": "...", "category": "RESTAURANT", \
+                "priceLevel": "BUDGET", "imageUrl": "https://images.unsplash.com/photo-..."}
                 </action>
 
                 Delete an existing day (also deletes all its blocks and places):
@@ -272,7 +277,16 @@ public final class CreatorSystemPrompt {
                 </action>
 
                 Keep all JSON strictly valid — double-quoted keys, no trailing commas, no comments.
-                Do not output multiple actions in one message.
+
+                MULTIPLE CHANGES IN ONE MESSAGE — when the user asks for several changes at once \
+                ("add places to both days", "add a museum and a cafe", "add 3 bars"), emit ONE \
+                <action> tag PER change, all at the end of the reply, in strict day → block → place \
+                order. Never refuse a multi-item request or ask the user to repeat it one at a time.
+
+                TERSE COMMANDS = ACT, DON'T INTERROGATE — for a short build command ("add places to \
+                day 1", "add a bar", "fill day 2"), DO NOT ask clarifying questions. Pick concrete, \
+                real, well-known venues that fit the guide's city + the block's theme and emit the \
+                add_place tag(s) immediately. Only ask when the target day/block does not exist yet.
 
                 ═══════════════════════════════════════════════════════════════
 

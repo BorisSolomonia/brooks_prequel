@@ -13,8 +13,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 @Component
 @RequiredArgsConstructor
@@ -35,13 +37,16 @@ public class OpenAiClient implements AiClient {
     @Override
     public void streamChat(String apiKey, String model, String systemPrompt,
                            List<ChatMessage> history, String userMessage,
-                           SseEmitter emitter) throws IOException {
-        List<Map<String, String>> messages = buildMessages(systemPrompt, history, userMessage);
-        String body = mapper.writeValueAsString(Map.of(
-                "model", model != null ? model : DEFAULT_MODEL,
-                "stream", true,
-                "messages", messages
-        ));
+                           List<ToolSpec> tools, SseEmitter emitter) throws IOException {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model != null ? model : DEFAULT_MODEL);
+        payload.put("stream", true);
+        payload.put("messages", buildMessages(systemPrompt, history, userMessage));
+        if (tools != null && !tools.isEmpty()) {
+            payload.put("tools", toOpenAiTools(tools));
+            payload.put("tool_choice", "auto");
+        }
+        String body = mapper.writeValueAsString(payload);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL))
@@ -49,6 +54,10 @@ public class OpenAiClient implements AiClient {
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
+
+        // Accumulate streamed tool-call fragments by index (name arrives once, arguments in chunks).
+        Map<Integer, String> toolNames = new TreeMap<>();
+        Map<Integer, StringBuilder> toolArgs = new TreeMap<>();
 
         http.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
                 .thenAccept(response -> {
@@ -58,19 +67,58 @@ public class OpenAiClient implements AiClient {
                             String data = line.substring(6).trim();
                             if ("[DONE]".equals(data)) return;
                             try {
-                                JsonNode node = mapper.readTree(data);
-                                String token = node.at("/choices/0/delta/content").asText("");
+                                JsonNode delta = mapper.readTree(data).at("/choices/0/delta");
+                                String token = delta.at("/content").asText("");
                                 if (!token.isEmpty()) {
                                     emitter.send(SseEmitter.event().data(token));
                                 }
+                                JsonNode toolCalls = delta.at("/tool_calls");
+                                if (toolCalls.isArray()) {
+                                    for (JsonNode tc : toolCalls) {
+                                        int idx = tc.path("index").asInt(0);
+                                        String name = tc.at("/function/name").asText(null);
+                                        if (name != null && !name.isEmpty()) toolNames.put(idx, name);
+                                        String argChunk = tc.at("/function/arguments").asText("");
+                                        if (!argChunk.isEmpty()) {
+                                            toolArgs.computeIfAbsent(idx, k -> new StringBuilder()).append(argChunk);
+                                        }
+                                    }
+                                }
                             } catch (Exception ignored) {}
                         });
+                        // Emit one structured "action" SSE event per completed tool call.
+                        for (Map.Entry<Integer, String> e : toolNames.entrySet()) {
+                            StringBuilder args = toolArgs.get(e.getKey());
+                            if (args == null) continue;
+                            try {
+                                JsonNode parsed = mapper.readTree(args.toString());
+                                Map<String, Object> action = new LinkedHashMap<>();
+                                action.put("type", e.getValue());
+                                action.put("payload", parsed);
+                                emitter.send(SseEmitter.event().name("action").data(mapper.writeValueAsString(action)));
+                            } catch (Exception ignored) {
+                                // Malformed tool args — skip; the client's text-tag fallback still applies.
+                            }
+                        }
                         emitter.complete();
                     } catch (Exception e) {
                         emitter.completeWithError(e);
                     }
                 })
                 .exceptionally(ex -> { emitter.completeWithError(ex); return null; });
+    }
+
+    private static List<Map<String, Object>> toOpenAiTools(List<ToolSpec> tools) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (ToolSpec t : tools) {
+            out.add(Map.of(
+                    "type", "function",
+                    "function", Map.of(
+                            "name", t.name(),
+                            "description", t.description(),
+                            "parameters", t.parameters())));
+        }
+        return out;
     }
 
     private List<Map<String, String>> buildMessages(String systemPrompt,

@@ -36,7 +36,8 @@ public class AnthropicClient implements AiClient {
     @Override
     public void streamChat(String apiKey, String model, String systemPrompt,
                            List<ChatMessage> history, String userMessage,
-                           SseEmitter emitter) throws IOException {
+                           List<ToolSpec> tools, SseEmitter emitter) throws IOException {
+        // tools: not yet wired for Anthropic — this provider stays on the text-tag protocol.
         List<Map<String, String>> messages = buildMessages(history, userMessage);
         String body = mapper.writeValueAsString(Map.of(
                 "model", model != null ? model : DEFAULT_MODEL,

@@ -36,7 +36,8 @@ public class GeminiClient implements AiClient {
     @Override
     public void streamChat(String apiKey, String model, String systemPrompt,
                            List<ChatMessage> history, String userMessage,
-                           SseEmitter emitter) throws IOException {
+                           List<ToolSpec> tools, SseEmitter emitter) throws IOException {
+        // tools: not yet wired for Gemini — this provider stays on the text-tag protocol.
         String resolvedModel = model != null ? model : DEFAULT_MODEL;
         String url = BASE_URL + resolvedModel + ":streamGenerateContent?alt=sse&key=" + apiKey;
 

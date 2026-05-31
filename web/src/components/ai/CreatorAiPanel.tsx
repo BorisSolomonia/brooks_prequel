@@ -54,11 +54,12 @@ interface AddPlaceAction {
   suggestedDurationMinutes: number | null;
   latitude: number | null;
   longitude: number | null;
+  imageUrl?: string;
 }
 
 interface UpdateDayAction { dayNumber: number; title?: string; description?: string; }
 interface UpdateBlockAction { dayNumber: number; blockTitle: string; title?: string; description?: string; blockType?: string; }
-interface UpdatePlaceAction { dayNumber: number; blockTitle: string; placeName: string; name?: string; description?: string; address?: string; category?: string; priceLevel?: string; }
+interface UpdatePlaceAction { dayNumber: number; blockTitle: string; placeName: string; name?: string; description?: string; address?: string; category?: string; priceLevel?: string; imageUrl?: string; }
 interface DeleteDayAction { dayNumber: number; }
 interface DeleteBlockAction { dayNumber: number; blockTitle: string; }
 interface DeletePlaceAction { dayNumber: number; blockTitle: string; placeName: string; }
@@ -101,7 +102,7 @@ interface Props {
   onGuideUpdated: (fields: Partial<Guide>) => void;
 }
 
-const ACTION_PATTERN = /<action\s+type="(update_guide|add_day|add_block|add_place|update_day|update_block|update_place|delete_day|delete_block|delete_place)">([\s\S]*?)<\/action>/;
+const ACTION_PATTERN = /<action\s+type="(update_guide|add_day|add_block|add_place|update_day|update_block|update_place|delete_day|delete_block|delete_place)">([\s\S]*?)<\/action>/g;
 const PROFILE_PATTERN = /<profile>([\s\S]*?)<\/profile>/g;
 
 // Phrases that signal the AI thinks it's making a change but forgot to emit the <action> tag.
@@ -174,26 +175,31 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
   const [messages, setMessages] = useState<Message[]>(() => loadMessages(guide.id));
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  // Queue of proposed actions awaiting approval. The AI can emit several in one reply
+  // ("add places to both days" → multiple add_place tags), applied in order on approve.
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [accepting, setAccepting] = useState(false);
   // When the AI describes an action ("adding...", "will add...") but emits no action tag,
   // we flag the last user message as retryable. One-click retry resends with stronger
   // instruction so the AI is forced to emit the tag.
   const [missingActionForMessage, setMissingActionForMessage] = useState<string | null>(null);
   const accumulatedRef = useRef('');
+  // Structured actions delivered via native tool calls (SSE `action` events). When present they
+  // take precedence over the legacy text-tag regex (used only by providers not yet on tool calling).
+  const actionsRef = useRef<PendingAction[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const metadataMissing = !guide.primaryCity || !guide.region;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, pendingAction]);
+  }, [messages.length, pendingActions.length]);
 
   async function send(messageOverride?: string) {
     const userMessage = (messageOverride ?? input).trim();
     if (!userMessage || streaming || !token) return;
     setInput('');
-    setPendingAction(null);
+    setPendingActions([]);
 
     const newMessages: Message[] = [
       ...messages,
@@ -205,6 +211,7 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
     setStreaming(true);
 
     accumulatedRef.current = '';
+    actionsRef.current = [];
 
     await streamPost(
       '/api/ai/creator-suggest',
@@ -240,7 +247,15 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
           return next;
         });
       },
-      undefined,
+      (eventName, data) => {
+        // Native tool call surfaced as a structured action event.
+        if (eventName === 'action') {
+          try {
+            const a = JSON.parse(data);
+            if (a && a.type && a.payload) actionsRef.current.push({ type: a.type, payload: a.payload });
+          } catch { /* ignore a malformed action event */ }
+        }
+      },
       (status) => {
         const errorText = status === 401
           ? 'Your session expired. Please sign in again.'
@@ -265,24 +280,32 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
     }
     rawText = rawText.replace(PROFILE_PATTERN, '').trim();
 
-    // Extract action tag
-    const match = ACTION_PATTERN.exec(rawText);
+    // Prefer structured tool-call actions (native tool calling, e.g. OpenAI). Only if none arrived
+    // do we fall back to parsing legacy <action> text tags (providers not yet on tool calling).
     let cleanText = rawText;
-    if (match) {
+    if (actionsRef.current.length > 0) {
+      setPendingActions(actionsRef.current);
+      cleanText = rawText.replace(ACTION_PATTERN, '').trim(); // strip any stray tags too
+      setMissingActionForMessage(null);
+    } else {
+    const parsed: PendingAction[] = [];
+    for (const m of Array.from(rawText.matchAll(ACTION_PATTERN))) {
       try {
-        const type = match[1] as PendingAction['type'];
-        const payload = JSON.parse(match[2].trim());
-        setPendingAction({ type, payload });
-        cleanText = rawText.replace(ACTION_PATTERN, '').trim();
-        setMissingActionForMessage(null);
+        parsed.push({ type: m[1] as PendingAction['type'], payload: JSON.parse(m[2].trim()) });
       } catch {
-        // Malformed JSON — leave message as-is
+        // Skip a malformed action; keep the others.
       }
+    }
+    if (parsed.length > 0) {
+      setPendingActions(parsed);
+      cleanText = rawText.replace(ACTION_PATTERN, '').trim();
+      setMissingActionForMessage(null);
     } else if (looksLikeIntentWithoutAction(cleanText)) {
       // AI described an action but emitted no tag — offer one-click retry
       setMissingActionForMessage(userMessage);
     } else {
       setMissingActionForMessage(null);
+    }
     }
 
     const finalMessages = (prev: Message[]) => {
@@ -299,11 +322,10 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
     setStreaming(false);
   }
 
-  async function acceptAction() {
-    if (!pendingAction || !token) return;
-    setAccepting(true);
-    try {
-      const { type, payload } = pendingAction;
+  // Apply a single proposed action. Early-returns (target not found) just skip that one action.
+  async function applyOne(action: PendingAction) {
+      if (!token) return;
+      const { type, payload } = action;
 
       if (type === 'update_guide') {
         const p = payload as UpdateGuideAction;
@@ -350,6 +372,7 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
             address: p.address,
             category: p.category,
             priceLevel: toPriceLevelInt(p.priceLevel),
+            imageUrls: p.imageUrl ? [p.imageUrl] : undefined,
             suggestedStartMinute: p.suggestedStartMinute,
             suggestedDurationMinutes: p.suggestedDurationMinutes,
             latitude: p.latitude,
@@ -380,7 +403,7 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
         const targetBlock = targetDay?.blocks?.find((b) => b.title?.toLowerCase() === p.blockTitle?.toLowerCase());
         const targetPlace = targetBlock?.places?.find((pl) => pl.name?.toLowerCase() === p.placeName?.toLowerCase());
         if (!targetPlace || !targetBlock || !targetDay) { console.warn('Place not found', p.placeName); return; }
-        const updatedPlace = await api.patch<GuidePlace>(`/api/guides/${guide.id}/places/${targetPlace.id}`, { name: p.name, description: p.description, address: p.address, category: p.category, priceLevel: toPriceLevelInt(p.priceLevel) }, token);
+        const updatedPlace = await api.patch<GuidePlace>(`/api/guides/${guide.id}/places/${targetPlace.id}`, { name: p.name, description: p.description, address: p.address, category: p.category, priceLevel: toPriceLevelInt(p.priceLevel), imageUrls: p.imageUrl ? [p.imageUrl] : undefined }, token);
         onGuideUpdated({ days: guide.days?.map((d) => d.id === targetDay.id ? { ...d, blocks: d.blocks?.map((b) => b.id === targetBlock.id ? { ...b, places: b.places?.map((pl) => pl.id === targetPlace.id ? { ...pl, ...updatedPlace } : pl) } : b) } : d) });
 
       } else if (type === 'delete_day') {
@@ -407,15 +430,28 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
         await api.delete<void>(`/api/guides/${guide.id}/blocks/${targetBlock.id}/places/${targetPlace.id}`, token);
         onGuideUpdated({ days: guide.days?.map((d) => d.id === targetDay.id ? { ...d, blocks: d.blocks?.map((b) => b.id === targetBlock.id ? { ...b, places: b.places?.filter((pl) => pl.id !== targetPlace.id) } : b) } : d) });
       }
+  }
 
-      setPendingAction(null);
+  async function acceptAction() {
+    if (pendingActions.length === 0 || !token) return;
+    setAccepting(true);
+    try {
+      // Apply in emit order (the AI is told to order day → block → place).
+      for (const action of pendingActions) {
+        try {
+          await applyOne(action);
+        } catch (e) {
+          console.error('AI action failed to apply:', action.type, e);
+        }
+      }
+      setPendingActions([]);
     } finally {
       setAccepting(false);
     }
   }
 
   function skipAction() {
-    setPendingAction(null);
+    setPendingActions([]);
     send('Skip that, suggest something else.');
   }
 
@@ -470,7 +506,7 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
         ))}
 
         {/* Missing-action warning */}
-        {missingActionForMessage && !pendingAction && !streaming && (
+        {missingActionForMessage && pendingActions.length === 0 && !streaming && (
           <div className="rounded-xl border-2 border-yellow-500/40 bg-yellow-500/10 p-3 space-y-2">
             <p className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
               ⚠ The AI confirmed but didn’t actually make the change
@@ -499,21 +535,27 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
           </div>
         )}
 
-        {/* Action confirmation card */}
-        {pendingAction && !streaming && (
+        {/* Action confirmation card — one or many proposed changes, applied in order on approve */}
+        {pendingActions.length > 0 && !streaming && (
           <div className="border border-[var(--border)] rounded-xl p-3 bg-[var(--bg-primary)] space-y-2">
             <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-              Proposed action
+              {pendingActions.length === 1 ? 'Proposed action' : `Proposed changes (${pendingActions.length})`}
             </p>
-            <p className="text-sm text-[var(--text-primary)] font-medium">{actionLabel(pendingAction)}</p>
-            <p className="text-xs text-[var(--text-tertiary)]">Approve to apply this to your guide.</p>
+            <ul className="space-y-1">
+              {pendingActions.map((a, i) => (
+                <li key={i} className="text-sm text-[var(--text-primary)] font-medium">• {actionLabel(a)}</li>
+              ))}
+            </ul>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              {pendingActions.length === 1 ? 'Approve to apply this to your guide.' : 'Approve to apply all of these to your guide.'}
+            </p>
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 onClick={acceptAction}
                 disabled={accepting}
                 className="min-h-11 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
               >
-                {accepting ? 'Applying…' : 'Approve'}
+                {accepting ? 'Applying…' : pendingActions.length === 1 ? 'Approve' : `Approve all (${pendingActions.length})`}
               </button>
               <button
                 onClick={skipAction}
