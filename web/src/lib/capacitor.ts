@@ -101,6 +101,47 @@ export async function startAuthFlow(returnTo?: string): Promise<void> {
   }
 }
 
+// Native-aware logout — the counterpart to startAuthFlow.
+//
+// Web: the standard SDK route + a full-page navigation clears everything in one
+// jar. Unchanged behaviour.
+//
+// Native: login completes in a Custom Tab, so the Auth0 SSO cookie lives in
+// Chrome's cookie jar while the local app session cookie lives in the WebView's
+// jar. A WebView-only logout (the old `<a href="/api/auth/logout">`) clears the
+// local session but leaves Chrome's SSO session intact, and its implicit
+// /v2/logout redirect does a flaky App-Link round-trip out through external
+// Chrome and back — the "briefly home, then bounced back, click logout twice"
+// bug. So we make logout symmetric with login:
+//   1. clear the LOCAL session via /api/auth/logout-app (a fetch — no redirect),
+//   2. drive Auth0 /v2/logout through a Custom Tab (the SAME jar login used) so
+//      the IdP SSO session is cleared too ("logged out on both ends"),
+//   3. land the WebView on home ourselves — deterministic, never dependent on
+//      the IdP round-trip completing.
+export async function startLogoutFlow(): Promise<void> {
+  if (!isNative()) {
+    window.location.href = '/api/auth/logout';
+    return;
+  }
+  try {
+    const res = await fetch('/api/auth/logout-app', { credentials: 'same-origin' });
+    if (res.ok) {
+      const data = (await res.json()) as { logoutUrl?: string };
+      // Best-effort SSO clear in Chrome's jar. The local session is already
+      // cleared by the fetch's Set-Cookie above, so app logout does not depend
+      // on this Custom Tab completing.
+      if (data.logoutUrl) {
+        try { await openInCustomTab(data.logoutUrl); } catch { /* best-effort */ }
+      }
+    } else {
+      console.warn('[capacitor] logout-app HTTP', res.status);
+    }
+  } catch (err) {
+    console.warn('[capacitor] native logout failed:', err);
+  }
+  window.location.href = '/';
+}
+
 // Registers a listener for incoming deep-link URIs (uk.brooksweb.app://...).
 // Called once at app startup from AppShell. On the web this is a no-op.
 export async function setupNativeAuthListener(): Promise<() => void> {

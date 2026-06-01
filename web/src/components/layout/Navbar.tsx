@@ -7,7 +7,8 @@ import { useUser } from '@auth0/nextjs-auth0/client';
 import GlobalSearchBar from '@/components/layout/GlobalSearchBar';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import NotificationBell from '@/components/notifications/NotificationBell';
-import { startAuthFlow } from '@/lib/capacitor';
+import { startAuthFlow, startLogoutFlow } from '@/lib/capacitor';
+import { clearAccessTokenCache } from '@/hooks/useAccessToken';
 
 // Shared click handler for any "Sign In" entry point. On web this navigates
 // to /api/auth/login; on native, startAuthFlow does the full deep-link
@@ -15,6 +16,16 @@ import { startAuthFlow } from '@/lib/capacitor';
 function handleSignInClick(event: React.MouseEvent<HTMLAnchorElement>) {
   event.preventDefault();
   void startAuthFlow();
+}
+
+// Shared click handler for any "Log Out" entry point. Clears the shared token
+// cache, then runs the native-aware logout (web: full nav to /api/auth/logout;
+// native: clear local session + Custom-Tab /v2/logout, see startLogoutFlow).
+// The <a href="/api/auth/logout"> stays as a no-JS fallback.
+function handleLogoutClick(event: React.MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
+  clearAccessTokenCache();
+  void startLogoutFlow();
 }
 
 function SearchBarFallback() {
@@ -105,6 +116,7 @@ export default function Navbar() {
               {user ? (
                 <a
                   href="/api/auth/logout"
+                  onClick={handleLogoutClick}
                   className="mw-button-secondary rounded-md px-4 py-2 text-sm transition-colors hover:bg-ig-hover"
                 >
                   Log Out
@@ -141,7 +153,7 @@ export default function Navbar() {
                 <Link href="/settings" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Settings</Link>
                 <Link href="/pricing" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Pricing</Link>
                 <Link href="/contact" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Contact</Link>
-                <a href="/api/auth/logout" className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
+                <a href="/api/auth/logout" onClick={handleLogoutClick} className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
               </div>
             </details>
           ) : (

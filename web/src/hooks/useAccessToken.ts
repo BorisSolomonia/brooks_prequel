@@ -32,6 +32,15 @@ function expiryFromJwt(token: string): number {
   return Date.now() + 50 * 60 * 1000;
 }
 
+// Invalidate the shared token cache. Called on logout so no component keeps
+// serving a stale access token through the logout transition (defends against
+// a silent re-auth even if a future logout path stops doing a full reload).
+export function clearAccessTokenCache(): void {
+  cachedToken = null;
+  cacheExpiry = 0;
+  inFlight = null;
+}
+
 function getToken(): Promise<string | null> {
   if (cachedToken && Date.now() < cacheExpiry) {
     return Promise.resolve(cachedToken);
