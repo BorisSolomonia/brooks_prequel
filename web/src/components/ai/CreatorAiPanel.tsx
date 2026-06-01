@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { streamPost, api } from '@/lib/api';
+import { searchWebImages } from '@/lib/unsplash';
 import type { Guide, GuideDay, GuideBlock, GuidePlace, AiProvider } from '@/types';
 
 type Provider = AiProvider;
@@ -55,11 +56,12 @@ interface AddPlaceAction {
   latitude: number | null;
   longitude: number | null;
   imageUrl?: string;
+  photoQuery?: string;
 }
 
 interface UpdateDayAction { dayNumber: number; title?: string; description?: string; }
 interface UpdateBlockAction { dayNumber: number; blockTitle: string; title?: string; description?: string; blockType?: string; }
-interface UpdatePlaceAction { dayNumber: number; blockTitle: string; placeName: string; name?: string; description?: string; address?: string; category?: string; priceLevel?: string; imageUrl?: string; }
+interface UpdatePlaceAction { dayNumber: number; blockTitle: string; placeName: string; name?: string; description?: string; address?: string; category?: string; priceLevel?: string; imageUrl?: string; photoQuery?: string; }
 interface DeleteDayAction { dayNumber: number; }
 interface DeleteBlockAction { dayNumber: number; blockTitle: string; }
 interface DeletePlaceAction { dayNumber: number; blockTitle: string; placeName: string; }
@@ -84,6 +86,22 @@ function toPriceLevelInt(value: unknown): number | undefined {
     LUXURY: 4, VERY_EXPENSIVE: 4, HIGH_END: 4, PREMIUM: 4, '$$$$': 4,
   };
   return map[s];
+}
+
+// AI proposes a photo SEARCH TERM (photoQuery); we resolve a REAL photo via the image API.
+// Falls back to a directly-provided imageUrl only for backward compatibility. Returns
+// undefined (no photo) rather than a hallucinated URL when nothing resolves.
+async function resolvePlacePhotos(p: { photoQuery?: string; imageUrl?: string }): Promise<string[] | undefined> {
+  if (p.photoQuery && p.photoQuery.trim()) {
+    try {
+      const results = await searchWebImages(p.photoQuery.trim());
+      if (results[0]?.fullUrl) return [results[0].fullUrl];
+    } catch (e) {
+      console.warn('photoQuery resolution failed', e);
+    }
+  }
+  if (p.imageUrl && p.imageUrl.trim()) return [p.imageUrl.trim()];
+  return undefined;
 }
 
 interface PendingAction {
@@ -364,6 +382,7 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
           (b) => b.title?.toLowerCase() === p.blockTitle?.toLowerCase()
         ) ?? targetDay.blocks?.[targetDay.blocks.length - 1];
         if (!targetBlock) { console.warn('Block not found for blockTitle', p.blockTitle); return; }
+        const addImageUrls = await resolvePlacePhotos(p);
         const place = await api.post<GuidePlace>(
           `/api/guides/${guide.id}/blocks/${targetBlock.id}/places`,
           {
@@ -372,7 +391,7 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
             address: p.address,
             category: p.category,
             priceLevel: toPriceLevelInt(p.priceLevel),
-            imageUrls: p.imageUrl ? [p.imageUrl] : undefined,
+            imageUrls: addImageUrls,
             suggestedStartMinute: p.suggestedStartMinute,
             suggestedDurationMinutes: p.suggestedDurationMinutes,
             latitude: p.latitude,
@@ -403,7 +422,8 @@ export function CreatorAiPanel({ guide, availableProviders, onDayAdded, onBlockA
         const targetBlock = targetDay?.blocks?.find((b) => b.title?.toLowerCase() === p.blockTitle?.toLowerCase());
         const targetPlace = targetBlock?.places?.find((pl) => pl.name?.toLowerCase() === p.placeName?.toLowerCase());
         if (!targetPlace || !targetBlock || !targetDay) { console.warn('Place not found', p.placeName); return; }
-        const updatedPlace = await api.patch<GuidePlace>(`/api/guides/${guide.id}/places/${targetPlace.id}`, { name: p.name, description: p.description, address: p.address, category: p.category, priceLevel: toPriceLevelInt(p.priceLevel), imageUrls: p.imageUrl ? [p.imageUrl] : undefined }, token);
+        const updImageUrls = (p.photoQuery || p.imageUrl) ? await resolvePlacePhotos(p) : undefined;
+        const updatedPlace = await api.patch<GuidePlace>(`/api/guides/${guide.id}/places/${targetPlace.id}`, { name: p.name, description: p.description, address: p.address, category: p.category, priceLevel: toPriceLevelInt(p.priceLevel), imageUrls: updImageUrls }, token);
         onGuideUpdated({ days: guide.days?.map((d) => d.id === targetDay.id ? { ...d, blocks: d.blocks?.map((b) => b.id === targetBlock.id ? { ...b, places: b.places?.map((pl) => pl.id === targetPlace.id ? { ...pl, ...updatedPlace } : pl) } : b) } : d) });
 
       } else if (type === 'delete_day') {

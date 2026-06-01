@@ -62,7 +62,7 @@ public final class CreatorTools {
                                 "suggestedDurationMinutes", integer("Duration in minutes"),
                                 "latitude", number("Latitude"),
                                 "longitude", number("Longitude"),
-                                "imageUrl", str("A real, working photo URL for this place (e.g. Unsplash)")
+                                "photoQuery", str("A short 2-4 word photo SEARCH TERM for this place (e.g. 'Tbilisi sulphur baths'). The app fetches a real photo — do NOT invent image URLs.")
                         ), List.of("dayNumber", "blockTitle", "name"))),
 
                 new ToolSpec("update_day", "Update an existing day's title/description.",
@@ -82,7 +82,7 @@ public final class CreatorTools {
                                 "name", str("New name"), "description", str("New description"), "address", str("Address"),
                                 "category", enumStr("Category", "RESTAURANT", "CAFE", "ATTRACTION", "MUSEUM", "PARK", "SHOPPING", "ACCOMMODATION", "TRANSPORT", "OTHER"),
                                 "priceLevel", enumStr("Price level", "FREE", "BUDGET", "MID_RANGE", "UPSCALE", "LUXURY"),
-                                "imageUrl", str("A real photo URL for this place")),
+                                "photoQuery", str("A short photo SEARCH TERM to set/replace the place photo. The app fetches a real photo — do NOT invent image URLs.")),
                                 List.of("dayNumber", "blockTitle", "placeName"))),
 
                 new ToolSpec("delete_day", "Delete a day (and its blocks/places).",

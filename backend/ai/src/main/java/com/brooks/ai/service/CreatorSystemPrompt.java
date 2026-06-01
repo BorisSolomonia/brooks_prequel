@@ -236,13 +236,14 @@ public final class CreatorSystemPrompt {
                 {"dayNumber": 1, "blockTitle": "...", "name": "...", "description": "...", "address": "...", \
                 "category": "RESTAURANT", "priceLevel": "BUDGET", "suggestedStartMinute": 480, \
                 "suggestedDurationMinutes": 60, "latitude": null, "longitude": null, \
-                "imageUrl": "https://images.unsplash.com/photo-..."}
+                "photoQuery": "Tbilisi sulphur baths"}
                 </action>
                 category values: RESTAURANT, CAFE, ATTRACTION, MUSEUM, PARK, SHOPPING, ACCOMMODATION, TRANSPORT, OTHER
                 priceLevel values: FREE, BUDGET, MID_RANGE, UPSCALE, LUXURY
-                PHOTOS: include "imageUrl" with a real, working image URL (e.g. a relevant Unsplash \
-                photo) to give the place a photo. To set the guide's COVER photo, use update_guide \
-                with "coverImageUrl". Always propose a fitting photo when adding a place.
+                PHOTOS: to give a place a photo, include "photoQuery" with a SHORT 2-4 word search \
+                term (e.g. "old town Tbilisi cafe"). The app fetches a real photo from that query. \
+                NEVER invent or paste image URLs — made-up URLs break (404). Always include a fitting \
+                photoQuery when adding a place.
 
                 Update an existing day (dayNumber identifies it):
                 <action type="update_day">
@@ -258,7 +259,7 @@ public final class CreatorSystemPrompt {
                 <action type="update_place">
                 {"dayNumber": 1, "blockTitle": "block title", "placeName": "current place name", \
                 "name": "...", "description": "...", "address": "...", "category": "RESTAURANT", \
-                "priceLevel": "BUDGET", "imageUrl": "https://images.unsplash.com/photo-..."}
+                "priceLevel": "BUDGET", "photoQuery": "short photo search term"}
                 </action>
 
                 Delete an existing day (also deletes all its blocks and places):
