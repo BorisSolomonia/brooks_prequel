@@ -74,6 +74,9 @@ public class GuideService {
         guide.setCurrency(normalizeBaseCurrency(request.getCurrency()));
         guide.setDiscountPercent(request.getDiscountPercent());
         guide.recomputeSalePrice(); // derive salePriceCents from the percentage
+        // Persist the Stage 1 destination pin so it survives the round-trip into the edit page.
+        guide.setLatitude(request.getLatitude());
+        guide.setLongitude(request.getLongitude());
 
         guide = guideRepository.save(guide);
         replaceTags(guide, request.getTags());

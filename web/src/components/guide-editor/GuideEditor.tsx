@@ -45,6 +45,11 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     bestSeasonStartMonth: initialGuide?.bestSeasonStartMonth ?? undefined,
     bestSeasonEndMonth: initialGuide?.bestSeasonEndMonth ?? undefined,
     bestSeasonLabel: initialGuide?.bestSeasonLabel ?? undefined,
+    // Re-hydrate the destination pin so Stage 2 (edit page) shows the exact location
+    // chosen in Stage 1. Without these the map fell back to the world view on every
+    // entry to the editor, looking like the location was "reset".
+    latitude: initialGuide?.latitude ?? undefined,
+    longitude: initialGuide?.longitude ?? undefined,
   });
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -154,7 +159,8 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
 
   return (
     <>
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      {/* pb-24 clears the fixed Save bar below so the last field (Tags) is never hidden. */}
+      <div className="max-w-3xl mx-auto px-4 pt-6 pb-24">
         {error && (
           <div className="mb-4 p-3 bg-ig-error/10 border border-ig-error/30 rounded-md text-ig-error text-sm">
             {error}
@@ -254,16 +260,6 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
               aiKeys={aiKeys}
             />
           </div>
-          <div className="sticky bottom-0 px-4 py-3 bg-ig-elevated border-t border-ig-border">
-            <button
-              onClick={handleSaveMetadata}
-              disabled={saving || !metadata.title}
-              className="mw-button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm disabled:opacity-50"
-            >
-              {saving && <Spinner />}
-              {saving ? 'Saving…' : guide ? 'Save Changes' : 'Create Guide'}
-            </button>
-          </div>
         </div>
 
         {/* Completeness score */}
@@ -310,6 +306,24 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
             />
           </GuideEditProvider>
         )}
+      </div>
+
+      {/* Persistent Save action bar. Fixed to the viewport so it stays visible in BOTH
+       * stages no matter how far the user scrolls — replacing the old sticky footer that
+       * was trapped inside the overflow-hidden metadata card and scrolled away in Stage 2.
+       * On mobile it sits flush above the app's bottom nav (mirroring AppShell's
+       * 5rem+safe-area offset); on md+ the nav is hidden so it pins to bottom-0. */}
+      <div className="fixed inset-x-0 bottom-[calc(5rem_+_env(safe-area-inset-bottom))] z-40 border-t border-ig-border bg-ig-elevated/95 backdrop-blur-md md:bottom-0">
+        <div className="mx-auto w-full max-w-3xl px-4 py-3">
+          <button
+            onClick={handleSaveMetadata}
+            disabled={saving || !metadata.title}
+            className="mw-button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm disabled:opacity-50"
+          >
+            {saving && <Spinner />}
+            {saving ? 'Saving…' : guide ? 'Save Changes' : 'Create Guide'}
+          </button>
+        </div>
       </div>
 
       {showGiftModal && guide && (

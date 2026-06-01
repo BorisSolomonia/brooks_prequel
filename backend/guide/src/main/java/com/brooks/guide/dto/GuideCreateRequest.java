@@ -38,4 +38,10 @@ public class GuideCreateRequest {
     private Integer discountPercent;
     private List<String> tags;
     private List<String> categoryIds;
+
+    // Destination pin chosen in Stage 1 (map / city autocomplete / "use my location").
+    // Must be carried on create so it survives the Stage 1 → Stage 2 (edit page) round-trip;
+    // previously these were absent here, so the location was silently dropped on POST.
+    private Double latitude;
+    private Double longitude;
 }
