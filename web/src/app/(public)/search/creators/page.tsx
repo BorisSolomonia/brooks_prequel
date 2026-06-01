@@ -6,8 +6,16 @@ import { api } from '@/lib/api';
 import type { CreatorSearchResult, PageResponse } from '@/types';
 import CreatorSearchCard from '@/components/search/CreatorSearchCard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
+import SearchFilterBar, { type SortOption } from '@/components/search/SearchFilterBar';
 import Spinner from '@/components/ui/Spinner';
 import Link from 'next/link';
+
+const CREATOR_SORTS: SortOption[] = [
+  { value: 'RELEVANCE', label: 'Relevance' },
+  { value: 'TOP_RATED', label: 'Top rated' },
+  { value: 'MOST_FOLLOWERS', label: 'Most followers' },
+  { value: 'NEWEST', label: 'Newest' },
+];
 
 function SearchCreatorsPageContent() {
   const searchParams = useSearchParams();
@@ -18,15 +26,24 @@ function SearchCreatorsPageContent() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [minRating, setMinRating] = useState<number | null>(null);
+  const [sort, setSort] = useState('RELEVANCE');
+  const [verified, setVerified] = useState(false);
+
+  const buildUrl = useCallback((pageNum: number) => {
+    const params = new URLSearchParams({ page: String(pageNum), size: '20' });
+    if (q.trim()) params.set('q', q);
+    if (minRating != null) params.set('minRating', String(minRating));
+    if (verified) params.set('verified', 'true');
+    if (sort && sort !== 'RELEVANCE') params.set('sort', sort);
+    return `/api/search/creators?${params.toString()}`;
+  }, [q, minRating, verified, sort]);
 
   const fetchPage = useCallback(async (pageNum: number, append: boolean) => {
-    if (!q.trim()) return;
     append ? setLoadingMore(true) : setLoading(true);
     setError(null);
     try {
-      const data = await api.get<PageResponse<CreatorSearchResult>>(
-        `/api/search/creators?q=${encodeURIComponent(q)}&page=${pageNum}&size=20`
-      );
+      const data = await api.get<PageResponse<CreatorSearchResult>>(buildUrl(pageNum));
       setResults(prev => append ? [...prev, ...data.content] : data.content);
       setTotal(data.totalElements);
       setPage(pageNum);
@@ -36,7 +53,7 @@ function SearchCreatorsPageContent() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [q]);
+  }, [buildUrl]);
 
   useEffect(() => {
     setResults([]);
@@ -51,8 +68,21 @@ function SearchCreatorsPageContent() {
       </Link>
       <h1 data-tour="creators-page" className="mw-section-title mb-1 text-xl">Creators</h1>
       {total > 0 && (
-        <p className="text-sm text-ig-text-secondary mb-6">{total} results for &ldquo;{q}&rdquo;</p>
+        <p className="text-sm text-ig-text-secondary mb-6">
+          {total} {q.trim() ? <>results for &ldquo;{q}&rdquo;</> : 'creators'}
+        </p>
       )}
+
+      {/* Rating + sort/date + verified (the universal filter bar) */}
+      <SearchFilterBar
+        minRating={minRating}
+        onMinRating={setMinRating}
+        sort={sort}
+        onSort={setSort}
+        sortOptions={CREATOR_SORTS}
+        verified={verified}
+        onVerified={setVerified}
+      />
 
       {loading && <SearchSkeleton />}
       {error && <p className="mt-8 text-center text-ig-error">{error}</p>}

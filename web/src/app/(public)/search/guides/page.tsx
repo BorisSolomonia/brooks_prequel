@@ -6,8 +6,26 @@ import { api } from '@/lib/api';
 import type { GuideSearchResult, PageResponse } from '@/types';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
+import SearchFilterBar, { type SortOption } from '@/components/search/SearchFilterBar';
 import Spinner from '@/components/ui/Spinner';
 import Link from 'next/link';
+
+const GUIDE_SORTS: SortOption[] = [
+  { value: 'RELEVANCE', label: 'Relevance' },
+  { value: 'NEWEST', label: 'Newest' },
+  { value: 'OLDEST', label: 'Oldest' },
+  { value: 'TOP_RATED', label: 'Top rated' },
+  { value: 'PRICE_ASC', label: 'Price: low to high' },
+  { value: 'PRICE_DESC', label: 'Price: high to low' },
+  { value: 'POPULAR', label: 'Popular' },
+];
+
+// Major currency units (e.g. "9.99") → integer minor units for the query.
+function toMinor(major: string): string | null {
+  const n = parseFloat(major);
+  if (isNaN(n) || n < 0) return null;
+  return String(Math.round(n * 100));
+}
 
 const PERSONAS = [
   { value: 'SOLO', label: 'Solo' },
@@ -35,16 +53,26 @@ function SearchGuidesPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
   const [selectedStage, setSelectedStage] = useState('');
+  const [minRating, setMinRating] = useState<number | null>(null);
+  const [sort, setSort] = useState('RELEVANCE');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
 
   const buildUrl = useCallback((pageNum: number) => {
-    const params = new URLSearchParams({ q, page: String(pageNum), size: '20' });
+    const params = new URLSearchParams({ page: String(pageNum), size: '20' });
+    if (q.trim()) params.set('q', q);
     if (selectedStage) params.set('stage', selectedStage);
     selectedPersonas.forEach((p) => params.append('persona', p));
+    if (minRating != null) params.set('minRating', String(minRating));
+    if (sort && sort !== 'RELEVANCE') params.set('sort', sort);
+    const minMinor = toMinor(priceMin);
+    const maxMinor = toMinor(priceMax);
+    if (minMinor != null) params.set('minPrice', minMinor);
+    if (maxMinor != null) params.set('maxPrice', maxMinor);
     return `/api/search/guides?${params.toString()}`;
-  }, [q, selectedPersonas, selectedStage]);
+  }, [q, selectedPersonas, selectedStage, minRating, sort, priceMin, priceMax]);
 
   const fetchPage = useCallback(async (pageNum: number, append: boolean) => {
-    if (!q.trim()) return;
     append ? setLoadingMore(true) : setLoading(true);
     setError(null);
     try {
@@ -58,7 +86,7 @@ function SearchGuidesPageContent() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [buildUrl, q]);
+  }, [buildUrl]);
 
   useEffect(() => {
     setResults([]);
@@ -79,8 +107,24 @@ function SearchGuidesPageContent() {
       </Link>
       <h1 className="mw-section-title mb-1 text-xl">Guides</h1>
       {total > 0 && (
-        <p className="text-sm text-ig-text-secondary mb-4">{total} results for &ldquo;{q}&rdquo;</p>
+        <p className="text-sm text-ig-text-secondary mb-4">
+          {total} {q.trim() ? <>results for &ldquo;{q}&rdquo;</> : 'guides'}
+        </p>
       )}
+
+      {/* Rating + sort/date + price (the universal filter bar) */}
+      <SearchFilterBar
+        minRating={minRating}
+        onMinRating={setMinRating}
+        sort={sort}
+        onSort={setSort}
+        sortOptions={GUIDE_SORTS}
+        showPrice
+        priceMin={priceMin}
+        priceMax={priceMax}
+        onPriceMin={setPriceMin}
+        onPriceMax={setPriceMax}
+      />
 
       {/* Stage filter */}
       <div className="flex flex-wrap gap-2 mb-3">

@@ -39,27 +39,36 @@ public class SearchService {
     }
 
     public PageResponse<CreatorSearchResult> searchCreators(String query, int page, int size) {
+        return searchCreators(query, page, size, null, null, null);
+    }
+
+    // q is optional: a blank query means "browse + filter all active creators"
+    // (rating / verified / sort), so we no longer short-circuit on blank.
+    public PageResponse<CreatorSearchResult> searchCreators(String query, int page, int size,
+                                                            Double minRating, Boolean verified, String sort) {
         String sanitized = sanitizeQuery(query);
-        if (sanitized.isBlank()) {
-            return PageResponse.empty(page, size);
-        }
-        long total = searchRepository.countCreators(sanitized);
-        List<CreatorSearchResult> content = searchRepository.searchCreators(sanitized, size, page * size);
+        long total = searchRepository.countCreators(sanitized, minRating, verified);
+        List<CreatorSearchResult> content =
+                searchRepository.searchCreators(sanitized, size, page * size, minRating, verified, sort);
         return PageResponse.of(content, page, size, total);
     }
 
     public PageResponse<GuideSearchResult> searchGuides(String query, int page, int size) {
-        return searchGuides(query, page, size, null, null);
+        return searchGuides(query, page, size, null, null, null, null, null, null);
     }
 
     public PageResponse<GuideSearchResult> searchGuides(String query, int page, int size, String stage, List<String> personas) {
+        return searchGuides(query, page, size, stage, personas, null, null, null, null);
+    }
+
+    // q is optional: a blank query means "browse + filter the whole catalogue".
+    public PageResponse<GuideSearchResult> searchGuides(String query, int page, int size, String stage, List<String> personas,
+                                                        Double minRating, Integer minPriceCents, Integer maxPriceCents, String sort) {
         String sanitized = sanitizeQuery(query);
-        if (sanitized.isBlank()) {
-            return PageResponse.empty(page, size);
-        }
         List<String> safePersonas = (personas == null) ? Collections.emptyList() : personas;
-        long total = searchRepository.countGuides(sanitized, stage, safePersonas);
-        List<GuideSearchResult> content = searchRepository.searchGuides(sanitized, size, page * size, stage, safePersonas);
+        long total = searchRepository.countGuides(sanitized, stage, safePersonas, minRating, minPriceCents, maxPriceCents);
+        List<GuideSearchResult> content = searchRepository.searchGuides(
+                sanitized, size, page * size, stage, safePersonas, minRating, minPriceCents, maxPriceCents, sort);
         return PageResponse.of(content, page, size, total);
     }
 

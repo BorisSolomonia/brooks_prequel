@@ -18,4 +18,7 @@ public class CreatorSearchResult {
     private int followerCount;
     private int guideCount;
     private boolean verified;
+    // Aggregate creator rating (user_profiles.creator_rating_average) — surfaced
+    // so the People results can show stars and be filtered/sorted by rating.
+    private double creatorRatingAverage;
 }

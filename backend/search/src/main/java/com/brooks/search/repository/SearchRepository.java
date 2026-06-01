@@ -27,33 +27,49 @@ public class SearchRepository {
     // ── Creator search ──────────────────────────────────────────
 
     public List<CreatorSearchResult> searchCreators(String tsQuery, int limit, int offset) {
-        // LEFT JOIN user_profiles so users WITHOUT a profile row (signed
-        // up but never edited their profile) are still findable. Match
-        // either the profile's search_vector OR the username substring,
-        // so people who haven't published a guide — or even filled in
-        // a display name — appear in the People tab.
-        return jdbcTemplate.query("""
+        return searchCreators(tsQuery, limit, offset, null, null, null);
+    }
+
+    // LEFT JOIN user_profiles so users WITHOUT a profile row are still findable.
+    // A blank tsQuery means "browse + filter all active creators" (no text match
+    // clause). minRating/verified narrow; sort is an allowlisted enum.
+    public List<CreatorSearchResult> searchCreators(String tsQuery, int limit, int offset,
+                                                    Double minRating, Boolean verified, String sort) {
+        boolean hasQuery = tsQuery != null && !tsQuery.isBlank();
+        List<Object> params = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("""
             SELECT u.id, u.username,
                    COALESCE(p.display_name, u.username) AS display_name,
                    p.avatar_url, p.region,
                    COALESCE(p.follower_count, 0) AS follower_count,
                    COALESCE(p.guide_count, 0) AS guide_count,
-                   COALESCE(p.is_verified, false) AS is_verified
+                   COALESCE(p.is_verified, false) AS is_verified,
+                   COALESCE(p.creator_rating_average, 0) AS creator_rating_average
             FROM users u
             LEFT JOIN user_profiles p ON p.user_id = u.id
             WHERE u.status = 'ACTIVE'
-              AND (
-                  (p.search_vector IS NOT NULL AND p.search_vector @@ plainto_tsquery('english', ?))
-                  OR LOWER(u.username) LIKE LOWER('%' || ? || '%')
-                  -- Fuzzy region match via pg_trgm (see V52 migration).
-                  -- Catches typos like "Tblisi" / "Georga" without
-                  -- requiring exact substring of the city/region.
-                  OR similarity(LOWER(COALESCE(p.region, '')), LOWER(?)) >= ?
-              )
-            ORDER BY COALESCE(ts_rank(p.search_vector, plainto_tsquery('english', ?)), 0) DESC,
-                     COALESCE(p.follower_count, 0) DESC
-            LIMIT ? OFFSET ?
-            """,
+            """);
+        if (hasQuery) {
+            sql.append("""
+                  AND (
+                      (p.search_vector IS NOT NULL AND p.search_vector @@ plainto_tsquery('english', ?))
+                      OR LOWER(u.username) LIKE LOWER('%' || ? || '%')
+                      OR similarity(LOWER(COALESCE(p.region, '')), LOWER(?)) >= ?
+                  )
+                """);
+            params.add(tsQuery); params.add(tsQuery); params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+        }
+        if (minRating != null) {
+            sql.append(" AND COALESCE(p.creator_rating_average, 0) >= ?");
+            params.add(minRating);
+        }
+        if (Boolean.TRUE.equals(verified)) {
+            sql.append(" AND COALESCE(p.is_verified, false) = true");
+        }
+        sql.append(" ORDER BY ").append(creatorOrderBy(sort, hasQuery, params, tsQuery));
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(limit); params.add(offset);
+        return jdbcTemplate.query(sql.toString(),
             (rs, rowNum) -> CreatorSearchResult.builder()
                 .userId(UUID.fromString(rs.getString("id")))
                 .username(rs.getString("username"))
@@ -63,100 +79,110 @@ public class SearchRepository {
                 .followerCount(rs.getInt("follower_count"))
                 .guideCount(rs.getInt("guide_count"))
                 .verified(rs.getBoolean("is_verified"))
+                .creatorRatingAverage(rs.getDouble("creator_rating_average"))
                 .build(),
-            tsQuery, tsQuery, tsQuery, FUZZY_THRESHOLD, tsQuery, limit, offset
+            params.toArray()
         );
     }
 
+    // Allowlisted creator ORDER BY — the raw sort string is NEVER interpolated.
+    private String creatorOrderBy(String sort, boolean hasQuery, List<Object> params, String tsQuery) {
+        String s = sort == null ? "RELEVANCE" : sort.trim().toUpperCase();
+        switch (s) {
+            case "TOP_RATED":
+                return "COALESCE(p.creator_rating_average, 0) DESC, COALESCE(p.follower_count, 0) DESC";
+            case "MOST_FOLLOWERS":
+                return "COALESCE(p.follower_count, 0) DESC";
+            case "NEWEST":
+                return "u.created_at DESC";
+            case "RELEVANCE":
+            default:
+                if (hasQuery) {
+                    params.add(tsQuery);
+                    return "COALESCE(ts_rank(p.search_vector, plainto_tsquery('english', ?)), 0) DESC, "
+                         + "COALESCE(p.follower_count, 0) DESC";
+                }
+                return "COALESCE(p.follower_count, 0) DESC";
+        }
+    }
+
     public long countCreators(String tsQuery) {
-        Long count = jdbcTemplate.queryForObject("""
+        return countCreators(tsQuery, null, null);
+    }
+
+    public long countCreators(String tsQuery, Double minRating, Boolean verified) {
+        boolean hasQuery = tsQuery != null && !tsQuery.isBlank();
+        List<Object> params = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("""
             SELECT COUNT(*)
             FROM users u
             LEFT JOIN user_profiles p ON p.user_id = u.id
             WHERE u.status = 'ACTIVE'
-              AND (
-                  (p.search_vector IS NOT NULL AND p.search_vector @@ plainto_tsquery('english', ?))
-                  OR LOWER(u.username) LIKE LOWER('%' || ? || '%')
-                  OR similarity(LOWER(COALESCE(p.region, '')), LOWER(?)) >= ?
-              )
-            """, Long.class, tsQuery, tsQuery, tsQuery, FUZZY_THRESHOLD);
+            """);
+        if (hasQuery) {
+            sql.append("""
+                  AND (
+                      (p.search_vector IS NOT NULL AND p.search_vector @@ plainto_tsquery('english', ?))
+                      OR LOWER(u.username) LIKE LOWER('%' || ? || '%')
+                      OR similarity(LOWER(COALESCE(p.region, '')), LOWER(?)) >= ?
+                  )
+                """);
+            params.add(tsQuery); params.add(tsQuery); params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+        }
+        if (minRating != null) { sql.append(" AND COALESCE(p.creator_rating_average, 0) >= ?"); params.add(minRating); }
+        if (Boolean.TRUE.equals(verified)) { sql.append(" AND COALESCE(p.is_verified, false) = true"); }
+        Long count = jdbcTemplate.queryForObject(sql.toString(), Long.class, params.toArray());
         return count != null ? count : 0;
     }
 
     // ── Guide search ────────────────────────────────────────────
+
+    // Effective (sale-aware) price — reused in SELECT, the price-range filter, and ORDER BY.
+    private static final String EFFECTIVE_PRICE =
+            "(CASE WHEN g.sale_price_cents IS NOT NULL AND (g.sale_ends_at IS NULL OR g.sale_ends_at > NOW()) "
+          + "THEN g.sale_price_cents ELSE g.price_cents END)";
 
     public List<GuideSearchResult> searchGuides(String tsQuery, int limit, int offset) {
         return searchGuides(tsQuery, limit, offset, null, List.of());
     }
 
     public List<GuideSearchResult> searchGuides(String tsQuery, int limit, int offset, String stage, List<String> personas) {
-        StringBuilder sql = new StringBuilder("""
-            SELECT g.id, g.title, g.cover_image_url, g.region, g.primary_city,
-                   g.day_count, g.place_count, g.price_cents, g.sale_price_cents,
-                   CASE
-                       WHEN g.sale_price_cents IS NOT NULL
-                        AND (g.sale_ends_at IS NULL OR g.sale_ends_at > NOW())
-                       THEN g.sale_price_cents
-                       ELSE g.price_cents
-                   END AS effective_price_cents,
-                   g.currency,
-                   COALESCE(NULLIF(g.primary_city, ''), NULLIF(g.region, ''), g.country) AS display_location,
-                   COALESCE(AVG(gr.rating), 0) AS average_rating,
-                   COUNT(DISTINCT gr.id) AS review_count,
-                   (
-                       COUNT(DISTINCT gp.id) FILTER (
-                           WHERE gp.status = 'COMPLETED'
-                             AND gp.created_at >= NOW() - INTERVAL '7 days'
-                       ) * 2
-                       + COUNT(DISTINCT sg.id) FILTER (
-                           WHERE sg.created_at >= NOW() - INTERVAL '7 days'
-                       )
-                   )::int AS weekly_popularity_score,
-                   u.username AS creator_username,
-                   p.display_name AS creator_display_name
-            FROM guides g
-            JOIN users u ON u.id = g.creator_id
-            LEFT JOIN user_profiles p ON p.user_id = g.creator_id
-            LEFT JOIN guide_reviews gr ON gr.guide_id = g.id
-            LEFT JOIN guide_purchases gp ON gp.guide_id = g.id
-            LEFT JOIN saved_guides sg ON sg.guide_id = g.id
-            WHERE (
-                  g.search_vector @@ plainto_tsquery('english', ?)
-                  -- Fuzzy city / region / country match for typo
-                  -- tolerance (V52 trigram indexes). Caught alongside
-                  -- the FTS clause so exact words still rank higher
-                  -- via ts_rank in the ORDER BY below.
-                  OR similarity(LOWER(COALESCE(g.primary_city, '')), LOWER(?)) >= ?
-                  OR similarity(LOWER(COALESCE(g.region, '')), LOWER(?)) >= ?
-                  OR similarity(LOWER(COALESCE(g.country, '')), LOWER(?)) >= ?
-              )
-              AND g.status = 'PUBLISHED'
-            """);
+        return searchGuides(tsQuery, limit, offset, stage, personas, null, null, null, null);
+    }
+
+    // Blank tsQuery = browse the whole published catalogue. minRating (HAVING on
+    // AVG review rating), price range, stage and personas narrow the set; sort is
+    // an allowlisted enum (see guideOrderBy) so no user text reaches ORDER BY.
+    public List<GuideSearchResult> searchGuides(String tsQuery, int limit, int offset, String stage, List<String> personas,
+                                                Double minRating, Integer minPriceCents, Integer maxPriceCents, String sort) {
+        boolean hasQuery = tsQuery != null && !tsQuery.isBlank();
         List<Object> params = new ArrayList<>();
-        params.add(tsQuery);
-        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
-        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
-        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
-        if (stage != null && !stage.isBlank()) {
-            sql.append(" AND g.traveler_stage = ?");
-            params.add(stage);
+        StringBuilder sql = new StringBuilder(
+            "SELECT g.id, g.title, g.cover_image_url, g.region, g.primary_city, "
+          + "g.day_count, g.place_count, g.price_cents, g.sale_price_cents, "
+          + EFFECTIVE_PRICE + " AS effective_price_cents, "
+          + "g.currency, "
+          + "COALESCE(NULLIF(g.primary_city, ''), NULLIF(g.region, ''), g.country) AS display_location, "
+          + "COALESCE(AVG(gr.rating), 0) AS average_rating, "
+          + "COUNT(DISTINCT gr.id) AS review_count, "
+          + "(COUNT(DISTINCT gp.id) FILTER (WHERE gp.status = 'COMPLETED' AND gp.created_at >= NOW() - INTERVAL '7 days') * 2 "
+          + " + COUNT(DISTINCT sg.id) FILTER (WHERE sg.created_at >= NOW() - INTERVAL '7 days'))::int AS weekly_popularity_score, "
+          + "u.username AS creator_username, p.display_name AS creator_display_name "
+          + "FROM guides g "
+          + "JOIN users u ON u.id = g.creator_id "
+          + "LEFT JOIN user_profiles p ON p.user_id = g.creator_id "
+          + "LEFT JOIN guide_reviews gr ON gr.guide_id = g.id "
+          + "LEFT JOIN guide_purchases gp ON gp.guide_id = g.id "
+          + "LEFT JOIN saved_guides sg ON sg.guide_id = g.id");
+        appendGuideWhere(sql, params, tsQuery, hasQuery, stage, personas, minPriceCents, maxPriceCents);
+        sql.append(" GROUP BY g.id, u.username, p.display_name");
+        if (minRating != null) {
+            sql.append(" HAVING COALESCE(AVG(gr.rating), 0) >= ?");
+            params.add(minRating);
         }
-        if (personas != null && !personas.isEmpty()) {
-            sql.append(" AND EXISTS (SELECT 1 FROM guide_personas gp WHERE gp.guide_id = g.id AND gp.persona IN (");
-            for (int i = 0; i < personas.size(); i++) {
-                sql.append(i == 0 ? "?" : ",?");
-                params.add(personas.get(i));
-            }
-            sql.append("))");
-        }
-        sql.append("""
-             GROUP BY g.id, u.username, p.display_name
-             ORDER BY ts_rank(g.search_vector, plainto_tsquery('english', ?)) DESC, g.created_at DESC
-             LIMIT ? OFFSET ?
-            """);
-        params.add(tsQuery);
-        params.add(limit);
-        params.add(offset);
+        sql.append(" ORDER BY ").append(guideOrderBy(sort, hasQuery, params, tsQuery));
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(limit); params.add(offset);
         return jdbcTemplate.query(sql.toString(),
             (rs, rowNum) -> GuideSearchResult.builder()
                 .id(UUID.fromString(rs.getString("id")))
@@ -183,40 +209,82 @@ public class SearchRepository {
         );
     }
 
-    public long countGuides(String tsQuery) {
-        return countGuides(tsQuery, null, List.of());
-    }
-
-    public long countGuides(String tsQuery, String stage, List<String> personas) {
-        StringBuilder sql = new StringBuilder("""
-            SELECT COUNT(*)
-            FROM guides g
-            WHERE (
-                  g.search_vector @@ plainto_tsquery('english', ?)
-                  OR similarity(LOWER(COALESCE(g.primary_city, '')), LOWER(?)) >= ?
-                  OR similarity(LOWER(COALESCE(g.region, '')), LOWER(?)) >= ?
-                  OR similarity(LOWER(COALESCE(g.country, '')), LOWER(?)) >= ?
-              )
-              AND g.status = 'PUBLISHED'
-            """);
-        List<Object> params = new ArrayList<>();
-        params.add(tsQuery);
-        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
-        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
-        params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+    // Shared WHERE builder for guide search + count (keeps the two in lock-step).
+    private void appendGuideWhere(StringBuilder sql, List<Object> params, String tsQuery, boolean hasQuery,
+                                  String stage, List<String> personas, Integer minPriceCents, Integer maxPriceCents) {
+        sql.append(" WHERE g.status = 'PUBLISHED'");
+        if (hasQuery) {
+            // Fuzzy city/region/country match (V52 trigram indexes) alongside FTS,
+            // so exact words still rank higher via ts_rank when sort = RELEVANCE.
+            sql.append(" AND (g.search_vector @@ plainto_tsquery('english', ?)")
+               .append(" OR similarity(LOWER(COALESCE(g.primary_city, '')), LOWER(?)) >= ?")
+               .append(" OR similarity(LOWER(COALESCE(g.region, '')), LOWER(?)) >= ?")
+               .append(" OR similarity(LOWER(COALESCE(g.country, '')), LOWER(?)) >= ?)");
+            params.add(tsQuery);
+            params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+            params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+            params.add(tsQuery); params.add(FUZZY_THRESHOLD);
+        }
         if (stage != null && !stage.isBlank()) {
             sql.append(" AND g.traveler_stage = ?");
             params.add(stage);
         }
         if (personas != null && !personas.isEmpty()) {
-            sql.append(" AND EXISTS (SELECT 1 FROM guide_personas gp WHERE gp.guide_id = g.id AND gp.persona IN (");
+            sql.append(" AND EXISTS (SELECT 1 FROM guide_personas gpe WHERE gpe.guide_id = g.id AND gpe.persona IN (");
             for (int i = 0; i < personas.size(); i++) {
                 sql.append(i == 0 ? "?" : ",?");
                 params.add(personas.get(i));
             }
             sql.append("))");
         }
-        Long count = jdbcTemplate.queryForObject(sql.toString(), Long.class, params.toArray());
+        if (minPriceCents != null) { sql.append(" AND ").append(EFFECTIVE_PRICE).append(" >= ?"); params.add(minPriceCents); }
+        if (maxPriceCents != null) { sql.append(" AND ").append(EFFECTIVE_PRICE).append(" <= ?"); params.add(maxPriceCents); }
+    }
+
+    // Allowlisted guide ORDER BY — the raw sort string is NEVER interpolated.
+    private String guideOrderBy(String sort, boolean hasQuery, List<Object> params, String tsQuery) {
+        String s = sort == null ? "RELEVANCE" : sort.trim().toUpperCase();
+        switch (s) {
+            case "NEWEST":     return "g.created_at DESC";
+            case "OLDEST":     return "g.created_at ASC";
+            case "TOP_RATED":  return "average_rating DESC, review_count DESC";
+            case "PRICE_ASC":  return "effective_price_cents ASC";
+            case "PRICE_DESC": return "effective_price_cents DESC";
+            case "POPULAR":    return "weekly_popularity_score DESC, g.created_at DESC";
+            case "RELEVANCE":
+            default:
+                if (hasQuery) {
+                    params.add(tsQuery);
+                    return "ts_rank(g.search_vector, plainto_tsquery('english', ?)) DESC, g.created_at DESC";
+                }
+                return "g.created_at DESC";
+        }
+    }
+
+    public long countGuides(String tsQuery) {
+        return countGuides(tsQuery, null, List.of());
+    }
+
+    public long countGuides(String tsQuery, String stage, List<String> personas) {
+        return countGuides(tsQuery, stage, personas, null, null, null);
+    }
+
+    public long countGuides(String tsQuery, String stage, List<String> personas,
+                            Double minRating, Integer minPriceCents, Integer maxPriceCents) {
+        boolean hasQuery = tsQuery != null && !tsQuery.isBlank();
+        List<Object> params = new ArrayList<>();
+        // Wrap in a subquery so minRating's GROUP BY + HAVING is counted correctly.
+        StringBuilder inner = new StringBuilder("SELECT g.id FROM guides g");
+        if (minRating != null) {
+            inner.append(" LEFT JOIN guide_reviews gr ON gr.guide_id = g.id");
+        }
+        appendGuideWhere(inner, params, tsQuery, hasQuery, stage, personas, minPriceCents, maxPriceCents);
+        if (minRating != null) {
+            inner.append(" GROUP BY g.id HAVING COALESCE(AVG(gr.rating), 0) >= ?");
+            params.add(minRating);
+        }
+        Long count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM (" + inner + ") sub", Long.class, params.toArray());
         return count != null ? count : 0;
     }
 

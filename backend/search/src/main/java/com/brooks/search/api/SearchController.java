@@ -27,22 +27,33 @@ public class SearchController {
         return ResponseEntity.ok(searchService.unifiedSearch(query));
     }
 
+    // q is optional here so the page can browse + filter the whole catalogue
+    // (rating / verified / sort) without a typed search term. unifiedSearch
+    // below still requires a query.
     @GetMapping("/creators")
     public ResponseEntity<PageResponse<CreatorSearchResult>> searchCreators(
-            @RequestParam("q") @NotBlank @Size(max = 200) String query,
+            @RequestParam(name = "q", required = false) @Size(max = 200) String query,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
-            @RequestParam(name = "size", defaultValue = "20") @Min(1) int size) {
-        return ResponseEntity.ok(searchService.searchCreators(query, page, Math.min(size, 50)));
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) int size,
+            @RequestParam(name = "minRating", required = false) Double minRating,
+            @RequestParam(name = "verified", required = false) Boolean verified,
+            @RequestParam(name = "sort", required = false) String sort) {
+        return ResponseEntity.ok(searchService.searchCreators(query, page, Math.min(size, 50), minRating, verified, sort));
     }
 
     @GetMapping("/guides")
     public ResponseEntity<PageResponse<GuideSearchResult>> searchGuides(
-            @RequestParam("q") @NotBlank @Size(max = 200) String query,
+            @RequestParam(name = "q", required = false) @Size(max = 200) String query,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) int size,
             @RequestParam(name = "stage", required = false) String stage,
-            @RequestParam(name = "persona", required = false) List<String> personas) {
-        return ResponseEntity.ok(searchService.searchGuides(query, page, Math.min(size, 50), stage, personas));
+            @RequestParam(name = "persona", required = false) List<String> personas,
+            @RequestParam(name = "minRating", required = false) Double minRating,
+            @RequestParam(name = "minPrice", required = false) Integer minPriceCents,
+            @RequestParam(name = "maxPrice", required = false) Integer maxPriceCents,
+            @RequestParam(name = "sort", required = false) String sort) {
+        return ResponseEntity.ok(searchService.searchGuides(
+                query, page, Math.min(size, 50), stage, personas, minRating, minPriceCents, maxPriceCents, sort));
     }
 
     @GetMapping("/guides/catalog")

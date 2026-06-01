@@ -40,6 +40,11 @@ export default function CreatorSearchCard({ creator }: CreatorSearchCardProps) {
         </div>
         <p className="text-sm text-ig-text-secondary truncate">@{creator.username}</p>
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ig-text-tertiary">
+          {creator.creatorRatingAverage > 0 && (
+            <span className="inline-flex items-center gap-0.5 font-semibold text-amber-400">
+              <span aria-hidden>★</span>{creator.creatorRatingAverage.toFixed(1)}
+            </span>
+          )}
           {creator.region && <span>{creator.region}</span>}
           <span>{creator.followerCount} followers</span>
           <span>{creator.guideCount} guides</span>

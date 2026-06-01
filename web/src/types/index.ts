@@ -693,6 +693,7 @@ export interface CreatorSearchResult {
   followerCount: number;
   guideCount: number;
   verified: boolean;
+  creatorRatingAverage: number;
 }
 
 export interface GuideSearchResult {
