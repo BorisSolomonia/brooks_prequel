@@ -163,15 +163,18 @@ export const tourSteps: TourStep[] = [
     title: 'Add to Calendar',
     body: 'Tap here to sync this trip with Google Calendar or download an .ics file.',
   },
-  // Stage 12 — AI button inside the guide editor.
+  // Stage 12 — the "Add a hook" generator inside the guide editor. (The old
+  // header "Create with AI" button was removed; this step now spotlights the
+  // hook generator under the Description field — see GuideMetadataForm's
+  // data-tour="hook-generator" anchor.)
   {
     kind: 'spotlight',
     id: 'ai-button',
     route: '/guides/new',
-    selector: '[data-tour="ai-button-in-guide"]',
+    selector: '[data-tour="hook-generator"]',
     placement: 'bottom',
-    title: 'Create with AI',
-    body: 'Every guide editor has a Create with AI button. Once you connect an AI key, it drafts and refines guides for you.',
+    title: 'Add a hook',
+    body: 'Under the description, tap “Add a hook — what makes this guide unmissable?” Once you connect an AI key, it drafts a compelling opening for your guide.',
   },
   // Stage 13 — connect AI keys panel inside the profile.
   {

@@ -277,6 +277,7 @@ function HookGenerator({ title, currentDescription, city, region, token, provide
   if (!open) {
     return (
       <button
+        data-tour="hook-generator"
         type="button"
         disabled={!canGenerate}
         title={disabledReason}
