@@ -44,4 +44,13 @@ public class GuideCreateRequest {
     // previously these were absent here, so the location was silently dropped on POST.
     private Double latitude;
     private Double longitude;
+
+    // Stage-1 audience/seasonality metadata. Like latitude/longitude above, these were
+    // previously absent from the create request (only updateGuide handled them), so the
+    // selections were silently dropped when "Create Guide" was clicked.
+    private String travelerStage;
+    private List<String> personas;
+    private Integer bestSeasonStartMonth;
+    private Integer bestSeasonEndMonth;
+    private String bestSeasonLabel;
 }

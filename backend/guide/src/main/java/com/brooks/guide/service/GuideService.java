@@ -77,6 +77,19 @@ public class GuideService {
         // Persist the Stage 1 destination pin so it survives the round-trip into the edit page.
         guide.setLatitude(request.getLatitude());
         guide.setLongitude(request.getLongitude());
+        // Stage-1 audience/seasonality metadata, mirroring updateGuide's null/blank rules so the
+        // selections are no longer dropped on create.
+        if (request.getTravelerStage() != null && !request.getTravelerStage().isBlank()) {
+            guide.setTravelerStage(request.getTravelerStage());
+        }
+        if (request.getPersonas() != null) {
+            guide.getPersonas().addAll(request.getPersonas());
+        }
+        guide.setBestSeasonStartMonth(request.getBestSeasonStartMonth());
+        guide.setBestSeasonEndMonth(request.getBestSeasonEndMonth());
+        if (request.getBestSeasonLabel() != null && !request.getBestSeasonLabel().isBlank()) {
+            guide.setBestSeasonLabel(request.getBestSeasonLabel());
+        }
 
         guide = guideRepository.save(guide);
         replaceTags(guide, request.getTags());
