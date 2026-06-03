@@ -27,6 +27,13 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 className="font-display text-lg font-black text-ig-text-primary">Location data</h2>
+          <p>Brooks uses location data to power its map-based features. With your explicit permission, we access your device&rsquo;s approximate or precise location only to centre the map on where you are and to offer the &ldquo;use my current location&rdquo; shortcut when you create a guide or memory. Separately, we store the coordinates you choose to attach to content &mdash; the pins on your guides, places, and the hidden memories you drop on the map &mdash; and the region you add to your profile. These stored coordinates also enable location-gated features, such as unlocking a hidden memory only when you are physically near the spot and sending proximity notifications you have opted into.</p>
+          <p className="mt-2">Granting location permission is entirely optional and the app remains usable without it; you can grant or revoke it at any time in your device settings. We do not track your location in the background or build a movement history &mdash; location is read only in the moment you use a feature that needs it.</p>
+          <p className="mt-2"><strong className="text-ig-text-primary">Location data is encrypted in transit with TLS and stored on infrastructure (Google Cloud Platform) that encrypts data at rest.</strong> <strong className="text-ig-text-primary">We never sell your location data to third parties, and we never use or share it for advertising.</strong> The only third party that receives location coordinates is Mapbox, and solely to render the map tiles you are viewing &mdash; this is a technical processing step subject to <a href="https://www.mapbox.com/legal/privacy" target="_blank" rel="noreferrer" className="text-brand-500 hover:text-brand-400">Mapbox&rsquo;s privacy policy</a>, not a sale. You can delete location coordinates attached to your content by editing or removing that content, or delete all of it via account deletion (see &ldquo;Your rights&rdquo; below).</p>
+        </section>
+
+        <section>
           <h2 className="font-display text-lg font-black text-ig-text-primary">Service providers we use</h2>
           <p>Auth0 (Okta) handles authentication and stores your account credentials. Bank of Georgia iPay processes card payments. Google Cloud Platform hosts the application, database, and media files. Mapbox renders interactive maps when you view location-based features. Google Calendar (optional) receives trip events when you connect your calendar. These providers receive only the information necessary to perform their function and are bound by their own privacy policies.</p>
         </section>
