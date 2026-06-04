@@ -224,7 +224,7 @@ export default function GlobalSearchBar() {
               handleSubmit();
             }
           }}
-          placeholder="Search creators, guides, places..."
+          placeholder=""
           className="h-12 w-full rounded-full border-2 border-ig-border bg-ig-elevated pl-10 pr-12 text-base text-ig-text-primary outline-none transition placeholder:text-sm focus:border-brand-500 focus:bg-ig-primary md:h-10 md:pr-20 md:text-sm"
           aria-label="Search creators, guides, and places"
         />

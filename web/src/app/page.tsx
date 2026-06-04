@@ -207,8 +207,8 @@ export default function LandingPage() {
         >
           <HeroContent mobile />
           <div className="mt-5 flex gap-6">
-            <Link href="/guides" className="inline-flex min-h-11 items-center text-sm font-black uppercase tracking-wide text-black">Guides</Link>
-            <Link href="/about" className="inline-flex min-h-11 items-center text-sm font-black uppercase tracking-wide text-black">About</Link>
+            <Link href="/guides" className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">Guides</Link>
+            <Link href="/about" className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">About</Link>
           </div>
         </div>
 
