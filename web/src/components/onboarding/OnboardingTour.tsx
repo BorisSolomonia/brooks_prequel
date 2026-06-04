@@ -191,6 +191,21 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
     let observedEl: HTMLElement | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let found = false;
+    let lastRect: Rect | null = null;
+    let scheduleRaf: number | null = null;
+
+    const rectsClose = (a: Rect, b: Rect) =>
+      Math.abs(a.top - b.top) < 1 && Math.abs(a.left - b.left) < 1 &&
+      Math.abs(a.width - b.width) < 1 && Math.abs(a.height - b.height) < 1;
+
+    // #1 — single funnel for EVERY rect update. Skips the setState (and therefore
+    // the expensive full-viewport spotlight repaint) when the rect hasn't moved
+    // ≥1px. Kills the per-frame re-render storm for the common static-target case.
+    const commitRect = (rect: Rect) => {
+      if (lastRect && rectsClose(lastRect, rect)) return;
+      lastRect = rect;
+      setTargetRect(rect);
+    };
 
     const measure = () => {
       const candidates = document.querySelectorAll(step.selector);
@@ -212,7 +227,7 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         return false;
       }
-      setTargetRect({
+      commitRect({
         top: rect.top - SPOTLIGHT_PADDING,
         left: rect.left - SPOTLIGHT_PADDING,
         width: rect.width + SPOTLIGHT_PADDING * 2,
@@ -238,7 +253,7 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
         resizeObserver = new ResizeObserver(() => {
           const fresh = target.getBoundingClientRect();
           if (fresh.width === 0 && fresh.height === 0) return;
-          setTargetRect({
+          commitRect({
             top: fresh.top - SPOTLIGHT_PADDING,
             left: fresh.left - SPOTLIGHT_PADDING,
             width: fresh.width + SPOTLIGHT_PADDING * 2,
@@ -265,15 +280,28 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
       if (!found) setShowLocating(true);
     }, LOCATING_HINT_DELAY_MS);
 
-    const onChange = () => measure();
-    window.addEventListener('resize', onChange);
-    window.addEventListener('scroll', onChange, true);
+    // #2 — coalesce scroll/resize bursts to ONE measure per frame, and drop
+    // capture. A smooth scrollIntoView (or momentum scroll) fires dozens of
+    // events per frame; previously each ran measure() synchronously (a forced
+    // reflow + spotlight repaint). capture=true also fired for every nested
+    // scroller incl. the map/drawer, multiplying the work. passive guarantees
+    // the listener can never delay scrolling.
+    const scheduleMeasure = () => {
+      if (scheduleRaf !== null) return;
+      scheduleRaf = requestAnimationFrame(() => {
+        scheduleRaf = null;
+        measure();
+      });
+    };
+    window.addEventListener('resize', scheduleMeasure, { passive: true });
+    window.addEventListener('scroll', scheduleMeasure, { passive: true });
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
+      if (scheduleRaf !== null) cancelAnimationFrame(scheduleRaf);
       if (resizeObserver) resizeObserver.disconnect();
       clearTimeout(locatingTimer);
-      window.removeEventListener('resize', onChange);
-      window.removeEventListener('scroll', onChange, true);
+      window.removeEventListener('resize', scheduleMeasure);
+      window.removeEventListener('scroll', scheduleMeasure);
     };
   }, [step, stepIndex, pathname]);
 
