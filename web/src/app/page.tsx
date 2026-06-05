@@ -16,6 +16,12 @@ const CONTRAST_TEXT_STYLE = {
   textShadow: '2px 2px 0 #050505, -1px -1px 0 #050505, 1px -1px 0 #050505, -1px 1px 0 #050505',
 };
 
+// Thin yellow outline around each glyph so the black tab labels (Guides / About)
+// stay legible over dark areas of the hero — matches the yellow border on the tabs.
+const YELLOW_OUTLINE_TEXT = {
+  textShadow: `1px 1px 0 ${YELLOW}, -1px -1px 0 ${YELLOW}, 1px -1px 0 ${YELLOW}, -1px 1px 0 ${YELLOW}`,
+};
+
 function PinIcon({ color = PINK, size = 22 }: { color?: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
@@ -207,8 +213,8 @@ export default function LandingPage() {
         >
           <HeroContent mobile />
           <div className="mt-5 flex gap-6">
-            <Link href="/guides" className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">Guides</Link>
-            <Link href="/about" className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">About</Link>
+            <Link href="/guides" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">Guides</Link>
+            <Link href="/about" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">About</Link>
           </div>
         </div>
 
