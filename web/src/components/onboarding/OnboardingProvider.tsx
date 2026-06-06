@@ -1,12 +1,16 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import OnboardingTour from './OnboardingTour';
-import { tourSteps, type TourStep } from './tourSteps';
+import RoleSelectionModal from './RoleSelectionModal';
+import { tourSteps, stepsForRole, type TourStep, type TourRole } from './tourSteps';
+
+// localStorage mirror of the chosen role, so we don't re-prompt or re-fetch /api/me every load.
+const ROLE_STORAGE_KEY = 'brooks.onboarding.role';
 
 // Every distinct path the tour will navigate to. Strip query because router.prefetch
 // works on path only. Computed once at module load — the step list is static.
@@ -52,6 +56,13 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [sampleCreatorUsername, setSampleCreatorUsername] = useState<string | null>(null);
+  // Self-selected intent. null = unknown until resolved. `roleResolved` gates the prompt so
+  // returning users (who already have a role) don't see a flash of the modal before /api/me returns.
+  const [role, setRole] = useState<TourRole | null>(null);
+  const [roleResolved, setRoleResolved] = useState(false);
+  // The active step list depends on the chosen role. Creator = full tour (unchanged);
+  // Traveler = the abbreviated subset. Memoised so the array identity is stable per role.
+  const activeSteps = useMemo<TourStep[]>(() => (role ? stepsForRole(role) : tourSteps), [role]);
   // useRef sentinel (not state) prevents React 18 strict-mode double-effects from firing
   // the prefetch twice. Reset on every start() so each tour invocation re-validates.
   const prefetchedRef = useRef(false);
@@ -112,8 +123,42 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     setStatus('pending');
   }, [user, token, userLoading, tokenLoading]);
 
+  // Resolve the chosen role: localStorage fast-path, else GET /api/me. Until resolved we don't
+  // show the prompt (avoids a modal flash for returning users). Stays null → prompt for new users.
   useEffect(() => {
-    if (status !== 'pending' || isActive) return;
+    if (role || !user || !token) return;
+    if (typeof window !== 'undefined') {
+      const cached = window.localStorage.getItem(ROLE_STORAGE_KEY);
+      if (cached === 'traveler' || cached === 'creator') {
+        setRole(cached);
+        setRoleResolved(true);
+        return;
+      }
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await api.get<{ primaryIntent?: string | null }>('/api/me', token);
+        if (cancelled) return;
+        const pi = me?.primaryIntent;
+        if (pi === 'TRAVELER' || pi === 'CREATOR') {
+          const r = pi.toLowerCase() as TourRole;
+          setRole(r);
+          try { window.localStorage.setItem(ROLE_STORAGE_KEY, r); } catch { /* incognito */ }
+        }
+      } catch {
+        // Leave role null → show the prompt; the POST on choose persists it.
+      } finally {
+        if (!cancelled) setRoleResolved(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [role, user, token]);
+
+  useEffect(() => {
+    // Only auto-start once a role is known (role-set users who haven't finished). New users
+    // (role === null) get the role prompt instead, which launches the tour on choose.
+    if (status !== 'pending' || isActive || !role) return;
     // Only fire the welcome on /maps (post-auth landing for new users).
     // The user-clicked Help link calls start() directly, bypassing this gate.
     if (!pathname || !pathname.startsWith('/maps')) return;
@@ -122,7 +167,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
       setCurrentStepIndex(0);
     }, 800);
     return () => clearTimeout(timer);
-  }, [status, isActive, pathname]);
+  }, [status, isActive, pathname, role]);
 
   const start = useCallback(() => {
     setIsActive(true);
@@ -134,9 +179,27 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     void fetchSampleCreator();
   }, [fetchSampleCreator]);
 
+  // Choose a role: persist (localStorage + backend, best-effort) and immediately launch that
+  // role's tour. Called by the role-selection modal.
+  const chooseRole = useCallback((r: TourRole) => {
+    setRole(r);
+    setRoleResolved(true);
+    try { window.localStorage.setItem(ROLE_STORAGE_KEY, r); } catch { /* incognito */ }
+    if (token) {
+      void api.post('/api/me/onboarding/role', { role: r.toUpperCase() }, token).catch(() => {
+        // Best-effort; localStorage keeps the choice for this session.
+      });
+    }
+    setIsActive(true);
+    setCurrentStepIndex(0);
+    prefetchedRef.current = false;
+    setSampleCreatorUsername(null);
+    void fetchSampleCreator();
+  }, [token, fetchSampleCreator]);
+
   const next = useCallback(() => {
-    setCurrentStepIndex((i) => Math.min(i + 1, tourSteps.length - 1));
-  }, []);
+    setCurrentStepIndex((i) => Math.min(i + 1, activeSteps.length - 1));
+  }, [activeSteps.length]);
 
   const prev = useCallback(() => {
     setCurrentStepIndex((i) => Math.max(i - 1, 0));
@@ -176,13 +239,18 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     exitToMaps();
   }, [persistComplete, exitToMaps]);
 
+  // New, authed users who haven't chosen a role yet get the must-choose prompt (once the role
+  // has been resolved, to avoid flashing it for returning users). It launches the tour on choose.
+  const needsRoleSelection =
+    status === 'pending' && !isActive && roleResolved && role === null && !!user && !!token;
+
   return (
     <OnboardingContext.Provider
       value={{
         isActive,
         currentStepIndex,
-        currentStep: isActive ? tourSteps[currentStepIndex] ?? null : null,
-        totalSteps: tourSteps.length,
+        currentStep: isActive ? activeSteps[currentStepIndex] ?? null : null,
+        totalSteps: activeSteps.length,
         sampleCreatorUsername,
         start,
         next,
@@ -193,6 +261,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     >
       {children}
       {isActive && <OnboardingTour stepIndex={currentStepIndex} />}
+      {needsRoleSelection && <RoleSelectionModal onChoose={chooseRole} />}
     </OnboardingContext.Provider>
   );
 }

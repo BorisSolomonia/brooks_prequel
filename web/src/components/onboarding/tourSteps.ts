@@ -197,3 +197,24 @@ export const tourSteps: TourStep[] = [
     body: 'Replay this tour anytime from Settings → Help & tour.',
   },
 ];
+
+// The user's self-selected onboarding intent. Drives which path runs.
+export type TourRole = 'traveler' | 'creator';
+
+// The abbreviated Traveler path: welcome → the four "create a memory" steps → search.
+// (Strictly "search for a guide + create a memory" per the spec.) Order is preserved from
+// tourSteps. Creators get the full list unchanged.
+const TRAVELER_STEP_IDS = new Set<string>([
+  'welcome',
+  'memory-drawer-trigger',
+  'memory-intro',
+  'memory-button',
+  'memory-form',
+  'search',
+]);
+
+/** Steps for the chosen role. Creator = the full tour, byte-identical to before. */
+export function stepsForRole(role: TourRole): TourStep[] {
+  if (role === 'creator') return tourSteps;
+  return tourSteps.filter((s) => TRAVELER_STEP_IDS.has(s.id));
+}

@@ -1,7 +1,9 @@
 package com.brooks.user.service;
 
+import com.brooks.common.exception.BusinessException;
 import com.brooks.common.exception.ResourceNotFoundException;
 import com.brooks.user.audit.AuditService;
+import com.brooks.user.domain.PrimaryIntent;
 import com.brooks.user.domain.User;
 import com.brooks.user.domain.UserRole;
 import com.brooks.user.repository.UserRepository;
@@ -148,6 +150,22 @@ public class UserService {
             userRepository.save(user);
         }
         return user;
+    }
+
+    // Persist the user's self-selected onboarding intent (TRAVELER / CREATOR). Evicts the
+    // usersBySubject cache so the next /api/me read reflects the choice immediately.
+    @Transactional
+    @CacheEvict(value = "usersBySubject", key = "#auth0Subject")
+    public User setPrimaryIntent(String auth0Subject, String intent) {
+        PrimaryIntent parsed;
+        try {
+            parsed = PrimaryIntent.valueOf(String.valueOf(intent).trim().toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException ex) {
+            throw new BusinessException("Invalid role: must be TRAVELER or CREATOR");
+        }
+        User user = findByAuth0Subject(auth0Subject);
+        user.setPrimaryIntent(parsed);
+        return userRepository.save(user);
     }
 
     @Transactional

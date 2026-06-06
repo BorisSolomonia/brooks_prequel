@@ -33,6 +33,13 @@ public class User extends BaseEntity {
     @Column(name = "onboarding_completed", nullable = false)
     private boolean onboardingCompleted = false;
 
+    // Self-selected onboarding intent (Traveler vs Guide Creator), chosen once after first
+    // sign-in. NULL = not chosen yet → the app shows the role-selection prompt. Separate from the
+    // system `role` above (that's auth/permissions; this is a UX preference).
+    @Enumerated(EnumType.STRING)
+    @Column(name = "primary_intent", length = 20)
+    private PrimaryIntent primaryIntent;
+
     @Column(name = "payout_iban", length = 34)
     private String payoutIban;
 

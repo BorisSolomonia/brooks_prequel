@@ -136,6 +136,7 @@ public class ProfileService {
                 .creatorRatingAverage(profile.getCreatorRatingAverage())
                 .creatorReviewCount(profile.getCreatorReviewCount())
                 .onboardingCompleted(user.isOnboardingCompleted())
+                .primaryIntent(user.getPrimaryIntent() != null ? user.getPrimaryIntent().name() : null)
                 .build();
     }
 

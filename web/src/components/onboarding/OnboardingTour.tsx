@@ -28,8 +28,11 @@ const LOCATING_HINT_DELAY_MS = 350;
 const ADVANCE_SAFETY_TIMEOUT_MS = 1500;
 
 export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
-  const step = tourSteps[stepIndex];
-  const { next, prev, skip, complete, totalSteps, sampleCreatorUsername } = useOnboarding();
+  // The active step comes from the provider (role-aware list), not the global tourSteps array —
+  // otherwise the Traveler path would index into the full Creator list. Fallback keeps the type
+  // non-null; the provider only renders this component while a valid step is active.
+  const { next, prev, skip, complete, totalSteps, sampleCreatorUsername, currentStep } = useOnboarding();
+  const step = currentStep ?? tourSteps[0];
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

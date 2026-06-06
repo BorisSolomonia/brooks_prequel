@@ -28,4 +28,7 @@ public class ProfileResponse {
     private double creatorRatingAverage;
     private int creatorReviewCount;
     private boolean onboardingCompleted;
+    // Self-selected onboarding intent: "TRAVELER", "CREATOR", or null if not yet chosen
+    // (null is what tells the frontend to show the role-selection prompt).
+    private String primaryIntent;
 }
