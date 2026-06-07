@@ -22,7 +22,7 @@ public interface MemoryRepository extends JpaRepository<Memory, UUID> {
         SELECT m.id
         FROM memories m
         WHERE (m.expires_at IS NULL OR m.expires_at > NOW())
-          -- Replies are nested inside their parent's card, never standalone map pins.
+          -- Replies (parent_memory_id set) are nested in the card, not standalone map pins.
           AND m.parent_memory_id IS NULL
           AND m.latitude BETWEEN :south AND :north
           AND ((:west <= :east AND m.longitude BETWEEN :west AND :east)
