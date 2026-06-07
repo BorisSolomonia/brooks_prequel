@@ -29,6 +29,10 @@ public class MemoryResponse {
      * unlocked by reaching its location), textContent and media are redacted.
      */
     private boolean revealed;
+    // Reply linkage: the memory this one was added to (null for top-level), and the number of
+    // replies attached to it that the viewer is entitled to see.
+    private UUID parentMemoryId;
+    private int replyCount;
     private Instant createdAt;
     private Instant updatedAt;
 }

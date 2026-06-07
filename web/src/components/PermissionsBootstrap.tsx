@@ -116,7 +116,9 @@ export default function PermissionsBootstrap() {
           const type = raw.type;
           console.info('[PermissionsBootstrap] push tap type=', type, 'data=', raw);
           try {
-            if (type === 'memory.direct-share') {
+            if (type === 'memory.direct-share' || type === 'memory.reply') {
+              // memory.reply deep-links to the ORIGINAL memory (data.memoryId = parent), so the
+              // author opens their pin and sees the reply that was added to it.
               if (raw.memoryId) router.push(`/maps?memory=${encodeURIComponent(raw.memoryId)}`);
               else router.push('/maps');
             } else if (type === 'follow') {
@@ -142,6 +144,20 @@ export default function PermissionsBootstrap() {
           await PushNotifications.register();
         } else {
           console.warn('[PermissionsBootstrap] notifications NOT granted — push disabled');
+        }
+
+        // Local-notification taps (arrival proximity alerts) deep-link to the memory, mirroring
+        // the push tap routing above.
+        try {
+          const { LocalNotifications } = await import('@capacitor/local-notifications');
+          await LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
+            if (cancelled) return;
+            const extra = (event.notification as { extra?: Record<string, string> })?.extra ?? {};
+            if (extra.memoryId) router.push(`/maps?memory=${encodeURIComponent(extra.memoryId)}`);
+            else router.push('/maps');
+          });
+        } catch (err) {
+          console.warn('[PermissionsBootstrap] local notification listener failed:', err);
         }
       } catch (err) {
         console.error('[PermissionsBootstrap] notifications:', err);

@@ -12,6 +12,7 @@ import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { redirectToLogin } from '@/lib/capacitor';
 import { useCurrency } from '@/hooks/useCurrency';
 import type {
   Guide,
@@ -195,7 +196,7 @@ export default function ViewGuidePage() {
 
   const handleVote = async (reviewId: string, vote: 'HELPFUL' | 'NOT_HELPFUL') => {
     if (!token) {
-      router.push('/api/auth/login');
+      redirectToLogin();
       return;
     }
     try {

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import StoryStrip from '@/components/ui/StoryStrip';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useRouter } from 'next/navigation';
+import { redirectToLogin } from '@/lib/capacitor';
 import { api } from '@/lib/api';
 import type { CreatorStoryStrip, FeedItem, PageResponse } from '@/types';
 
@@ -18,7 +19,7 @@ export default function FeedPage() {
   useEffect(() => {
     if (tokenLoading) return;
     if (!token) {
-      router.push('/api/auth/login');
+      redirectToLogin();
       return;
     }
 

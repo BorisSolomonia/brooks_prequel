@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Avatar from '@/components/ui/Avatar';
 import { AiKeysPanel } from '@/components/ai/AiKeysPanel';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { redirectToLogin } from '@/lib/capacitor';
 import { api } from '@/lib/api';
 import type { Profile } from '@/types';
 
@@ -20,9 +21,9 @@ export default function ProfilePage() {
 }
 
 function ProfilePageInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { token, loading: tokenLoading } = useAccessToken();
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +31,7 @@ function ProfilePageInner() {
 
   useEffect(() => {
     if (!tokenLoading && !token) {
-      router.push('/api/auth/login');
+      redirectToLogin();
       return;
     }
     if (!token) return;

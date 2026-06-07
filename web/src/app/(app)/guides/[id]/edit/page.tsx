@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { redirectToLogin } from '@/lib/capacitor';
 import type { Guide, AiKeyResponse } from '@/types';
 import GuideEditor from '@/components/guide-editor/GuideEditor';
 
 export default function EditGuidePage() {
   const params = useParams();
   const guideId = params.id as string;
-  const router = useRouter();
   const { token, loading: tokenLoading } = useAccessToken();
+  const router = useRouter();
 
   const [guide, setGuide] = useState<Guide | null>(null);
   const [aiKeys, setAiKeys] = useState<AiKeyResponse[]>([]);
@@ -21,7 +22,7 @@ export default function EditGuidePage() {
   useEffect(() => {
     if (tokenLoading) return;
     if (!token) {
-      router.push('/api/auth/login');
+      redirectToLogin();
       return;
     }
     Promise.all([

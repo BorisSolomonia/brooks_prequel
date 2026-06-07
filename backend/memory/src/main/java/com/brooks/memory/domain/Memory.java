@@ -34,6 +34,11 @@ public class Memory extends BaseEntity {
     @Column(name = "place_label", length = 200)
     private String placeLabel;
 
+    // When set, this memory is a reply linked to the memory it was added to. Self-referential;
+    // NULL for top-level memories. Supports arbitrary nesting.
+    @Column(name = "parent_memory_id")
+    private UUID parentMemoryId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "visibility", nullable = false, length = 30)
     private MemoryVisibility visibility = MemoryVisibility.PRIVATE;

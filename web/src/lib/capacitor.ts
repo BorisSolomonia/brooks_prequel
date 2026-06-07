@@ -101,6 +101,17 @@ export async function startAuthFlow(returnTo?: string): Promise<void> {
   }
 }
 
+// Send an unauthenticated user to login from a client-side auth guard. CRITICAL on native: the
+// in-WebView /api/auth/login → Auth0 page is blocked by Google for OAuth and dead-ends on a blank
+// screen, so we MUST route through startAuthFlow (Custom Tab). On web it's the standard SDK login
+// with a returnTo back to the page the user was trying to reach.
+export function redirectToLogin(): void {
+  const returnTo = typeof window !== 'undefined'
+    ? window.location.pathname + window.location.search
+    : undefined;
+  void startAuthFlow(returnTo);
+}
+
 // Native-aware logout — the counterpart to startAuthFlow.
 //
 // Web: the standard SDK route + a full-page navigation clears everything in one

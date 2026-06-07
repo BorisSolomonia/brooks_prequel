@@ -31,7 +31,10 @@ export default function MyGuidesPage() {
   useEffect(() => {
     if (tokenLoading) return;
     if (!token) {
-      router.push('/api/auth/login');
+      // "Guides" is a browsable concept — never force registration. Logged-out visitors
+      // (incl. back-button / deep-link / shared /guides URLs) land on the PUBLIC catalogue
+      // instead of bouncing to Auth0. replace() so Back doesn't loop into this redirect.
+      router.replace('/search/guides');
       return;
     }
     Promise.all([

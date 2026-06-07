@@ -189,7 +189,7 @@ export default function LandingPage() {
           <div className="hidden items-center lg:flex" style={{ gap: 'clamp(24px, 3vw, 40px)', paddingTop: 4 }}>
             <Link href="/terms" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>TERMS</Link>
             <Link href="/privacy" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>PRIVACY</Link>
-            <Link href="/guides" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>GUIDES</Link>
+            <Link href="/search/guides" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>GUIDES</Link>
             <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <Link href="/about" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>ABOUT</Link>
               <span style={{ color: PINK, fontSize: 11 }}>◆</span>
@@ -213,7 +213,7 @@ export default function LandingPage() {
         >
           <HeroContent mobile />
           <div className="mt-5 flex gap-6">
-            <Link href="/guides" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">Guides</Link>
+            <Link href="/search/guides" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">Guides</Link>
             <Link href="/about" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">About</Link>
           </div>
         </div>

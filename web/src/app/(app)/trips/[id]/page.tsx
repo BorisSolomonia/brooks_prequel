@@ -9,6 +9,7 @@ import PlaceReviewPanel from '@/components/reviews/PlaceReviewPanel';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { redirectToLogin } from '@/lib/capacitor';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { MyTripDetail, MyTripItem, MyTripItemUpdateRequest, MyTripSetupRequest, AiKeyResponse, GuidePlace } from '@/types';
 import { BuyerChatPanel } from '@/components/ai/BuyerChatPanel';
@@ -139,7 +140,7 @@ export default function TripDetailPage() {
   useEffect(() => {
     if (tokenLoading) return;
     if (!token) {
-      router.push('/api/auth/login');
+      redirectToLogin();
       return;
     }
 

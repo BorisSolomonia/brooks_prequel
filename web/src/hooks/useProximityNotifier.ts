@@ -107,6 +107,12 @@ export function useProximityNotifier({ enabled, memories, onFire }: ProximityNot
       const body = m.textPreview?.slice(0, 80) || 'Tap to open Brooks.';
       // In-app banner via toast (Material snackbar). Survives 6s.
       toast.info(`${title} — ${body}`, 6000);
+      // On native, ALSO fire a real OS local notification so it surfaces in the tray even when the
+      // app is backgrounded-but-running (foreground v1 — phone-locked arrival is the deferred
+      // background-geolocation v2). Tap routing handled in PermissionsBootstrap.
+      if (isNative()) {
+        void scheduleArrivalNotification(m, title, body);
+      }
       onFire?.({ title, body, memory: m });
       // Mark fired today + persist.
       firedTodayRef.current.add(m.id);
@@ -171,6 +177,35 @@ export function useProximityNotifier({ enabled, memories, onFire }: ProximityNot
       cleanupNative?.();
     };
   }, [enabled, toast, onFire]);
+}
+
+// Fire an OS local notification for an arrival (native only). Lazily imported so the web bundle
+// never loads the plugin. Best-effort: requests permission once, swallows all errors.
+async function scheduleArrivalNotification(m: MemoryMapPin, title: string, body: string): Promise<void> {
+  try {
+    // @ts-ignore - resolved at runtime via npm install + cap sync
+    const mod = await import('@capacitor/local-notifications');
+    const LN = mod.LocalNotifications;
+    if (!LN) return;
+    const perm = await LN.checkPermissions();
+    if (perm.display !== 'granted') {
+      const req = await LN.requestPermissions();
+      if (req.display !== 'granted') return;
+    }
+    await LN.schedule({
+      notifications: [
+        {
+          id: Math.floor(Math.random() * 2_000_000_000),
+          title,
+          body,
+          // Tapping deep-links to the memory (see PermissionsBootstrap localNotification listener).
+          extra: { type: 'memory.proximity', memoryId: m.id },
+        },
+      ],
+    });
+  } catch (err) {
+    console.warn('[proximityNotifier] local notification failed:', err);
+  }
 }
 
 function todayKey(): string {

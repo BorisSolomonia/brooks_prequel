@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap, Marker as LeafletMarker, TileLayer as LeafletTileLayer, LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useRouter } from 'next/navigation';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useRouter } from 'next/navigation';
+import { redirectToLogin } from '@/lib/capacitor';
 import { api } from '@/lib/api';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
 import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
@@ -114,8 +115,8 @@ const INTEREST_OPTIONS = [
 ];
 
 export default function EditProfilePage() {
-  const router = useRouter();
   const { token, loading: tokenLoading } = useAccessToken();
+  const router = useRouter();
 
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -136,7 +137,7 @@ export default function EditProfilePage() {
     }
 
     if (!token) {
-      router.push('/api/auth/login');
+      redirectToLogin();
       return;
     }
 

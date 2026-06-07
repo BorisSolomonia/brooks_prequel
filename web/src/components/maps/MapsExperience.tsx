@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Map as LeafletMap, Marker as LeafletMarker, LayerGroup, TileLayer, LatLngBounds, MarkerClusterGroup } from 'leaflet';
 
@@ -21,6 +21,7 @@ import type {
   InfluencerMapPin,
   InfluencerMapResponse,
   MediaUploadResponse,
+  Memory,
   MemoryMapPin,
   MemoryMapResponse,
   MemoryMediaRequest,
@@ -147,6 +148,7 @@ type MemoryViewportSliceProps = {
 
 type SelectedMemoryCardProps = {
   memory: MemoryMapPin;
+  token: string;
   onClose: () => void;
   onShare: (memoryId: string) => void;
   onDelete: (memoryId: string) => void;
@@ -575,7 +577,142 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
   );
 }
 
-function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, onReveal, busy }: SelectedMemoryCardProps) {
+// Max reply nesting surfaced in the UI: original (level 0) → reply (1) → reply-back (2).
+const MAX_REPLY_DEPTH = 2;
+
+// Recursive linked-reply thread inside a revealed memory card. Depth 1 = replies to the original
+// (the recipient adds here); depth 2 = replies to each reply (the original author replies back).
+// The backend enforces the true gate; the UI shows a composer to the likely participants of an
+// edge (the parent's owner, or the reply's own author).
+function MemoryReplies({
+  parentId,
+  parentOwnedByViewer,
+  canReplyToParent,
+  token,
+  depth = 1,
+}: {
+  parentId: string;
+  parentOwnedByViewer: boolean;
+  canReplyToParent: boolean;
+  token: string;
+  depth?: number;
+}) {
+  const [replies, setReplies] = useState<Memory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setReplies(await api.get<Memory[]>(`/api/memories/${parentId}/replies`, token));
+    } catch {
+      /* not fatal to the card */
+    } finally {
+      setLoading(false);
+    }
+  }, [parentId, token]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const submit = async () => {
+    const body = text.trim();
+    if (!body || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.post(`/api/memories/${parentId}/replies`, { textContent: body }, token);
+      setText('');
+      setOpen(false);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not add your memory');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const addLabel = depth === 1 ? 'Add a Memory' : 'Reply';
+
+  return (
+    <div className={depth === 1 ? 'mt-4 border-t border-ig-border pt-3' : 'mt-2 border-l-2 border-ig-border pl-3'}>
+      {depth === 1 && (
+        <p className="text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
+          Linked memories{replies.length > 0 ? ` (${replies.length})` : ''}
+        </p>
+      )}
+      {loading && depth === 1 ? (
+        <p className="mt-2 text-sm text-ig-text-tertiary">Loading…</p>
+      ) : replies.length === 0 && depth === 1 ? (
+        <p className="mt-2 text-sm text-ig-text-tertiary">No memories added here yet.</p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {replies.map((r) => (
+            <li key={r.id} className="rounded-lg border border-ig-border bg-ig-secondary/40 p-2.5">
+              <p className="text-sm text-ig-text-primary">{r.textContent}</p>
+              <p className="mt-1 text-xs text-ig-text-tertiary">
+                by {r.creatorDisplayName || r.creatorUsername || 'Brooks user'}
+              </p>
+              {depth < MAX_REPLY_DEPTH && (
+                <MemoryReplies
+                  parentId={r.id}
+                  parentOwnedByViewer={r.ownedByViewer}
+                  canReplyToParent={parentOwnedByViewer || r.ownedByViewer}
+                  token={token}
+                  depth={depth + 1}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canReplyToParent && (open ? (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder={depth === 1 ? 'Add your memory at this spot…' : 'Reply…'}
+            className="w-full resize-none rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none"
+          />
+          {error && <p className="text-xs text-red-400">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={submitting || !text.trim()}
+              onClick={submit}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {submitting && <Spinner />}
+              {addLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); setText(''); }}
+              className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={`mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${
+            depth === 1 ? 'bg-brand-500 text-white' : 'border border-ig-border text-brand-500'
+          }`}
+        >
+          {depth === 1 && <span aria-hidden>✨</span>} {addLabel}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemove, onReveal, busy }: SelectedMemoryCardProps) {
   // A share the viewer hasn't reached yet: contents are withheld by the server
   // (textPreview is null). Show a locked teaser that points them to the spot.
   const locked = memory.sharedWithViewer && !memory.ownedByViewer && !memory.revealed;
@@ -656,6 +793,16 @@ function SelectedMemoryCard({ memory, onClose, onShare, onDelete, onRemove, onRe
             Remove from my map
           </button>
         </div>
+      )}
+      {/* Linked replies + "Add a Memory" — only once the memory's content is visible
+          (owner always; a recipient after they unlock it on-site). */}
+      {memory.revealed && token && (
+        <MemoryReplies
+          parentId={memory.id}
+          parentOwnedByViewer={memory.ownedByViewer}
+          canReplyToParent={memory.sharedWithViewer && !memory.ownedByViewer}
+          token={token}
+        />
       )}
     </div>
   );
@@ -2706,6 +2853,7 @@ export default function MapsExperience({
       {selectedMemory && (
         <SelectedMemoryCard
           memory={selectedMemory}
+          token={token ?? ''}
           onClose={() => setSelectedMemory(null)}
           onShare={handleShareMemory}
           onReveal={handleRevealMemory}

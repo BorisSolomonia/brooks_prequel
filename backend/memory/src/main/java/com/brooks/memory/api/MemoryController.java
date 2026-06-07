@@ -48,6 +48,28 @@ public class MemoryController {
         return ResponseEntity.ok(memoryService.getMemory(subject(authentication), memoryId));
     }
 
+    /**
+     * Add a reply memory to {@code memoryId} — a memory shared with the caller that they've unlocked
+     * on-site. The reply inherits the parent's location and links to it; the parent's creator is
+     * notified ("[name] added their memory to yours!"). Returns the created reply.
+     */
+    @PostMapping("/memories/{memoryId}/replies")
+    public ResponseEntity<MemoryResponse> addReply(
+            Authentication authentication,
+            @PathVariable UUID memoryId,
+            @Valid @RequestBody MemoryReplyRequest request) {
+        MemoryResponse reply = memoryService.createReply(subject(authentication), memoryId, request);
+        return ResponseEntity.created(URI.create("/api/memories/" + reply.getId())).body(reply);
+    }
+
+    /** Replies attached to {@code memoryId} that the caller is entitled to see. */
+    @GetMapping("/memories/{memoryId}/replies")
+    public ResponseEntity<java.util.List<MemoryResponse>> listReplies(
+            Authentication authentication,
+            @PathVariable UUID memoryId) {
+        return ResponseEntity.ok(memoryService.listReplies(subject(authentication), memoryId));
+    }
+
     @GetMapping("/me/memories/created")
     public ResponseEntity<java.util.List<MemoryResponse>> listMyCreated(Authentication authentication) {
         return ResponseEntity.ok(memoryService.listMyCreatedMemories(subject(authentication)));

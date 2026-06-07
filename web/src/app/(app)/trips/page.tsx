@@ -3,15 +3,16 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useRouter } from 'next/navigation';
+import { redirectToLogin } from '@/lib/capacitor';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { MyTripSummary, MyTripsResponse } from '@/types';
 
 export default function MyTripsPage() {
-  const router = useRouter();
   const { token, loading: tokenLoading } = useAccessToken();
+  const router = useRouter();
   const { formatAmount } = useCurrency();
   const [trips, setTrips] = useState<MyTripSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,7 @@ export default function MyTripsPage() {
 
   useEffect(() => {
     if (tokenLoading) return;
-    if (!token) { router.push('/api/auth/login'); return; }
+    if (!token) { redirectToLogin(); return; }
     load(showHidden);
   }, [router, token, tokenLoading, showHidden, load]);
 

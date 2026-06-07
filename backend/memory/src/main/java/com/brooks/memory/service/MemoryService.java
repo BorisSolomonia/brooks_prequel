@@ -1,5 +1,6 @@
 package com.brooks.memory.service;
 
+import com.brooks.common.event.MemoryReplyCreatedEvent;
 import com.brooks.common.exception.BusinessException;
 import com.brooks.common.exception.ResourceNotFoundException;
 import com.brooks.memory.domain.*;
@@ -12,6 +13,7 @@ import com.brooks.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,7 @@ public class MemoryService {
     private final UserProfileRepository profileRepository;
     private final MemoryGrantService memoryGrantService;
     private final MemoryGrantRepository memoryGrantRepository;
+    private final ApplicationEventPublisher events;
 
     @Value("${app.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -83,6 +86,81 @@ public class MemoryService {
                     ex);
             throw ex;
         }
+    }
+
+    @Transactional
+    public MemoryResponse createReply(String auth0Subject, UUID parentMemoryId, MemoryReplyRequest request) {
+        User replier = userService.findByAuth0Subject(auth0Subject);
+        if (!memorySchemaHealthService.isMemorySchemaReady()) {
+            throw new BusinessException("Memory storage is not ready. Run database migrations and retry.");
+        }
+        Memory parent = memoryRepository.findById(parentMemoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Memory", parentMemoryId));
+        if (!isActive(parent)) {
+            throw new BusinessException("Memory is unavailable");
+        }
+        if (!canReplyTo(parent, replier.getId())) {
+            throw new BusinessException("You can only add a memory to one shared with you that you've unlocked here");
+        }
+        enforceDailyLimit(replier.getId());
+        validateText(request.getTextContent());
+
+        // A reply inherits the parent's coordinates — it pins at the same physical spot.
+        Memory reply = new Memory(replier.getId(), request.getTextContent().trim(),
+                parent.getLatitude(), parent.getLongitude());
+        reply.setPlaceLabel(parent.getPlaceLabel());
+        reply.setVisibility(MemoryVisibility.PRIVATE);
+        reply.setParentMemoryId(parent.getId());
+        replaceMedia(reply, request.getMedia(), replier.getId());
+        reply = memoryRepository.save(reply);
+        productEventService.record("MEMORY_REPLY_CREATED", replier.getId(), reply.getId(), null, null);
+
+        // Notify the parent's creator — "[name] added their memory to yours!" — unless self-reply.
+        if (!parent.getCreatorId().equals(replier.getId())) {
+            events.publishEvent(new MemoryReplyCreatedEvent(
+                    parent.getId(), reply.getId(), parent.getCreatorId(), replier.getId()));
+        }
+        return toResponse(reply, replier.getId());
+    }
+
+    /**
+     * Replies the viewer is entitled to see: the parent's creator sees EVERY reply; everyone else
+     * sees only the replies they authored (per-edge "author + replier only" visibility).
+     */
+    @Transactional(readOnly = true)
+    public List<MemoryResponse> listReplies(String auth0Subject, UUID parentMemoryId) {
+        User viewer = userService.findByAuth0Subject(auth0Subject);
+        Memory parent = memoryRepository.findById(parentMemoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Memory", parentMemoryId));
+        boolean parentCreator = parent.getCreatorId().equals(viewer.getId());
+        return memoryRepository.findByParentMemoryIdAndDeletedAtIsNullOrderByCreatedAtAsc(parentMemoryId).stream()
+                .filter(r -> parentCreator || r.getCreatorId().equals(viewer.getId()))
+                .map(r -> toResponse(r, viewer.getId()))
+                .toList();
+    }
+
+    /**
+     * May {@code viewerId} add a reply to {@code parent}? Yes when they created the parent (extend
+     * their own thread), hold a REVEALED grant on it (unlocked it on-site), or created the parent's
+     * parent (so the person being replied to can reply back — enables nested A↔B threads).
+     */
+    private boolean canReplyTo(Memory parent, UUID viewerId) {
+        if (parent.getCreatorId().equals(viewerId)) {
+            return true;
+        }
+        boolean revealedGrantee = memoryGrantRepository
+                .findByMemoryIdAndBeneficiaryUserId(parent.getId(), viewerId)
+                .filter(g -> g.getRemovedAt() == null && g.getRevealedAt() != null)
+                .isPresent();
+        if (revealedGrantee) {
+            return true;
+        }
+        if (parent.getParentMemoryId() != null) {
+            return memoryRepository.findById(parent.getParentMemoryId())
+                    .map(grandParent -> grandParent.getCreatorId().equals(viewerId))
+                    .orElse(false);
+        }
+        return false;
     }
 
     @Transactional(readOnly = true)
@@ -459,6 +537,8 @@ public class MemoryService {
                         : List.of())
                 .ownedByViewer(memory.getCreatorId().equals(viewerId))
                 .revealed(contentVisible)
+                .parentMemoryId(memory.getParentMemoryId())
+                .replyCount((int) memoryRepository.countByParentMemoryIdAndDeletedAtIsNull(memory.getId()))
                 .createdAt(memory.getCreatedAt())
                 .updatedAt(memory.getUpdatedAt())
                 .build();

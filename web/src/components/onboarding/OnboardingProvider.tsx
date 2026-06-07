@@ -241,8 +241,11 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
 
   // New, authed users who haven't chosen a role yet get the must-choose prompt (once the role
   // has been resolved, to avoid flashing it for returning users). It launches the tour on choose.
+  // Gated to /maps (the post-login landing) so it never appears over public pages the user
+  // navigated to — e.g. browsing /search/guides while logged-in-but-not-onboarded.
   const needsRoleSelection =
-    status === 'pending' && !isActive && roleResolved && role === null && !!user && !!token;
+    status === 'pending' && !isActive && roleResolved && role === null && !!user && !!token
+    && !!pathname && pathname.startsWith('/maps');
 
   return (
     <OnboardingContext.Provider

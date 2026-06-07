@@ -13,10 +13,17 @@ import java.util.UUID;
 @Repository
 public interface MemoryRepository extends JpaRepository<Memory, UUID> {
 
+    // Reply linkage — direct (one-level) children of a memory, oldest first (thread order).
+    List<Memory> findByParentMemoryIdAndDeletedAtIsNullOrderByCreatedAtAsc(UUID parentMemoryId);
+
+    long countByParentMemoryIdAndDeletedAtIsNull(UUID parentMemoryId);
+
     @Query(value = """
         SELECT m.id
         FROM memories m
         WHERE (m.expires_at IS NULL OR m.expires_at > NOW())
+          -- Replies are nested inside their parent's card, never standalone map pins.
+          AND m.parent_memory_id IS NULL
           AND m.latitude BETWEEN :south AND :north
           AND ((:west <= :east AND m.longitude BETWEEN :west AND :east)
                OR (:west > :east AND (m.longitude >= :west OR m.longitude <= :east)))
@@ -60,6 +67,7 @@ public interface MemoryRepository extends JpaRepository<Memory, UUID> {
         SELECT m FROM Memory m
         WHERE m.creatorId = :creatorId
           AND m.deletedAt IS NULL
+          AND m.parentMemoryId IS NULL
         ORDER BY m.createdAt DESC
         """)
     List<Memory> findMyCreatedMemories(@Param("creatorId") UUID creatorId);

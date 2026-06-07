@@ -136,6 +136,10 @@ export interface Memory {
   ownedByViewer: boolean;
   /** False for a shared memory the viewer hasn't unlocked at the location. */
   revealed: boolean;
+  /** Set when this memory is a reply linked to another (the shared one it was added to). */
+  parentMemoryId?: string | null;
+  /** Replies attached to this memory that the viewer is entitled to see. */
+  replyCount?: number;
   createdAt: string;
   updatedAt: string;
 }

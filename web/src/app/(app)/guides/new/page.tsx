@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useRouter } from 'next/navigation';
+import { redirectToLogin } from '@/lib/capacitor';
 import { api } from '@/lib/api';
 import type { AiKeyResponse } from '@/types';
 import GuideEditor from '@/components/guide-editor/GuideEditor';
@@ -14,7 +15,7 @@ export default function NewGuidePage() {
 
   useEffect(() => {
     if (!loading && !token) {
-      router.push('/api/auth/login');
+      redirectToLogin();
       return;
     }
     if (!loading && token) {
