@@ -981,7 +981,7 @@ export default function MapsExperience({
   const [recording, setRecording] = useState(false);
   // Memory share mode: 'link' = current behavior (token URL after save),
   // 'follower' = direct in-app share to a follower (no link).
-  const [shareMode, setShareMode] = useState<'link' | 'follower'>('link');
+  const [shareMode, setShareMode] = useState<'link' | 'follower'>('follower');
   const [followers, setFollowers] = useState<Array<{ userId: string; username: string | null; displayName: string; avatarUrl: string | null }>>([]);
   const [followersLoading, setFollowersLoading] = useState(false);
   const [followersFetched, setFollowersFetched] = useState(false);
@@ -1388,8 +1388,8 @@ export default function MapsExperience({
     setMemoryAudio(null);
     setCreateMemoryOpen(false);
     setMemoryBusy(false);
-    // Reset share mode for the next composer session.
-    setShareMode('link');
+    // Reset share mode for the next composer session (default = share with a follower).
+    setShareMode('follower');
     setSelectedFollowerId('');
 
     let created: { id: string };
