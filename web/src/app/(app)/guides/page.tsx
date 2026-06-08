@@ -7,12 +7,13 @@ import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
-import type { GuideLibraryItem, GuideLibraryResponse, MyTripSummary, PageResponse, PurchaseResponse } from '@/types';
+import type { GuideLibraryItem, GuideLibraryResponse, GuideSearchResult, MyTripSummary, PageResponse, PurchaseResponse } from '@/types';
+import GuideSearchCard from '@/components/search/GuideSearchCard';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 
-type LibraryTab = 'created' | 'saved' | 'purchased';
+type LibraryTab = 'discover' | 'created' | 'saved' | 'purchased';
 
 export default function MyGuidesPage() {
   const { token, loading: tokenLoading } = useAccessToken();
@@ -23,7 +24,12 @@ export default function MyGuidesPage() {
   const [library, setLibrary] = useState<GuideLibraryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<LibraryTab>('created');
+  const [activeTab, setActiveTab] = useState<LibraryTab>('discover');
+  const [discover, setDiscover] = useState<GuideSearchResult[]>([]);
+  const [discoverPage, setDiscoverPage] = useState(0);
+  const [discoverTotal, setDiscoverTotal] = useState(0);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const [discoverError, setDiscoverError] = useState<string | null>(null);
   const [deletingGuideId, setDeletingGuideId] = useState<string | null>(null);
   const [calendarTripId, setCalendarTripId] = useState<string | null>(null);
   const [calendarLoadingGuideId, setCalendarLoadingGuideId] = useState<string | null>(null);
@@ -69,6 +75,32 @@ export default function MyGuidesPage() {
       .finally(() => setLoading(false));
   }, [token, tokenLoading, router]);
 
+  // Discover feed (BOR-27): all published guides ranked by relevance, via the
+  // AUTHENTICATED relevance endpoint (sends the token so the backend processes the
+  // viewer). Reuses the landing GuideSearchCard.
+  const loadDiscover = (pageNum: number, append: boolean) => {
+    if (!token) return;
+    setDiscoverLoading(true);
+    setDiscoverError(null);
+    api.get<PageResponse<GuideSearchResult>>(`/api/search/guides/feed?page=${pageNum}&size=20`, token)
+      .then((res) => {
+        setDiscover((prev) => (append ? [...prev, ...res.content] : res.content));
+        setDiscoverTotal(res.totalElements);
+        setDiscoverPage(pageNum);
+      })
+      .catch((err) => setDiscoverError(err instanceof Error ? err.message : 'Failed to load guides'))
+      .finally(() => setDiscoverLoading(false));
+  };
+
+  // Lazy-load Discover the first time its tab is shown (it's the default).
+  useEffect(() => {
+    if (tokenLoading || !token) return;
+    if (activeTab === 'discover' && discover.length === 0 && !discoverLoading && !discoverError) {
+      loadDiscover(0, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, tokenLoading, activeTab]);
+
   if (tokenLoading || loading) {
     return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
   }
@@ -95,6 +127,13 @@ export default function MyGuidesPage() {
   ];
 
   const activeItems = tabs.find((tab) => tab.key === activeTab)?.items ?? [];
+
+  // Tab buttons: the relevance-ranked Discover feed (BOR-27, default) plus the
+  // three personal-library tabs. Discover shows its count only once loaded.
+  const tabButtons: { key: LibraryTab; label: string; count: number | null }[] = [
+    { key: 'discover', label: 'Discover', count: discoverTotal || null },
+    ...tabs.map((t) => ({ key: t.key, label: t.label, count: t.items.length })),
+  ];
 
   const formatPrice = (item: GuideLibraryItem) => {
     const cents = item.effectivePriceCents ?? item.priceCents;
@@ -172,7 +211,7 @@ export default function MyGuidesPage() {
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2 border-b-2 border-ig-border pb-3">
-        {tabs.map((tab) => (
+        {tabButtons.map((tab) => (
           <button
             key={tab.key}
             type="button"
@@ -183,12 +222,47 @@ export default function MyGuidesPage() {
                 : 'border-2 border-ig-border bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
             }`}
           >
-            {tab.label} ({tab.items.length})
+            {tab.label}{tab.count != null ? ` (${tab.count})` : ''}
           </button>
         ))}
       </div>
 
-      {activeItems.length === 0 ? (
+      {activeTab === 'discover' ? (
+        discoverError ? (
+          <div className="mw-card py-12 text-center">
+            <p className="text-sm text-ig-error">{discoverError}</p>
+            <button type="button" onClick={() => loadDiscover(0, false)} className="mt-3 text-sm text-ig-text-secondary underline">
+              Retry
+            </button>
+          </div>
+        ) : discoverLoading && discover.length === 0 ? (
+          <div className="py-12 text-center text-ig-text-tertiary">Loading guides…</div>
+        ) : discover.length === 0 ? (
+          <div className="mw-card py-12 text-center">
+            <p className="text-ig-text-secondary mb-2">No guides to discover yet</p>
+            <p className="text-sm text-ig-text-tertiary">New guides ranked by relevance will appear here.</p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-3">
+              {discover.map((g) => (
+                <GuideSearchCard key={g.id} guide={g} />
+              ))}
+            </div>
+            {discover.length < discoverTotal && (
+              <button
+                type="button"
+                onClick={() => loadDiscover(discoverPage + 1, true)}
+                disabled={discoverLoading}
+                className="mw-button-secondary mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
+              >
+                {discoverLoading && <Spinner />}
+                {discoverLoading ? 'Loading…' : 'Load more'}
+              </button>
+            )}
+          </>
+        )
+      ) : activeItems.length === 0 ? (
         <div className="mw-card py-12 text-center">
           <p className="text-ig-text-secondary mb-2">
             {activeTab === 'created' && "You haven't created any guides yet"}

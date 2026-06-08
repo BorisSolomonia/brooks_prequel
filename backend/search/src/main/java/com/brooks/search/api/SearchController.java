@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,6 +56,19 @@ public class SearchController {
             @RequestParam(name = "sort", required = false) String sort) {
         return ResponseEntity.ok(searchService.searchGuides(
                 query, page, Math.min(size, 50), stage, personas, minRating, minPriceCents, maxPriceCents, sort));
+    }
+
+    // Authenticated "Discover" feed (BOR-27). Requires a valid token (enforced in
+    // SecurityConfig) so the viewer is processed server-side; ranks all published
+    // guides by the global relevance composite. The viewer subject is the seam for
+    // future per-user personalization — it is read here but does not yet alter ranking.
+    @GetMapping("/guides/feed")
+    public ResponseEntity<PageResponse<GuideSearchResult>> discoverGuides(
+            Authentication authentication,
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) int size) {
+        String viewerSubject = ((Jwt) authentication.getPrincipal()).getSubject();
+        return ResponseEntity.ok(searchService.discoverGuides(viewerSubject, page, Math.min(size, 50)));
     }
 
     @GetMapping("/guides/catalog")

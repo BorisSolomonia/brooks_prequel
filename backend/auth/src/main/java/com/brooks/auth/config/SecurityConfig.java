@@ -59,6 +59,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/fx/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/guides/*/reviews").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/memory-shares/*").permitAll()
+                // Authenticated "Discover" feed (BOR-27): the viewer's token must reach
+                // the backend (personalization seam). Listed BEFORE the search permitAll
+                // so this exact path requires auth while the rest of search stays public.
+                .requestMatchers(HttpMethod.GET, "/api/search/guides/feed").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/tour/**").permitAll()

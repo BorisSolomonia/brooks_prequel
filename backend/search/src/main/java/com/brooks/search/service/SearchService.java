@@ -57,6 +57,17 @@ public class SearchService {
         return searchGuides(query, page, size, null, null, null, null, null, null);
     }
 
+    /**
+     * Authenticated "Discover" feed (BOR-27): all published guides ranked by the global
+     * relevance composite (same algorithm the landing page uses). {@code viewerSubject}
+     * is the authenticated user's token subject — the seam for future per-user
+     * personalization. It is accepted (proving the token is processed) but does NOT yet
+     * influence ranking; personalized weights are a planned follow-up.
+     */
+    public PageResponse<GuideSearchResult> discoverGuides(String viewerSubject, int page, int size) {
+        return searchGuides(null, page, size);
+    }
+
     public PageResponse<GuideSearchResult> searchGuides(String query, int page, int size, String stage, List<String> personas) {
         return searchGuides(query, page, size, stage, personas, null, null, null, null);
     }
