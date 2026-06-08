@@ -1,6 +1,6 @@
 # Google Pay — Spring backend endpoint TODO
 
-The Next.js frontend now contains a feature-flagged Google Pay button (`web/src/components/ui/GooglePayButton.tsx`) and a thin proxy at `web/src/app/api/purchases/google-pay/route.ts`. **Until the Spring endpoint below exists, leave `NEXT_PUBLIC_GOOGLE_PAY_ENABLED` unset (or `false`).** The button is also hidden in that case, so the existing iPay flow is the only one that fires.
+The Next.js frontend now contains a feature-flagged Google Pay button (`web/src/components/ui/GooglePayButton.tsx`) and a thin proxy at `web/src/app/api/purchases/google-pay/route.ts`. **Until the Spring endpoint below exists, leave `NEXT_PUBLIC_GOOGLE_PAY_ENABLED` unset (or `false`).** The button is also hidden in that case, so the existing iPay flow is the only one that fires..
 
 ---
 
