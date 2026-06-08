@@ -12,7 +12,14 @@ import SearchFilterBar, { type SortOption } from '@/components/search/SearchFilt
 // DRAFT state: edits don't touch the query until "Apply"; "Clear all" resets the
 // draft. Backdrop / ESC / swipe close without committing.
 
+export interface ChipOption {
+  value: string;
+  label: string;
+}
+
 export interface GuideFilterValues {
+  stage: string;
+  personas: string[];
   minRating: number | null;
   sort: string;
   priceMin: string;
@@ -23,6 +30,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   committed: GuideFilterValues;
+  // Category options relocated into the sheet (BOR-28): stage is single-select
+  // (incl. an "Any" entry with value ''), personas are multi-select.
+  stages: ChipOption[];
+  personas: ChipOption[];
   sortOptions: SortOption[];
   defaultSort?: string;
   onApply: (next: GuideFilterValues) => void;
@@ -33,6 +44,8 @@ const SWIPE_DISMISS_PX = 90;
 
 export function countActiveFilters(v: GuideFilterValues, defaultSort = 'RELEVANCE'): number {
   let n = 0;
+  if (v.stage) n += 1;
+  n += v.personas.length;
   if (v.minRating != null) n += 1;
   if (v.sort && v.sort !== defaultSort) n += 1;
   if (v.priceMin.trim()) n += 1;
@@ -44,6 +57,8 @@ export default function GuideFilterSheet({
   open,
   onClose,
   committed,
+  stages,
+  personas,
   sortOptions,
   defaultSort = 'RELEVANCE',
   onApply,
@@ -100,7 +115,15 @@ export default function GuideFilterSheet({
   };
 
   const clearAll = () =>
-    setDraft({ minRating: null, sort: defaultSort, priceMin: '', priceMax: '' });
+    setDraft({ stage: '', personas: [], minRating: null, sort: defaultSort, priceMin: '', priceMax: '' });
+
+  const togglePersona = (value: string) =>
+    setDraft((d) => ({
+      ...d,
+      personas: d.personas.includes(value)
+        ? d.personas.filter((p) => p !== value)
+        : [...d.personas, value],
+    }));
 
   const apply = () => {
     onApply(draft);
@@ -154,8 +177,53 @@ export default function GuideFilterSheet({
           </div>
         </div>
 
-        {/* Scrollable filter body — the shared SearchFilterBar bound to draft state. */}
+        {/* Scrollable filter body. Category chips (stage + persona) relocated here
+            from the main viewport (BOR-28), above the shared rating/sort/price bar. */}
         <div className="min-h-0 flex-1 overflow-y-auto px-5">
+          <div className="mb-3 rounded-xl border border-ig-border bg-ig-elevated/60 p-3">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">Stage</span>
+            <div className="flex flex-wrap gap-2">
+              {stages.map((s) => {
+                const active = draft.stage === s.value;
+                return (
+                  <button
+                    key={`stage-${s.value || 'any'}`}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setDraft((d) => ({ ...d, stage: s.value }))}
+                    className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
+                      active
+                        ? 'border-brand-500 bg-brand-500/15 text-brand-400'
+                        : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="mb-1.5 mt-3 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">Traveler type</span>
+            <div className="flex flex-wrap gap-2">
+              {personas.map((p) => {
+                const active = draft.personas.includes(p.value);
+                return (
+                  <button
+                    key={`persona-${p.value}`}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => togglePersona(p.value)}
+                    className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
+                      active
+                        ? 'border-brand-500 bg-brand-500/15 text-brand-400'
+                        : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <SearchFilterBar
             minRating={draft.minRating}
             onMinRating={(v) => setDraft((d) => ({ ...d, minRating: v }))}

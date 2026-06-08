@@ -24,7 +24,7 @@ export default function MyGuidesPage() {
   const [library, setLibrary] = useState<GuideLibraryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<LibraryTab>('discover');
+  const [activeTab, setActiveTab] = useState<LibraryTab>('purchased');
   const [discover, setDiscover] = useState<GuideSearchResult[]>([]);
   const [discoverPage, setDiscoverPage] = useState(0);
   const [discoverTotal, setDiscoverTotal] = useState(0);
@@ -128,12 +128,39 @@ export default function MyGuidesPage() {
 
   const activeItems = tabs.find((tab) => tab.key === activeTab)?.items ?? [];
 
-  // Tab buttons: the relevance-ranked Discover feed (BOR-27, default) plus the
-  // three personal-library tabs. Discover shows its count only once loaded.
+  // BOR-28: exactly three tabs — Purchased, Discover, Created (in that order).
+  // "Saved" is no longer a tab; saved guides surface at the top of Discover.
   const tabButtons: { key: LibraryTab; label: string; count: number | null }[] = [
+    { key: 'purchased', label: 'Purchased', count: library?.purchased.length ?? 0 },
     { key: 'discover', label: 'Discover', count: discoverTotal || null },
-    ...tabs.map((t) => ({ key: t.key, label: t.label, count: t.items.length })),
+    { key: 'created', label: 'Created', count: library?.created.length ?? 0 },
   ];
+
+  // Saved guides (still loaded in the library) are pinned at the top of Discover,
+  // rendered with the same GuideSearchCard as the feed — mapped from the library
+  // DTO (GuideLibraryItem -> GuideSearchResult; the two shapes are near-identical).
+  const savedGuides: GuideSearchResult[] = (library?.saved ?? []).map((it) => ({
+    id: it.id,
+    title: it.title,
+    coverImageUrl: it.coverImageUrl,
+    region: it.region,
+    primaryCity: null,
+    dayCount: it.dayCount,
+    placeCount: it.placeCount,
+    priceCents: it.priceCents,
+    salePriceCents: it.salePriceCents,
+    discountPercent: it.discountPercent,
+    effectivePriceCents: it.effectivePriceCents,
+    currency: it.currency,
+    displayLocation: it.displayLocation,
+    spotCount: it.spotCount,
+    averageRating: it.averageRating,
+    reviewCount: it.reviewCount,
+    weeklyPopularityScore: it.weeklyPopularityScore,
+    popularThisWeek: it.popularThisWeek,
+    creatorUsername: it.creatorUsername ?? '',
+    creatorDisplayName: null,
+  }));
 
   const formatPrice = (item: GuideLibraryItem) => {
     const cents = item.effectivePriceCents ?? item.priceCents;
@@ -210,63 +237,79 @@ export default function MyGuidesPage() {
         </Link>
       </div>
 
-      {/* Tabs on a single horizontally scrollable row (Discover + the 3 library
-          tabs can't fit one line on mobile). Keeps the controls compact and clear
-          of the "+ New Guide" header button above. */}
-      <div className="mb-6 overflow-x-auto border-b-2 border-ig-border pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max gap-2">
-          {tabButtons.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`min-h-11 shrink-0 whitespace-nowrap rounded-pill px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === tab.key
-                  ? 'border-2 border-brand-500 bg-brand-500/15 text-brand-500'
-                  : 'border-2 border-ig-border bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
-              }`}
-            >
-              {tab.label}{tab.count != null ? ` (${tab.count})` : ''}
-            </button>
-          ))}
-        </div>
+      {/* BOR-28: three tabs in a 3-column grid so they fit the width with no
+          horizontal overflow, clear of the "+ New Guide" header button above. */}
+      <div className="mb-6 grid grid-cols-3 gap-2 border-b-2 border-ig-border pb-3">
+        {tabButtons.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={`min-h-11 truncate rounded-pill px-2 py-2 text-center text-sm font-medium transition-colors ${
+              activeTab === tab.key
+                ? 'border-2 border-brand-500 bg-brand-500/15 text-brand-500'
+                : 'border-2 border-ig-border bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
+            }`}
+          >
+            {tab.label}{tab.count != null ? ` (${tab.count})` : ''}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'discover' ? (
-        discoverError ? (
-          <div className="mw-card py-12 text-center">
-            <p className="text-sm text-ig-error">{discoverError}</p>
-            <button type="button" onClick={() => loadDiscover(0, false)} className="mt-3 text-sm text-ig-text-secondary underline">
-              Retry
-            </button>
-          </div>
-        ) : discoverLoading && discover.length === 0 ? (
-          <div className="py-12 text-center text-ig-text-tertiary">Loading guides…</div>
-        ) : discover.length === 0 ? (
-          <div className="mw-card py-12 text-center">
-            <p className="text-ig-text-secondary mb-2">No guides to discover yet</p>
-            <p className="text-sm text-ig-text-tertiary">New guides ranked by relevance will appear here.</p>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-3">
-              {discover.map((g) => (
-                <GuideSearchCard key={g.id} guide={g} />
-              ))}
-            </div>
-            {discover.length < discoverTotal && (
-              <button
-                type="button"
-                onClick={() => loadDiscover(discoverPage + 1, true)}
-                disabled={discoverLoading}
-                className="mw-button-secondary mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
-              >
-                {discoverLoading && <Spinner />}
-                {discoverLoading ? 'Loading…' : 'Load more'}
+        <>
+          {/* BOR-28: the user's Saved guides are pinned at the top of Discover,
+              ahead of the relevance feed. */}
+          {savedGuides.length > 0 && (
+            <section className="mb-6">
+              <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">Saved</h2>
+              <div className="space-y-3">
+                {savedGuides.map((g) => (
+                  <GuideSearchCard key={`saved-${g.id}`} guide={g} initialSaved />
+                ))}
+              </div>
+            </section>
+          )}
+          {discoverError ? (
+            <div className="mw-card py-12 text-center">
+              <p className="text-sm text-ig-error">{discoverError}</p>
+              <button type="button" onClick={() => loadDiscover(0, false)} className="mt-3 text-sm text-ig-text-secondary underline">
+                Retry
               </button>
-            )}
-          </>
-        )
+            </div>
+          ) : discoverLoading && discover.length === 0 ? (
+            <div className="py-12 text-center text-ig-text-tertiary">Loading guides…</div>
+          ) : discover.length === 0 ? (
+            savedGuides.length === 0 ? (
+              <div className="mw-card py-12 text-center">
+                <p className="text-ig-text-secondary mb-2">No guides to discover yet</p>
+                <p className="text-sm text-ig-text-tertiary">New guides ranked by relevance will appear here.</p>
+              </div>
+            ) : null
+          ) : (
+            <>
+              {savedGuides.length > 0 && (
+                <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">Discover</h2>
+              )}
+              <div className="space-y-3">
+                {discover.map((g) => (
+                  <GuideSearchCard key={g.id} guide={g} />
+                ))}
+              </div>
+              {discover.length < discoverTotal && (
+                <button
+                  type="button"
+                  onClick={() => loadDiscover(discoverPage + 1, true)}
+                  disabled={discoverLoading}
+                  className="mw-button-secondary mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
+                >
+                  {discoverLoading && <Spinner />}
+                  {discoverLoading ? 'Loading…' : 'Load more'}
+                </button>
+              )}
+            </>
+          )}
+        </>
       ) : activeItems.length === 0 ? (
         <div className="mw-card py-12 text-center">
           <p className="text-ig-text-secondary mb-2">

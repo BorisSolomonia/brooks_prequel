@@ -10,12 +10,15 @@ import type { GuideSaveStatusResponse, GuideSearchResult } from '@/types';
 
 interface GuideSearchCardProps {
   guide: GuideSearchResult;
+  // Seed the save heart as already filled — used by the "Saved" section of the
+  // signed-in Discover feed (BOR-28). Defaults false so all other usages are unchanged.
+  initialSaved?: boolean;
 }
 
-export default function GuideSearchCard({ guide }: GuideSearchCardProps) {
+export default function GuideSearchCard({ guide, initialSaved = false }: GuideSearchCardProps) {
   const { token } = useAccessToken();
   const toast = useToast();
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(initialSaved);
   const [saving, setSaving] = useState(false);
 
   const handleSaveClick = async () => {

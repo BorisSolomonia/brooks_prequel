@@ -96,15 +96,12 @@ function SearchGuidesPageContent() {
     fetchPage(0, false);
   }, [fetchPage]);
 
-  const togglePersona = (persona: string) => {
-    setSelectedPersonas((prev) =>
-      prev.includes(persona) ? prev.filter((p) => p !== persona) : [...prev, persona]
-    );
-  };
-
-  // Badge count for the Filters trigger — only the sheet's granular filters
-  // (rating, non-default sort, min/max price); category chips are quick-access.
-  const activeFilterCount = countActiveFilters({ minRating, sort, priceMin, priceMax }, 'RELEVANCE');
+  // Badge count for the Filters trigger — stage, each selected persona, rating,
+  // non-default sort, and each price bound. Categories now live inside the sheet (BOR-28).
+  const activeFilterCount = countActiveFilters(
+    { stage: selectedStage, personas: selectedPersonas, minRating, sort, priceMin, priceMax },
+    'RELEVANCE',
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -138,41 +135,6 @@ function SearchGuidesPageContent() {
         </button>
       </div>
 
-      {/* Category chips (stage + persona): one full-width horizontally scrollable
-          row. A plain block scroller (not a flex child) sidesteps the flex
-          min-width:auto trap that let the chips overflow under the button. */}
-      <div className="mb-6 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max items-center gap-2">
-          {STAGES.map((s) => (
-            <button
-              key={`stage-${s.value || 'any'}`}
-              onClick={() => setSelectedStage(s.value)}
-              className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
-                selectedStage === s.value
-                  ? 'border-brand-500 bg-brand-500/15 text-brand-400'
-                  : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-          <span className="mx-1 h-6 w-px shrink-0 bg-ig-border" aria-hidden="true" />
-          {PERSONAS.map((p) => (
-            <button
-              key={`persona-${p.value}`}
-              onClick={() => togglePersona(p.value)}
-              className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
-                selectedPersonas.includes(p.value)
-                  ? 'border-brand-500 bg-brand-500/15 text-brand-400'
-                  : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {loading && <SearchSkeleton />}
       {error && <p className="mt-8 text-center text-ig-error">{error}</p>}
 
@@ -202,10 +164,14 @@ function SearchGuidesPageContent() {
       <GuideFilterSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        committed={{ minRating, sort, priceMin, priceMax }}
+        committed={{ stage: selectedStage, personas: selectedPersonas, minRating, sort, priceMin, priceMax }}
+        stages={STAGES}
+        personas={PERSONAS}
         sortOptions={GUIDE_SORTS}
         defaultSort="RELEVANCE"
         onApply={(next) => {
+          setSelectedStage(next.stage);
+          setSelectedPersonas(next.personas);
           setMinRating(next.minRating);
           setSort(next.sort);
           setPriceMin(next.priceMin);
