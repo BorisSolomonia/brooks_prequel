@@ -172,6 +172,13 @@ export default function Navbar() {
         bottom-tab nav clear separation from the map / page content without
         sacrificing the parchment transparency. Per-Link text-shadow lifts
         labels + icons over busy backgrounds like map tiles. */}
+    {/* Only render the bottom tab bar when it offers real multi-destination
+        navigation. For logged-out users every tab except Explore is auth-gated,
+        so the bar collapses to a SINGLE Explore/search icon — a redundant
+        "transparent search button" sitting next to the top GlobalSearchBar
+        (BOR-25). Suppress that degenerate one-button bar; the full logged-in
+        5-tab nav and the top search are unaffected. */}
+    {visibleMobileTabs.length > 1 && (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t-2 border-ig-border bg-ig-elevated/95 backdrop-blur-xl backdrop-saturate-50 md:hidden" aria-label="Primary">
       <div className="mx-auto flex max-w-lg justify-around px-1 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
         {visibleMobileTabs.map((tab) => {
@@ -192,6 +199,7 @@ export default function Navbar() {
         })}
       </div>
     </nav>
+    )}
     </>
   );
 }

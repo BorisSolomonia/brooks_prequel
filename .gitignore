@@ -25,6 +25,8 @@ out/
 **/out/
 dist/
 **/dist/
+# TypeScript incremental-build cache — regenerated on every tsc run, never committed.
+*.tsbuildinfo
 
 # =========================
 # Environment / Secrets

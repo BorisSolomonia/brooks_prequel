@@ -142,6 +142,20 @@ public class SearchRepository {
             "(CASE WHEN g.sale_price_cents IS NOT NULL AND (g.sale_ends_at IS NULL OR g.sale_ends_at > NOW()) "
           + "THEN g.sale_price_cents ELSE g.price_cents END)";
 
+    // Weekly traction = completed purchases (last 7d) x2 + saves (last 7d). Reused
+    // in SELECT (as weekly_popularity_score) and in the no-query relevance ORDER BY,
+    // so both stay in lock-step (same reason EFFECTIVE_PRICE is a shared constant).
+    private static final String WEEKLY_POPULARITY =
+            "(COUNT(DISTINCT gp.id) FILTER (WHERE gp.status = 'COMPLETED' AND gp.created_at >= NOW() - INTERVAL '7 days') * 2 "
+          + " + COUNT(DISTINCT sg.id) FILTER (WHERE sg.created_at >= NOW() - INTERVAL '7 days'))";
+
+    // Bayesian-average priors for the no-query relevance score. A guide's own rating
+    // is shrunk toward the global mean until it has enough reviews to be trusted:
+    //   bayesian = (C*m + sum_ratings) / (C + review_count)
+    // C = "how many reviews of prior weight"; m = assumed global mean rating.
+    private static final double BAYES_CONFIDENCE = 10.0;   // C
+    private static final double GLOBAL_MEAN_RATING = 4.3;  // m
+
     public List<GuideSearchResult> searchGuides(String tsQuery, int limit, int offset) {
         return searchGuides(tsQuery, limit, offset, null, List.of());
     }
@@ -165,8 +179,7 @@ public class SearchRepository {
           + "COALESCE(NULLIF(g.primary_city, ''), NULLIF(g.region, ''), g.country) AS display_location, "
           + "COALESCE(AVG(gr.rating), 0) AS average_rating, "
           + "COUNT(DISTINCT gr.id) AS review_count, "
-          + "(COUNT(DISTINCT gp.id) FILTER (WHERE gp.status = 'COMPLETED' AND gp.created_at >= NOW() - INTERVAL '7 days') * 2 "
-          + " + COUNT(DISTINCT sg.id) FILTER (WHERE sg.created_at >= NOW() - INTERVAL '7 days'))::int AS weekly_popularity_score, "
+          + WEEKLY_POPULARITY + "::int AS weekly_popularity_score, "
           + "u.username AS creator_username, p.display_name AS creator_display_name "
           + "FROM guides g "
           + "JOIN users u ON u.id = g.creator_id "
@@ -257,7 +270,18 @@ public class SearchRepository {
                     params.add(tsQuery);
                     return "ts_rank(g.search_vector, plainto_tsquery('english', ?)) DESC, g.created_at DESC";
                 }
-                return "g.created_at DESC";
+                // No query → discovery ranking (the "golden path"): a 0..1 blend of
+                //   0.55 * Bayesian quality  +  0.30 * capped 7-day traction  +  0.15 * freshness decay
+                // tiebroken by recency. Aliases can't appear inside an ORDER BY
+                // expression (PG reads them as input columns), so the raw aggregates
+                // are repeated here. The two params are C*m then C for the Bayesian term.
+                params.add(BAYES_CONFIDENCE * GLOBAL_MEAN_RATING); // C*m (numerator prior)
+                params.add(BAYES_CONFIDENCE);                      // C   (denominator prior)
+                return "0.55 * ((? + COALESCE(AVG(gr.rating), 0) * COUNT(DISTINCT gr.id)) "
+                     + "/ (? + COUNT(DISTINCT gr.id)) / 5.0) "
+                     + "+ 0.30 * LEAST(" + WEEKLY_POPULARITY + " / 20.0, 1.0) "
+                     + "+ 0.15 * EXP(- EXTRACT(EPOCH FROM (NOW() - g.created_at)) / 2592000.0) "
+                     + "DESC, g.created_at DESC";
         }
     }
 

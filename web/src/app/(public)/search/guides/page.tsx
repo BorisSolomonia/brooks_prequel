@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import type { GuideSearchResult, PageResponse } from '@/types';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
-import SearchFilterBar, { type SortOption } from '@/components/search/SearchFilterBar';
+import { type SortOption } from '@/components/search/SearchFilterBar';
+import GuideFilterSheet, { countActiveFilters } from '@/components/search/GuideFilterSheet';
 import Spinner from '@/components/ui/Spinner';
 import Link from 'next/link';
 
@@ -57,6 +58,7 @@ function SearchGuidesPageContent() {
   const [sort, setSort] = useState('RELEVANCE');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const buildUrl = useCallback((pageNum: number) => {
     const params = new URLSearchParams({ page: String(pageNum), size: '20' });
@@ -100,6 +102,10 @@ function SearchGuidesPageContent() {
     );
   };
 
+  // Badge count for the Filters trigger — only the sheet's granular filters
+  // (rating, non-default sort, min/max price); category chips are quick-access.
+  const activeFilterCount = countActiveFilters({ minRating, sort, priceMin, priceMax }, 'RELEVANCE');
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link href={`/search?q=${encodeURIComponent(q)}`} className="mb-4 inline-block font-display text-sm font-black uppercase tracking-[0.06em] text-brand-500 hover:text-brand-400">
@@ -112,52 +118,59 @@ function SearchGuidesPageContent() {
         </p>
       )}
 
-      {/* Rating + sort/date + price (the universal filter bar) */}
-      <SearchFilterBar
-        minRating={minRating}
-        onMinRating={setMinRating}
-        sort={sort}
-        onSort={setSort}
-        sortOptions={GUIDE_SORTS}
-        showPrice
-        priceMin={priceMin}
-        priceMax={priceMax}
-        onPriceMin={setPriceMin}
-        onPriceMax={setPriceMax}
-      />
+      {/* Quick-access category chips (stage + persona) in a SINGLE horizontally
+          scrollable row, plus the Filters trigger that opens the granular bottom
+          sheet. Replaces the old inline "wall of filters" (BOR-26). */}
+      <div className="mb-6 flex items-center gap-2">
+        <div className="-mx-1 flex-1 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max items-center gap-2">
+            {STAGES.map((s) => (
+              <button
+                key={`stage-${s.value || 'any'}`}
+                onClick={() => setSelectedStage(s.value)}
+                className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
+                  selectedStage === s.value
+                    ? 'border-brand-500 bg-brand-500/15 text-brand-400'
+                    : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+            <span className="mx-1 h-6 w-px shrink-0 bg-ig-border" aria-hidden="true" />
+            {PERSONAS.map((p) => (
+              <button
+                key={`persona-${p.value}`}
+                onClick={() => togglePersona(p.value)}
+                className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
+                  selectedPersonas.includes(p.value)
+                    ? 'border-brand-500 bg-brand-500/15 text-brand-400'
+                    : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* Stage filter */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        {STAGES.map((s) => (
-          <button
-            key={s.value}
-            onClick={() => setSelectedStage(s.value)}
-            className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
-              selectedStage === s.value
-                ? 'border-brand-500 bg-brand-500/15 text-brand-400'
-                : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Persona filter chips */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {PERSONAS.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => togglePersona(p.value)}
-            className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
-              selectedPersonas.includes(p.value)
-                ? 'border-brand-500 bg-brand-500/15 text-brand-400'
-                : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
+        {/* Filters trigger with active-count badge. */}
+        <button
+          type="button"
+          onClick={() => setSheetOpen(true)}
+          aria-label="Open filters"
+          className="relative inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:border-brand-500/40 lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 5h18M6 12h12M10 19h4" />
+          </svg>
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[11px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {loading && <SearchSkeleton />}
@@ -185,6 +198,20 @@ function SearchGuidesPageContent() {
           {loadingMore ? 'Loading...' : 'Load more'}
         </button>
       )}
+
+      <GuideFilterSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        committed={{ minRating, sort, priceMin, priceMax }}
+        sortOptions={GUIDE_SORTS}
+        defaultSort="RELEVANCE"
+        onApply={(next) => {
+          setMinRating(next.minRating);
+          setSort(next.sort);
+          setPriceMin(next.priceMin);
+          setPriceMax(next.priceMax);
+        }}
+      />
     </div>
   );
 }
