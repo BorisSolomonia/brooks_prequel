@@ -112,49 +112,14 @@ function SearchGuidesPageContent() {
         &larr; Back to search
       </Link>
       <h1 className="mw-section-title mb-1 text-xl">Guides</h1>
-      {total > 0 && (
-        <p className="text-sm text-ig-text-secondary mb-4">
-          {total} {q.trim() ? <>results for &ldquo;{q}&rdquo;</> : 'guides'}
+      {/* Result count + Filters trigger share one row (button pinned right). The
+          category chips get their OWN full-width scroll row below, so the Filters
+          button can never overlap them. Previously the button + a flex-1 scroll
+          container without min-w-0 collided (the chips couldn't shrink). */}
+      <div className="mb-3 mt-1 flex items-center justify-between gap-3">
+        <p className="min-w-0 truncate text-sm text-ig-text-secondary">
+          {total > 0 ? (q.trim() ? <>{total} results for &ldquo;{q}&rdquo;</> : <>{total} guides</>) : null}
         </p>
-      )}
-
-      {/* Quick-access category chips (stage + persona) in a SINGLE horizontally
-          scrollable row, plus the Filters trigger that opens the granular bottom
-          sheet. Replaces the old inline "wall of filters" (BOR-26). */}
-      <div className="mb-6 flex items-center gap-2">
-        <div className="-mx-1 flex-1 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex w-max items-center gap-2">
-            {STAGES.map((s) => (
-              <button
-                key={`stage-${s.value || 'any'}`}
-                onClick={() => setSelectedStage(s.value)}
-                className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
-                  selectedStage === s.value
-                    ? 'border-brand-500 bg-brand-500/15 text-brand-400'
-                    : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-            <span className="mx-1 h-6 w-px shrink-0 bg-ig-border" aria-hidden="true" />
-            {PERSONAS.map((p) => (
-              <button
-                key={`persona-${p.value}`}
-                onClick={() => togglePersona(p.value)}
-                className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
-                  selectedPersonas.includes(p.value)
-                    ? 'border-brand-500 bg-brand-500/15 text-brand-400'
-                    : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Filters trigger with active-count badge. */}
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
@@ -171,6 +136,41 @@ function SearchGuidesPageContent() {
             </span>
           )}
         </button>
+      </div>
+
+      {/* Category chips (stage + persona): one full-width horizontally scrollable
+          row. A plain block scroller (not a flex child) sidesteps the flex
+          min-width:auto trap that let the chips overflow under the button. */}
+      <div className="mb-6 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-max items-center gap-2">
+          {STAGES.map((s) => (
+            <button
+              key={`stage-${s.value || 'any'}`}
+              onClick={() => setSelectedStage(s.value)}
+              className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
+                selectedStage === s.value
+                  ? 'border-brand-500 bg-brand-500/15 text-brand-400'
+                  : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+          <span className="mx-1 h-6 w-px shrink-0 bg-ig-border" aria-hidden="true" />
+          {PERSONAS.map((p) => (
+            <button
+              key={`persona-${p.value}`}
+              onClick={() => togglePersona(p.value)}
+              className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs ${
+                selectedPersonas.includes(p.value)
+                  ? 'border-brand-500 bg-brand-500/15 text-brand-400'
+                  : 'border-ig-border text-ig-text-secondary hover:border-brand-500/40'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading && <SearchSkeleton />}

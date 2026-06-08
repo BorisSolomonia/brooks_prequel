@@ -210,21 +210,26 @@ export default function MyGuidesPage() {
         </Link>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2 border-b-2 border-ig-border pb-3">
-        {tabButtons.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`min-h-11 rounded-pill px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab.key
-                ? 'border-2 border-brand-500 bg-brand-500/15 text-brand-500'
-                : 'border-2 border-ig-border bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
-            }`}
-          >
-            {tab.label}{tab.count != null ? ` (${tab.count})` : ''}
-          </button>
-        ))}
+      {/* Tabs on a single horizontally scrollable row (Discover + the 3 library
+          tabs can't fit one line on mobile). Keeps the controls compact and clear
+          of the "+ New Guide" header button above. */}
+      <div className="mb-6 overflow-x-auto border-b-2 border-ig-border pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-max gap-2">
+          {tabButtons.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`min-h-11 shrink-0 whitespace-nowrap rounded-pill px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'border-2 border-brand-500 bg-brand-500/15 text-brand-500'
+                  : 'border-2 border-ig-border bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
+              }`}
+            >
+              {tab.label}{tab.count != null ? ` (${tab.count})` : ''}
+            </button>
+          ))}
+        </div>
       </div>
 
       {activeTab === 'discover' ? (
