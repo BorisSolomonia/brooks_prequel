@@ -97,6 +97,12 @@ export default function NotificationBell() {
           if (data.memoryId) router.push(`/maps?memory=${encodeURIComponent(data.memoryId)}`);
           else router.push('/maps');
           break;
+        case 'memory.reply':
+          // Reply notification deep-links to the ORIGINAL memory (data.memoryId = parent),
+          // so the author opens their pin and sees the reply nested in its card.
+          if (data.memoryId) router.push(`/maps?memory=${encodeURIComponent(data.memoryId)}`);
+          else router.push('/maps');
+          break;
         case 'guide.gift':
           // Pending free-gift offer → the gifts inbox where they accept/decline.
           router.push('/gifts');
