@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
@@ -14,6 +14,9 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 type LibraryTab = 'discover' | 'created' | 'saved' | 'purchased';
+
+// Discover loads in small batches and grows via infinite scroll (BOR-29).
+const DISCOVER_PAGE_SIZE = 10;
 
 export default function MyGuidesPage() {
   const { token, loading: tokenLoading } = useAccessToken();
@@ -82,7 +85,7 @@ export default function MyGuidesPage() {
     if (!token) return;
     setDiscoverLoading(true);
     setDiscoverError(null);
-    api.get<PageResponse<GuideSearchResult>>(`/api/search/guides/feed?page=${pageNum}&size=20`, token)
+    api.get<PageResponse<GuideSearchResult>>(`/api/search/guides/feed?page=${pageNum}&size=${DISCOVER_PAGE_SIZE}`, token)
       .then((res) => {
         setDiscover((prev) => (append ? [...prev, ...res.content] : res.content));
         setDiscoverTotal(res.totalElements);
@@ -92,7 +95,7 @@ export default function MyGuidesPage() {
       .finally(() => setDiscoverLoading(false));
   };
 
-  // Lazy-load Discover the first time its tab is shown (it's the default).
+  // Lazy-load Discover the first time its tab is shown.
   useEffect(() => {
     if (tokenLoading || !token) return;
     if (activeTab === 'discover' && discover.length === 0 && !discoverLoading && !discoverError) {
@@ -100,6 +103,26 @@ export default function MyGuidesPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, tokenLoading, activeTab]);
+
+  // Infinite scroll: when the bottom sentinel of the Discover list enters view and
+  // more guides remain, fetch the next batch (BOR-29) — replaces the Load-more button.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (activeTab !== 'discover') return;
+    const el = sentinelRef.current;
+    if (!el || discover.length === 0 || discover.length >= discoverTotal) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !discoverLoading && discover.length < discoverTotal) {
+          loadDiscover(discoverPage + 1, true);
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, discover.length, discoverTotal, discoverLoading, discoverPage]);
 
   if (tokenLoading || loading) {
     return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
@@ -132,7 +155,7 @@ export default function MyGuidesPage() {
   // "Saved" is no longer a tab; saved guides surface at the top of Discover.
   const tabButtons: { key: LibraryTab; label: string; count: number | null }[] = [
     { key: 'purchased', label: 'Purchased', count: library?.purchased.length ?? 0 },
-    { key: 'discover', label: 'Discover', count: discoverTotal || null },
+    { key: 'discover', label: 'Discover', count: null }, // no count on Discover (BOR-29)
     { key: 'created', label: 'Created', count: library?.created.length ?? 0 },
   ];
 
@@ -297,15 +320,9 @@ export default function MyGuidesPage() {
                 ))}
               </div>
               {discover.length < discoverTotal && (
-                <button
-                  type="button"
-                  onClick={() => loadDiscover(discoverPage + 1, true)}
-                  disabled={discoverLoading}
-                  className="mw-button-secondary mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
-                >
+                <div ref={sentinelRef} className="flex justify-center py-6">
                   {discoverLoading && <Spinner />}
-                  {discoverLoading ? 'Loading…' : 'Load more'}
-                </button>
+                </div>
               )}
             </>
           )}

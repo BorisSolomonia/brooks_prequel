@@ -61,10 +61,13 @@ function SearchResultRow({ href, title, subtitle, meta, badge, icon, onSelect }:
 interface SearchSectionProps {
   title: string;
   count: number;
+  // Deep-dive link to the full, filtered list page for this category.
+  href: string;
+  onNavigate: () => void;
   children: React.ReactNode;
 }
 
-function SearchSection({ title, count, children }: SearchSectionProps) {
+function SearchSection({ title, count, href, onNavigate, children }: SearchSectionProps) {
   if (!count) {
     return null;
   }
@@ -72,7 +75,17 @@ function SearchSection({ title, count, children }: SearchSectionProps) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between px-1">
-        <p className="mw-eyebrow">{title}</p>
+        {/* Clickable header → full filtered list for this entity type (BOR-29). */}
+        <Link
+          href={href}
+          onClick={onNavigate}
+          className="mw-eyebrow inline-flex items-center gap-1 transition-colors hover:text-brand-500"
+        >
+          {title}
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
         <span className="text-[11px] text-ig-text-tertiary">{count}</span>
       </div>
       <div className="space-y-1">{children}</div>
@@ -266,8 +279,13 @@ export default function GlobalSearchBar() {
             </div>
           ) : totalResults > 0 ? (
             <div className="space-y-4">
-              <SearchSection title="Creators" count={results?.creators.length ?? 0}>
-                {results?.creators.slice(0, 3).map((creator: CreatorSearchResult) => (
+              <SearchSection
+                title="Creators"
+                count={results?.creators.length ?? 0}
+                href={`/search/creators?q=${encodeURIComponent(inputValue.trim())}`}
+                onNavigate={() => setOpen(false)}
+              >
+                {results?.creators.slice(0, 2).map((creator: CreatorSearchResult) => (
                   <SearchResultRow
                     key={creator.userId}
                     href={`/creators/${creator.username}`}
@@ -294,8 +312,13 @@ export default function GlobalSearchBar() {
                 ))}
               </SearchSection>
 
-              <SearchSection title="Guides" count={results?.guides.length ?? 0}>
-                {results?.guides.slice(0, 3).map((guide: GuideSearchResult) => (
+              <SearchSection
+                title="Guides"
+                count={results?.guides.length ?? 0}
+                href={`/search/guides?q=${encodeURIComponent(inputValue.trim())}`}
+                onNavigate={() => setOpen(false)}
+              >
+                {results?.guides.slice(0, 2).map((guide: GuideSearchResult) => (
                   <SearchResultRow
                     key={guide.id}
                     href={`/guides/${guide.id}/view`}
@@ -313,8 +336,13 @@ export default function GlobalSearchBar() {
                 ))}
               </SearchSection>
 
-              <SearchSection title="Places" count={results?.places.length ?? 0}>
-                {results?.places.slice(0, 3).map((place: PlaceSearchResult) => (
+              <SearchSection
+                title="Places"
+                count={results?.places.length ?? 0}
+                href={`/search/places?q=${encodeURIComponent(inputValue.trim())}`}
+                onNavigate={() => setOpen(false)}
+              >
+                {results?.places.slice(0, 2).map((place: PlaceSearchResult) => (
                   <SearchResultRow
                     key={place.id}
                     href={buildPlaceHref(place)}
