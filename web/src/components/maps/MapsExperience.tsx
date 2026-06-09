@@ -24,6 +24,7 @@ import type {
   Memory,
   MemoryMapPin,
   MemoryMapResponse,
+  MemoryMedia,
   MemoryMediaRequest,
   MemoryRevealResponse,
   MemoryShareResponse,
@@ -716,6 +717,33 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
   // A share the viewer hasn't reached yet: contents are withheld by the server
   // (textPreview is null). Show a locked teaser that points them to the spot.
   const locked = memory.sharedWithViewer && !memory.ownedByViewer && !memory.revealed;
+
+  // BOR-34: the map pin only carries hasImage/hasAudio booleans, not the media
+  // URLs — so the card previously showed a "Photo" chip but NEVER rendered the
+  // actual image, which is why receivers saw no photos. Fetch the full memory
+  // (which includes media[] URLs) once the card opens and the content is
+  // visible (owner, or a recipient who unlocked it on-site), then render it.
+  const [media, setMedia] = useState<MemoryMedia[]>([]);
+  const [mediaFailed, setMediaFailed] = useState(false);
+  useEffect(() => {
+    setMedia([]);
+    setMediaFailed(false);
+    if (locked || !token || (!memory.hasImage && !memory.hasAudio)) {
+      return;
+    }
+    let cancelled = false;
+    api.get<Memory>(`/api/memories/${encodeURIComponent(memory.id)}`, token)
+      .then((full) => {
+        if (!cancelled) setMedia(full.media ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setMediaFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [memory.id, memory.hasImage, memory.hasAudio, locked, token]);
+
   return (
     <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
       <div className="flex items-start justify-between gap-4">
@@ -748,6 +776,32 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
           Close
         </button>
       </div>
+      {/* BOR-34: render the actual uploaded media (photos + audio) once content
+          is visible. The locked teaser intentionally hides it until unlock. */}
+      {!locked && media.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {media.map((item) =>
+            item.mediaType === 'IMAGE' ? (
+              <img
+                key={item.id}
+                src={item.url}
+                alt="Memory photo"
+                loading="lazy"
+                className="w-full rounded-xl border border-ig-border object-cover"
+              />
+            ) : (
+              <audio key={item.id} controls src={item.url} className="w-full">
+                Your browser does not support audio playback.
+              </audio>
+            ),
+          )}
+        </div>
+      )}
+      {!locked && mediaFailed && (memory.hasImage || memory.hasAudio) && (
+        <p className="mt-3 text-xs text-ig-text-tertiary">
+          Couldn&apos;t load the attached media. Check your connection and try again.
+        </p>
+      )}
       {memory.ownedByViewer && (
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -1262,7 +1316,9 @@ export default function MapsExperience({
     try {
       setMemoryPhoto(await uploadMemoryFile(file, 'IMAGE'));
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : 'Photo upload failed');
+      // BOR-34: explicit, retry-able error — never a false "success".
+      setMemoryPhoto(null);
+      setPageError((error instanceof Error ? error.message : 'Photo upload failed') + ' Please try again.');
     } finally {
       setMemoryBusy(false);
     }
@@ -1276,7 +1332,8 @@ export default function MapsExperience({
     try {
       setMemoryAudio(await uploadMemoryFile(file, 'AUDIO'));
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : 'Audio upload failed');
+      setMemoryAudio(null);
+      setPageError((error instanceof Error ? error.message : 'Audio upload failed') + ' Please try again.');
     } finally {
       setMemoryBusy(false);
     }
@@ -1654,7 +1711,7 @@ export default function MapsExperience({
       ownedByViewer: boolean;
       revealed?: boolean;
       createdAt: string;
-      media?: Array<{ kind: string }>;
+      media?: Array<{ mediaType: string }>;
     };
     api.get<RemoteMemory>(`/api/memories/${encodeURIComponent(memoryParam)}`, token)
       .then((m) => {
@@ -1674,8 +1731,8 @@ export default function MapsExperience({
           ownedByViewer: m.ownedByViewer,
           sharedWithViewer: !m.ownedByViewer,
           revealed: m.revealed ?? m.ownedByViewer,
-          hasImage: (m.media ?? []).some((x) => x.kind === 'IMAGE'),
-          hasAudio: (m.media ?? []).some((x) => x.kind === 'AUDIO'),
+          hasImage: (m.media ?? []).some((x) => x.mediaType === 'IMAGE'),
+          hasAudio: (m.media ?? []).some((x) => x.mediaType === 'AUDIO'),
           createdAt: m.createdAt,
         };
         setSelectedMemory(projected);
@@ -2146,6 +2203,17 @@ export default function MapsExperience({
 
   useEffect(() => {
     if (!selectedMemory) {
+      return;
+    }
+
+    // BOR-33: a memory opened via deep-link (`/maps?memory=<id>`, e.g. tapped from
+    // the Memories tab or a push) is STICKY. Such a memory is frequently a projected
+    // one fetched by id that is not part of the viewport-bounded `visibleMemories`
+    // set at all (shared from another city, cold load, etc.). The old unconditional
+    // "pin left the viewport → close" rule nulled it on the very next bounds refresh,
+    // so the card rendered then immediately vanished. Skip the auto-close for the
+    // active deep-linked id; only auto-close ordinary pins the user tapped on the map.
+    if (selectedMemory.id === autoSelectedMemoryRef.current) {
       return;
     }
 

@@ -82,6 +82,35 @@ export default function Navbar() {
     }
   }, [pathname]);
 
+  // BOR-35: dismiss the mobile <details> menu when the user taps anywhere
+  // outside it. A <details> only closes via its <summary> by default; this
+  // adds the expected click-outside UX. The listener is registered only while
+  // the menu is open (toggled via the native `toggle` event) and removed on
+  // close, and it ignores taps inside the menu so links/buttons still work.
+  useEffect(() => {
+    const menu = mobileMenuRef.current;
+    if (!menu) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (menu && menu.open && !menu.contains(event.target as Node)) {
+        menu.removeAttribute('open');
+      }
+    }
+    function handleToggle() {
+      if (menu?.open) {
+        document.addEventListener('pointerdown', handlePointerDown);
+      } else {
+        document.removeEventListener('pointerdown', handlePointerDown);
+      }
+    }
+
+    menu.addEventListener('toggle', handleToggle);
+    return () => {
+      menu.removeEventListener('toggle', handleToggle);
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, []);
+
   return (
     <>
     <nav className="sticky top-0 z-50 border-b-2 border-ig-border bg-ig-elevated/95 pt-safe-top backdrop-blur">
