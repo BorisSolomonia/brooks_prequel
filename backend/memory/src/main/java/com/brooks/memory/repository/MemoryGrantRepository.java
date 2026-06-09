@@ -16,6 +16,9 @@ public interface MemoryGrantRepository extends JpaRepository<MemoryGrant, UUID> 
 
     Optional<MemoryGrant> findByMemoryIdAndBeneficiaryUserId(UUID memoryId, UUID beneficiaryUserId);
 
+    /** Active (non-removed) grants for any of the given memories — used to list a memory's recipients. */
+    List<MemoryGrant> findByMemoryIdInAndRemovedAtIsNull(Collection<UUID> memoryIds);
+
     @Query(value = """
         SELECT g.memory_id
         FROM memory_grants g

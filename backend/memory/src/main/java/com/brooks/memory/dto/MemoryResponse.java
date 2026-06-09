@@ -33,6 +33,12 @@ public class MemoryResponse {
     // replies attached to it that the viewer is entitled to see.
     private UUID parentMemoryId;
     private int replyCount;
+    /**
+     * Users this memory was directly shared with. Populated only on the
+     * "created by me" list (BOR-30) so the client can filter My Memories by
+     * recipient; null on all other response paths.
+     */
+    private List<MemoryRecipientSummary> recipients;
     private Instant createdAt;
     private Instant updatedAt;
 }

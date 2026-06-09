@@ -170,13 +170,47 @@ public class MemoryService {
         return toResponse(memory, viewer.getId());
     }
 
-    /** Memories I created — newest first. Used by /memories "Created" tab. */
+    /** Memories I created — newest first. Used by /memories "My Memories" tab. */
     @Transactional(readOnly = true)
     public List<MemoryResponse> listMyCreatedMemories(String auth0Subject) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
-        return memoryRepository.findMyCreatedMemories(viewer.getId()).stream()
-                .map(m -> toResponse(m, viewer.getId()))
+        List<Memory> created = memoryRepository.findMyCreatedMemories(viewer.getId());
+        if (created.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, List<MemoryRecipientSummary>> recipientsByMemory =
+                recipientsByMemory(created.stream().map(Memory::getId).toList());
+        return created.stream()
+                .map(m -> toResponse(m, viewer.getId(), true,
+                        recipientsByMemory.getOrDefault(m.getId(), List.of())))
                 .toList();
+    }
+
+    /**
+     * For the given memories, group their active-grant beneficiaries into recipient
+     * summaries keyed by memory id. Drives the "filter My Memories by recipient" view
+     * (BOR-30). One batched users+profiles load — no N+1.
+     */
+    private Map<UUID, List<MemoryRecipientSummary>> recipientsByMemory(List<UUID> memoryIds) {
+        List<MemoryGrant> grants = memoryGrantRepository.findByMemoryIdInAndRemovedAtIsNull(memoryIds);
+        if (grants.isEmpty()) {
+            return Map.of();
+        }
+        Set<UUID> beneficiaryIds = grants.stream()
+                .map(MemoryGrant::getBeneficiaryUserId)
+                .collect(Collectors.toSet());
+        Map<UUID, User> users = userService.findAllByIds(beneficiaryIds);
+        Map<UUID, UserProfile> profiles = profileRepository.findAllByUserIdIn(beneficiaryIds).stream()
+                .collect(Collectors.toMap(UserProfile::getUserId, p -> p));
+
+        Map<UUID, List<MemoryRecipientSummary>> byMemory = new HashMap<>();
+        for (MemoryGrant grant : grants) {
+            CreatorSummary u = creatorSummary(grant.getBeneficiaryUserId(), users, profiles);
+            byMemory.computeIfAbsent(grant.getMemoryId(), k -> new ArrayList<>())
+                    .add(new MemoryRecipientSummary(
+                            grant.getBeneficiaryUserId(), u.username(), u.displayName(), u.avatarUrl()));
+        }
+        return byMemory;
     }
 
     /** Memories shared with me (via link redemption OR direct in-app share). */
@@ -509,16 +543,22 @@ public class MemoryService {
 
     /** Full response — for owner-only paths where content is always visible. */
     private MemoryResponse toResponse(Memory memory, UUID viewerId) {
-        return toResponse(memory, viewerId, true);
+        return toResponse(memory, viewerId, true, null);
+    }
+
+    private MemoryResponse toResponse(Memory memory, UUID viewerId, boolean contentVisible) {
+        return toResponse(memory, viewerId, contentVisible, null);
     }
 
     /**
      * Build a memory response, redacting contents when {@code contentVisible} is
      * false (a shared memory not yet unlocked by reaching its location). Location
      * and creator stay visible so the recipient can navigate there; textContent
-     * and media are withheld until reveal.
+     * and media are withheld until reveal. {@code recipients} is non-null only on
+     * the "created by me" list (BOR-30); null leaves the field absent.
      */
-    private MemoryResponse toResponse(Memory memory, UUID viewerId, boolean contentVisible) {
+    private MemoryResponse toResponse(Memory memory, UUID viewerId, boolean contentVisible,
+                                      List<MemoryRecipientSummary> recipients) {
         CreatorSummary creator = creatorSummary(memory.getCreatorId());
         return MemoryResponse.builder()
                 .id(memory.getId())
@@ -539,6 +579,7 @@ public class MemoryService {
                 .revealed(contentVisible)
                 .parentMemoryId(memory.getParentMemoryId())
                 .replyCount((int) memoryRepository.countByParentMemoryIdAndDeletedAtIsNull(memory.getId()))
+                .recipients(recipients)
                 .createdAt(memory.getCreatedAt())
                 .updatedAt(memory.getUpdatedAt())
                 .build();

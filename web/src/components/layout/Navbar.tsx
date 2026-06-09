@@ -50,7 +50,10 @@ const mobileTabs = [
   { href: '/search', label: 'Explore', icon: 'M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Zm5.3-2.2L21 21' },
   { href: '/maps', label: 'Maps', auth: true, icon: 'M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Zm0 0V3m6 18V6' },
   { href: '/guides', label: 'Guides', auth: true, icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15Z' },
-  { href: '/trips', label: 'Purchased guides', auth: true, icon: 'M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11Zm0-8.5A2.5 2.5 0 1 0 12 7a2.5 2.5 0 0 0 0 5.5Z' },
+  // BOR-30: "Purchased guides" left the bottom tab bar in favour of "Memories"
+  // (the core social feature). Purchased guides stays reachable via the desktop
+  // nav and the mobile "Menu" dropdown below.
+  { href: '/memories', label: 'Memories', auth: true, icon: 'M6 4h12v16l-6-4-6 4V4Z' },
   { href: '/profile', label: 'Profile', auth: true, icon: 'M20 21a8 8 0 1 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z' },
 ];
 

@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { api } from '@/lib/api';
-import { useCurrency } from '@/hooks/useCurrency';
+import CreatorSearchCard from '@/components/search/CreatorSearchCard';
+import GuideSearchCard from '@/components/search/GuideSearchCard';
+import PlaceSearchCard from '@/components/search/PlaceSearchCard';
 import type {
   CreatorSearchResult,
   GuideSearchResult,
@@ -16,46 +18,6 @@ const SEARCH_DEBOUNCE_MS = 250;
 
 function buildSearchHref(query: string): string {
   return `/search?q=${encodeURIComponent(query)}`;
-}
-
-function buildPlaceHref(place: PlaceSearchResult): string {
-  return `/guides/${place.guideId}/view?placeId=${place.id}`;
-}
-
-interface SearchResultRowProps {
-  href: string;
-  title: string;
-  subtitle: string;
-  meta?: string | null;
-  badge?: string | null;
-  icon: React.ReactNode;
-  onSelect: () => void;
-}
-
-function SearchResultRow({ href, title, subtitle, meta, badge, icon, onSelect }: SearchResultRowProps) {
-  return (
-    <Link
-      href={href}
-      onClick={onSelect}
-      className="flex min-h-14 items-start gap-3 rounded-xl border-2 border-transparent px-3 py-3 transition-colors hover:border-ig-border hover:bg-ig-hover"
-    >
-      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-ig-border bg-ig-primary text-ig-text-secondary">
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold text-ig-text-primary">{title}</p>
-          {badge && (
-            <span className="mw-badge rounded-pill px-2 py-0.5 text-[10px]">
-              {badge}
-            </span>
-          )}
-        </div>
-        <p className="truncate text-xs text-ig-text-secondary">{subtitle}</p>
-        {meta && <p className="truncate text-[11px] text-ig-text-tertiary">{meta}</p>}
-      </div>
-    </Link>
-  );
 }
 
 interface SearchSectionProps {
@@ -94,7 +56,6 @@ function SearchSection({ title, count, href, onNavigate, children }: SearchSecti
 }
 
 export default function GlobalSearchBar() {
-  const { formatAmount } = useCurrency();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -279,6 +240,10 @@ export default function GlobalSearchBar() {
             </div>
           ) : totalResults > 0 ? (
             <div className="space-y-4">
+              {/* BOR-31: the dropdown now renders the same premium cards as the
+                  Explore page, while keeping the clickable category headers that
+                  deep-dive to the filtered list (?q= carries the typed query).
+                  Each card is wrapped so a click also closes the dropdown. */}
               <SearchSection
                 title="Creators"
                 count={results?.creators.length ?? 0}
@@ -286,29 +251,9 @@ export default function GlobalSearchBar() {
                 onNavigate={() => setOpen(false)}
               >
                 {results?.creators.slice(0, 2).map((creator: CreatorSearchResult) => (
-                  <SearchResultRow
-                    key={creator.userId}
-                    href={`/creators/${creator.username}`}
-                    title={creator.displayName || creator.username}
-                    subtitle={`@${creator.username}`}
-                    meta={[creator.region, `${creator.followerCount} followers`, `${creator.guideCount} guides`].filter(Boolean).join(' · ')}
-                    badge={creator.verified ? 'Verified' : null}
-                    onSelect={() => setOpen(false)}
-                    icon={
-                      creator.avatarUrl ? (
-                        <img
-                          src={creator.avatarUrl}
-                          alt={creator.displayName || creator.username}
-                          className="h-9 w-9 object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5.121 17.804A8.966 8.966 0 0112 15c2.331 0 4.455.889 6.04 2.347M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      )
-                    }
-                  />
+                  <div key={creator.userId} onClick={() => setOpen(false)}>
+                    <CreatorSearchCard creator={creator} />
+                  </div>
                 ))}
               </SearchSection>
 
@@ -319,20 +264,9 @@ export default function GlobalSearchBar() {
                 onNavigate={() => setOpen(false)}
               >
                 {results?.guides.slice(0, 2).map((guide: GuideSearchResult) => (
-                  <SearchResultRow
-                    key={guide.id}
-                    href={`/guides/${guide.id}/view`}
-                    title={guide.title}
-                    subtitle={`by ${guide.creatorDisplayName || guide.creatorUsername}`}
-                    meta={[guide.primaryCity || guide.region, `${guide.dayCount} days`, `${guide.placeCount} places`].filter(Boolean).join(' · ')}
-                    badge={formatAmount(guide.priceCents, guide.currency)}
-                    onSelect={() => setOpen(false)}
-                    icon={
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5 4.462 5 2 6.79 2 9v10c0-2.21 2.462-4 5.5-4 1.746 0 3.332.477 4.5 1.253m0-10C13.168 5.477 14.754 5 16.5 5 19.538 5 22 6.79 22 9v10c0-2.21-2.462-4-5.5-4-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    }
-                  />
+                  <div key={guide.id} onClick={() => setOpen(false)}>
+                    <GuideSearchCard guide={guide} />
+                  </div>
                 ))}
               </SearchSection>
 
@@ -343,20 +277,9 @@ export default function GlobalSearchBar() {
                 onNavigate={() => setOpen(false)}
               >
                 {results?.places.slice(0, 2).map((place: PlaceSearchResult) => (
-                  <SearchResultRow
-                    key={place.id}
-                    href={buildPlaceHref(place)}
-                    title={place.name}
-                    subtitle={place.address || place.guideTitle}
-                    meta={[place.category, place.guideRegion || place.guideTitle].filter(Boolean).join(' · ')}
-                    onSelect={() => setOpen(false)}
-                    icon={
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    }
-                  />
+                  <div key={place.id} onClick={() => setOpen(false)}>
+                    <PlaceSearchCard place={place} />
+                  </div>
                 ))}
               </SearchSection>
             </div>
