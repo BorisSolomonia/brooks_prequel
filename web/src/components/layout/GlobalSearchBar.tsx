@@ -16,8 +16,13 @@ import type {
 
 const SEARCH_DEBOUNCE_MS = 250;
 
+// BOR-37: submit (Enter / "Search everything") pushes a DEDICATED results route,
+// not `/search` (the Explore tab) — routing to /search would hijack the bottom
+// nav and destroy the user's context. `/search-results` sits outside the
+// `/search/` prefix so no bottom tab activates, and Android Back pops to the
+// originating page.
 function buildSearchHref(query: string): string {
-  return `/search?q=${encodeURIComponent(query)}`;
+  return `/search-results?q=${encodeURIComponent(query)}`;
 }
 
 interface SearchSectionProps {
@@ -67,7 +72,9 @@ export default function GlobalSearchBar() {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
-  const isUrlSyncedPage = pathname === '/maps' || pathname === '/search';
+  // /search-results is URL-synced too so the bar reflects the active query and
+  // edits live-update the results page (BOR-37).
+  const isUrlSyncedPage = pathname === '/maps' || pathname === '/search' || pathname === '/search-results';
 
   useEffect(() => {
     if (!isUrlSyncedPage) {
