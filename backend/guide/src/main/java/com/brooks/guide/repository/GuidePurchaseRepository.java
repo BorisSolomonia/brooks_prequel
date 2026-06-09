@@ -41,4 +41,21 @@ public interface GuidePurchaseRepository extends JpaRepository<GuidePurchase, UU
     long countByGuideIdAndStatus(UUID guideId, GuidePurchaseStatus status);
 
     long countByGuideIdAndStatusAndCreatedAtAfter(UUID guideId, GuidePurchaseStatus status, Instant createdAt);
+
+    /** Batch variant for list views — one grouped query instead of one query per guide. */
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT p.guideId AS guideId, COUNT(p) AS total
+        FROM GuidePurchase p
+        WHERE p.guideId IN :guideIds
+          AND p.status = :status
+          AND p.createdAt > :createdAt
+        GROUP BY p.guideId
+        """)
+    List<GuideCountRow> countByGuideIdsAndStatusAndCreatedAtAfter(
+            java.util.Collection<UUID> guideIds, GuidePurchaseStatus status, Instant createdAt);
+
+    interface GuideCountRow {
+        UUID getGuideId();
+        long getTotal();
+    }
 }

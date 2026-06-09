@@ -415,6 +415,9 @@ public class GuideService {
         int purchaseCount = (int) purchaseRepository.countByGuideIdAndStatus(guideId, GuidePurchaseStatus.COMPLETED);
         double avgRating = reviewRepository.averageRatingByGuideId(guideId);
         int reviewCount = (int) reviewRepository.countByGuideId(guideId);
+        // Computed once — the score + popular flag previously triggered the same pair of
+        // count queries twice.
+        int previewWeeklyScore = weeklyPopularityScore(guideId);
 
         List<GuidePreviewResponse.ReviewPreview> recentReviews = reviewRepository
                 .findByGuideIdOrderByCreatedAtDesc(guideId, PageRequest.of(0, 5))
@@ -492,8 +495,8 @@ public class GuideService {
                 .purchaseCount(purchaseCount)
                 .averageRating(avgRating)
                 .reviewCount(reviewCount)
-                .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
-                .popularThisWeek(isPopularThisWeek(guide.getId()))
+                .weeklyPopularityScore(previewWeeklyScore)
+                .popularThisWeek(previewWeeklyScore >= popularThisWeekThreshold)
                 .bestSeasonStartMonth(guide.getBestSeasonStartMonth())
                 .bestSeasonEndMonth(guide.getBestSeasonEndMonth())
                 .bestSeasonLabel(guide.getBestSeasonLabel())
@@ -547,9 +550,7 @@ public class GuideService {
         Page<Guide> guides = guideRepository.findByCreatorIdAndStatusNot(
                 user.getId(), GuideStatus.DELETED, pageRequest);
 
-        List<GuideListItemResponse> items = guides.getContent().stream()
-                .map(this::toListItem)
-                .toList();
+        List<GuideListItemResponse> items = toListItems(guides.getContent());
 
         return new PageResponse<>(items, guides.getNumber(), guides.getSize(),
                 guides.getTotalElements(), guides.getTotalPages(), guides.isLast());
@@ -559,12 +560,9 @@ public class GuideService {
     public GuideLibraryResponse getGuideLibrary(String auth0Subject) {
         User user = userService.findByAuth0Subject(auth0Subject);
 
-        List<GuideLibraryItemResponse> created = guideRepository.findByCreatorIdAndStatusNot(
+        List<Guide> createdGuides = guideRepository.findByCreatorIdAndStatusNot(
                         user.getId(), GuideStatus.DELETED, PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "updatedAt")))
-                .getContent()
-                .stream()
-                .map(this::toLibraryItemFromGuide)
-                .toList();
+                .getContent();
 
         List<SavedGuide> savedEntries = savedGuideRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
         Map<UUID, Guide> savedGuides = guideRepository.findAllById(
@@ -572,12 +570,26 @@ public class GuideService {
                 .stream()
                 .collect(Collectors.toMap(Guide::getId, guide -> guide));
 
+        // One pass of grouped queries for both sections; one batch user fetch for creator handles.
+        List<Guide> allGuides = new ArrayList<>(createdGuides);
+        allGuides.addAll(savedGuides.values());
+        Map<UUID, GuideStats> stats = loadGuideStats(allGuides);
+        Map<UUID, User> creators = userService.findAllByIds(
+                savedGuides.values().stream().map(Guide::getCreatorId).collect(Collectors.toSet()));
+
+        List<GuideLibraryItemResponse> created = createdGuides.stream()
+                .map(guide -> toLibraryItemFromGuide(guide,
+                        stats.getOrDefault(guide.getId(), GuideStats.EMPTY), user.getUsername()))
+                .toList();
+
         List<GuideLibraryItemResponse> saved = savedEntries.stream()
                 .map(savedEntry -> {
                     Guide guide = savedGuides.get(savedEntry.getGuideId());
                     if (guide == null || guide.getStatus() != GuideStatus.PUBLISHED) {
                         return null;
                     }
+                    GuideStats guideStats = stats.getOrDefault(guide.getId(), GuideStats.EMPTY);
+                    User creator = creators.get(guide.getCreatorId());
                     return GuideLibraryItemResponse.builder()
                             .id(guide.getId())
                             .title(guide.getTitle())
@@ -592,13 +604,13 @@ public class GuideService {
                             .currency(guide.getCurrency())
                             .versionNumber(guide.getVersionNumber())
                             .savedAt(savedEntry.getCreatedAt())
-                            .creatorUsername(userService.findById(guide.getCreatorId()).getUsername())
+                            .creatorUsername(creator == null ? null : creator.getUsername())
                             .displayLocation(displayLocation(guide))
                             .spotCount(guide.getPlaceCount())
-                            .averageRating(reviewRepository.averageRatingByGuideId(guide.getId()))
-                            .reviewCount((int) reviewRepository.countByGuideId(guide.getId()))
-                            .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
-                            .popularThisWeek(isPopularThisWeek(guide.getId()))
+                            .averageRating(guideStats.averageRating())
+                            .reviewCount(guideStats.reviewCount())
+                            .weeklyPopularityScore(guideStats.weeklyPopularityScore())
+                            .popularThisWeek(guideStats.weeklyPopularityScore() >= popularThisWeekThreshold)
                             .savedByViewer(true)
                             .build();
                 })
@@ -621,9 +633,7 @@ public class GuideService {
         Page<Guide> guides = guideRepository.findByCreatorIdAndStatusOrderBySortOrderAscUpdatedAtDesc(
                 user.getId(), GuideStatus.PUBLISHED, pageRequest);
 
-        List<GuideListItemResponse> items = guides.getContent().stream()
-                .map(this::toListItem)
-                .toList();
+        List<GuideListItemResponse> items = toListItems(guides.getContent());
 
         return new PageResponse<>(items, guides.getNumber(), guides.getSize(),
                 guides.getTotalElements(), guides.getTotalPages(), guides.isLast());
@@ -723,6 +733,10 @@ public class GuideService {
                 .map(this::toDayResponse)
                 .toList();
 
+        // Computed once — the score + popular flag previously triggered the same pair of
+        // count queries twice.
+        int fullResponseWeeklyScore = weeklyPopularityScore(guide.getId());
+
         return GuideResponse.builder()
                 .id(guide.getId())
                 .creatorId(guide.getCreatorId())
@@ -747,8 +761,8 @@ public class GuideService {
                 .spotCount(guide.getPlaceCount())
                 .averageRating(reviewRepository.averageRatingByGuideId(guide.getId()))
                 .reviewCount((int) reviewRepository.countByGuideId(guide.getId()))
-                .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
-                .popularThisWeek(isPopularThisWeek(guide.getId()))
+                .weeklyPopularityScore(fullResponseWeeklyScore)
+                .popularThisWeek(fullResponseWeeklyScore >= popularThisWeekThreshold)
                 .tags(tagNames)
                 .days(dayResponses)
                 .createdAt(guide.getCreatedAt())
@@ -825,7 +839,7 @@ public class GuideService {
                 .build();
     }
 
-    private GuideListItemResponse toListItem(Guide guide) {
+    private GuideListItemResponse toListItem(Guide guide, GuideStats stats) {
         return GuideListItemResponse.builder()
                 .id(guide.getId())
                 .title(guide.getTitle())
@@ -842,16 +856,16 @@ public class GuideService {
                 .versionNumber(guide.getVersionNumber())
                 .displayLocation(displayLocation(guide))
                 .spotCount(guide.getPlaceCount())
-                .averageRating(reviewRepository.averageRatingByGuideId(guide.getId()))
-                .reviewCount((int) reviewRepository.countByGuideId(guide.getId()))
-                .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
-                .popularThisWeek(isPopularThisWeek(guide.getId()))
+                .averageRating(stats.averageRating())
+                .reviewCount(stats.reviewCount())
+                .weeklyPopularityScore(stats.weeklyPopularityScore())
+                .popularThisWeek(stats.weeklyPopularityScore() >= popularThisWeekThreshold)
                 .createdAt(guide.getCreatedAt())
                 .updatedAt(guide.getUpdatedAt())
                 .build();
     }
 
-    private GuideLibraryItemResponse toLibraryItemFromGuide(Guide guide) {
+    private GuideLibraryItemResponse toLibraryItemFromGuide(Guide guide, GuideStats stats, String creatorUsername) {
         return GuideLibraryItemResponse.builder()
                 .id(guide.getId())
                 .title(guide.getTitle())
@@ -865,15 +879,64 @@ public class GuideService {
                 .effectivePriceCents(guide.effectivePrice())
                 .currency(guide.getCurrency())
                 .versionNumber(guide.getVersionNumber())
-                .creatorUsername(userService.findById(guide.getCreatorId()).getUsername())
+                .creatorUsername(creatorUsername)
                 .displayLocation(displayLocation(guide))
                 .spotCount(guide.getPlaceCount())
-                .averageRating(reviewRepository.averageRatingByGuideId(guide.getId()))
-                .reviewCount((int) reviewRepository.countByGuideId(guide.getId()))
-                .weeklyPopularityScore(weeklyPopularityScore(guide.getId()))
-                .popularThisWeek(isPopularThisWeek(guide.getId()))
+                .averageRating(stats.averageRating())
+                .reviewCount(stats.reviewCount())
+                .weeklyPopularityScore(stats.weeklyPopularityScore())
+                .popularThisWeek(stats.weeklyPopularityScore() >= popularThisWeekThreshold)
                 .savedByViewer(false)
                 .build();
+    }
+
+    /**
+     * Review/popularity stats for one guide in a list view. Loaded via {@link #loadGuideStats}
+     * in three grouped queries for the whole list — the previous per-guide repository calls
+     * (rating, count, weekly purchases, weekly saves — twice for the popular flag) cost
+     * ~7 queries per row and made the library/list endpoints scale O(n) in DB round-trips.
+     */
+    private record GuideStats(double averageRating, int reviewCount, int weeklyPopularityScore) {
+        static final GuideStats EMPTY = new GuideStats(0.0, 0, 0);
+    }
+
+    private Map<UUID, GuideStats> loadGuideStats(Collection<Guide> guides) {
+        if (guides.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> guideIds = guides.stream().map(Guide::getId).toList();
+        Instant since = Instant.now().minus(7, ChronoUnit.DAYS);
+
+        Map<UUID, GuideReviewRepository.ReviewStatsRow> reviews = reviewRepository
+                .reviewStatsByGuideIds(guideIds).stream()
+                .collect(Collectors.toMap(GuideReviewRepository.ReviewStatsRow::getGuideId, row -> row));
+        Map<UUID, Long> weeklyPurchases = purchaseRepository
+                .countByGuideIdsAndStatusAndCreatedAtAfter(guideIds, GuidePurchaseStatus.COMPLETED, since).stream()
+                .collect(Collectors.toMap(GuidePurchaseRepository.GuideCountRow::getGuideId,
+                        GuidePurchaseRepository.GuideCountRow::getTotal));
+        Map<UUID, Long> weeklySaves = savedGuideRepository
+                .countByGuideIdsAndCreatedAtAfter(guideIds, since).stream()
+                .collect(Collectors.toMap(GuidePurchaseRepository.GuideCountRow::getGuideId,
+                        GuidePurchaseRepository.GuideCountRow::getTotal));
+
+        Map<UUID, GuideStats> stats = new HashMap<>();
+        for (UUID guideId : guideIds) {
+            GuideReviewRepository.ReviewStatsRow review = reviews.get(guideId);
+            long score = weeklyPurchases.getOrDefault(guideId, 0L) * weeklyPurchaseWeight
+                    + weeklySaves.getOrDefault(guideId, 0L);
+            stats.put(guideId, new GuideStats(
+                    review == null ? 0.0 : review.getAverageRating(),
+                    review == null ? 0 : Math.toIntExact(review.getReviewCount()),
+                    Math.toIntExact(Math.min(Integer.MAX_VALUE, score))));
+        }
+        return stats;
+    }
+
+    private List<GuideListItemResponse> toListItems(List<Guide> guides) {
+        Map<UUID, GuideStats> stats = loadGuideStats(guides);
+        return guides.stream()
+                .map(guide -> toListItem(guide, stats.getOrDefault(guide.getId(), GuideStats.EMPTY)))
+                .toList();
     }
 
     private String displayLocation(Guide guide) {
@@ -892,10 +955,6 @@ public class GuideService {
                 guideId, GuidePurchaseStatus.COMPLETED, since);
         long weeklySaves = savedGuideRepository.countByGuideIdAndCreatedAtAfter(guideId, since);
         return Math.toIntExact(Math.min(Integer.MAX_VALUE, weeklyPurchases * weeklyPurchaseWeight + weeklySaves));
-    }
-
-    private boolean isPopularThisWeek(UUID guideId) {
-        return weeklyPopularityScore(guideId) >= popularThisWeekThreshold;
     }
 
     private GuideResponse parseGuideSnapshot(GuideVersion version) {

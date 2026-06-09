@@ -64,7 +64,8 @@
   --border-light: #DECEB7;
   --text-primary: #3B3B3B;
   --text-secondary: #6B5F50;
-  --text-tertiary: #A09684;
+  /* WCAG AA: was #A09684 (≈2.3:1 on --bg-primary); #6E6354 ≈ 4.7:1. */
+  --text-tertiary: #6E6354;
   --separator: #5A7D87;
 
   --grain: rgba(59, 59, 59, 0.025);
@@ -135,7 +136,8 @@
   --border-light: #242424;
   --text-primary: #E5E5E5;
   --text-secondary: #A0A0A0;
-  --text-tertiary: #6B6B6B;
+  /* WCAG AA: was #6B6B6B (≈3.6:1 on --bg-primary, ≈3.3:1 on --bg-elevated); #8A8A8A ≥ 5:1. */
+  --text-tertiary: #8A8A8A;
   --separator: #242424;
 
   --grain: rgba(255, 255, 255, 0.018);

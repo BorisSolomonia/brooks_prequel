@@ -10,7 +10,9 @@ import RoleSelectionModal from './RoleSelectionModal';
 import { tourSteps, stepsForRole, type TourStep, type TourRole } from './tourSteps';
 
 // localStorage mirror of the chosen role, so we don't re-prompt or re-fetch /api/me every load.
-const ROLE_STORAGE_KEY = 'brooks.onboarding.role';
+// Namespaced per Auth0 subject: a shared browser previously leaked the PREVIOUS account's
+// cached role into the next sign-in, showing the wrong tour for the new user.
+const roleStorageKey = (sub: string | undefined) => `brooks.onboarding.role.${sub ?? 'anonymous'}`;
 
 // Every distinct path the tour will navigate to. Strip query because router.prefetch
 // works on path only. Computed once at module load — the step list is static.
@@ -128,7 +130,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   useEffect(() => {
     if (role || !user || !token) return;
     if (typeof window !== 'undefined') {
-      const cached = window.localStorage.getItem(ROLE_STORAGE_KEY);
+      const cached = window.localStorage.getItem(roleStorageKey(user.sub ?? undefined));
       if (cached === 'traveler' || cached === 'creator') {
         setRole(cached);
         setRoleResolved(true);
@@ -144,7 +146,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
         if (pi === 'TRAVELER' || pi === 'CREATOR') {
           const r = pi.toLowerCase() as TourRole;
           setRole(r);
-          try { window.localStorage.setItem(ROLE_STORAGE_KEY, r); } catch { /* incognito */ }
+          try { window.localStorage.setItem(roleStorageKey(user.sub ?? undefined), r); } catch { /* incognito */ }
         }
       } catch {
         // Leave role null → show the prompt; the POST on choose persists it.
@@ -184,7 +186,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   const chooseRole = useCallback((r: TourRole) => {
     setRole(r);
     setRoleResolved(true);
-    try { window.localStorage.setItem(ROLE_STORAGE_KEY, r); } catch { /* incognito */ }
+    try { window.localStorage.setItem(roleStorageKey(user?.sub ?? undefined), r); } catch { /* incognito */ }
     if (token) {
       void api.post('/api/me/onboarding/role', { role: r.toUpperCase() }, token).catch(() => {
         // Best-effort; localStorage keeps the choice for this session.
@@ -195,7 +197,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     prefetchedRef.current = false;
     setSampleCreatorUsername(null);
     void fetchSampleCreator();
-  }, [token, fetchSampleCreator]);
+  }, [token, user, fetchSampleCreator]);
 
   const next = useCallback(() => {
     setCurrentStepIndex((i) => Math.min(i + 1, activeSteps.length - 1));

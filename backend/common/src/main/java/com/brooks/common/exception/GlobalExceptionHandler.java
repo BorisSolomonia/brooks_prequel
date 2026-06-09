@@ -1,5 +1,7 @@
 package com.brooks.common.exception;
 
+import com.brooks.common.web.RequestIdFilter;
+import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -23,14 +25,14 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleNotFound(ResourceNotFoundException ex) {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setType(URI.create("about:blank"));
-        return detail;
+        return withRequestId(detail);
     }
 
     @ExceptionHandler(BusinessException.class)
     public ProblemDetail handleBusiness(BusinessException ex) {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         detail.setType(URI.create("about:blank"));
-        return detail;
+        return withRequestId(detail);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -52,7 +54,7 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
         detail.setType(URI.create("about:blank"));
         detail.setProperty("errors", errors);
-        return detail;
+        return withRequestId(detail);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -62,7 +64,7 @@ public class GlobalExceptionHandler {
         // are handled by the AccessDeniedHandler in SecurityConfig, not this advice.
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied");
         detail.setType(URI.create("about:blank"));
-        return detail;
+        return withRequestId(detail);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -71,7 +73,7 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT, "This action conflicts with an existing record");
         detail.setType(URI.create("about:blank"));
-        return detail;
+        return withRequestId(detail);
     }
 
     @ExceptionHandler(Exception.class)
@@ -80,6 +82,18 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
         detail.setType(URI.create("about:blank"));
+        return withRequestId(detail);
+    }
+
+    /**
+     * Echo the per-request correlation id (set by {@link RequestIdFilter}) in every error body,
+     * so a user-reported error message can be matched to the exact backend log lines.
+     */
+    private static ProblemDetail withRequestId(ProblemDetail detail) {
+        String requestId = MDC.get(RequestIdFilter.MDC_KEY);
+        if (requestId != null && !requestId.isBlank()) {
+            detail.setProperty("requestId", requestId);
+        }
         return detail;
     }
 }

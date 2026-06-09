@@ -67,7 +67,22 @@
       "Bash(grep -v -E \"\\\\\\\\\\\\$\\\\{|secrets\\\\.|env\\\\.|description|comment|example|trigger\")",
       "Bash(Get-ChildItem -Path 'C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\backend' -Directory)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\web\" -Recurse -Directory)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "PowerShell(claude mcp *)",
+      "mcp__linear-server__get_issue",
+      "mcp__linear-server__save_issue",
+      "PowerShell(git checkout *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\backend\" -Directory)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\web\\\\src\" -Directory)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\" -Depth 2 | Where-Object { $_.PSIsContainer } | Select-Object -ExpandProperty FullName | Select-Object -First 30)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "PowerShell(git check-ignore *)",
+      "PowerShell(npm run *)",
+      "PowerShell(git push *)",
+      "PowerShell($out = \"url=https://github.com`n`n\" | git credential fill 2>$null; $user = \\($out | Select-String '^username='\\).ToString\\(\\).Substring\\(9\\); $pwLen = \\(\\($out | Select-String '^password='\\).ToString\\(\\).Length - 9\\); \"user=$user pwLen=$pwLen\")",
+      "Bash(git credential *)",
+      "mcp__linear-server__list_issue_statuses",
+      "mcp__linear-server__save_comment"
     ]
   }
 }

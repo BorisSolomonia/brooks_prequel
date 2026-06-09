@@ -1,4 +1,17 @@
 {$DOMAIN:localhost} {
+    # Security headers on every response. Caddy already redirects HTTP→HTTPS; HSTS pins
+    # browsers to HTTPS so a MITM can't downgrade the first request. frame-ancestors
+    # (plus the legacy X-Frame-Options) blocks clickjacking overlays on the checkout flow.
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Content-Security-Policy "frame-ancestors 'none'"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), payment=()"
+        -Server
+    }
+
     # Next.js standalone already emits the right Cache-Control on /_next/static/*; the `?`
     # form sets the header only if upstream didn't, avoiding a duplicate header.
     @nextStatic path /_next/static/*

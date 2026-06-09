@@ -4,6 +4,7 @@ import com.brooks.ai.dto.ChatMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -20,6 +21,7 @@ import java.util.TreeMap;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OpenAiClient implements AiClient {
 
     private static final String BASE_URL = "https://api.openai.com/v1/chat/completions";
@@ -84,7 +86,11 @@ public class OpenAiClient implements AiClient {
                                         }
                                     }
                                 }
-                            } catch (Exception ignored) {}
+                            } catch (Exception e) {
+                                // Skip the malformed chunk but leave a trace — silently dropping
+                                // chunks made truncated AI replies undiagnosable in production.
+                                log.warn("OpenAI stream: dropped unparseable SSE chunk", e);
+                            }
                         });
                         // Emit one structured "action" SSE event per completed tool call.
                         for (Map.Entry<Integer, String> e : toolNames.entrySet()) {
@@ -96,8 +102,9 @@ public class OpenAiClient implements AiClient {
                                 action.put("type", e.getValue());
                                 action.put("payload", parsed);
                                 emitter.send(SseEmitter.event().name("action").data(mapper.writeValueAsString(action)));
-                            } catch (Exception ignored) {
+                            } catch (Exception ex) {
                                 // Malformed tool args — skip; the client's text-tag fallback still applies.
+                                log.warn("OpenAI stream: dropped tool call '{}' with unparseable arguments", e.getValue(), ex);
                             }
                         }
                         emitter.complete();
