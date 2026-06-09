@@ -1,9 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState, useEffect, useCallback } from 'react';
-import { api } from '@/lib/api';
-import type { PlaceSearchResult, PageResponse } from '@/types';
+import { Suspense, useCallback } from 'react';
+import type { PlaceSearchResult } from '@/types';
+import { useInfinitePagination } from '@/hooks/useInfinitePagination';
 import PlaceSearchCard from '@/components/search/PlaceSearchCard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
 import Spinner from '@/components/ui/Spinner';
@@ -12,37 +12,14 @@ import Link from 'next/link';
 function SearchPlacesPageContent() {
   const searchParams = useSearchParams();
   const q = searchParams.get('q') || '';
-  const [results, setResults] = useState<PlaceSearchResult[]>([]);
-  const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchPage = useCallback(async (pageNum: number, append: boolean) => {
-    if (!q.trim()) return;
-    append ? setLoadingMore(true) : setLoading(true);
-    setError(null);
-    try {
-      const data = await api.get<PageResponse<PlaceSearchResult>>(
-        `/api/search/places?q=${encodeURIComponent(q)}&page=${pageNum}&size=20`
-      );
-      setResults(prev => append ? [...prev, ...data.content] : data.content);
-      setTotal(data.totalElements);
-      setPage(pageNum);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [q]);
+  const buildUrl = useCallback(
+    (pageNum: number) => `/api/search/places?q=${encodeURIComponent(q)}&page=${pageNum}&size=20`,
+    [q],
+  );
 
-  useEffect(() => {
-    setResults([]);
-    setPage(0);
-    fetchPage(0, false);
-  }, [fetchPage]);
+  const { results, total, loading, loadingMore, error, loadMore } =
+    useInfinitePagination<PlaceSearchResult>(buildUrl, Boolean(q.trim()));
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -69,7 +46,7 @@ function SearchPlacesPageContent() {
 
       {!loading && results.length < total && (
         <button
-          onClick={() => fetchPage(page + 1, true)}
+          onClick={loadMore}
           disabled={loadingMore}
           className="mw-button-secondary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
         >

@@ -4,6 +4,7 @@ import com.brooks.ai.dto.ChatMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -18,6 +19,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AnthropicClient implements AiClient {
 
     private static final String BASE_URL = "https://api.anthropic.com/v1/messages";
@@ -67,7 +69,11 @@ public class AnthropicClient implements AiClient {
                                     String token = node.at("/delta/text").asText("");
                                     if (!token.isEmpty()) emitter.send(SseEmitter.event().data(token));
                                 }
-                            } catch (Exception ignored) {}
+                            } catch (Exception e) {
+                                // Skip the malformed chunk but leave a trace — silently dropping
+                                // chunks made truncated AI replies undiagnosable in production.
+                                log.warn("Anthropic stream: dropped unparseable SSE chunk", e);
+                            }
                         });
                         emitter.complete();
                     } catch (Exception e) {

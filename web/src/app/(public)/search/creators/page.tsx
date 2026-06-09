@@ -1,9 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState, useEffect, useCallback } from 'react';
-import { api } from '@/lib/api';
-import type { CreatorSearchResult, PageResponse } from '@/types';
+import { Suspense, useState, useCallback } from 'react';
+import type { CreatorSearchResult } from '@/types';
+import { useInfinitePagination } from '@/hooks/useInfinitePagination';
 import CreatorSearchCard from '@/components/search/CreatorSearchCard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
 import SearchFilterBar, { type SortOption } from '@/components/search/SearchFilterBar';
@@ -20,12 +20,6 @@ const CREATOR_SORTS: SortOption[] = [
 function SearchCreatorsPageContent() {
   const searchParams = useSearchParams();
   const q = searchParams.get('q') || '';
-  const [results, setResults] = useState<CreatorSearchResult[]>([]);
-  const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [minRating, setMinRating] = useState<number | null>(null);
   const [sort, setSort] = useState('RELEVANCE');
   const [verified, setVerified] = useState(false);
@@ -39,27 +33,8 @@ function SearchCreatorsPageContent() {
     return `/api/search/creators?${params.toString()}`;
   }, [q, minRating, verified, sort]);
 
-  const fetchPage = useCallback(async (pageNum: number, append: boolean) => {
-    append ? setLoadingMore(true) : setLoading(true);
-    setError(null);
-    try {
-      const data = await api.get<PageResponse<CreatorSearchResult>>(buildUrl(pageNum));
-      setResults(prev => append ? [...prev, ...data.content] : data.content);
-      setTotal(data.totalElements);
-      setPage(pageNum);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [buildUrl]);
-
-  useEffect(() => {
-    setResults([]);
-    setPage(0);
-    fetchPage(0, false);
-  }, [fetchPage]);
+  const { results, total, loading, loadingMore, error, loadMore } =
+    useInfinitePagination<CreatorSearchResult>(buildUrl);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -101,7 +76,7 @@ function SearchCreatorsPageContent() {
 
       {!loading && results.length < total && (
         <button
-          onClick={() => fetchPage(page + 1, true)}
+          onClick={loadMore}
           disabled={loadingMore}
           className="mw-button-secondary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
         >

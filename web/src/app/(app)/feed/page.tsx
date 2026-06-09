@@ -15,6 +15,7 @@ export default function FeedPage() {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [storyStrips, setStoryStrips] = useState<CreatorStoryStrip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (tokenLoading) return;
@@ -23,9 +24,20 @@ export default function FeedPage() {
       return;
     }
 
+    // Stories failing is cosmetic (strip just hides), but a failed feed fetch must surface
+    // as an error — swallowing it rendered "Your feed is empty" on network failures, which
+    // reads as "nobody you follow posted" instead of "retry".
+    setError(null);
     Promise.all([
       api.get<CreatorStoryStrip[]>('/api/stories/feed', token).catch((err) => { console.error('[feed] stories:', err); return [] as CreatorStoryStrip[]; }),
-      api.get<PageResponse<FeedItem>>('/api/feed', token).catch((err) => { console.error('[feed] items:', err); return null; }),
+      api.get<PageResponse<FeedItem>>('/api/feed', token).then(
+        (page) => page,
+        (err) => {
+          console.error('[feed] items:', err);
+          setError('Failed to load your feed. Check your connection and try again.');
+          return null;
+        },
+      ),
     ])
       .then(([strips, page]) => {
         setStoryStrips(strips);
@@ -48,7 +60,12 @@ export default function FeedPage() {
 
       {/* Feed */}
       <div className="space-y-4 mt-4">
-        {feedItems.length === 0 ? (
+        {error ? (
+          <div className="mw-card py-12 text-center">
+            <p className="mb-2 font-display text-lg font-black uppercase tracking-[0.08em] text-ig-text-primary">Something went wrong</p>
+            <p className="text-sm text-ig-text-secondary">{error}</p>
+          </div>
+        ) : feedItems.length === 0 ? (
           <div className="mw-card py-12 text-center">
             <p className="mb-2 font-display text-lg font-black uppercase tracking-[0.08em] text-ig-text-primary">Your feed is empty</p>
             <p className="text-sm text-ig-text-tertiary">Follow some creators to see their guides and stories here.</p>

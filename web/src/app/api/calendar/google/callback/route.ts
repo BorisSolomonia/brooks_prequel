@@ -12,7 +12,14 @@ export async function GET(request: NextRequest) {
   const state = request.nextUrl.searchParams.get('state');
   const code = request.nextUrl.searchParams.get('code');
   const error = request.nextUrl.searchParams.get('error');
-  const destination = new URL(returnTo, process.env.AUTH0_BASE_URL ?? request.url);
+  const baseUrl = process.env.AUTH0_BASE_URL ?? request.url;
+  // Open-redirect guard: the cookie value is client-controlled, and `new URL()` happily
+  // resolves absolute ("https://evil.com") and protocol-relative ("//evil.com") values
+  // against any base. Anything that escapes our own origin falls back to /trips.
+  let destination = new URL(returnTo, baseUrl);
+  if (destination.origin !== new URL(baseUrl).origin) {
+    destination = new URL('/trips', baseUrl);
+  }
 
   const redirect = () => {
     const response = NextResponse.redirect(destination);

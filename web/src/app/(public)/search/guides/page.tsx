@@ -1,9 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState, useEffect, useCallback } from 'react';
-import { api } from '@/lib/api';
-import type { GuideSearchResult, PageResponse } from '@/types';
+import { Suspense, useState, useCallback } from 'react';
+import type { GuideSearchResult } from '@/types';
+import { useInfinitePagination } from '@/hooks/useInfinitePagination';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
 import { type SortOption } from '@/components/search/SearchFilterBar';
@@ -46,12 +46,6 @@ const STAGES = [
 function SearchGuidesPageContent() {
   const searchParams = useSearchParams();
   const q = searchParams.get('q') || '';
-  const [results, setResults] = useState<GuideSearchResult[]>([]);
-  const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
   const [selectedStage, setSelectedStage] = useState('');
   const [minRating, setMinRating] = useState<number | null>(null);
@@ -74,27 +68,8 @@ function SearchGuidesPageContent() {
     return `/api/search/guides?${params.toString()}`;
   }, [q, selectedPersonas, selectedStage, minRating, sort, priceMin, priceMax]);
 
-  const fetchPage = useCallback(async (pageNum: number, append: boolean) => {
-    append ? setLoadingMore(true) : setLoading(true);
-    setError(null);
-    try {
-      const data = await api.get<PageResponse<GuideSearchResult>>(buildUrl(pageNum));
-      setResults(prev => append ? [...prev, ...data.content] : data.content);
-      setTotal(data.totalElements);
-      setPage(pageNum);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [buildUrl]);
-
-  useEffect(() => {
-    setResults([]);
-    setPage(0);
-    fetchPage(0, false);
-  }, [fetchPage]);
+  const { results, total, loading, loadingMore, error, loadMore } =
+    useInfinitePagination<GuideSearchResult>(buildUrl);
 
   // Badge count for the Filters trigger — stage, each selected persona, rating,
   // non-default sort, and each price bound. Categories now live inside the sheet (BOR-28).
@@ -152,7 +127,7 @@ function SearchGuidesPageContent() {
 
       {!loading && results.length < total && (
         <button
-          onClick={() => fetchPage(page + 1, true)}
+          onClick={loadMore}
           disabled={loadingMore}
           className="mw-button-secondary mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
         >

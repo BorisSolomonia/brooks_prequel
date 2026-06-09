@@ -19,4 +19,15 @@ public interface SavedGuideRepository extends JpaRepository<SavedGuide, UUID> {
     List<SavedGuide> findByUserIdOrderByCreatedAtDesc(UUID userId);
 
     long countByGuideIdAndCreatedAtAfter(UUID guideId, Instant createdAt);
+
+    /** Batch variant for list views — one grouped query instead of one query per guide. */
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT s.guideId AS guideId, COUNT(s) AS total
+        FROM SavedGuide s
+        WHERE s.guideId IN :guideIds
+          AND s.createdAt > :createdAt
+        GROUP BY s.guideId
+        """)
+    List<GuidePurchaseRepository.GuideCountRow> countByGuideIdsAndCreatedAtAfter(
+            java.util.Collection<UUID> guideIds, Instant createdAt);
 }

@@ -111,7 +111,7 @@ public class WebhookController {
             }
         } catch (Exception e) {
             // Return 5xx so BOG retries per their contract; service layer is idempotent.
-            log.error("Failed to process BOG iPay callback for order_id={}", orderId, e);
+            log.error("Failed to process BOG iPay callback for order_id={} status={}", orderId, statusKey, e);
             recordOutcome("error", statusKey);
             return ResponseEntity.status(500).body("processing_failed");
         }

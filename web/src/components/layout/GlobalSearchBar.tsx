@@ -217,7 +217,7 @@ export default function GlobalSearchBar() {
             <button
               type="button"
               onClick={clearSearch}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-ig-text-tertiary transition hover:bg-ig-hover hover:text-ig-text-primary lg:h-7 lg:w-7"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-ig-text-tertiary transition hover:bg-ig-hover hover:text-ig-text-primary lg:h-7 lg:w-7"
               aria-label="Clear search"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

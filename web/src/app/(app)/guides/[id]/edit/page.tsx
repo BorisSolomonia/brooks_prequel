@@ -49,5 +49,8 @@ export default function EditGuidePage() {
     );
   }
 
-  return <GuideEditor initialGuide={guide} token={token!} aiKeys={aiKeys} />;
+  // key forces a remount when navigating between two guides' edit pages: GuideEditor
+  // seeds its form state from initialGuide in useState initializers, so without the key
+  // guide B's editor would keep showing (and save!) guide A's stale form data.
+  return <GuideEditor key={guide.id} initialGuide={guide} token={token!} aiKeys={aiKeys} />;
 }
