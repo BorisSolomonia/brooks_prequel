@@ -3,6 +3,7 @@ import { Archivo, Bricolage_Grotesque } from 'next/font/google';
 import AppShell from '@/components/layout/AppShell';
 import RootErrorBoundary from '@/components/RootErrorBoundary';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import I18nProvider from '@/components/i18n/I18nProvider';
 import './globals.css';
 
 const archivo = Archivo({
@@ -85,7 +86,9 @@ export default function RootLayout({
       <body className={`${archivo.variable} ${bricolage.variable} bg-ig-primary font-sans text-ig-text-primary`}>
         <RootErrorBoundary>
           <ThemeProvider>
-            <AppShell>{children}</AppShell>
+            <I18nProvider>
+              <AppShell>{children}</AppShell>
+            </I18nProvider>
           </ThemeProvider>
         </RootErrorBoundary>
       </body>

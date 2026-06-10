@@ -81,6 +81,42 @@ let _memoriesCacheExpiry = 0;
 const MEMORIES_CACHE_TTL = 60 * 1000;
 const LAYER_STORAGE_KEY = 'brooks.maps.layers';
 
+// Camera (center + zoom) survives within-tab navigation away from /maps and back.
+// Layers and filters already persist (localStorage + URL) but the camera reset to the
+// env fallback on every visit — the user's pan/zoom work was lost (BOR-39).
+// sessionStorage (not localStorage): a stale viewport from last week is worse than
+// the fallback; per-tab session scope matches the "continue where I was" intent.
+const CAMERA_STORAGE_KEY = 'brooks.maps.camera';
+
+type SavedCamera = { lat: number; lng: number; zoom: number };
+
+function readSavedCamera(): SavedCamera | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(CAMERA_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SavedCamera>;
+    if (
+      typeof parsed.lat !== 'number' || !Number.isFinite(parsed.lat) || Math.abs(parsed.lat) > 90 ||
+      typeof parsed.lng !== 'number' || !Number.isFinite(parsed.lng) || Math.abs(parsed.lng) > 180 ||
+      typeof parsed.zoom !== 'number' || !Number.isFinite(parsed.zoom)
+    ) {
+      return null;
+    }
+    return { lat: parsed.lat, lng: parsed.lng, zoom: parsed.zoom };
+  } catch {
+    return null;
+  }
+}
+
+function saveCamera(camera: SavedCamera): void {
+  try {
+    window.sessionStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify(camera));
+  } catch {
+    /* quota/incognito — losing camera persistence is acceptable */
+  }
+}
+
 // Upper bound on simultaneously-rendered creator HTML markers. Each marker is a
 // DOM node plus a decoded avatar bitmap, so this directly caps the map's marker
 // memory footprint on the Android WebView. Off-screen / lower-ranked creators
@@ -744,8 +780,13 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
     };
   }, [memory.id, memory.hasImage, memory.hasAudio, locked, token]);
 
+  // max-h is CONTAINER-relative (100% = the map container), not viewport-relative:
+  // the old calc(100dvh - 9rem) allowed the card to be taller than the space above its
+  // bottom-12 anchor, and the map container's overflow-hidden clipped the card's top
+  // edge on small screens (BOR-39 viewport audit). 100% - 4rem = full container minus
+  // the 3rem bottom anchor minus 1rem headroom.
   return (
-    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
+    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100%_-_4rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
@@ -863,8 +904,13 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
 }
 
 function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
+  // max-h is CONTAINER-relative (100% = the map container), not viewport-relative:
+  // the old calc(100dvh - 9rem) allowed the card to be taller than the space above its
+  // bottom-12 anchor, and the map container's overflow-hidden clipped the card's top
+  // edge on small screens (BOR-39 viewport audit). 100% - 4rem = full container minus
+  // the 3rem bottom anchor minus 1rem headroom.
   return (
-    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
+    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100%_-_4rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-3">
           <div className="h-14 w-14 overflow-hidden rounded-full border border-white/90 bg-ig-secondary shadow-[0_0_0_2px_var(--brand-primary)]">
@@ -939,6 +985,9 @@ export default function MapsExperience({
   const memoryMarkersRef = useRef<LeafletMarker[]>([]);
   const memoryMarkersMapRef = useRef<Map<string, LeafletMarker>>(new Map());
   const userLocationMarkerRef = useRef<LeafletMarker | null>(null);
+  // True when the map initialized from a saved (sessionStorage) camera. Blocks the
+  // one-shot auto-centre-on-user so a returning user keeps their last viewport.
+  const cameraRestoredRef = useRef(false);
   // Tracks the style URL currently applied to the map so we don't re-call
   // setStyle on the first mapReady event (the map already initialized with
   // this style; calling setStyle again would needlessly reload tiles).
@@ -1880,10 +1929,14 @@ export default function MapsExperience({
         return;
       }
 
-      const [lng, lat] = fallbackCenter;
+      // Camera precedence: saved session camera (user's last viewport) beats the
+      // env fallback. Deep links (?memory=) still win — their setView runs later.
+      const savedCamera = readSavedCamera();
+      cameraRestoredRef.current = savedCamera !== null;
+      const [lng, lat] = savedCamera ? [savedCamera.lng, savedCamera.lat] : fallbackCenter;
       const map = L.map(mapContainerRef.current, {
         center: [lat, lng],
-        zoom: fallbackZoom ?? 9,
+        zoom: savedCamera?.zoom ?? fallbackZoom ?? 9,
         zoomControl: true,
         attributionControl: true,
         // Animated flyTo loads tiles along the whole path; keep zoom snappy.
@@ -1925,6 +1978,10 @@ export default function MapsExperience({
       const syncBounds = () => {
         const b = map.getBounds();
         if (b) setCurrentBounds(getBoundsState(b));
+        // Persist the camera on every settled move so leaving /maps and coming
+        // back restores exactly this viewport.
+        const c = map.getCenter();
+        saveCamera({ lat: c.lat, lng: c.lng, zoom: map.getZoom() });
       };
       map.on('moveend', syncBounds);
       map.whenReady(() => {
@@ -2291,6 +2348,12 @@ export default function MapsExperience({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !userCoordinates) {
+      return;
+    }
+    // A restored session camera represents the user's own last viewport — don't
+    // let the geolocation auto-centre stomp it. First visits (no saved camera)
+    // keep the original centre-on-user behavior.
+    if (cameraRestoredRef.current) {
       return;
     }
 
