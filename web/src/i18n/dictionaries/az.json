@@ -1,0 +1,127 @@
+{
+  "common": {
+    "actions": {
+      "save": "Yadda saxla",
+      "cancel": "Ləğv et",
+      "delete": "Sil",
+      "edit": "Redaktə et",
+      "close": "Bağla",
+      "back": "Geri",
+      "next": "Növbəti",
+      "search": "Axtar",
+      "share": "Paylaş",
+      "retry": "Yenidən cəhd et",
+      "seeAll": "Hamısına bax",
+      "learnMore": "Ətraflı öyrən",
+      "apply": "Tətbiq et",
+      "clear": "Təmizlə"
+    },
+    "states": {
+      "loading": "Yüklənir…",
+      "empty": "Hələ burada heç nə yoxdur",
+      "error": "Nəsə səhv getdi"
+    }
+  },
+  "nav": {
+    "brand": "Brooks",
+    "links": {
+      "explore": "Kəşf et",
+      "maps": "Xəritələr",
+      "myGuides": "Bələdçilərim",
+      "myMemories": "Xatirələrim",
+      "memories": "Xatirələr",
+      "purchasedGuides": "Alınmış bələdçilər",
+      "guides": "Bələdçilər",
+      "pricing": "Qiymətlər",
+      "contact": "Əlaqə",
+      "profile": "Profil",
+      "settings": "Tənzimləmələr"
+    },
+    "auth": {
+      "signIn": "Daxil ol",
+      "logOut": "Çıxış"
+    },
+    "menu": {
+      "open": "Menyu",
+      "ariaPrimary": "Əsas"
+    },
+    "search": {
+      "placeholder": "Yaradıcıları, bələdçiləri və yerləri axtarın"
+    }
+  },
+  "footer": {
+    "support": "Dəstək",
+    "ariaLegal": "Hüquqi və biznes məlumatları",
+    "links": {
+      "productsAndPrices": "Məhsullar və qiymətlər",
+      "contact": "Əlaqə",
+      "terms": "Şərtlər",
+      "privacy": "Məxfilik",
+      "refunds": "Geri ödəmələr",
+      "delivery": "Çatdırılma"
+    },
+    "help": "Kömək"
+  },
+  "languageSelector": {
+    "trigger": "Dili dəyiş",
+    "title": "Dilinizi seçin",
+    "current": "Cari dil",
+    "ariaActive": "Aktiv dil"
+  },
+  "landing": {
+    "hero": {
+      "line1": "Hər yer",
+      "line2": "nəyisə gizlədə",
+      "line3": "bilər.",
+      "subhead": "İnsanların əksəriyyəti yanından ötüb keçir."
+    },
+    "memory": {
+      "eyebrow": "XATİRƏ QOYUN",
+      "title": "Mənalı bir şey qoyun."
+    },
+    "guides": {
+      "eyebrow": "SEÇİLMİŞ BƏLƏDÇİLƏR",
+      "button": "Bələdçilərə bax"
+    },
+    "search": {
+      "eyebrow": "AXTARIŞINIZI DƏQİQLƏŞDİRİN"
+    }
+  },
+  "auth": {
+    "signInTitle": "Yenidən xoş gəldiniz",
+    "signInSubtitle": "Davam etmək üçün daxil olun",
+    "redirecting": "Girişə yönləndirilir…"
+  },
+  "pricing": {
+    "eyebrow": "Məhsullar və qiymətlər",
+    "catalogTitle": "Brooks bələdçi kataloqu",
+    "serviceProvider": "Xidmət təminatçısı",
+    "deliveryLabel": "Çatdırılma",
+    "deliveryValue": "Ödənişdən sonra rəqəmsal giriş",
+    "support": "Dəstək",
+    "loadingProducts": "Məhsullar yüklənir…",
+    "loadError": "Məhsulları yükləmək alınmadı",
+    "empty": "Hələ dərc edilmiş bələdçi məhsulu yoxdur.",
+    "colProduct": "Məhsul",
+    "colPrice": "Qiymət",
+    "colDelivery": "Çatdırılma",
+    "guideFallback": "Səyahət bələdçisi",
+    "productMeta": "{{location}} - {{days}} günlük bələdçi - {{places}} yer",
+    "digital": "Rəqəmsal",
+    "loadMore": "Daha çox məhsul yüklə",
+    "loadingMore": "Yüklənir…"
+  },
+  "contact": {
+    "title": "Əlaqə"
+  },
+  "search": {
+    "topGuides": "Sizin üçün ən yaxşı bələdçilər",
+    "resultsFor": "«{{query}}» üçün nəticələr",
+    "noResults": "Birbaşa uyğunluq yoxdur",
+    "searchEverything": "«{{query}}» üçün hər şeyi axtar"
+  },
+  "about": {
+    "eyebrow": "Brooks Prequel haqqında",
+    "title": "İnsanların ətrafında qurulmuş səyahət bələdçiləri, siyahıların yox."
+  }
+}

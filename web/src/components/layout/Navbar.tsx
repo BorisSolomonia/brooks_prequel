@@ -4,8 +4,10 @@ import { Suspense, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { useTranslation } from 'react-i18next';
 import GlobalSearchBar from '@/components/layout/GlobalSearchBar';
 import ThemeToggle from '@/components/theme/ThemeToggle';
+import LanguageSelector from '@/components/i18n/LanguageSelector';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { startAuthFlow, startLogoutFlow } from '@/lib/capacitor';
 import { clearAccessTokenCache } from '@/hooks/useAccessToken';
@@ -34,27 +36,28 @@ function SearchBarFallback() {
   );
 }
 
+// BOR-41: labels are i18n keys resolved via t() at render. hrefs/icons unchanged.
 const desktopLinks = [
-  { href: '/search', label: 'Explore' },
-  { href: '/maps', label: 'Maps', auth: true },
-  { href: '/guides', label: 'My Guides', auth: true },
-  { href: '/memories', label: 'My Memories', auth: true },
-  { href: '/trips', label: 'Purchased guides', auth: true },
-  { href: '/pricing', label: 'Pricing' },
-  { href: '/contact', label: 'Contact' },
-  { href: '/profile', label: 'Profile', auth: true },
-  { href: '/settings', label: 'Settings', auth: true },
+  { href: '/search', labelKey: 'nav.links.explore' },
+  { href: '/maps', labelKey: 'nav.links.maps', auth: true },
+  { href: '/guides', labelKey: 'nav.links.myGuides', auth: true },
+  { href: '/memories', labelKey: 'nav.links.myMemories', auth: true },
+  { href: '/trips', labelKey: 'nav.links.purchasedGuides', auth: true },
+  { href: '/pricing', labelKey: 'nav.links.pricing' },
+  { href: '/contact', labelKey: 'nav.links.contact' },
+  { href: '/profile', labelKey: 'nav.links.profile', auth: true },
+  { href: '/settings', labelKey: 'nav.links.settings', auth: true },
 ];
 
 const mobileTabs = [
-  { href: '/search', label: 'Explore', icon: 'M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Zm5.3-2.2L21 21' },
-  { href: '/maps', label: 'Maps', auth: true, icon: 'M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Zm0 0V3m6 18V6' },
-  { href: '/guides', label: 'Guides', auth: true, icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15Z' },
+  { href: '/search', labelKey: 'nav.links.explore', icon: 'M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Zm5.3-2.2L21 21' },
+  { href: '/maps', labelKey: 'nav.links.maps', auth: true, icon: 'M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Zm0 0V3m6 18V6' },
+  { href: '/guides', labelKey: 'nav.links.guides', auth: true, icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15Z' },
   // BOR-30: "Purchased guides" left the bottom tab bar in favour of "Memories"
   // (the core social feature). Purchased guides stays reachable via the desktop
   // nav and the mobile "Menu" dropdown below.
-  { href: '/memories', label: 'Memories', auth: true, icon: 'M6 4h12v16l-6-4-6 4V4Z' },
-  { href: '/profile', label: 'Profile', auth: true, icon: 'M20 21a8 8 0 1 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z' },
+  { href: '/memories', labelKey: 'nav.links.memories', auth: true, icon: 'M6 4h12v16l-6-4-6 4V4Z' },
+  { href: '/profile', labelKey: 'nav.links.profile', auth: true, icon: 'M20 21a8 8 0 1 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z' },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -71,6 +74,7 @@ function MobileTabIcon({ path }: { path: string }) {
 
 export default function Navbar() {
   const { user, isLoading } = useUser();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
   const visibleDesktopLinks = desktopLinks.filter((link) => !link.auth || user);
@@ -116,7 +120,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 border-b-2 border-ig-border bg-ig-elevated/95 pt-safe-top backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-2 px-3 md:h-[60px] md:gap-4 md:px-4">
         <Link href="/" className="font-display shrink-0 text-base font-black uppercase tracking-[0.08em] text-brand-500 md:text-xl">
-          Brooks
+          {t('nav.brand')}
         </Link>
         <div data-tour="search-bar" className="min-w-0 flex-1">
           <Suspense fallback={<SearchBarFallback />}>
@@ -140,10 +144,11 @@ export default function Navbar() {
                       : 'text-ig-text-secondary hover:text-ig-text-primary'
                   }`}
                 >
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               ))}
               <NotificationBell />
+              <LanguageSelector />
               <ThemeToggle />
               {user ? (
                 <a
@@ -151,7 +156,7 @@ export default function Navbar() {
                   onClick={handleLogoutClick}
                   className="mw-button-secondary rounded-md px-4 py-2 text-sm transition-colors hover:bg-ig-hover"
                 >
-                  Log Out
+                  {t('nav.auth.logOut')}
                 </a>
               ) : (
                 <Link
@@ -159,7 +164,7 @@ export default function Navbar() {
                   onClick={handleSignInClick}
                   className="mw-button-primary rounded-md px-4 py-2 text-sm transition-colors"
                 >
-                  Sign In
+                  {t('nav.auth.signIn')}
                 </Link>
               )}
             </>
@@ -168,24 +173,25 @@ export default function Navbar() {
 
         <div className="flex shrink-0 items-center gap-2 md:hidden">
           <NotificationBell />
+          <LanguageSelector />
           <ThemeToggle />
           {isLoading ? (
             <div className="h-12 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />
           ) : user ? (
             <details ref={mobileMenuRef} className="group relative">
               <summary className="flex h-12 min-w-12 cursor-pointer list-none items-center justify-center rounded-full border-2 border-ig-border bg-ig-elevated px-3 text-sm font-semibold text-ig-text-primary [&::-webkit-details-marker]:hidden">
-                Menu
+                {t('nav.menu.open')}
               </summary>
               <div className="mw-panel absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-2xl">
-                <Link href="/search" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Explore</Link>
-                <Link href="/maps" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Maps</Link>
-                <Link href="/guides" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">My Guides</Link>
-                <Link href="/trips" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Purchased guides</Link>
-                <Link href="/profile" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Profile</Link>
-                <Link href="/settings" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Settings</Link>
-                <Link href="/pricing" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Pricing</Link>
-                <Link href="/contact" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Contact</Link>
-                <a href="/api/auth/logout" onClick={handleLogoutClick} className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">Log Out</a>
+                <Link href="/search" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.explore')}</Link>
+                <Link href="/maps" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.maps')}</Link>
+                <Link href="/guides" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.myGuides')}</Link>
+                <Link href="/trips" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.purchasedGuides')}</Link>
+                <Link href="/profile" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.profile')}</Link>
+                <Link href="/settings" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.settings')}</Link>
+                <Link href="/pricing" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.pricing')}</Link>
+                <Link href="/contact" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.contact')}</Link>
+                <a href="/api/auth/logout" onClick={handleLogoutClick} className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.auth.logOut')}</a>
               </div>
             </details>
           ) : (
@@ -194,7 +200,7 @@ export default function Navbar() {
               onClick={handleSignInClick}
               className="mw-button-primary inline-flex h-12 items-center rounded-full px-4 text-sm transition-colors"
             >
-              Sign In
+              {t('nav.auth.signIn')}
             </Link>
           )}
         </div>
@@ -211,7 +217,7 @@ export default function Navbar() {
         (BOR-25). Suppress that degenerate one-button bar; the full logged-in
         5-tab nav and the top search are unaffected. */}
     {visibleMobileTabs.length > 1 && (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t-2 border-ig-border bg-ig-elevated/95 backdrop-blur-xl backdrop-saturate-50 md:hidden" aria-label="Primary">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t-2 border-ig-border bg-ig-elevated/95 backdrop-blur-xl backdrop-saturate-50 md:hidden" aria-label={t('nav.menu.ariaPrimary')}>
       <div className="mx-auto flex max-w-lg justify-around px-1 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
         {visibleMobileTabs.map((tab) => {
           const active = isActive(pathname, tab.href);
@@ -225,7 +231,7 @@ export default function Navbar() {
               }`}
             >
               <MobileTabIcon path={tab.icon} />
-              <span className="leading-none">{tab.label}</span>
+              <span className="leading-none">{t(tab.labelKey)}</span>
             </Link>
           );
         })}

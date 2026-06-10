@@ -1,0 +1,127 @@
+{
+  "common": {
+    "actions": {
+      "save": "Зберегти",
+      "cancel": "Скасувати",
+      "delete": "Видалити",
+      "edit": "Редагувати",
+      "close": "Закрити",
+      "back": "Назад",
+      "next": "Далі",
+      "search": "Пошук",
+      "share": "Поділитися",
+      "retry": "Спробувати ще раз",
+      "seeAll": "Переглянути все",
+      "learnMore": "Дізнатися більше",
+      "apply": "Застосувати",
+      "clear": "Очистити"
+    },
+    "states": {
+      "loading": "Завантаження…",
+      "empty": "Тут поки що нічого немає",
+      "error": "Щось пішло не так"
+    }
+  },
+  "nav": {
+    "brand": "Brooks",
+    "links": {
+      "explore": "Огляд",
+      "maps": "Карти",
+      "myGuides": "Мої гіди",
+      "myMemories": "Мої спогади",
+      "memories": "Спогади",
+      "purchasedGuides": "Придбані гіди",
+      "guides": "Гіди",
+      "pricing": "Ціни",
+      "contact": "Контакти",
+      "profile": "Профіль",
+      "settings": "Налаштування"
+    },
+    "auth": {
+      "signIn": "Увійти",
+      "logOut": "Вийти"
+    },
+    "menu": {
+      "open": "Меню",
+      "ariaPrimary": "Головне"
+    },
+    "search": {
+      "placeholder": "Шукайте авторів, гіди та місця"
+    }
+  },
+  "footer": {
+    "support": "Підтримка",
+    "ariaLegal": "Юридична та ділова інформація",
+    "links": {
+      "productsAndPrices": "Товари та ціни",
+      "contact": "Контакти",
+      "terms": "Умови",
+      "privacy": "Конфіденційність",
+      "refunds": "Повернення коштів",
+      "delivery": "Доставка"
+    },
+    "help": "Довідка"
+  },
+  "languageSelector": {
+    "trigger": "Змінити мову",
+    "title": "Виберіть свою мову",
+    "current": "Поточна мова",
+    "ariaActive": "Активна мова"
+  },
+  "landing": {
+    "hero": {
+      "line1": "Кожне місце",
+      "line2": "може щось",
+      "line3": "приховувати.",
+      "subhead": "Більшість людей просто проходить повз."
+    },
+    "memory": {
+      "eyebrow": "ЗАЛИШТЕ СПОГАД",
+      "title": "Залиште щось значуще."
+    },
+    "guides": {
+      "eyebrow": "ДІБРАНІ ГІДИ",
+      "button": "Переглянути гіди"
+    },
+    "search": {
+      "eyebrow": "УТОЧНІТЬ ПОШУК"
+    }
+  },
+  "auth": {
+    "signInTitle": "З поверненням",
+    "signInSubtitle": "Увійдіть, щоб продовжити",
+    "redirecting": "Перенаправлення на вхід…"
+  },
+  "pricing": {
+    "eyebrow": "Товари та ціни",
+    "catalogTitle": "Каталог гідів Brooks",
+    "serviceProvider": "Постачальник послуг",
+    "deliveryLabel": "Доставка",
+    "deliveryValue": "Цифровий доступ після оплати",
+    "support": "Підтримка",
+    "loadingProducts": "Завантаження товарів…",
+    "loadError": "Не вдалося завантажити товари",
+    "empty": "Опублікованих гідів поки немає.",
+    "colProduct": "Товар",
+    "colPrice": "Ціна",
+    "colDelivery": "Доставка",
+    "guideFallback": "Путівник",
+    "productMeta": "{{location}} - гід на {{days}} дн. - {{places}} місць",
+    "digital": "Цифровий",
+    "loadMore": "Завантажити більше товарів",
+    "loadingMore": "Завантаження…"
+  },
+  "contact": {
+    "title": "Контакти"
+  },
+  "search": {
+    "topGuides": "Найкращі гіди для вас",
+    "resultsFor": "Результати за запитом «{{query}}»",
+    "noResults": "Прямих збігів немає",
+    "searchEverything": "Шукати все за запитом «{{query}}»"
+  },
+  "about": {
+    "eyebrow": "Про Brooks Prequel",
+    "title": "Путівники, побудовані навколо людей, а не списків."
+  }
+}

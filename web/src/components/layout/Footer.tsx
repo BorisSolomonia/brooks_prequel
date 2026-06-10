@@ -1,20 +1,23 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { compliance } from '@/lib/compliance';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 
+// BOR-41: labels are i18n keys resolved at render.
 const links = [
-  { href: '/pricing', label: 'Products & prices' },
-  { href: '/contact', label: 'Contact' },
-  { href: '/terms', label: 'Terms' },
-  { href: '/privacy', label: 'Privacy' },
-  { href: '/refund', label: 'Refunds' },
-  { href: '/delivery', label: 'Delivery' },
+  { href: '/pricing', labelKey: 'footer.links.productsAndPrices' },
+  { href: '/contact', labelKey: 'footer.links.contact' },
+  { href: '/terms', labelKey: 'footer.links.terms' },
+  { href: '/privacy', labelKey: 'footer.links.privacy' },
+  { href: '/refund', labelKey: 'footer.links.refunds' },
+  { href: '/delivery', labelKey: 'footer.links.delivery' },
 ];
 
 export default function Footer() {
   const { start } = useOnboarding();
+  const { t } = useTranslation();
   // Hidden on mobile (`hidden md:block`): the legal/business links here are
   // relocated to /settings on small screens — May 2026 IA cleanup keeps every
   // mobile page edge-to-edge. The desktop fat footer is preserved for SEO
@@ -28,13 +31,13 @@ export default function Footer() {
             {compliance.legalEntity} - {compliance.legalIdentifier}
           </p>
           <p className="mt-1 text-sm text-ig-text-tertiary">
-            Support: {compliance.email} - {compliance.phone}
+            {t('footer.support')}: {compliance.email} - {compliance.phone}
           </p>
         </div>
-        <nav className="flex flex-wrap gap-x-4 gap-y-2 font-display text-xs font-black uppercase tracking-[0.08em]" aria-label="Legal and business information">
+        <nav className="flex flex-wrap gap-x-4 gap-y-2 font-display text-xs font-black uppercase tracking-[0.08em]" aria-label={t('footer.ariaLegal')}>
           {links.map((link) => (
             <Link key={link.href} href={link.href} className="text-ig-text-secondary transition-colors hover:text-brand-500">
-              {link.label}
+              {t(link.labelKey)}
             </Link>
           ))}
           <button
@@ -43,7 +46,7 @@ export default function Footer() {
             data-tour="help-link"
             className="text-ig-text-secondary transition-colors hover:text-brand-500"
           >
-            Help
+            {t('footer.help')}
           </button>
         </nav>
       </div>
