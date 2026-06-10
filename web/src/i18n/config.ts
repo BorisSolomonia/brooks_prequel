@@ -18,7 +18,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { DEFAULT_LOCALE, SUPPORTED_CODES } from './locales';
+import { DEFAULT_LOCALE, SUPPORTED_CODES, LOCALE_STORAGE_KEY } from './locales';
 
 import en from './dictionaries/en.json';
 import fr from './dictionaries/fr.json';
@@ -57,6 +57,18 @@ if (!i18n.isInitialized) {
     returnEmptyString: false, // empty value → fall back to en, not ''
     react: { useSuspense: false },
   });
+}
+
+// Switch the app language and persist it as the manual override (wins over
+// device detection on return visits). Shared by the navbar Globe selector AND
+// the Settings language section so there is one code path.
+export function setAppLanguage(code: string): void {
+  void i18n.changeLanguage(code);
+  try {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, code);
+  } catch {
+    // Persisting is best-effort; the live switch still applies this session.
+  }
 }
 
 export default i18n;

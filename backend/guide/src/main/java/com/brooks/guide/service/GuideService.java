@@ -411,6 +411,8 @@ public class GuideService {
         }
 
         User creator = userService.findById(guide.getCreatorId());
+        // Creator profile for the public byline (avatar + display name → /creators/{username}).
+        var creatorProfile = profileRepository.findByUserId(guide.getCreatorId()).orElse(null);
 
         int purchaseCount = (int) purchaseRepository.countByGuideIdAndStatus(guideId, GuidePurchaseStatus.COMPLETED);
         double avgRating = reviewRepository.averageRatingByGuideId(guideId);
@@ -489,6 +491,9 @@ public class GuideService {
                 .displayLocation(displayLocation(guide))
                 .spotCount(guide.getPlaceCount())
                 .creatorUsername(creator.getUsername())
+                .creatorDisplayName(creatorProfile != null && creatorProfile.getDisplayName() != null
+                        ? creatorProfile.getDisplayName() : creator.getUsername())
+                .creatorAvatarUrl(creatorProfile != null ? creatorProfile.getAvatarUrl() : null)
                 .purchaseCount(purchaseCount)
                 .averageRating(avgRating)
                 .reviewCount(reviewCount)

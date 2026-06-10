@@ -59,6 +59,8 @@ export default function GuideSearchCard({ guide, initialSaved = false }: GuideSe
       savedByViewer={saved}
       onSaveClick={saving ? undefined : handleSaveClick}
       saveLabel={saving ? 'Saving guide' : saved ? 'Saved guide' : 'Save guide'}
+      creatorName={guide.creatorDisplayName || guide.creatorUsername}
+      creatorAvatarUrl={guide.creatorAvatarUrl}
     />
   );
 }

@@ -403,6 +403,8 @@ export interface GuidePreview {
   displayLocation?: string | null;
   spotCount?: number;
   creatorUsername?: string | null;
+  creatorDisplayName?: string | null;
+  creatorAvatarUrl?: string | null;
   purchaseCount?: number;
   averageRating?: number;
   reviewCount?: number;
@@ -719,8 +721,10 @@ export interface GuideSearchResult {
   reviewCount?: number;
   weeklyPopularityScore?: number;
   popularThisWeek?: boolean;
+  creatorId?: string | null;
   creatorUsername: string;
   creatorDisplayName: string | null;
+  creatorAvatarUrl?: string | null;
   purchaseCount?: number;
   bestSeasonStartMonth?: number | null;
   bestSeasonEndMonth?: number | null;

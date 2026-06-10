@@ -180,7 +180,9 @@ public class SearchRepository {
           + "COALESCE(AVG(gr.rating), 0) AS average_rating, "
           + "COUNT(DISTINCT gr.id) AS review_count, "
           + WEEKLY_POPULARITY + "::int AS weekly_popularity_score, "
-          + "u.username AS creator_username, p.display_name AS creator_display_name "
+          + "g.creator_id AS creator_id, "
+          + "u.username AS creator_username, p.display_name AS creator_display_name, "
+          + "p.avatar_url AS creator_avatar_url "
           + "FROM guides g "
           + "JOIN users u ON u.id = g.creator_id "
           + "LEFT JOIN user_profiles p ON p.user_id = g.creator_id "
@@ -188,7 +190,7 @@ public class SearchRepository {
           + "LEFT JOIN guide_purchases gp ON gp.guide_id = g.id "
           + "LEFT JOIN saved_guides sg ON sg.guide_id = g.id");
         appendGuideWhere(sql, params, tsQuery, hasQuery, stage, personas, minPriceCents, maxPriceCents);
-        sql.append(" GROUP BY g.id, u.username, p.display_name");
+        sql.append(" GROUP BY g.id, u.username, p.display_name, p.avatar_url");
         if (minRating != null) {
             sql.append(" HAVING COALESCE(AVG(gr.rating), 0) >= ?");
             params.add(minRating);
@@ -215,8 +217,10 @@ public class SearchRepository {
                 .reviewCount(rs.getInt("review_count"))
                 .weeklyPopularityScore(rs.getInt("weekly_popularity_score"))
                 .popularThisWeek(rs.getInt("weekly_popularity_score") >= 5)
+                .creatorId(UUID.fromString(rs.getString("creator_id")))
                 .creatorUsername(rs.getString("creator_username"))
                 .creatorDisplayName(rs.getString("creator_display_name"))
+                .creatorAvatarUrl(rs.getString("creator_avatar_url"))
                 .build(),
             params.toArray()
         );
@@ -337,8 +341,10 @@ public class SearchRepository {
                            WHERE sg.created_at >= NOW() - INTERVAL '7 days'
                        )
                    )::int AS weekly_popularity_score,
+                   g.creator_id AS creator_id,
                    u.username AS creator_username,
-                   p.display_name AS creator_display_name
+                   p.display_name AS creator_display_name,
+                   p.avatar_url AS creator_avatar_url
             FROM guides g
             JOIN users u ON u.id = g.creator_id
             LEFT JOIN user_profiles p ON p.user_id = g.creator_id
@@ -346,7 +352,7 @@ public class SearchRepository {
             LEFT JOIN guide_purchases gp ON gp.guide_id = g.id
             LEFT JOIN saved_guides sg ON sg.guide_id = g.id
             WHERE g.status = 'PUBLISHED'
-            GROUP BY g.id, u.username, p.display_name
+            GROUP BY g.id, u.username, p.display_name, p.avatar_url
             ORDER BY g.created_at DESC
             LIMIT ? OFFSET ?
             """,
@@ -368,8 +374,10 @@ public class SearchRepository {
                 .reviewCount(rs.getInt("review_count"))
                 .weeklyPopularityScore(rs.getInt("weekly_popularity_score"))
                 .popularThisWeek(rs.getInt("weekly_popularity_score") >= 5)
+                .creatorId(UUID.fromString(rs.getString("creator_id")))
                 .creatorUsername(rs.getString("creator_username"))
                 .creatorDisplayName(rs.getString("creator_display_name"))
+                .creatorAvatarUrl(rs.getString("creator_avatar_url"))
                 .build(),
             limit, offset
         );

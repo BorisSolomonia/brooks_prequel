@@ -70,6 +70,35 @@ export default async function PublicGuidePreviewPage({ params }: { params: { id:
                 </span>
               )}
             </div>
+
+            {preview.creatorUsername && (
+              <Link
+                href={`/creators/${preview.creatorUsername}`}
+                className="group mt-3 inline-flex items-center gap-2"
+              >
+                <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-ig-border bg-gradient-to-br from-brand-500 to-accent-500">
+                  {preview.creatorAvatarUrl ? (
+                    <Image
+                      src={preview.creatorAvatarUrl}
+                      alt={preview.creatorDisplayName || preview.creatorUsername}
+                      width={28}
+                      height={28}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs font-bold text-white">
+                      {(preview.creatorDisplayName || preview.creatorUsername).charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+                <span className="text-sm text-ig-text-secondary group-hover:text-brand-500">
+                  by{' '}
+                  <span className="font-semibold text-ig-text-primary group-hover:text-brand-500">
+                    {preview.creatorDisplayName || preview.creatorUsername}
+                  </span>
+                </span>
+              </Link>
+            )}
           </div>
 
           <div className="flex flex-col items-start gap-1 text-xs text-ig-text-tertiary sm:items-end">

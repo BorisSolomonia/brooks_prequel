@@ -26,6 +26,8 @@ public class GuidePreviewResponse {
     private String displayLocation;
     private int spotCount;
     private String creatorUsername;
+    private String creatorDisplayName;
+    private String creatorAvatarUrl;
 
     // Social proof
     private int purchaseCount;

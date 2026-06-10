@@ -27,6 +27,8 @@ public class GuideSearchResult {
     private int reviewCount;
     private int weeklyPopularityScore;
     private boolean popularThisWeek;
+    private UUID creatorId;
     private String creatorUsername;
     private String creatorDisplayName;
+    private String creatorAvatarUrl;
 }

@@ -11,7 +11,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { LOCALES, LOCALE_STORAGE_KEY } from '@/i18n/locales';
+import { LOCALES } from '@/i18n/locales';
+import { setAppLanguage } from '@/i18n/config';
 
 function GlobeIcon() {
   return (
@@ -61,12 +62,7 @@ export default function LanguageSelector() {
   }, [open]);
 
   function choose(code: string) {
-    void i18n.changeLanguage(code);
-    try {
-      window.localStorage.setItem(LOCALE_STORAGE_KEY, code);
-    } catch {
-      // Persisting is best-effort; the live switch still applies this session.
-    }
+    setAppLanguage(code);
     setOpen(false);
   }
 

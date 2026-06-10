@@ -25,6 +25,10 @@ interface GuideCardProps {
   showSaveButton?: boolean;
   statusBadge?: string | null;
   className?: string;
+  // Creator byline (visual only — the whole card already links to the guide;
+  // the clickable profile link lives on the guide detail page).
+  creatorName?: string | null;
+  creatorAvatarUrl?: string | null;
 }
 
 
@@ -59,6 +63,8 @@ export default function GuideCard({
   showSaveButton = true,
   statusBadge,
   className = '',
+  creatorName,
+  creatorAvatarUrl,
 }: GuideCardProps) {
   const { formatAmount } = useCurrency();
   const location = displayLocation || region || 'Destination';
@@ -111,6 +117,19 @@ export default function GuideCard({
         <p className="mt-2 text-sm text-ig-text-secondary">
           {location} - {formatDuration(dayCount)} - {spots} {spots === 1 ? 'spot' : 'spots'}
         </p>
+
+        {creatorName && (
+          <div className="mt-2 flex items-center gap-1.5">
+            <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-ig-border bg-gradient-to-br from-brand-500 to-accent-500">
+              {creatorAvatarUrl ? (
+                <Image src={creatorAvatarUrl} alt={creatorName} width={20} height={20} className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-[10px] font-bold text-white">{creatorName.charAt(0).toUpperCase()}</span>
+              )}
+            </span>
+            <span className="truncate text-xs text-ig-text-tertiary">{creatorName}</span>
+          </div>
+        )}
         <p className="mt-1 text-sm text-ig-text-tertiary">
           {spots} {spots === 1 ? 'spot' : 'spots'} included
         </p>

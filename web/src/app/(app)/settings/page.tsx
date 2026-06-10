@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { compliance } from '@/lib/compliance';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
+import SettingsLanguageSection from '@/components/i18n/SettingsLanguageSection';
 
 // Settings landing page. Three-tier IA per the May 2026 mobile-first cleanup:
 //   1. Account — what's mine to manage
@@ -117,6 +118,11 @@ export default function SettingsPage() {
           body="Permanently remove your profile, purchases, and uploaded content."
           destructive
         />
+      </Group>
+
+      {/* — Language group (BOR-41): same selector as the navbar Globe — */}
+      <Group title="Language">
+        <SettingsLanguageSection />
       </Group>
 
       {/* — Support group — */}
