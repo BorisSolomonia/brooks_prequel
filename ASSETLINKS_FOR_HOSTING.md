@@ -1,6 +1,6 @@
 # Digital Asset Links — host before first internal-test upload
 
-This JSON proves to Android that `brooksweb.uk` and the Play-signed `uk.brooksweb.app` are the same publisher. Without it, the Auth0 callback opens the system browser instead of returning to your app, and any future `https://brooksweb.uk/...` deep link is not auto-verified.
+This JSON proves to Android that `brooksweb.uk` and the Play-signed `uk.brooksweb.app` are the same publisher. Without it, the Auth0 callback opens the system browser instead of returning to your app, and any future `https://brooksweb.uk/...` deep link is not auto-verified..
 
 ---
 
