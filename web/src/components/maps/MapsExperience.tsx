@@ -16,6 +16,7 @@ import { useAccessToken } from '@/hooks/useAccessToken';
 import Spinner from '@/components/ui/Spinner';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 import { isNative } from '@/lib/capacitor';
+import { capturePhotoDetailed } from '@/lib/camera';
 import { useProximityNotifier } from '@/hooks/useProximityNotifier';
 import type {
   InfluencerMapPin,
@@ -1042,6 +1043,9 @@ export default function MapsExperience({
   const [selectedFollowerId, setSelectedFollowerId] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<BlobPart[]>([]);
+  // BOR-40: hidden capture-enabled input used as the web / no-native-camera
+  // fallback for the "Take Photo" button.
+  const cameraFallbackInputRef = useRef<HTMLInputElement | null>(null);
 
   // Fetch followers when the composer opens AND share mode is 'follower'.
   // Keeps the network call lazy so users who only ever share via link
@@ -1321,6 +1325,29 @@ export default function MapsExperience({
       setPageError((error instanceof Error ? error.message : 'Photo upload failed') + ' Please try again.');
     } finally {
       setMemoryBusy(false);
+    }
+  };
+
+  // BOR-40: take a photo with the native camera and route it through the SAME
+  // upload pipeline as gallery photos (handlePhotoSelected → api.uploadMedia).
+  // Denial shows a graceful, actionable message; cancel is silent; on web /
+  // no native camera we fall back to a capture-enabled file input.
+  const handleTakePhoto = async () => {
+    const result = await capturePhotoDetailed();
+    switch (result.status) {
+      case 'captured':
+        await handlePhotoSelected(result.file);
+        return;
+      case 'denied':
+        setPageError(
+          'Camera access is needed to take a photo for your memory. Enable Camera for Brooks in your device Settings, then try again.',
+        );
+        return;
+      case 'cancelled':
+        return;
+      case 'unavailable':
+        cameraFallbackInputRef.current?.click();
+        return;
     }
   };
 
@@ -2795,9 +2822,9 @@ export default function MapsExperience({
             <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
               Attach media
             </label>
-            <div className="mt-1 grid grid-cols-3 gap-2">
-              <label className="mw-ripple flex min-h-touch cursor-pointer items-center justify-center rounded-2xl border-2 border-ig-border bg-ig-elevated px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
-                {memoryPhoto ? '✓ Photo' : 'Photo'}
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              <label className="mw-ripple flex min-h-touch cursor-pointer items-center justify-center gap-1 rounded-2xl border-2 border-ig-border bg-ig-elevated px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
+                {memoryPhoto ? '✓ Photo' : '🖼️ Photo'}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -2805,8 +2832,28 @@ export default function MapsExperience({
                   onChange={(event) => void handlePhotoSelected(event.target.files?.[0] ?? null)}
                 />
               </label>
-              <label className="mw-ripple flex min-h-touch cursor-pointer items-center justify-center rounded-2xl border-2 border-ig-border bg-ig-elevated px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
-                {memoryAudio ? '✓ Audio' : 'Audio'}
+              {/* BOR-40: native camera capture, same upload pipeline as gallery. */}
+              <button
+                type="button"
+                disabled={memoryBusy}
+                onClick={() => void handleTakePhoto()}
+                className="mw-ripple flex min-h-touch items-center justify-center gap-1 rounded-2xl border-2 border-ig-border bg-ig-elevated px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary disabled:opacity-60 md:text-sm"
+              >
+                📷 Take Photo
+              </button>
+              <input
+                ref={cameraFallbackInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                className="hidden"
+                onChange={(event) => {
+                  void handlePhotoSelected(event.target.files?.[0] ?? null);
+                  if (cameraFallbackInputRef.current) cameraFallbackInputRef.current.value = '';
+                }}
+              />
+              <label className="mw-ripple flex min-h-touch cursor-pointer items-center justify-center gap-1 rounded-2xl border-2 border-ig-border bg-ig-elevated px-2 py-2 text-xs font-semibold text-ig-text-secondary transition hover:text-ig-text-primary md:text-sm">
+                {memoryAudio ? '✓ Audio' : '🎵 Audio'}
                 <input
                   type="file"
                   accept="audio/mpeg,audio/mp4,audio/webm,audio/ogg,audio/wav"
