@@ -67,7 +67,9 @@
       "Bash(grep -v -E \"\\\\\\\\\\\\$\\\\{|secrets\\\\.|env\\\\.|description|comment|example|trigger\")",
       "Bash(Get-ChildItem -Path 'C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\backend' -Directory)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Boris\\\\Dell\\\\Projects\\\\APPS\\\\Brooks_prequel\\\\web\" -Recurse -Directory)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "mcp__linear-server__save_issue",
+      "mcp__linear-server__save_comment"
     ]
   }
 }
