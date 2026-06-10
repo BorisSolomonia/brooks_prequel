@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { compliance } from '@/lib/compliance';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -9,6 +10,7 @@ import type { GuideSearchResult, PageResponse } from '@/types';
 import Spinner from '@/components/ui/Spinner';
 
 export default function PricingPage() {
+  const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [guides, setGuides] = useState<GuideSearchResult[]>([]);
   const [total, setTotal] = useState(0);
@@ -26,7 +28,7 @@ export default function PricingPage() {
       setTotal(data.totalElements);
       setPage(nextPage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load products');
+      setError(err instanceof Error ? err.message : t('pricing.loadError'));
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -40,45 +42,45 @@ export default function PricingPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="max-w-3xl">
-        <p className="mw-eyebrow">Products and prices</p>
-        <h1 className="mw-section-title mt-2 text-3xl">Brooks guide catalog</h1>
+        <p className="mw-eyebrow">{t('pricing.eyebrow')}</p>
+        <h1 className="mw-section-title mt-2 text-3xl">{t('pricing.catalogTitle')}</h1>
         <p className="mt-3 text-sm leading-6 text-ig-text-secondary">
-          All products sold on Brooks are digital travel guides. Prices are shown in the product currency before checkout, including active sale pricing where available.
+          {t('pricing.intro')}
         </p>
       </div>
 
       <div className="mw-card mt-6 p-5">
         <div className="grid gap-4 text-sm sm:grid-cols-3">
           <div>
-            <p className="text-ig-text-tertiary">Service provider</p>
+            <p className="text-ig-text-tertiary">{t('pricing.serviceProvider')}</p>
             <p className="mt-1 font-semibold text-ig-text-primary">{compliance.legalEntity}</p>
           </div>
           <div>
-            <p className="text-ig-text-tertiary">Delivery</p>
-            <p className="mt-1 font-semibold text-ig-text-primary">Digital access after payment</p>
+            <p className="text-ig-text-tertiary">{t('pricing.deliveryLabel')}</p>
+            <p className="mt-1 font-semibold text-ig-text-primary">{t('pricing.deliveryValue')}</p>
           </div>
           <div>
-            <p className="text-ig-text-tertiary">Support</p>
+            <p className="text-ig-text-tertiary">{t('pricing.support')}</p>
             <p className="mt-1 font-semibold text-ig-text-primary">{compliance.email}</p>
           </div>
         </div>
       </div>
 
-      {loading && <p className="mt-10 text-sm text-ig-text-tertiary">Loading products...</p>}
+      {loading && <p className="mt-10 text-sm text-ig-text-tertiary">{t('pricing.loadingProducts')}</p>}
       {error && <p className="mt-10 text-sm text-ig-error">{error}</p>}
 
       {!loading && guides.length === 0 && !error && (
         <div className="mw-card mt-10 p-5 text-sm text-ig-text-secondary">
-          No published guide products are available yet.
+          {t('pricing.empty')}
         </div>
       )}
 
       {guides.length > 0 && (
         <div className="mw-panel mt-8 overflow-hidden rounded-lg">
           <div className="grid grid-cols-[1fr_auto] gap-3 border-b-2 border-ig-border px-4 py-3 font-display text-xs font-black uppercase tracking-[0.08em] text-ig-text-tertiary sm:grid-cols-[1fr_140px_140px]">
-            <span>Product</span>
-            <span className="text-right">Price</span>
-            <span className="hidden text-right sm:block">Delivery</span>
+            <span>{t('pricing.colProduct')}</span>
+            <span className="text-right">{t('pricing.colPrice')}</span>
+            <span className="hidden text-right sm:block">{t('pricing.colDelivery')}</span>
           </div>
           {guides.map((guide) => (
             <Link
@@ -89,7 +91,11 @@ export default function PricingPage() {
               <span>
                 <span className="block font-display font-black text-ig-text-primary">{guide.title}</span>
                 <span className="mt-1 block text-sm text-ig-text-tertiary">
-                  {guide.displayLocation || guide.primaryCity || guide.region || 'Travel guide'} - {guide.dayCount}-day guide - {guide.placeCount} places
+                  {t('pricing.productMeta', {
+                    location: guide.displayLocation || guide.primaryCity || guide.region || t('pricing.guideFallback'),
+                    days: guide.dayCount,
+                    places: guide.placeCount,
+                  })}
                 </span>
               </span>
               <span className="text-right font-display font-black text-accent-500">
@@ -100,7 +106,7 @@ export default function PricingPage() {
                   </span>
                 )}
               </span>
-              <span className="hidden text-right text-sm text-ig-text-secondary sm:block">Digital</span>
+              <span className="hidden text-right text-sm text-ig-text-secondary sm:block">{t('pricing.digital')}</span>
             </Link>
           ))}
         </div>
@@ -114,7 +120,7 @@ export default function PricingPage() {
           className="mw-button-secondary mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm disabled:opacity-60"
         >
           {loadingMore && <Spinner />}
-          {loadingMore ? 'Loading...' : 'Load more products'}
+          {loadingMore ? t('pricing.loadingMore') : t('pricing.loadMore')}
         </button>
       )}
     </div>

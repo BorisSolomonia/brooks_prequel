@@ -1,0 +1,130 @@
+{
+  "common": {
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "close": "Close",
+      "back": "Back",
+      "next": "Next",
+      "search": "Search",
+      "share": "Share",
+      "retry": "Try again",
+      "seeAll": "See all",
+      "learnMore": "Learn more",
+      "apply": "Apply",
+      "clear": "Clear"
+    },
+    "states": {
+      "loading": "Loading…",
+      "empty": "Nothing here yet",
+      "error": "Something went wrong"
+    }
+  },
+  "nav": {
+    "brand": "Brooks",
+    "links": {
+      "explore": "Explore",
+      "maps": "Maps",
+      "myGuides": "My Guides",
+      "myMemories": "My Memories",
+      "memories": "Memories",
+      "purchasedGuides": "Purchased guides",
+      "guides": "Guides",
+      "pricing": "Pricing",
+      "contact": "Contact",
+      "profile": "Profile",
+      "settings": "Settings"
+    },
+    "auth": {
+      "signIn": "Sign In",
+      "logOut": "Log Out"
+    },
+    "menu": {
+      "open": "Menu",
+      "ariaPrimary": "Primary"
+    },
+    "search": {
+      "placeholder": "Search creators, guides, and places"
+    }
+  },
+  "footer": {
+    "support": "Support",
+    "ariaLegal": "Legal and business information",
+    "links": {
+      "productsAndPrices": "Products & prices",
+      "contact": "Contact",
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "refunds": "Refunds",
+      "delivery": "Delivery"
+    },
+    "help": "Help"
+  },
+  "languageSelector": {
+    "trigger": "Change language",
+    "title": "Choose your language",
+    "current": "Current language",
+    "ariaActive": "Active language"
+  },
+  "landing": {
+    "hero": {
+      "line1": "Every place",
+      "line2": "could be hiding",
+      "line3": "something.",
+      "subhead": "Most people walk right past it."
+    },
+    "memory": {
+      "eyebrow": "LEAVE A MEMORY",
+      "title": "Leave something meaningful."
+    },
+    "guides": {
+      "eyebrow": "CURATED GUIDES",
+      "button": "Browse guides"
+    },
+    "search": {
+      "eyebrow": "FOCUS YOUR SEARCH"
+    }
+  },
+  "auth": {
+    "signInTitle": "Welcome back",
+    "signInSubtitle": "Sign in to continue",
+    "redirecting": "Redirecting to login…"
+  },
+  "pricing": {
+    "eyebrow": "Products and prices",
+    "catalogTitle": "Brooks guide catalog",
+    "serviceProvider": "Service provider",
+    "deliveryLabel": "Delivery",
+    "deliveryValue": "Digital access after payment",
+    "support": "Support",
+    "loadingProducts": "Loading products…",
+    "loadError": "Failed to load products",
+    "empty": "No published guide products are available yet.",
+    "colProduct": "Product",
+    "colPrice": "Price",
+    "colDelivery": "Delivery",
+    "guideFallback": "Travel guide",
+    "productMeta": "{{location}} - {{days}}-day guide - {{places}} places",
+    "digital": "Digital",
+    "loadMore": "Load more products",
+    "loadingMore": "Loading…",
+    "intro": "All products sold on Brooks are digital travel guides. Prices are shown in the product currency before checkout, including active sale pricing where available."
+  },
+  "contact": {
+    "title": "Contact"
+  },
+  "search": {
+    "topGuides": "Top guides for you",
+    "resultsFor": "Results for \"{{query}}\"",
+    "noResults": "No direct matches",
+    "searchEverything": "Search everything for \"{{query}}\""
+  },
+  "about": {
+    "eyebrow": "About Brooks Prequel",
+    "title": "Travel guides built around people, not lists.",
+    "p1": "Brooks Prequel is a travel-guide marketplace where creators publish personal itineraries, hidden places, memories, and practical routes that buyers can turn into trips.",
+    "p2": "The product is designed for travelers who want context before they arrive: what to see, what to skip, how to plan a day, and how to move discoveries into maps and calendars without rebuilding everything manually."
+  }
+}

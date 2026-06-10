@@ -1,0 +1,127 @@
+{
+  "common": {
+    "actions": {
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "delete": "Eliminar",
+      "edit": "Editar",
+      "close": "Cerrar",
+      "back": "Atrás",
+      "next": "Siguiente",
+      "search": "Buscar",
+      "share": "Compartir",
+      "retry": "Reintentar",
+      "seeAll": "Ver todo",
+      "learnMore": "Más información",
+      "apply": "Aplicar",
+      "clear": "Borrar"
+    },
+    "states": {
+      "loading": "Cargando…",
+      "empty": "Aún no hay nada aquí",
+      "error": "Algo salió mal"
+    }
+  },
+  "nav": {
+    "brand": "Brooks",
+    "links": {
+      "explore": "Explorar",
+      "maps": "Mapas",
+      "myGuides": "Mis guías",
+      "myMemories": "Mis recuerdos",
+      "memories": "Recuerdos",
+      "purchasedGuides": "Guías compradas",
+      "guides": "Guías",
+      "pricing": "Precios",
+      "contact": "Contacto",
+      "profile": "Perfil",
+      "settings": "Ajustes"
+    },
+    "auth": {
+      "signIn": "Iniciar sesión",
+      "logOut": "Cerrar sesión"
+    },
+    "menu": {
+      "open": "Menú",
+      "ariaPrimary": "Principal"
+    },
+    "search": {
+      "placeholder": "Buscar creadores, guías y lugares"
+    }
+  },
+  "footer": {
+    "support": "Soporte",
+    "ariaLegal": "Información legal y comercial",
+    "links": {
+      "productsAndPrices": "Productos y precios",
+      "contact": "Contacto",
+      "terms": "Términos",
+      "privacy": "Privacidad",
+      "refunds": "Reembolsos",
+      "delivery": "Entrega"
+    },
+    "help": "Ayuda"
+  },
+  "languageSelector": {
+    "trigger": "Cambiar idioma",
+    "title": "Elige tu idioma",
+    "current": "Idioma actual",
+    "ariaActive": "Idioma activo"
+  },
+  "landing": {
+    "hero": {
+      "line1": "Cada lugar",
+      "line2": "podría esconder",
+      "line3": "algo.",
+      "subhead": "La mayoría de la gente pasa de largo."
+    },
+    "memory": {
+      "eyebrow": "DEJA UN RECUERDO",
+      "title": "Deja algo significativo."
+    },
+    "guides": {
+      "eyebrow": "GUÍAS SELECCIONADAS",
+      "button": "Explorar guías"
+    },
+    "search": {
+      "eyebrow": "AFINA TU BÚSQUEDA"
+    }
+  },
+  "auth": {
+    "signInTitle": "Bienvenido de nuevo",
+    "signInSubtitle": "Inicia sesión para continuar",
+    "redirecting": "Redirigiendo al inicio de sesión…"
+  },
+  "pricing": {
+    "eyebrow": "Productos y precios",
+    "catalogTitle": "Catálogo de guías Brooks",
+    "serviceProvider": "Proveedor de servicios",
+    "deliveryLabel": "Entrega",
+    "deliveryValue": "Acceso digital tras el pago",
+    "support": "Soporte",
+    "loadingProducts": "Cargando productos…",
+    "loadError": "No se pudieron cargar los productos",
+    "empty": "Aún no hay guías publicadas disponibles.",
+    "colProduct": "Producto",
+    "colPrice": "Precio",
+    "colDelivery": "Entrega",
+    "guideFallback": "Guía de viaje",
+    "productMeta": "{{location}} - guía de {{days}} días - {{places}} lugares",
+    "digital": "Digital",
+    "loadMore": "Cargar más productos",
+    "loadingMore": "Cargando…"
+  },
+  "contact": {
+    "title": "Contacto"
+  },
+  "search": {
+    "topGuides": "Las mejores guías para ti",
+    "resultsFor": "Resultados para «{{query}}»",
+    "noResults": "Sin coincidencias directas",
+    "searchEverything": "Buscar todo para «{{query}}»"
+  },
+  "about": {
+    "eyebrow": "Acerca de Brooks Prequel",
+    "title": "Guías de viaje creadas en torno a las personas, no a las listas."
+  }
+}

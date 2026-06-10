@@ -1,0 +1,127 @@
+{
+  "common": {
+    "actions": {
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "delete": "Löschen",
+      "edit": "Bearbeiten",
+      "close": "Schließen",
+      "back": "Zurück",
+      "next": "Weiter",
+      "search": "Suchen",
+      "share": "Teilen",
+      "retry": "Erneut versuchen",
+      "seeAll": "Alle ansehen",
+      "learnMore": "Mehr erfahren",
+      "apply": "Anwenden",
+      "clear": "Löschen"
+    },
+    "states": {
+      "loading": "Wird geladen…",
+      "empty": "Noch nichts vorhanden",
+      "error": "Etwas ist schiefgelaufen"
+    }
+  },
+  "nav": {
+    "brand": "Brooks",
+    "links": {
+      "explore": "Entdecken",
+      "maps": "Karten",
+      "myGuides": "Meine Guides",
+      "myMemories": "Meine Erinnerungen",
+      "memories": "Erinnerungen",
+      "purchasedGuides": "Gekaufte Guides",
+      "guides": "Guides",
+      "pricing": "Preise",
+      "contact": "Kontakt",
+      "profile": "Profil",
+      "settings": "Einstellungen"
+    },
+    "auth": {
+      "signIn": "Anmelden",
+      "logOut": "Abmelden"
+    },
+    "menu": {
+      "open": "Menü",
+      "ariaPrimary": "Hauptmenü"
+    },
+    "search": {
+      "placeholder": "Creator, Guides und Orte suchen"
+    }
+  },
+  "footer": {
+    "support": "Support",
+    "ariaLegal": "Rechtliche und geschäftliche Informationen",
+    "links": {
+      "productsAndPrices": "Produkte & Preise",
+      "contact": "Kontakt",
+      "terms": "AGB",
+      "privacy": "Datenschutz",
+      "refunds": "Rückerstattungen",
+      "delivery": "Lieferung"
+    },
+    "help": "Hilfe"
+  },
+  "languageSelector": {
+    "trigger": "Sprache ändern",
+    "title": "Wählen Sie Ihre Sprache",
+    "current": "Aktuelle Sprache",
+    "ariaActive": "Aktive Sprache"
+  },
+  "landing": {
+    "hero": {
+      "line1": "Jeder Ort",
+      "line2": "könnte etwas",
+      "line3": "verbergen.",
+      "subhead": "Die meisten gehen einfach daran vorbei."
+    },
+    "memory": {
+      "eyebrow": "HINTERLASSE EINE ERINNERUNG",
+      "title": "Hinterlasse etwas Bedeutungsvolles."
+    },
+    "guides": {
+      "eyebrow": "KURATIERTE GUIDES",
+      "button": "Guides durchsuchen"
+    },
+    "search": {
+      "eyebrow": "GRENZE DEINE SUCHE EIN"
+    }
+  },
+  "auth": {
+    "signInTitle": "Willkommen zurück",
+    "signInSubtitle": "Melde dich an, um fortzufahren",
+    "redirecting": "Weiterleitung zur Anmeldung…"
+  },
+  "pricing": {
+    "eyebrow": "Produkte und Preise",
+    "catalogTitle": "Brooks Guide-Katalog",
+    "serviceProvider": "Dienstanbieter",
+    "deliveryLabel": "Lieferung",
+    "deliveryValue": "Digitaler Zugang nach Zahlung",
+    "support": "Support",
+    "loadingProducts": "Produkte werden geladen…",
+    "loadError": "Produkte konnten nicht geladen werden",
+    "empty": "Es sind noch keine veröffentlichten Guide-Produkte verfügbar.",
+    "colProduct": "Produkt",
+    "colPrice": "Preis",
+    "colDelivery": "Lieferung",
+    "guideFallback": "Reiseführer",
+    "productMeta": "{{location}} - {{days}}-Tage-Guide - {{places}} Orte",
+    "digital": "Digital",
+    "loadMore": "Mehr Produkte laden",
+    "loadingMore": "Wird geladen…"
+  },
+  "contact": {
+    "title": "Kontakt"
+  },
+  "search": {
+    "topGuides": "Top-Guides für dich",
+    "resultsFor": "Ergebnisse für „{{query}}“",
+    "noResults": "Keine direkten Treffer",
+    "searchEverything": "Alles durchsuchen nach „{{query}}“"
+  },
+  "about": {
+    "eyebrow": "Über Brooks Prequel",
+    "title": "Reiseführer rund um Menschen, nicht um Listen."
+  }
+}

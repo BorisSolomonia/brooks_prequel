@@ -1,0 +1,127 @@
+{
+  "common": {
+    "actions": {
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "delete": "Удалить",
+      "edit": "Редактировать",
+      "close": "Закрыть",
+      "back": "Назад",
+      "next": "Далее",
+      "search": "Поиск",
+      "share": "Поделиться",
+      "retry": "Повторить",
+      "seeAll": "Смотреть все",
+      "learnMore": "Подробнее",
+      "apply": "Применить",
+      "clear": "Очистить"
+    },
+    "states": {
+      "loading": "Загрузка…",
+      "empty": "Здесь пока ничего нет",
+      "error": "Что-то пошло не так"
+    }
+  },
+  "nav": {
+    "brand": "Brooks",
+    "links": {
+      "explore": "Обзор",
+      "maps": "Карты",
+      "myGuides": "Мои гиды",
+      "myMemories": "Мои воспоминания",
+      "memories": "Воспоминания",
+      "purchasedGuides": "Купленные гиды",
+      "guides": "Гиды",
+      "pricing": "Цены",
+      "contact": "Контакты",
+      "profile": "Профиль",
+      "settings": "Настройки"
+    },
+    "auth": {
+      "signIn": "Войти",
+      "logOut": "Выйти"
+    },
+    "menu": {
+      "open": "Меню",
+      "ariaPrimary": "Главное"
+    },
+    "search": {
+      "placeholder": "Ищите авторов, гиды и места"
+    }
+  },
+  "footer": {
+    "support": "Поддержка",
+    "ariaLegal": "Юридическая и деловая информация",
+    "links": {
+      "productsAndPrices": "Товары и цены",
+      "contact": "Контакты",
+      "terms": "Условия",
+      "privacy": "Конфиденциальность",
+      "refunds": "Возврат средств",
+      "delivery": "Доставка"
+    },
+    "help": "Помощь"
+  },
+  "languageSelector": {
+    "trigger": "Сменить язык",
+    "title": "Выберите язык",
+    "current": "Текущий язык",
+    "ariaActive": "Активный язык"
+  },
+  "landing": {
+    "hero": {
+      "line1": "Каждое место",
+      "line2": "может что-то",
+      "line3": "скрывать.",
+      "subhead": "Большинство людей проходит мимо."
+    },
+    "memory": {
+      "eyebrow": "ОСТАВЬТЕ ВОСПОМИНАНИЕ",
+      "title": "Оставьте что-то значимое."
+    },
+    "guides": {
+      "eyebrow": "ОТОБРАННЫЕ ГИДЫ",
+      "button": "Смотреть гиды"
+    },
+    "search": {
+      "eyebrow": "УТОЧНИТЕ ПОИСК"
+    }
+  },
+  "auth": {
+    "signInTitle": "С возвращением",
+    "signInSubtitle": "Войдите, чтобы продолжить",
+    "redirecting": "Перенаправление на вход…"
+  },
+  "pricing": {
+    "eyebrow": "Товары и цены",
+    "catalogTitle": "Каталог гидов Brooks",
+    "serviceProvider": "Поставщик услуг",
+    "deliveryLabel": "Доставка",
+    "deliveryValue": "Цифровой доступ после оплаты",
+    "support": "Поддержка",
+    "loadingProducts": "Загрузка товаров…",
+    "loadError": "Не удалось загрузить товары",
+    "empty": "Опубликованных гидов пока нет.",
+    "colProduct": "Товар",
+    "colPrice": "Цена",
+    "colDelivery": "Доставка",
+    "guideFallback": "Путеводитель",
+    "productMeta": "{{location}} - гид на {{days}} дн. - {{places}} мест",
+    "digital": "Цифровой",
+    "loadMore": "Загрузить больше товаров",
+    "loadingMore": "Загрузка…"
+  },
+  "contact": {
+    "title": "Контакты"
+  },
+  "search": {
+    "topGuides": "Лучшие гиды для вас",
+    "resultsFor": "Результаты по запросу «{{query}}»",
+    "noResults": "Прямых совпадений нет",
+    "searchEverything": "Искать всё по запросу «{{query}}»"
+  },
+  "about": {
+    "eyebrow": "О Brooks Prequel",
+    "title": "Путеводители, построенные вокруг людей, а не списков."
+  }
+}
