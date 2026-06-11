@@ -103,7 +103,7 @@ function PurchaseFailedInner() {
             </>
           )}
           <Link
-            href={purchase?.guideId ? `/guides/${purchase.guideId}` : '/search'}
+            href={purchase?.guideId ? `/guides/${purchase.guideId}/view` : '/search'}
             className={`${purchase?.guideId ? 'mw-button-secondary' : 'mw-button-primary'} inline-block min-h-11 rounded-lg px-6 py-2.5 text-sm`}
           >
             {purchase?.guideId ? 'Back to guide' : 'Browse guides'}
