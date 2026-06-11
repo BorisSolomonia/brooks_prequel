@@ -35,7 +35,8 @@
       "pricing": "Prezzi",
       "contact": "Contatti",
       "profile": "Profilo",
-      "settings": "Impostazioni"
+      "settings": "Impostazioni",
+      "about": "Chi siamo"
     },
     "auth": {
       "signIn": "Accedi",
@@ -73,7 +74,10 @@
       "line1": "Ogni luogo",
       "line2": "potrebbe nascondere",
       "line3": "qualcosa.",
-      "subhead": "La maggior parte delle persone gli passa accanto."
+      "line4": "La maggior parte delle persone",
+      "line5": "non controlla mai.",
+      "subA": "Ricordi nascosti. Luoghi reali.",
+      "subB": "Guide personali. Non per la folla."
     },
     "memory": {
       "eyebrow": "LASCIA UN RICORDO",
@@ -123,5 +127,8 @@
   "about": {
     "eyebrow": "Informazioni su Brooks Prequel",
     "title": "Guide di viaggio costruite attorno alle persone, non agli elenchi."
+  },
+  "memory": {
+    "createPill": "Crea un ricordo"
   }
 }

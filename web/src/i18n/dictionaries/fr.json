@@ -35,7 +35,8 @@
       "pricing": "Tarifs",
       "contact": "Contact",
       "profile": "Profil",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "about": "À propos"
     },
     "auth": {
       "signIn": "Se connecter",
@@ -73,7 +74,10 @@
       "line1": "Chaque lieu",
       "line2": "pourrait cacher",
       "line3": "quelque chose.",
-      "subhead": "La plupart des gens passent juste à côté."
+      "line4": "La plupart des gens",
+      "line5": "ne vérifient jamais.",
+      "subA": "Souvenirs cachés. Lieux réels.",
+      "subB": "Guides personnels. Pas pour la foule."
     },
     "memory": {
       "eyebrow": "LAISSEZ UN SOUVENIR",
@@ -123,5 +127,8 @@
   "about": {
     "eyebrow": "À propos de Brooks Prequel",
     "title": "Des guides de voyage construits autour des gens, pas des listes."
+  },
+  "memory": {
+    "createPill": "Créer un souvenir"
   }
 }

@@ -18,6 +18,7 @@ import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 import { isNative } from '@/lib/capacitor';
 import { capturePhotoDetailed } from '@/lib/camera';
 import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
+import { useTranslation } from 'react-i18next';
 import { useProximityNotifier } from '@/hooks/useProximityNotifier';
 import type {
   InfluencerMapPin,
@@ -986,6 +987,7 @@ export default function MapsExperience({
   // exclusive. Opening the drawer marks 'burger' active (closing the upper
   // menu); when the upper menu becomes active, the effect closes this drawer.
   const { openMenuId: activeMenuId, openMenu: setMenuActive, closeMenu: clearMenuActive } = useMenuCoordinator();
+  const { t } = useTranslation();
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false);
     clearMenuActive('burger');
@@ -2426,7 +2428,7 @@ export default function MapsExperience({
             className="absolute bottom-12 left-1/2 z-30 inline-flex min-h-touch -translate-x-1/2 items-center gap-2 rounded-full bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95"
           >
             <span aria-hidden className="text-base leading-none">+</span>
-            <span>Create a memory</span>
+            <span>{t('memory.createPill')}</span>
           </button>
           <div
             aria-hidden

@@ -35,7 +35,8 @@
       "pricing": "Pricing",
       "contact": "Contact",
       "profile": "Profile",
-      "settings": "Settings"
+      "settings": "Settings",
+      "about": "About"
     },
     "auth": {
       "signIn": "Sign In",
@@ -73,7 +74,10 @@
       "line1": "Every place",
       "line2": "could be hiding",
       "line3": "something.",
-      "subhead": "Most people walk right past it."
+      "line4": "Most people",
+      "line5": "never check.",
+      "subA": "Hidden memories. Real places.",
+      "subB": "Personal guides. Not for the crowd."
     },
     "memory": {
       "eyebrow": "LEAVE A MEMORY",
@@ -126,5 +130,8 @@
     "title": "Travel guides built around people, not lists.",
     "p1": "Brooks Prequel is a travel-guide marketplace where creators publish personal itineraries, hidden places, memories, and practical routes that buyers can turn into trips.",
     "p2": "The product is designed for travelers who want context before they arrive: what to see, what to skip, how to plan a day, and how to move discoveries into maps and calendars without rebuilding everything manually."
+  },
+  "memory": {
+    "createPill": "Create a memory"
   }
 }

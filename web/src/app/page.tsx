@@ -1,6 +1,9 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Anton } from 'next/font/google';
+import { useTranslation } from 'react-i18next';
 import FloatingFeatureCard from '@/components/landing/FloatingFeatureCard';
 import BottomFeatureStrip from '@/components/landing/BottomFeatureStrip';
 import GetStartedButton from '@/components/landing/GetStartedButton';
@@ -104,19 +107,19 @@ function ListSmall() {
 }
 
 function HeroContent({ mobile = false }: { mobile?: boolean }) {
+  const { t } = useTranslation();
   const size = mobile ? 'clamp(40px, 12vw, 54px)' : 'clamp(50px, 5.35vw, 74px)';
   const lineHeight = mobile ? 0.96 : 0.93;
 
   return (
     <>
       <div className={anton.className} style={{ lineHeight }}>
-        <p style={{ fontSize: size, color: BLACK, margin: 0 }}>Every place</p>
-        <p style={{ fontSize: size, color: BLACK, margin: 0 }}>could be hiding</p>
-        <p style={{ fontSize: size, color: BLACK, margin: 0 }}>something.</p>
-        <p style={{ fontSize: size, margin: 0, ...CONTRAST_TEXT_STYLE }}>Most people</p>
+        <p style={{ fontSize: size, color: BLACK, margin: 0 }}>{t('landing.hero.line1')}</p>
+        <p style={{ fontSize: size, color: BLACK, margin: 0 }}>{t('landing.hero.line2')}</p>
+        <p style={{ fontSize: size, color: BLACK, margin: 0 }}>{t('landing.hero.line3')}</p>
+        <p style={{ fontSize: size, margin: 0, ...CONTRAST_TEXT_STYLE }}>{t('landing.hero.line4')}</p>
         <p style={{ fontSize: size, color: PINK, margin: 0 }}>
-          <span style={CONTRAST_TEXT_STYLE}>never</span>{' '}
-          <span style={CONTRAST_TEXT_STYLE}>check.</span>
+          <span style={CONTRAST_TEXT_STYLE}>{t('landing.hero.line5')}</span>
         </p>
       </div>
 
@@ -136,8 +139,8 @@ function HeroContent({ mobile = false }: { mobile?: boolean }) {
           color: '#ffffff',
         }}
       >
-        Hidden memories. Real places.<br />
-        Personal guides. Not for the crowd.
+        {t('landing.hero.subA')}<br />
+        {t('landing.hero.subB')}
       </p>
 
       <GetStartedButton mobile={mobile} />
@@ -149,6 +152,7 @@ const card2Icons = [<CameraSmall key="cam" />, <NoteSmall key="note" />];
 const card3Icons = [<CalendarIcon key="cal" color={BLACK} size={13} />, <MapSmall key="map" />, <ListSmall key="list" />];
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   return (
     <div className="relative min-h-[100dvh] overflow-y-auto lg:fixed lg:inset-0 lg:z-[100] lg:overflow-hidden">
       <section
@@ -187,11 +191,11 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden items-center lg:flex" style={{ gap: 'clamp(24px, 3vw, 40px)', paddingTop: 4 }}>
-            <Link href="/terms" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>TERMS</Link>
-            <Link href="/privacy" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>PRIVACY</Link>
-            <Link href="/search/guides" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>GUIDES</Link>
+            <Link href="/terms" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none', textTransform: 'uppercase' }}>{t('footer.links.terms')}</Link>
+            <Link href="/privacy" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none', textTransform: 'uppercase' }}>{t('footer.links.privacy')}</Link>
+            <Link href="/search/guides" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none', textTransform: 'uppercase' }}>{t('nav.links.guides')}</Link>
             <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Link href="/about" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none' }}>ABOUT</Link>
+              <Link href="/about" style={{ fontSize: 15, fontWeight: 900, color: BLACK, letterSpacing: '0.5px', textDecoration: 'none', textTransform: 'uppercase' }}>{t('nav.links.about')}</Link>
               <span style={{ color: PINK, fontSize: 11 }}>◆</span>
             </span>
           </div>
@@ -213,8 +217,8 @@ export default function LandingPage() {
         >
           <HeroContent mobile />
           <div className="mt-5 flex gap-6">
-            <Link href="/search/guides" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">Guides</Link>
-            <Link href="/about" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">About</Link>
+            <Link href="/search/guides" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">{t('nav.links.guides')}</Link>
+            <Link href="/about" style={YELLOW_OUTLINE_TEXT} className="inline-flex min-h-11 items-center rounded-md border border-[#D4AA3A] px-3 text-sm font-black uppercase tracking-wide text-black">{t('nav.links.about')}</Link>
           </div>
         </div>
 

@@ -35,7 +35,8 @@
       "pricing": "Qiymətlər",
       "contact": "Əlaqə",
       "profile": "Profil",
-      "settings": "Tənzimləmələr"
+      "settings": "Tənzimləmələr",
+      "about": "Haqqımızda"
     },
     "auth": {
       "signIn": "Daxil ol",
@@ -73,7 +74,10 @@
       "line1": "Hər yer",
       "line2": "nəyisə gizlədə",
       "line3": "bilər.",
-      "subhead": "İnsanların əksəriyyəti yanından ötüb keçir."
+      "line4": "İnsanların əksəriyyəti",
+      "line5": "heç vaxt yoxlamır.",
+      "subA": "Gizli xatirələr. Real yerlər.",
+      "subB": "Şəxsi bələdçilər. Kütlə üçün deyil."
     },
     "memory": {
       "eyebrow": "XATİRƏ QOYUN",
@@ -123,5 +127,8 @@
   "about": {
     "eyebrow": "Brooks Prequel haqqında",
     "title": "İnsanların ətrafında qurulmuş səyahət bələdçiləri, siyahıların yox."
+  },
+  "memory": {
+    "createPill": "Xatirə yarat"
   }
 }

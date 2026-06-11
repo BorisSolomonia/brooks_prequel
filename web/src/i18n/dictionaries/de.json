@@ -35,7 +35,8 @@
       "pricing": "Preise",
       "contact": "Kontakt",
       "profile": "Profil",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen",
+      "about": "Über uns"
     },
     "auth": {
       "signIn": "Anmelden",
@@ -73,7 +74,10 @@
       "line1": "Jeder Ort",
       "line2": "könnte etwas",
       "line3": "verbergen.",
-      "subhead": "Die meisten gehen einfach daran vorbei."
+      "line4": "Die meisten Menschen",
+      "line5": "schauen nie nach.",
+      "subA": "Verborgene Erinnerungen. Echte Orte.",
+      "subB": "Persönliche Guides. Nicht für die Masse."
     },
     "memory": {
       "eyebrow": "HINTERLASSE EINE ERINNERUNG",
@@ -123,5 +127,8 @@
   "about": {
     "eyebrow": "Über Brooks Prequel",
     "title": "Reiseführer rund um Menschen, nicht um Listen."
+  },
+  "memory": {
+    "createPill": "Erinnerung erstellen"
   }
 }
