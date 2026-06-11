@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { compliance } from '@/lib/compliance';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -25,10 +25,15 @@ function PurchaseSuccessInner() {
   const shopOrderId = searchParams.get('shop_order_id');
   const { token, loading: tokenLoading } = useAccessToken();
   const { formatAmount } = useCurrency();
+  const router = useRouter();
 
   const [purchase, setPurchase] = useState<PurchaseResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
+  // BOR-46: once the payment is confirmed COMPLETED, route straight to the
+  // purchased guide so the buyer reaches their content immediately. Ref guard +
+  // router.replace so it fires once and Back doesn't loop to this receipt.
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
     if (tokenLoading || !token || !shopOrderId) return;
@@ -46,6 +51,12 @@ function PurchaseSuccessInner() {
         );
         if (cancelled) return;
         setPurchase(result);
+        if (result.status === 'COMPLETED' && result.guideId && !redirectedRef.current) {
+          // Confirmed paid → go straight to the guide they just bought.
+          redirectedRef.current = true;
+          router.replace(`/guides/${result.guideId}/view`);
+          return;
+        }
         if (result.status !== 'COMPLETED' && attempts < POLL_MAX_ATTEMPTS) {
           setTimeout(() => setAttempts((a) => a + 1), POLL_INTERVAL_MS);
         }
@@ -59,7 +70,7 @@ function PurchaseSuccessInner() {
     return () => {
       cancelled = true;
     };
-  }, [token, tokenLoading, shopOrderId, attempts]);
+  }, [token, tokenLoading, shopOrderId, attempts, router]);
 
   const formatDate = (iso: string | null | undefined) => {
     if (!iso) return '—';
