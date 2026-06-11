@@ -1066,6 +1066,8 @@ export default function MapsExperience({
   const [followersFetched, setFollowersFetched] = useState(false);
   // BOR-50: multi-select recipients (was a single follower). Holds follower userIds.
   const [selectedFollowerIds, setSelectedFollowerIds] = useState<string[]>([]);
+  // BOR-50: "Self" time-capsule — lock my own memory until I return to the spot.
+  const [shareSelf, setShareSelf] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<BlobPart[]>([]);
   // BOR-40: hidden capture-enabled input used as the web / no-native-camera
@@ -1491,6 +1493,7 @@ export default function MapsExperience({
     const isPrivate = snapshot.visibility === 'PRIVATE';
     const sharePath: 'none' | 'link' | 'follower' = isPrivate ? 'none' : shareMode;
     const followerRecipientIds = sharePath === 'follower' ? [...selectedFollowerIds] : [];
+    const selfSelected = sharePath === 'follower' && shareSelf;
 
     // Drop UI state + show the optimistic pin in a single React commit.
     setMemories((prev) => [...prev, optimisticPin]);
@@ -1503,6 +1506,7 @@ export default function MapsExperience({
     // Reset share mode for the next composer session (default = share with a follower).
     setShareMode('follower');
     setSelectedFollowerIds([]);
+    setShareSelf(false);
 
     let created: { id: string };
     try {
@@ -1545,21 +1549,29 @@ export default function MapsExperience({
 
     // Direct in-app share to a follower: backend creates a MemoryGrant
     // and pushes "shared a memory with you" to the recipient.
-    if (sharePath === 'follower' && followerRecipientIds.length > 0) {
-      // BOR-50: one grant per recipient (reuses the existing per-user
-      // direct-share endpoint, so each gets an independent locked grant).
-      void Promise.allSettled(
-        followerRecipientIds.map((rid) =>
-          api.post(`/api/memories/${createdId}/direct-shares`, { recipientUserId: rid }, token),
-        ),
-      ).then((results) => {
+    if (sharePath === 'follower' && (followerRecipientIds.length > 0 || selfSelected)) {
+      // BOR-50: one locked grant per recipient (reuses the existing per-user
+      // direct-share endpoint) + an optional "self" time-capsule grant. Each
+      // recipient — including the creator — must reach the location to unlock.
+      const calls: Array<Promise<unknown>> = [];
+      if (selfSelected) {
+        calls.push(api.post(`/api/memories/${createdId}/self-share`, undefined, token));
+      }
+      followerRecipientIds.forEach((rid) =>
+        calls.push(api.post(`/api/memories/${createdId}/direct-shares`, { recipientUserId: rid }, token)),
+      );
+      void Promise.allSettled(calls).then((results) => {
         const failed = results.filter((r) => r.status === 'rejected').length;
         const total = followerRecipientIds.length;
-        if (failed === 0) {
-          setPageError(`Sent to ${total} ${total === 1 ? 'follower' : 'followers'}. They'll get a notification.`);
+        if (failed > 0) {
+          console.error('[memory] share: %d of %d calls failed', failed, calls.length);
+          setPageError(`Memory saved; ${failed} of ${calls.length} shares failed.`);
+        } else if (total > 0) {
+          setPageError(
+            `Sent to ${total} ${total === 1 ? 'follower' : 'followers'}${selfSelected ? ' + a time capsule for you' : ''}. They'll get a notification.`,
+          );
         } else {
-          console.error('[memory] direct share: %d of %d failed', failed, total);
-          setPageError(`Memory saved; ${failed} of ${total} sends failed.`);
+          setPageError('Saved as a time capsule — it unlocks when you return to this spot.');
         }
       });
       return;
@@ -2951,12 +2963,27 @@ export default function MapsExperience({
             </div>
 
             {shareMode === 'follower' && (
-              <div className="mt-3">
+              <div className="mt-3 space-y-1">
+                {/* BOR-50: "Self" time-capsule — lock your own memory until you
+                    return here. Always available, even with no followers. */}
+                <button
+                  type="button"
+                  aria-pressed={shareSelf}
+                  onClick={() => setShareSelf((v) => !v)}
+                  className={`flex min-h-touch w-full items-center justify-between gap-2 rounded-2xl border-2 px-3 py-2 text-left text-sm transition ${
+                    shareSelf
+                      ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
+                      : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
+                  }`}
+                >
+                  <span className="truncate">🔒 Yourself — unlocks when you return here</span>
+                  {shareSelf && <span aria-hidden className="shrink-0 text-brand-500">✓</span>}
+                </button>
                 {followersLoading ? (
                   <p className="text-xs text-ig-text-tertiary">Loading your followers…</p>
                 ) : followers.length === 0 ? (
                   <p className="text-xs text-ig-text-tertiary">
-                    No followers yet. Share the app or switch to &quot;Share via link&quot;.
+                    No followers yet — you can still time-capsule it for yourself above, or use &quot;Share via link&quot;.
                   </p>
                 ) : (
                   <>
@@ -3005,8 +3032,9 @@ export default function MapsExperience({
               type="button"
               disabled={
                 memoryBusy ||
-                // BOR-50: only require a recipient for a non-private follower share.
-                (memoryVisibility !== 'PRIVATE' && shareMode === 'follower' && selectedFollowerIds.length === 0)
+                // BOR-50: a non-private follower share needs at least one recipient —
+                // a follower OR "Self".
+                (memoryVisibility !== 'PRIVATE' && shareMode === 'follower' && selectedFollowerIds.length === 0 && !shareSelf)
               }
               onClick={handleCreateMemory}
               className="mw-button-primary mt-6 inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold transition hover:bg-brand-600 disabled:opacity-60"

@@ -129,6 +129,20 @@ public class MemoryController {
     }
 
     /**
+     * BOR-50: time-capsule a memory for YOURSELF — creates a locked grant for the
+     * caller on their own memory; content stays hidden until they reveal it by
+     * reaching the location. Resolves the caller server-side (no recipient id).
+     */
+    @PostMapping("/memories/{memoryId}/self-share")
+    public ResponseEntity<Void> shareMemoryWithSelf(
+            Authentication authentication,
+            @PathVariable UUID memoryId) {
+        UUID userId = userService.findByAuth0Subject(subject(authentication)).getId();
+        memoryDirectShareService.shareWithSelf(memoryId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Reveal a DIRECT in-app share (no token) by memory id. The caller must hold
      * a grant for the memory and be within the unlock radius; only then are the
      * contents returned and the grant marked revealed. Mirrors the token reveal.

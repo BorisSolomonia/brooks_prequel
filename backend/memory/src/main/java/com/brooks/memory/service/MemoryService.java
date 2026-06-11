@@ -167,7 +167,10 @@ public class MemoryService {
     public MemoryResponse getMemory(String auth0Subject, UUID memoryId) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
         Memory memory = findOwnedMemory(viewer.getId(), memoryId);
-        return toResponse(memory, viewer.getId());
+        // BOR-50: a self time-capsuled memory stays redacted for its own creator
+        // until they reveal it on arrival.
+        boolean locked = ownerSelfLockedIds(viewer.getId(), List.of(memoryId)).contains(memoryId);
+        return toResponse(memory, viewer.getId(), !locked, null);
     }
 
     /** Memories I created — newest first. Used by /memories "My Memories" tab. */
@@ -178,10 +181,12 @@ public class MemoryService {
         if (created.isEmpty()) {
             return List.of();
         }
-        Map<UUID, List<MemoryRecipientSummary>> recipientsByMemory =
-                recipientsByMemory(created.stream().map(Memory::getId).toList());
+        List<UUID> createdIds = created.stream().map(Memory::getId).toList();
+        Map<UUID, List<MemoryRecipientSummary>> recipientsByMemory = recipientsByMemory(createdIds);
+        // BOR-50: redact self time-capsuled memories from their own creator until revealed.
+        Set<UUID> selfLocked = ownerSelfLockedIds(viewer.getId(), createdIds);
         return created.stream()
-                .map(m -> toResponse(m, viewer.getId(), true,
+                .map(m -> toResponse(m, viewer.getId(), !selfLocked.contains(m.getId()),
                         recipientsByMemory.getOrDefault(m.getId(), List.of())))
                 .toList();
     }
@@ -225,8 +230,11 @@ public class MemoryService {
         List<UUID> memoryIds = memories.stream().map(Memory::getId).toList();
         Set<UUID> revealedIds = new HashSet<>(
                 memoryGrantRepository.findRevealedGrantedMemoryIdsForBeneficiary(viewer.getId(), memoryIds));
+        // BOR-50: granted-but-unrevealed = locked (applies the self time-capsule lock to own memories).
+        Set<UUID> selfLockedIds = new HashSet<>(memoryIds);
+        selfLockedIds.removeAll(revealedIds);
         return memories.stream()
-                .map(m -> toResponse(m, viewer.getId(), contentVisible(m, viewer.getId(), revealedIds)))
+                .map(m -> toResponse(m, viewer.getId(), contentVisible(m, viewer.getId(), revealedIds, selfLockedIds)))
                 .toList();
     }
 
@@ -503,6 +511,9 @@ public class MemoryService {
         List<UUID> memoryIds = memories.stream().map(Memory::getId).toList();
         Set<UUID> grantedIds = new HashSet<>(memoryGrantRepository.findActiveGrantedMemoryIdsForBeneficiary(viewerId, memoryIds));
         Set<UUID> revealedIds = new HashSet<>(memoryGrantRepository.findRevealedGrantedMemoryIdsForBeneficiary(viewerId, memoryIds));
+        // BOR-50: granted-but-unrevealed = locked (drives the self time-capsule lock on own pins).
+        Set<UUID> selfLockedIds = new HashSet<>(grantedIds);
+        selfLockedIds.removeAll(revealedIds);
         Set<UUID> creatorIds = memories.stream().map(Memory::getCreatorId).collect(Collectors.toSet());
         Map<UUID, User> users = userService.findAllByIds(creatorIds);
         Map<UUID, UserProfile> profiles = profileRepository.findAllByUserIdIn(creatorIds).stream()
@@ -515,7 +526,7 @@ public class MemoryService {
                     // location gate (owns it, or it's a public followers memory) or
                     // has unlocked the share by reaching it. A granted-but-unrevealed
                     // share stays a locked teaser: redact text + media indicators.
-                    boolean revealed = contentVisible(memory, viewerId, revealedIds);
+                    boolean revealed = contentVisible(memory, viewerId, revealedIds, selfLockedIds);
                     boolean hasImage = revealed && memory.getMedia().stream().anyMatch(media -> media.getMediaType() == MemoryMediaType.IMAGE);
                     boolean hasAudio = revealed && memory.getMedia().stream().anyMatch(media -> media.getMediaType() == MemoryMediaType.AUDIO);
                     return MemoryMapPinResponse.builder()
@@ -546,10 +557,30 @@ public class MemoryService {
      * hold a revealed grant (unlocked by reaching the location). A granted-but-
      * unrevealed direct share returns false → contents are redacted.
      */
-    private boolean contentVisible(Memory memory, UUID viewerId, Set<UUID> revealedGrantIds) {
-        return memory.getCreatorId().equals(viewerId)
-                || memory.getVisibility() == MemoryVisibility.FOLLOWERS_PUBLIC
+    private boolean contentVisible(Memory memory, UUID viewerId, Set<UUID> revealedGrantIds, Set<UUID> selfLockedIds) {
+        if (memory.getCreatorId().equals(viewerId)) {
+            // BOR-50 self time-capsule: the creator is locked out of their OWN
+            // memory while they hold an active-but-unrevealed grant for it —
+            // until they reveal it by reaching the location.
+            return !selfLockedIds.contains(memory.getId());
+        }
+        return memory.getVisibility() == MemoryVisibility.FOLLOWERS_PUBLIC
                 || revealedGrantIds.contains(memory.getId());
+    }
+
+    /**
+     * BOR-50: memory ids the viewer holds an ACTIVE but UN-revealed grant for
+     * (granted − revealed). For the viewer's OWN memories this is a self
+     * time-capsule lock; the set is ignored for non-owner memories.
+     */
+    private Set<UUID> ownerSelfLockedIds(UUID viewerId, List<UUID> memoryIds) {
+        if (memoryIds.isEmpty()) {
+            return Set.of();
+        }
+        Set<UUID> locked = new HashSet<>(
+                memoryGrantRepository.findActiveGrantedMemoryIdsForBeneficiary(viewerId, memoryIds));
+        locked.removeAll(memoryGrantRepository.findRevealedGrantedMemoryIdsForBeneficiary(viewerId, memoryIds));
+        return locked;
     }
 
     private static List<Memory> orderByIds(List<Memory> memories, List<UUID> orderedIds) {

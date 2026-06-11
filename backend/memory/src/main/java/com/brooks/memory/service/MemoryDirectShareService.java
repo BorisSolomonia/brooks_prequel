@@ -80,6 +80,28 @@ public class MemoryDirectShareService {
         return grant;
     }
 
+    /**
+     * BOR-50 "Self time-capsule": the creator locks their OWN memory until they
+     * physically return to its location. Creates a locked grant (revealed_at
+     * null) for the creator themselves — no follower check, no self-notification.
+     * The owner is then redacted from the content (MemoryService.contentVisible)
+     * until they reveal it on arrival via the normal reveal flow.
+     */
+    @Transactional
+    public MemoryGrant shareWithSelf(UUID memoryId, UUID userId) {
+        Memory memory = memoryRepository.findById(memoryId)
+                .orElseThrow(() -> new BusinessException("Memory not found"));
+        if (!memory.getCreatorId().equals(userId)) {
+            throw new BusinessException("You can only time-capsule memories you created.");
+        }
+        Optional<MemoryGrant> existing = memoryGrantRepository
+                .findByMemoryIdAndBeneficiaryUserId(memoryId, userId);
+        if (existing.isPresent() && existing.get().getRemovedAt() == null) {
+            return existing.get();
+        }
+        return memoryGrantRepository.save(MemoryGrant.direct(memoryId, userId));
+    }
+
     private String trimPreview(String s) {
         if (s == null) return "";
         String trimmed = s.trim();
