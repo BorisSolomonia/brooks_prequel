@@ -748,7 +748,7 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
   }, [memory.id, memory.hasImage, memory.hasAudio, locked, token]);
 
   return (
-    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
+    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100%_-_4rem)] max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
@@ -790,7 +790,7 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
                 src={item.url}
                 alt="Memory photo"
                 loading="lazy"
-                className="w-full rounded-xl border border-ig-border object-cover"
+                className="mx-auto block max-h-[45vh] w-full max-w-full rounded-xl border border-ig-border object-contain"
               />
             ) : (
               <audio key={item.id} controls src={item.url} className="w-full">
@@ -867,7 +867,7 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
 
 function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
   return (
-    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100dvh_-_9rem)] max-w-md overflow-y-auto rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
+    <div className="absolute inset-x-3 bottom-12 z-30 mx-auto max-h-[calc(100%_-_4rem)] max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-ig-border bg-ig-elevated p-4 shadow-2xl md:bottom-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-3">
           <div className="h-14 w-14 overflow-hidden rounded-full border border-white/90 bg-ig-secondary shadow-[0_0_0_2px_var(--brand-primary)]">
