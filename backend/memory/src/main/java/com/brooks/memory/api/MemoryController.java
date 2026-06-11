@@ -80,6 +80,16 @@ public class MemoryController {
         return ResponseEntity.ok(memoryService.listMemoriesSharedWithMe(subject(authentication)));
     }
 
+    /**
+     * BOR-44 (Phase A): geofences the caller's device should monitor (memories
+     * shared with them). The native client registers these with the OS geofencing
+     * APIs to fire a proximity notification on entry.
+     */
+    @GetMapping("/me/memories/geofences")
+    public ResponseEntity<java.util.List<MemoryGeofenceResponse>> listMyGeofences(Authentication authentication) {
+        return ResponseEntity.ok(memoryService.listMyGeofences(subject(authentication)));
+    }
+
     @PatchMapping("/memories/{memoryId}")
     public ResponseEntity<MemoryResponse> updateMemory(
             Authentication authentication,

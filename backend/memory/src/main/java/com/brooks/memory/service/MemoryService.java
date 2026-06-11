@@ -230,6 +230,25 @@ public class MemoryService {
                 .toList();
     }
 
+    /**
+     * BOR-44 (Phase A): the geofences the caller's device should monitor — every
+     * memory shared WITH them, at its coordinates, with the platform unlock radius
+     * and the sharer's display name (for the proximity-notification copy). The
+     * native client (Phase B) registers these with the OS geofencing APIs.
+     */
+    @Transactional(readOnly = true)
+    public List<MemoryGeofenceResponse> listMyGeofences(String auth0Subject) {
+        User viewer = userService.findByAuth0Subject(auth0Subject);
+        return memoryRepository.findMemoriesSharedWithMe(viewer.getId()).stream()
+                .map(m -> new MemoryGeofenceResponse(
+                        m.getId(),
+                        m.getLatitude(),
+                        m.getLongitude(),
+                        unlockRadiusMeters,
+                        creatorSummary(m.getCreatorId()).displayName()))
+                .toList();
+    }
+
     @Transactional
     public MemoryResponse updateMemory(String auth0Subject, UUID memoryId, MemoryUpdateRequest request) {
         User viewer = userService.findByAuth0Subject(auth0Subject);

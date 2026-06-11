@@ -385,6 +385,17 @@ export interface CreatorReviewListResponse {
   reviews: PageResponse<CreatorReviewItem>;
 }
 
+// BOR-44 (Phase A): a geofence the native client should monitor for a memory
+// shared with the viewer. The native layer (Phase B) registers these with the
+// OS geofencing APIs and notifies on entry.
+export interface MemoryGeofence {
+  memoryId: string;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  sharerName: string;
+}
+
 export interface GuidePreview {
   id: string;
   title: string;
