@@ -16,6 +16,7 @@
 
 import { api } from '@/lib/api';
 import { isNative } from '@/lib/capacitor';
+import { Geofence } from '@/lib/geofence-plugin';
 import type { MemoryGeofence } from '@/types';
 
 export async function fetchMyGeofences(token: string): Promise<MemoryGeofence[]> {
@@ -26,18 +27,29 @@ export async function fetchMyGeofences(token: string): Promise<MemoryGeofence[]>
 export const MAX_MONITORED_REGIONS = 20;
 
 /**
- * Phase A no-op. Phase B replaces the body with real plugin registration.
- * Returns the subset that WOULD be registered so the caller/tests can assert.
+ * Register the regions with the native Geofence plugin. The native side posts
+ * the notification itself on entry (works when the app is killed). Fully
+ * guarded: on web, or before the native plugin is installed, it no-ops so this
+ * is safe to ship ahead of the native build (Phase B).
  */
 export async function registerNativeGeofences(geofences: MemoryGeofence[]): Promise<MemoryGeofence[]> {
   const toRegister = geofences.slice(0, MAX_MONITORED_REGIONS);
   if (!isNative()) {
     return toRegister; // web: nothing to monitor
   }
-  // Phase B: await Geofence.addRegions(toRegister.map(...)) + native enter handler.
-  if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
-    console.info(`[geofences] Phase A: would monitor ${toRegister.length} region(s); native plugin pending (BOR-44 Phase B).`);
+  try {
+    await Geofence.setGeofences({
+      regions: toRegister.map((g) => ({
+        identifier: g.memoryId,
+        latitude: g.latitude,
+        longitude: g.longitude,
+        radius: g.radiusMeters,
+        notificationTitle: 'Brooks',
+        notificationBody: `You are near a memory shared by ${g.sharerName}!`,
+      })),
+    });
+  } catch {
+    // Native plugin not installed yet (Phase B pending) — safe no-op.
   }
   return toRegister;
 }
