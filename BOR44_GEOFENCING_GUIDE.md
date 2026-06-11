@@ -1,5 +1,69 @@
 # BOR-44 — Proximity Geofencing: complete native implementation + step-by-step
 
+---
+
+## ⏸️ STATUS: PAUSED 2026-06-11 — pick up any time
+
+This feature is intentionally **parked**. Everything needed to finish it is in THIS file. Nothing is
+lost. Resume whenever; no memory of the original work is required.
+
+**Done & live-able (web/backend, no app build):**
+- ✅ Backend `GET /api/me/memories/geofences` — committed `b83c6fd`, **already on `origin/main`**.
+- ✅ Web JS bridge: `web/src/lib/geofence-plugin.ts` + `web/src/lib/geofences.ts` (guarded, no-ops
+  until the native plugin exists) — committed `11f932c`, **local only, push to ship**.
+
+**Not done (the native part — needs an app build + store work):**
+- ⬜ Add the native Android plugin + receiver (Part 1).
+- ⬜ Add the native iOS plugin (Part 2) — requires `ios/` project (`npx cap add ios` on a Mac).
+- ⬜ Wire `useGeofenceSync` on app start (Part 3).
+- ⬜ Build, grant background location, device-test (Part 4).
+- ⬜ Play Console background-location declaration + prominent disclosure + Data Safety (Part 6) — **release blocker if skipped.**
+
+---
+
+## ▶️ HOW TO RESUME — for a future AI/LLM assistant
+
+> Paste roughly: *"Resume BOR-44 from BOR44_GEOFENCING_GUIDE.md, Phase B native."* Then:
+
+1. **Read, in order:** this file (top to bottom), then the PRD at
+   `~/.claude/MEMORY/WORK/20260611-132435_bor44-geofencing-plan/PRD.md`, then the memory note
+   `feedback_leave_changes_uncommitted.md` and `project_brooks_i18n_architecture.md`.
+2. **Hard constraints for this repo (do not relearn the hard way):**
+   - **You cannot `git push`** from this environment (no GitHub creds — `could not read Username`).
+     Commit locally with **specific file paths** (never `git add .` — the WSL/Windows tree is full of
+     CRLF/EOL noise; run `git diff -w` to see only real changes). Tell Boris to `git push origin main`.
+   - **Compile backend** with `~/.claude/bin/brooks-gradle :<module>:compileJava` (no Linux JVM).
+   - **Verify web** with `cd web && npx tsc --noEmit` + `npx next lint --file <files>`.
+   - The app is a **remote WebView** (`server.url = https://brooksweb.uk`) — killed-app notifications
+     MUST be posted by native code (see "How it works"). App id `uk.brooksweb.app`; Android pkg
+     `uk/brooksweb/app` (Java MainActivity). Only `web/android` exists in the checkout (no `web/ios`).
+3. **What to implement:** the native code in Parts 1–3 below is complete and ready to paste into the
+   native projects. The web/backend side is already done. Your job when resuming is to (a) place the
+   native files, (b) wire `useGeofenceSync`, (c) help Boris build+test, (d) do the store-declaration
+   text (Part 6). You CANNOT verify native builds — be honest about that; lean on Part 4 testing.
+4. **Decisions already locked (don't re-litigate):** free **custom** plugin (no paid license);
+   on-device **local** notification fired by native receiver (works when killed); register the
+   **nearest ≤20** regions (iOS cap); notification copy "You are near a memory shared by [name]!";
+   tap → existing `/maps?memory=<id>` App Link.
+5. **Linear:** move BOR-44 Backlog → In Progress when you start; update at each stage; In Review when
+   the native build is testable; Done after device QA + store acceptance.
+
+## ▶️ HOW TO RESUME — for a human (even if you don't code)
+
+- You do **not** have to write code. In a future session, tell the AI the line in the box above; it
+  will place the files for you. Your hands-on jobs are the things only a human can do:
+  1. **Run the build** (Part 4): open Android Studio, press Run on a real phone.
+  2. **Grant "Allow all the time" location** on the phone (the OS makes the *user* do this).
+  3. **Test by simulating arrival** (Part 4 step 7) and confirm the notification fires (even after
+     swiping the app closed) and tapping it opens the memory.
+  4. **Play Console paperwork** (Part 6): the background-location declaration form + the demo video +
+     Data Safety. Without this, Google rejects the release — this is the single most important human step.
+- If you only want the **safe, instant** part live now (no app build, no store risk): just
+  `git push origin main` to ship the backend endpoint + web bridge (the no-op groundwork). The actual
+  notifications stay off until the native parts above are built.
+
+---
+
 This is the **Phase B/C** guide. Phase A (the backend endpoint + JS bridge) is already in the code.
 Follow this top to bottom. **Every code block tells you the exact file path.** Android is fully
 covered (the `android/` project is in the repo); iOS is fully covered too (do it on a Mac once the
