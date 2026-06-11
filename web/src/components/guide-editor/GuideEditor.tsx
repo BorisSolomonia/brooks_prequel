@@ -157,8 +157,10 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     if (!guide) return;
     try {
       await api.post<Guide>(`/api/guides/${guide.id}/publish`, undefined, token);
-      const updated = await api.get<Guide>(`/api/guides/${guide.id}`, token);
-      setGuide(updated);
+      // BOR-48: on a successful publish, take the creator straight to the live
+      // guide page so they can review their published work immediately.
+      toast.success('Guide published!');
+      router.push(`/guides/${guide.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to publish');
     }
