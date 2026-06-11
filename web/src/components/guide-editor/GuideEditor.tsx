@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
 import type { Guide, GuideUpdateRequest } from '@/types';
 import GuideMetadataForm from './GuideMetadataForm';
 import DayPanel from './DayPanel';
@@ -23,6 +24,11 @@ interface Props {
 export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props) {
   const router = useRouter();
   const { confirm } = useConfirm();
+  const toast = useToast();
+  // BOR-43: after a successful save we scroll/focus the inline Publish action
+  // (the header) to flow the creator toward publishing, rather than routing to
+  // a separate screen.
+  const publishActionsRef = useRef<HTMLDivElement>(null);
   const [guide, setGuide] = useState<Guide | null>(initialGuide || null);
   const [metadata, setMetadata] = useState<GuideUpdateRequest>({
     title: initialGuide?.title || '',
@@ -84,7 +90,19 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     setMetadata((prev) => ({ ...prev, tags: (prev.tags || []).filter((t) => t !== tag) }));
   };
 
+  // BOR-43: save → flow toward publish. Validation gate runs BEFORE the API
+  // call; on a successful (2xx) save we toast and scroll to the inline Publish
+  // action; on error we block that, surface the message, and restore the button.
   const handleSaveMetadata = async () => {
+    if (saving) return; // guard against double-submission
+    // Validation gate — block the API call if required fields are missing.
+    if (!metadata.title || !metadata.title.trim()) {
+      const msg = 'Add a title before saving.';
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -93,12 +111,22 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
         const updated = await api.get<Guide>(`/api/guides/${guide.id}`, token);
         setGuide(updated);
       } else {
+        // router.replace (not push) so Back from the editor never re-triggers
+        // the save or loops (BOR-43 AC).
         const created = await api.post<Guide>('/api/guides', metadata, token);
         setGuide(created);
         router.replace(`/guides/${created.id}/edit`);
       }
+      // Success: transient toast + flow toward the inline Publish action.
+      toast.success('Draft saved!');
+      requestAnimationFrame(() => {
+        publishActionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save');
+      // Error: block the scroll above, restore the button (finally), show message.
+      const msg = err instanceof Error ? err.message : 'Failed to save';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -173,7 +201,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
           <h1 className="text-xl font-semibold text-ig-text-primary">
             {guide ? 'Edit Guide' : 'New Guide'}
           </h1>
-          <div className="flex flex-wrap items-center gap-3">
+          <div ref={publishActionsRef} className="flex flex-wrap items-center gap-3">
             {/* The header "Create with AI" button was removed: on /guides/new it was a
              * non-functional disabled stub, and once a guide exists the SAME toggle is
              * already offered in the itinerary section (DaysSection). AI discovery now
