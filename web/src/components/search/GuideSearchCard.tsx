@@ -61,6 +61,7 @@ export default function GuideSearchCard({ guide, initialSaved = false }: GuideSe
       saveLabel={saving ? 'Saving guide' : saved ? 'Saved guide' : 'Save guide'}
       creatorName={guide.creatorDisplayName || guide.creatorUsername}
       creatorAvatarUrl={guide.creatorAvatarUrl}
+      creatorHref={guide.creatorUsername ? `/creators/${guide.creatorUsername}` : undefined}
     />
   );
 }

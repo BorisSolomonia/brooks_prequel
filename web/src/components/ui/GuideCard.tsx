@@ -25,10 +25,13 @@ interface GuideCardProps {
   showSaveButton?: boolean;
   statusBadge?: string | null;
   className?: string;
-  // Creator byline (visual only — the whole card already links to the guide;
-  // the clickable profile link lives on the guide detail page).
+  // BOR-42 edge-floating creator badge. Rendered only when both a name and a
+  // profile href are supplied (opt-in — e.g. the creator's own profile page
+  // passes neither, so its cards show no badge). The badge is a SEPARATE link
+  // from the main card link, so tapping it routes to the creator, not the guide.
   creatorName?: string | null;
   creatorAvatarUrl?: string | null;
+  creatorHref?: string | null;
 }
 
 
@@ -65,11 +68,13 @@ export default function GuideCard({
   className = '',
   creatorName,
   creatorAvatarUrl,
+  creatorHref,
 }: GuideCardProps) {
   const { formatAmount } = useCurrency();
   const location = displayLocation || region || 'Destination';
   const spots = spotCount ?? placeCount ?? 0;
   const cardPrice = effectivePriceCents ?? priceCents ?? 0;
+  const showCreatorBadge = Boolean(creatorName && creatorHref);
 
   return (
     <article className={`mw-card overflow-hidden rounded-xl transition duration-200 hover:-translate-y-0.5 hover:border-brand-500/60 ${className}`}>
@@ -110,27 +115,45 @@ export default function GuideCard({
         )}
       </div>
 
-      <Link href={href} className="block p-4">
-        <h3 className="font-display line-clamp-2 text-base font-black leading-5 text-ig-text-primary">
-          {title}
-        </h3>
-        <p className="mt-2 text-sm text-ig-text-secondary">
-          {location} - {formatDuration(dayCount)} - {spots} {spots === 1 ? 'spot' : 'spots'}
-        </p>
-
-        {creatorName && (
-          <div className="mt-2 flex items-center gap-1.5">
-            <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-ig-border bg-gradient-to-br from-brand-500 to-accent-500">
-              {creatorAvatarUrl ? (
-                <Image src={creatorAvatarUrl} alt={creatorName} width={20} height={20} className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-[10px] font-bold text-white">{creatorName.charAt(0).toUpperCase()}</span>
-              )}
+      <div className="relative">
+        {/* BOR-42: edge-floating creator badge. A SEPARATE link (z-30, sits on
+            top of the card link below) so tapping it routes to the creator, not
+            the guide. It straddles the photo/details divider via -top-7 on this
+            56px avatar (centred on the line). The article is overflow-hidden but
+            the badge is interior (left-4) so it is never clipped. */}
+        {showCreatorBadge && (
+          <Link
+            href={creatorHref!}
+            aria-label={`View ${creatorName}'s profile`}
+            className="group/badge absolute -top-7 left-4 z-30 inline-flex flex-col items-start"
+          >
+            <span className="relative">
+              {/* 1980s Memphis-style geometric accents behind the avatar */}
+              <span aria-hidden className="absolute -right-1.5 -top-1.5 h-4 w-4 rotate-45 rounded-[3px] bg-brand-500 shadow-sm" />
+              <span aria-hidden className="absolute -bottom-1 -left-1.5 h-2.5 w-2.5 rounded-full bg-accent-400" />
+              {/* Avatar in a vibrant tanned (accent) border, ringed against the dark container */}
+              <span className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-4 border-accent-500 bg-gradient-to-br from-brand-500 to-accent-500 shadow-lg ring-2 ring-ig-elevated transition group-hover/badge:border-accent-400">
+                {creatorAvatarUrl ? (
+                  <Image src={creatorAvatarUrl} alt={creatorName ?? ''} width={56} height={56} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-lg font-black text-white">{(creatorName ?? '?').charAt(0).toUpperCase()}</span>
+                )}
+              </span>
             </span>
-            <span className="truncate text-xs text-ig-text-tertiary">{creatorName}</span>
-          </div>
+            <span className="mt-1 max-w-[8.5rem] truncate text-xs font-medium text-ig-text-secondary group-hover/badge:text-brand-500">
+              By {creatorName}
+            </span>
+          </Link>
         )}
-        <p className="mt-1 text-sm text-ig-text-tertiary">
+
+        <Link href={href} className={`block p-4 ${showCreatorBadge ? 'pt-12' : ''}`}>
+          <h3 className="font-display line-clamp-2 text-base font-black leading-5 text-ig-text-primary">
+            {title}
+          </h3>
+          <p className="mt-2 text-sm text-ig-text-secondary">
+            {location} - {formatDuration(dayCount)} - {spots} {spots === 1 ? 'spot' : 'spots'}
+          </p>
+          <p className="mt-1 text-sm text-ig-text-tertiary">
           {spots} {spots === 1 ? 'spot' : 'spots'} included
         </p>
 
@@ -163,7 +186,8 @@ export default function GuideCard({
             )}
           </p>
         </div>
-      </Link>
+        </Link>
+      </div>
     </article>
   );
 }
