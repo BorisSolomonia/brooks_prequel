@@ -10,6 +10,7 @@ import PermissionsBootstrap from '@/components/PermissionsBootstrap';
 import { setupNativeAuthListener } from '@/lib/capacitor';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
+import { MenuCoordinatorProvider } from '@/components/layout/MenuCoordinator';
 
 // Immersive routes — full-screen experiences where the in-document chrome
 // (Footer in particular) competes with the primary surface. On these the
@@ -51,18 +52,22 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <ToastProvider>
         <ConfirmProvider>
           <OnboardingProvider>
-            <PermissionsBootstrap />
-            {!isLandingPage && <Navbar />}
-            <main
-              className={
-                isLandingPage || isImmersive
-                  ? ''
-                  : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'
-              }
-            >
-              {children}
-            </main>
-            {showFooter && <Footer />}
+            {/* BOR-47: shares menu-open state across the Navbar "upper menu" and
+                the map "burger" drawer so only one can be open at a time. */}
+            <MenuCoordinatorProvider>
+              <PermissionsBootstrap />
+              {!isLandingPage && <Navbar />}
+              <main
+                className={
+                  isLandingPage || isImmersive
+                    ? ''
+                    : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'
+                }
+              >
+                {children}
+              </main>
+              {showFooter && <Footer />}
+            </MenuCoordinatorProvider>
           </OnboardingProvider>
         </ConfirmProvider>
       </ToastProvider>

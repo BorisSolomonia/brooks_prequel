@@ -17,6 +17,7 @@ import Spinner from '@/components/ui/Spinner';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 import { isNative } from '@/lib/capacitor';
 import { capturePhotoDetailed } from '@/lib/camera';
+import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
 import { useProximityNotifier } from '@/hooks/useProximityNotifier';
 import type {
   InfluencerMapPin,
@@ -980,6 +981,27 @@ export default function MapsExperience({
   useEffect(() => {
     if (!drawerOpen) setDrawerShowAllMemories(false);
   }, [drawerOpen]);
+
+  // BOR-47: coordinate with the Navbar "upper menu" so the two are mutually
+  // exclusive. Opening the drawer marks 'burger' active (closing the upper
+  // menu); when the upper menu becomes active, the effect closes this drawer.
+  const { openMenuId: activeMenuId, openMenu: setMenuActive, closeMenu: clearMenuActive } = useMenuCoordinator();
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    clearMenuActive('burger');
+  }, [clearMenuActive]);
+  const toggleDrawer = () => {
+    if (drawerOpen) {
+      closeDrawer();
+    } else {
+      setDrawerOpen(true);
+      setMenuActive('burger');
+    }
+  };
+  useEffect(() => {
+    if (activeMenuId !== 'burger' && drawerOpen) setDrawerOpen(false);
+  }, [activeMenuId, drawerOpen]);
+
   const { currentStep, isActive: tourActive } = useOnboarding();
 
   // Auto-close the drawer whenever a memory becomes selected. The selected
@@ -2375,7 +2397,7 @@ export default function MapsExperience({
       <button
         type="button"
         data-tour="memory-drawer-trigger"
-        onClick={() => setDrawerOpen((open) => !open)}
+        onClick={toggleDrawer}
         aria-label="Open guides, filters and layers"
         aria-expanded={drawerOpen}
         className="absolute right-3 top-3 z-30 inline-flex h-touch w-touch items-center justify-center rounded-full border-2 border-ig-text-primary bg-ig-elevated text-ig-text-primary shadow-[0_4px_16px_rgba(15,23,42,0.28)] transition active:scale-95 md:right-4 md:top-4"
@@ -2428,7 +2450,7 @@ export default function MapsExperience({
           <button
             type="button"
             aria-label="Close drawer"
-            onClick={() => setDrawerOpen(false)}
+            onClick={closeDrawer}
             className="absolute inset-0 bg-black/75"
           />
           <div
@@ -2452,7 +2474,7 @@ export default function MapsExperience({
               </div>
               <button
                 type="button"
-                onClick={() => setDrawerOpen(false)}
+                onClick={closeDrawer}
                 aria-label="Close"
                 className="mw-ripple inline-flex h-touch w-touch shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-ig-text-secondary"
               >

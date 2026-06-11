@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useTranslation } from 'react-i18next';
+import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
 import GlobalSearchBar from '@/components/layout/GlobalSearchBar';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import LanguageSelector from '@/components/i18n/LanguageSelector';
@@ -75,6 +76,7 @@ function MobileTabIcon({ path }: { path: string }) {
 export default function Navbar() {
   const { user, isLoading } = useUser();
   const { t } = useTranslation();
+  const { openMenuId, openMenu, closeMenu } = useMenuCoordinator();
   const pathname = usePathname();
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
   const visibleDesktopLinks = desktopLinks.filter((link) => !link.auth || user);
@@ -102,8 +104,11 @@ export default function Navbar() {
     }
     function handleToggle() {
       if (menu?.open) {
+        // BOR-47: announce the upper menu as the active one (closes the burger).
+        openMenu('upper');
         document.addEventListener('pointerdown', handlePointerDown);
       } else {
+        closeMenu('upper');
         document.removeEventListener('pointerdown', handlePointerDown);
       }
     }
@@ -113,7 +118,16 @@ export default function Navbar() {
       menu.removeEventListener('toggle', handleToggle);
       document.removeEventListener('pointerdown', handlePointerDown);
     };
-  }, []);
+  }, [openMenu, closeMenu]);
+
+  // BOR-47: when another primary menu (the map burger) becomes active, close
+  // this upper menu. Closing fires `toggle` → closeMenu('upper'), which is a
+  // no-op while another menu owns the id, so there's no update loop.
+  useEffect(() => {
+    if (openMenuId !== 'upper' && mobileMenuRef.current?.open) {
+      mobileMenuRef.current.removeAttribute('open');
+    }
+  }, [openMenuId]);
 
   return (
     <>
