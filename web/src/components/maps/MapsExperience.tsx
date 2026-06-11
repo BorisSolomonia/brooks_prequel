@@ -1705,6 +1705,18 @@ export default function MapsExperience({
   //      can render it.
   // A ref sentinel ensures we only auto-select ONCE per id — if the user
   // dismisses the card we don't keep re-opening it on every re-render.
+  // BOR-45: deep-link from the Memories page "Create memory" button. When the
+  // map opens with ?action=create_memory, auto-open the composer once — exactly
+  // as if the user tapped the "Create a memory" pill. Ref sentinel so dismissing
+  // the composer doesn't re-open it on re-render.
+  const autoCreateTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (autoCreateTriggeredRef.current) return;
+    if (searchParams.get('action') !== 'create_memory') return;
+    autoCreateTriggeredRef.current = true;
+    setCreateMemoryOpen(true);
+  }, [searchParams]);
+
   const autoSelectedMemoryRef = useRef<string | null>(null);
   useEffect(() => {
     const memoryParam = searchParams.get('memory');

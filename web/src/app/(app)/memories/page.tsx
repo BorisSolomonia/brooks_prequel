@@ -123,11 +123,13 @@ export default function MyMemoriesPage() {
         <h1 className="font-display text-2xl font-black uppercase tracking-[0.04em] text-ig-text-primary">
           Memories
         </h1>
+        {/* BOR-45: routes to the map AND auto-opens the create-memory composer
+            on arrival (the map listens for ?action=create_memory). */}
         <Link
-          href="/maps"
-          className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm"
+          href="/maps?action=create_memory"
+          className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm"
         >
-          Open map
+          Create memory
         </Link>
       </div>
 
