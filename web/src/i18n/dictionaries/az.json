@@ -85,10 +85,31 @@
     },
     "guides": {
       "eyebrow": "SEÇİLMİŞ BƏLƏDÇİLƏR",
-      "button": "Bələdçilərə bax"
+      "button": "Bələdçilərə bax",
+      "cardBody": "Maraqlarınıza uyğun bələdçilər.\nFərqli baxışlar."
     },
     "search": {
-      "eyebrow": "AXTARIŞINIZI DƏQİQLƏŞDİRİN"
+      "eyebrow": "AXTARIŞINIZI DƏQİQLƏŞDİRİN",
+      "cardBody": "Lazımsızı gizlədin.\nƏsası görün."
+    },
+    "plan": {
+      "title": "KƏŞFDƏN\nPLANA",
+      "body": "Yerləri öz təqviminizə\nvə xəritənizə çevirin."
+    },
+    "getStarted": "Başla",
+    "signingIn": "Giriş…",
+    "signingInAria": "Giriş edilir",
+    "strip": {
+      "discoverTitle": "GÖRÜNMƏYƏNI\nKƏŞF ET",
+      "discoverBody": "Real yerlərdə\nreal hekayələr.",
+      "herdTitle": "KÜTLƏDƏN QAÇ",
+      "herdBody": "Öz tərzində kəşf et.",
+      "connectTitle": "MƏNA İLƏ\nƏLAQƏ QUR",
+      "connectBody": "Qalıcı anlar.",
+      "shareTitle": "HEKAYƏNI PAYLAŞ",
+      "shareBody": "Sənin sözlərin. Onların macərası.",
+      "intentionalTitle": "DAHA ŞÜURLU\nYAŞA",
+      "intentionalBody": "Sadəcə səyahət deyil."
     }
   },
   "auth": {

@@ -85,10 +85,31 @@
     },
     "guides": {
       "eyebrow": "GUIDE SELEZIONATE",
-      "button": "Sfoglia le guide"
+      "button": "Sfoglia le guide",
+      "cardBody": "Guide in base ai tuoi interessi.\nProspettive diverse."
     },
     "search": {
-      "eyebrow": "AFFINA LA TUA RICERCA"
+      "eyebrow": "AFFINA LA TUA RICERCA",
+      "cardBody": "Nascondi l'inutile.\nVedi ciò che conta."
+    },
+    "plan": {
+      "title": "DALLA SCOPERTA\nAL PIANO",
+      "body": "Trasforma i luoghi nel tuo\ncalendario e mappa."
+    },
+    "getStarted": "Inizia",
+    "signingIn": "Accesso…",
+    "signingInAria": "Accesso in corso",
+    "strip": {
+      "discoverTitle": "SCOPRI\nL'INVISIBILE",
+      "discoverBody": "Storie vere in\nluoghi veri.",
+      "herdTitle": "EVITA LA FOLLA",
+      "herdBody": "Esplora a modo tuo.",
+      "connectTitle": "CONNETTITI CON\nIL SIGNIFICATO",
+      "connectBody": "Momenti che restano.",
+      "shareTitle": "CONDIVIDI LA TUA STORIA",
+      "shareBody": "Le tue parole. La loro avventura.",
+      "intentionalTitle": "VIVI PIÙ\nINTENZIONALMENTE",
+      "intentionalBody": "Non solo viaggi."
     }
   },
   "auth": {

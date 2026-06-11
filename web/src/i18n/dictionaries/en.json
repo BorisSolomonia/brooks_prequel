@@ -85,10 +85,31 @@
     },
     "guides": {
       "eyebrow": "CURATED GUIDES",
-      "button": "Browse guides"
+      "button": "Browse guides",
+      "cardBody": "Guides around your interests.\nDifferent perspectives."
     },
     "search": {
-      "eyebrow": "FOCUS YOUR SEARCH"
+      "eyebrow": "FOCUS YOUR SEARCH",
+      "cardBody": "Hide what is not useful.\nSee what matters."
+    },
+    "plan": {
+      "title": "FROM DISCOVERY\nTO PLAN",
+      "body": "Turn places into your\ncalendar and map."
+    },
+    "getStarted": "Get started",
+    "signingIn": "Signing in…",
+    "signingInAria": "Signing you in",
+    "strip": {
+      "discoverTitle": "DISCOVER\nTHE UNSEEN",
+      "discoverBody": "Real stories in\nreal places.",
+      "herdTitle": "AVOID THE HERD",
+      "herdBody": "Explore your way.",
+      "connectTitle": "CONNECT THROUGH\nMEANING",
+      "connectBody": "Moments that stay.",
+      "shareTitle": "SHARE YOUR STORY",
+      "shareBody": "Your words. Their adventure.",
+      "intentionalTitle": "LIVE MORE\nINTENTIONAL",
+      "intentionalBody": "Not just trips."
     }
   },
   "auth": {

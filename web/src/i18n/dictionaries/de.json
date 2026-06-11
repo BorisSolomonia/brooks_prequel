@@ -85,10 +85,31 @@
     },
     "guides": {
       "eyebrow": "KURATIERTE GUIDES",
-      "button": "Guides durchsuchen"
+      "button": "Guides durchsuchen",
+      "cardBody": "Guides nach deinen Interessen.\nVerschiedene Perspektiven."
     },
     "search": {
-      "eyebrow": "GRENZE DEINE SUCHE EIN"
+      "eyebrow": "GRENZE DEINE SUCHE EIN",
+      "cardBody": "Blende Unnötiges aus.\nSieh, was zählt."
+    },
+    "plan": {
+      "title": "VON DER ENTDECKUNG\nZUM PLAN",
+      "body": "Mach Orte zu deinem\nKalender und deiner Karte."
+    },
+    "getStarted": "Loslegen",
+    "signingIn": "Anmeldung…",
+    "signingInAria": "Anmeldung läuft",
+    "strip": {
+      "discoverTitle": "ENTDECKE\nDAS VERBORGENE",
+      "discoverBody": "Echte Geschichten an\nechten Orten.",
+      "herdTitle": "MEIDE DIE MASSE",
+      "herdBody": "Erkunde auf deine Art.",
+      "connectTitle": "VERBINDE DICH\nMIT SINN",
+      "connectBody": "Momente, die bleiben.",
+      "shareTitle": "TEILE DEINE GESCHICHTE",
+      "shareBody": "Deine Worte. Ihr Abenteuer.",
+      "intentionalTitle": "LEBE\nBEWUSSTER",
+      "intentionalBody": "Nicht nur Reisen."
     }
   },
   "auth": {

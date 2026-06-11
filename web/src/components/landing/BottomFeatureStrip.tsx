@@ -1,4 +1,7 @@
+'use client';
+
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const PINK = '#C95A7D';
 const YELLOW = '#D4AA3A';
@@ -52,39 +55,20 @@ function LightningIcon() {
 
 interface FeatureItem {
   icon: ReactNode;
-  title: string;
-  body: string;
+  titleKey: string;
+  bodyKey: string;
 }
 
 const features: FeatureItem[] = [
-  {
-    icon: <SearchPinIcon />,
-    title: 'DISCOVER\nTHE UNSEEN',
-    body: 'Real stories in\nreal places.',
-  },
-  {
-    icon: <WalkingIcon />,
-    title: 'AVOID THE HERD',
-    body: 'Explore your way.',
-  },
-  {
-    icon: <HeartIcon />,
-    title: 'CONNECT THROUGH\nMEANING',
-    body: 'Moments that stay.',
-  },
-  {
-    icon: <PencilIcon />,
-    title: 'SHARE YOUR STORY',
-    body: 'Your words. Their adventure.',
-  },
-  {
-    icon: <LightningIcon />,
-    title: 'LIVE MORE\nINTENTIONAL',
-    body: 'Not just trips.',
-  },
+  { icon: <SearchPinIcon />, titleKey: 'landing.strip.discoverTitle', bodyKey: 'landing.strip.discoverBody' },
+  { icon: <WalkingIcon />, titleKey: 'landing.strip.herdTitle', bodyKey: 'landing.strip.herdBody' },
+  { icon: <HeartIcon />, titleKey: 'landing.strip.connectTitle', bodyKey: 'landing.strip.connectBody' },
+  { icon: <PencilIcon />, titleKey: 'landing.strip.shareTitle', bodyKey: 'landing.strip.shareBody' },
+  { icon: <LightningIcon />, titleKey: 'landing.strip.intentionalTitle', bodyKey: 'landing.strip.intentionalBody' },
 ];
 
 export default function BottomFeatureStrip() {
+  const { t } = useTranslation();
   return (
     <div
       className="absolute inset-x-0 bottom-0 z-20 grid grid-cols-5 overflow-hidden"
@@ -92,7 +76,7 @@ export default function BottomFeatureStrip() {
     >
       {features.map((feature, index) => (
         <div
-          key={feature.title}
+          key={feature.titleKey}
           style={{
             minWidth: 0,
             borderRight: index < features.length - 1 ? '2px solid rgba(255,255,255,0.16)' : 'none',
@@ -114,7 +98,7 @@ export default function BottomFeatureStrip() {
               margin: 0,
             }}
           >
-            {feature.title}
+            {t(feature.titleKey)}
           </p>
           <p
             className="hidden sm:block"
@@ -127,7 +111,7 @@ export default function BottomFeatureStrip() {
               marginTop: 5,
             }}
           >
-            {feature.body}
+            {t(feature.bodyKey)}
           </p>
         </div>
       ))}

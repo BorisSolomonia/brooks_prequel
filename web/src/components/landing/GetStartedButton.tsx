@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Spinner from '@/components/ui/Spinner';
 import { startAuthFlow } from '@/lib/capacitor';
 
@@ -8,6 +9,7 @@ const BLACK = '#050505';
 const YELLOW = '#D4AA3A';
 
 export default function GetStartedButton({ mobile }: { mobile: boolean }) {
+  const { t } = useTranslation();
   const [loggingIn, setLoggingIn] = useState(false);
 
   const handleClick = () => {
@@ -46,7 +48,7 @@ export default function GetStartedButton({ mobile }: { mobile: boolean }) {
         opacity: loggingIn ? 0.85 : 1,
         color: YELLOW,
       }}
-      aria-label={loggingIn ? 'Signing you in' : 'Get started'}
+      aria-label={loggingIn ? t('landing.signingInAria') : t('landing.getStarted')}
     >
       <span
         style={{
@@ -57,7 +59,7 @@ export default function GetStartedButton({ mobile }: { mobile: boolean }) {
           textTransform: 'uppercase',
         }}
       >
-        {loggingIn ? 'Signing in…' : 'Get started'}
+        {loggingIn ? t('landing.signingIn') : t('landing.getStarted')}
       </span>
       {loggingIn ? (
         <Spinner size={24} ariaLabel="Signing in" />

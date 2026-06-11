@@ -234,8 +234,8 @@ export default function LandingPage() {
           >
             <FloatingFeatureCard
               icon={<PinIcon size={18} />}
-              title="LEAVE A MEMORY"
-              body="Leave something meaningful."
+              title={t('landing.memory.eyebrow')}
+              body={t('landing.memory.title')}
               style={{
                 minHeight: 86,
                 background: 'rgba(245,234,216,0.96)',
@@ -256,8 +256,8 @@ export default function LandingPage() {
           >
             <FloatingFeatureCard
               icon={<CompassIcon size={17} />}
-              title="CURATED GUIDES"
-              body={"Guides around your interests.\nDifferent perspectives."}
+              title={t('landing.guides.eyebrow')}
+              body={t('landing.guides.cardBody')}
               bottomIcons={card2Icons}
               style={{ minHeight: 88, background: 'rgba(245,234,216,0.92)', border: '2px solid rgba(46,46,46,0.72)', boxShadow: '7px 7px 0 rgba(80,152,179,0.2)' }}
             />
@@ -274,8 +274,8 @@ export default function LandingPage() {
           >
             <FloatingFeatureCard
               icon={<CalendarIcon color={BLACK} size={17} />}
-              title={"FROM DISCOVERY\nTO PLAN"}
-              body={"Turn places into your\ncalendar and map."}
+              title={t('landing.plan.title')}
+              body={t('landing.plan.body')}
               bottomIcons={card3Icons}
               style={{ minHeight: 90, background: 'rgba(245,234,216,0.92)', border: '2px solid rgba(46,46,46,0.72)', boxShadow: '7px 7px 0 rgba(212,170,58,0.26)' }}
             />
@@ -292,8 +292,8 @@ export default function LandingPage() {
           >
             <FloatingFeatureCard
               icon={<EyeOffIcon size={17} />}
-              title="FOCUS YOUR SEARCH"
-              body={"Hide what is not useful.\nSee what matters."}
+              title={t('landing.search.eyebrow')}
+              body={t('landing.search.cardBody')}
               style={{ minHeight: 82, background: 'rgba(245,234,216,0.9)', border: '2px solid rgba(46,46,46,0.72)', boxShadow: '7px 7px 0 rgba(201,90,125,0.2)' }}
             />
           </div>

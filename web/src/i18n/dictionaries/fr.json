@@ -85,10 +85,31 @@
     },
     "guides": {
       "eyebrow": "GUIDES SÉLECTIONNÉS",
-      "button": "Parcourir les guides"
+      "button": "Parcourir les guides",
+      "cardBody": "Guides selon vos centres d'intérêt.\nDes perspectives différentes."
     },
     "search": {
-      "eyebrow": "AFFINEZ VOTRE RECHERCHE"
+      "eyebrow": "AFFINEZ VOTRE RECHERCHE",
+      "cardBody": "Masquez l'inutile.\nVoyez l'essentiel."
+    },
+    "plan": {
+      "title": "DE LA DÉCOUVERTE\nAU PLAN",
+      "body": "Transformez des lieux en\nagenda et carte."
+    },
+    "getStarted": "Commencer",
+    "signingIn": "Connexion…",
+    "signingInAria": "Connexion en cours",
+    "strip": {
+      "discoverTitle": "DÉCOUVRIR\nL'INVISIBLE",
+      "discoverBody": "De vraies histoires\ndans de vrais lieux.",
+      "herdTitle": "ÉVITER LA FOULE",
+      "herdBody": "Explorez à votre façon.",
+      "connectTitle": "SE CONNECTER PAR\nLE SENS",
+      "connectBody": "Des moments qui restent.",
+      "shareTitle": "PARTAGEZ VOTRE HISTOIRE",
+      "shareBody": "Vos mots. Leur aventure.",
+      "intentionalTitle": "VIVRE PLUS\nINTENTIONNELLEMENT",
+      "intentionalBody": "Pas juste des voyages."
     }
   },
   "auth": {

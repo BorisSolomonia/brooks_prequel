@@ -85,10 +85,31 @@
     },
     "guides": {
       "eyebrow": "GUÍAS SELECCIONADAS",
-      "button": "Explorar guías"
+      "button": "Explorar guías",
+      "cardBody": "Guías según tus intereses.\nPerspectivas diferentes."
     },
     "search": {
-      "eyebrow": "AFINA TU BÚSQUEDA"
+      "eyebrow": "AFINA TU BÚSQUEDA",
+      "cardBody": "Oculta lo inútil.\nVe lo que importa."
+    },
+    "plan": {
+      "title": "DEL DESCUBRIMIENTO\nAL PLAN",
+      "body": "Convierte lugares en tu\ncalendario y mapa."
+    },
+    "getStarted": "Empezar",
+    "signingIn": "Iniciando sesión…",
+    "signingInAria": "Iniciando sesión",
+    "strip": {
+      "discoverTitle": "DESCUBRE\nLO OCULTO",
+      "discoverBody": "Historias reales en\nlugares reales.",
+      "herdTitle": "EVITA LA MULTITUD",
+      "herdBody": "Explora a tu manera.",
+      "connectTitle": "CONECTA CON\nSIGNIFICADO",
+      "connectBody": "Momentos que perduran.",
+      "shareTitle": "COMPARTE TU HISTORIA",
+      "shareBody": "Tus palabras. Su aventura.",
+      "intentionalTitle": "VIVE MÁS\nINTENCIONALMENTE",
+      "intentionalBody": "No solo viajes."
     }
   },
   "auth": {
