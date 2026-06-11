@@ -1064,7 +1064,8 @@ export default function MapsExperience({
   const [followers, setFollowers] = useState<Array<{ userId: string; username: string | null; displayName: string; avatarUrl: string | null }>>([]);
   const [followersLoading, setFollowersLoading] = useState(false);
   const [followersFetched, setFollowersFetched] = useState(false);
-  const [selectedFollowerId, setSelectedFollowerId] = useState<string>('');
+  // BOR-50: multi-select recipients (was a single follower). Holds follower userIds.
+  const [selectedFollowerIds, setSelectedFollowerIds] = useState<string[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<BlobPart[]>([]);
   // BOR-40: hidden capture-enabled input used as the web / no-native-camera
@@ -1483,10 +1484,13 @@ export default function MapsExperience({
       longitude: userCoordinates[0],
     };
 
-    // Snapshot share mode + selected follower so the background call uses
-    // the right values even if the UI moves on while POSTs are in flight.
-    const sharePath: 'link' | 'follower' = shareMode;
-    const followerRecipientId = sharePath === 'follower' ? selectedFollowerId : '';
+    // Snapshot share mode + recipients so the background call uses the right
+    // values even if the UI moves on while POSTs are in flight. BOR-50: a
+    // PRIVATE memory is never shared (no recipient required); multi-select
+    // followers are sent one grant each.
+    const isPrivate = snapshot.visibility === 'PRIVATE';
+    const sharePath: 'none' | 'link' | 'follower' = isPrivate ? 'none' : shareMode;
+    const followerRecipientIds = sharePath === 'follower' ? [...selectedFollowerIds] : [];
 
     // Drop UI state + show the optimistic pin in a single React commit.
     setMemories((prev) => [...prev, optimisticPin]);
@@ -1498,7 +1502,7 @@ export default function MapsExperience({
     setMemoryBusy(false);
     // Reset share mode for the next composer session (default = share with a follower).
     setShareMode('follower');
-    setSelectedFollowerId('');
+    setSelectedFollowerIds([]);
 
     let created: { id: string };
     try {
@@ -1541,24 +1545,28 @@ export default function MapsExperience({
 
     // Direct in-app share to a follower: backend creates a MemoryGrant
     // and pushes "shared a memory with you" to the recipient.
-    if (sharePath === 'follower' && followerRecipientId) {
-      void api
-        .post(
-          `/api/memories/${createdId}/direct-shares`,
-          { recipientUserId: followerRecipientId },
-          token,
-        )
-        .then(() => {
-          setPageError('Sent to follower. They\'ll get a notification.');
-        })
-        .catch((err) => {
-          console.error('[memory] direct share failed:', err);
-          setPageError(
-            err instanceof Error
-              ? `Memory saved, but follower send failed: ${err.message}`
-              : 'Memory saved, but follower send failed.',
-          );
-        });
+    if (sharePath === 'follower' && followerRecipientIds.length > 0) {
+      // BOR-50: one grant per recipient (reuses the existing per-user
+      // direct-share endpoint, so each gets an independent locked grant).
+      void Promise.allSettled(
+        followerRecipientIds.map((rid) =>
+          api.post(`/api/memories/${createdId}/direct-shares`, { recipientUserId: rid }, token),
+        ),
+      ).then((results) => {
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        const total = followerRecipientIds.length;
+        if (failed === 0) {
+          setPageError(`Sent to ${total} ${total === 1 ? 'follower' : 'followers'}. They'll get a notification.`);
+        } else {
+          console.error('[memory] direct share: %d of %d failed', failed, total);
+          setPageError(`Memory saved; ${failed} of ${total} sends failed.`);
+        }
+      });
+      return;
+    }
+
+    // PRIVATE (or follower with no recipients) — nothing more to do.
+    if (sharePath !== 'link') {
       return;
     }
 
@@ -2906,7 +2914,12 @@ export default function MapsExperience({
               </button>
             </div>
 
-            {/* Share mode — link (token URL) vs direct share to a follower */}
+            {/* BOR-50: a PRIVATE memory is never shared — hide the share UI
+                entirely so the user can just Save (resolves the "must share a
+                private memory" paradox). */}
+            {memoryVisibility !== 'PRIVATE' && (
+            <>
+            {/* Share mode — link (token URL) vs direct share to followers */}
             <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
               How to share
             </label>
@@ -2933,7 +2946,7 @@ export default function MapsExperience({
                     : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
                 }`}
               >
-                Share with follower
+                Share with followers
               </button>
             </div>
 
@@ -2946,34 +2959,66 @@ export default function MapsExperience({
                     No followers yet. Share the app or switch to &quot;Share via link&quot;.
                   </p>
                 ) : (
-                  <select
-                    value={selectedFollowerId}
-                    onChange={(e) => setSelectedFollowerId(e.target.value)}
-                    className="min-h-touch w-full rounded-2xl border-2 border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
-                  >
-                    <option value="">Pick a follower…</option>
-                    {followers.map((f) => (
-                      <option key={f.userId} value={f.userId}>
-                        {f.displayName}{f.username ? ` (@${f.username})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    {/* BOR-50: multi-select — tap to toggle each follower. Each
+                        selected recipient gets their own locked grant. */}
+                    <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
+                      {followers.map((f) => {
+                        const checked = selectedFollowerIds.includes(f.userId);
+                        return (
+                          <button
+                            key={f.userId}
+                            type="button"
+                            aria-pressed={checked}
+                            onClick={() =>
+                              setSelectedFollowerIds((prev) =>
+                                checked ? prev.filter((id) => id !== f.userId) : [...prev, f.userId],
+                              )
+                            }
+                            className={`flex min-h-touch w-full items-center justify-between gap-2 rounded-2xl border-2 px-3 py-2 text-left text-sm transition ${
+                              checked
+                                ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
+                                : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
+                            }`}
+                          >
+                            <span className="truncate">
+                              {f.displayName}{f.username ? ` (@${f.username})` : ''}
+                            </span>
+                            {checked && <span aria-hidden className="shrink-0 text-brand-500">✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedFollowerIds.length > 0 && (
+                      <p className="mt-1 text-[11px] text-ig-text-tertiary">
+                        {selectedFollowerIds.length} selected
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
+            )}
+            </>
             )}
 
             <button
               type="button"
-              disabled={memoryBusy || (shareMode === 'follower' && !selectedFollowerId)}
+              disabled={
+                memoryBusy ||
+                // BOR-50: only require a recipient for a non-private follower share.
+                (memoryVisibility !== 'PRIVATE' && shareMode === 'follower' && selectedFollowerIds.length === 0)
+              }
               onClick={handleCreateMemory}
               className="mw-button-primary mt-6 inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold transition hover:bg-brand-600 disabled:opacity-60"
             >
               {memoryBusy && <Spinner />}
               {memoryBusy
                 ? 'Saving...'
-                : shareMode === 'follower'
-                  ? 'Save and send'
-                  : 'Save and share'}
+                : memoryVisibility === 'PRIVATE'
+                  ? 'Save'
+                  : shareMode === 'follower'
+                    ? 'Save and send'
+                    : 'Save and share'}
             </button>
 
             <a
