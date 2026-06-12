@@ -95,7 +95,11 @@ export default function Navbar() {
     <>
     <nav className="sticky top-0 z-50 border-b-2 border-ig-border bg-ig-elevated/95 pt-safe-top backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-2 px-3 md:h-[60px] md:gap-4 md:px-4">
-        <Link href="/" className="font-display shrink-0 text-base font-black uppercase tracking-[0.08em] text-brand-500 md:text-xl">
+        {/* BOR-58: the logo is "Home". For a logged-in session that's the Map
+            (the authed home); only logged-out visitors go to the landing page —
+            this stops the logo from dumping authenticated users back onto the
+            unauthenticated landing + "Get Started". */}
+        <Link href={user ? '/maps' : '/'} className="font-display shrink-0 text-base font-black uppercase tracking-[0.08em] text-brand-500 md:text-xl">
           {t('nav.brand')}
         </Link>
         <div data-tour="search-bar" className="min-w-0 flex-1">
