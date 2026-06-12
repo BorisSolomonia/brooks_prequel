@@ -48,7 +48,7 @@ export default function PreviewTripPage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <Link href="/trips" className="text-sm text-brand-500 hover:text-brand-400">
+          <Link href="/guides" className="text-sm text-brand-500 hover:text-brand-400">
             {t('guidePages.tripsPreview.backToPurchased')}
           </Link>
           <span className="ml-3 inline-flex items-center rounded-full border border-brand-500/40 bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-500">

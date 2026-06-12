@@ -42,7 +42,6 @@ const desktopLinks = [
   { href: '/maps', labelKey: 'nav.links.maps', auth: true },
   { href: '/guides', labelKey: 'nav.links.myGuides', auth: true },
   { href: '/memories', labelKey: 'nav.links.myMemories', auth: true },
-  { href: '/trips', labelKey: 'nav.links.purchasedGuides', auth: true },
   { href: '/pricing', labelKey: 'nav.links.pricing' },
   { href: '/contact', labelKey: 'nav.links.contact' },
   { href: '/profile', labelKey: 'nav.links.profile', auth: true },
@@ -177,7 +176,6 @@ export default function Navbar() {
                     <Link href="/search" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.explore')}</Link>
                     <Link href="/maps" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.maps')}</Link>
                     <Link href="/guides" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.myGuides')}</Link>
-                    <Link href="/trips" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.purchasedGuides')}</Link>
                     <Link href="/profile" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.profile')}</Link>
                     <Link href="/settings" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.settings')}</Link>
                     <Link href="/pricing" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.pricing')}</Link>

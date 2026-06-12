@@ -78,7 +78,7 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [returnTo, setReturnTo] = useState('/trips');
+  const [returnTo, setReturnTo] = useState('/guides');
 
   useEffect(() => {
     setReturnTo(window.location.pathname + window.location.search);

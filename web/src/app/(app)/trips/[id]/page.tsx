@@ -126,7 +126,7 @@ export default function TripDetailPage() {
     setRemoving(true);
     try {
       await api.delete(`/api/me/trips/${tripId}`, token);
-      router.push('/trips');
+      router.push('/guides');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('guidePages.tripDetail.errorCouldNotRemove'));
       setRemoving(false);
@@ -280,7 +280,7 @@ export default function TripDetailPage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <Link href="/trips" className="text-sm text-brand-500 hover:text-brand-400">
+          <Link href="/guides" className="text-sm text-brand-500 hover:text-brand-400">
             {t('guidePages.tripDetail.backToPurchased')}
           </Link>
           <h1 className="mw-section-title mt-3 text-2xl md:text-3xl">{trip.guide.title}</h1>

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   }
 
   const state = randomUUID();
-  const returnTo = request.nextUrl.searchParams.get('returnTo') || '/trips';
+  const returnTo = request.nextUrl.searchParams.get('returnTo') || '/guides';
   const redirectUri = new URL('/api/calendar/google/callback', process.env.AUTH0_BASE_URL ?? request.url).toString();
   const url = new URL(GOOGLE_AUTH_URL);
   url.searchParams.set('client_id', clientId);

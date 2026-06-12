@@ -127,7 +127,7 @@ function ProfilePageInner() {
                 <h2 className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-tertiary">{t('account.profile.accountSection')}</h2>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <Link
-                    href="/trips"
+                    href="/guides"
                     className="group flex items-center justify-between rounded-xl border border-ig-border bg-ig-primary p-4 transition-colors hover:border-brand-500/50"
                   >
                     <div>

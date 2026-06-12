@@ -8,7 +8,7 @@ const API_BASE_URL =
 
 export async function GET(request: NextRequest) {
   const expectedState = request.cookies.get('brooks_google_calendar_state')?.value;
-  const returnTo = request.cookies.get('brooks_google_calendar_return_to')?.value || '/trips';
+  const returnTo = request.cookies.get('brooks_google_calendar_return_to')?.value || '/guides';
   const state = request.nextUrl.searchParams.get('state');
   const code = request.nextUrl.searchParams.get('code');
   const error = request.nextUrl.searchParams.get('error');
