@@ -244,6 +244,17 @@ export default function MyGuidesPage() {
     }
   };
 
+  // BOR-56: when a card in the Discover "Saved" section is un-saved (backend
+  // confirmed), splice it out of library.saved so the pinned card disappears
+  // immediately — fixes the stale-card bug where only the heart toggled. A
+  // re-save (saved === true) needs no change here (the card was already shown).
+  const handleSaveChange = (guideId: string, isSaved: boolean) => {
+    if (isSaved) return;
+    setLibrary((current) =>
+      current ? { ...current, saved: current.saved.filter((item) => item.id !== guideId) } : current,
+    );
+  };
+
   const openCalendarForGuide = async (guide: GuideLibraryItem) => {
     if (!token || calendarLoadingGuideId) return;
     setCalendarLoadingGuideId(guide.id);
@@ -300,7 +311,7 @@ export default function MyGuidesPage() {
               <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">{t('guidePages.guidesList.savedSectionTitle')}</h2>
               <div className="space-y-3">
                 {savedGuides.map((g) => (
-                  <GuideSearchCard key={`saved-${g.id}`} guide={g} initialSaved />
+                  <GuideSearchCard key={`saved-${g.id}`} guide={g} initialSaved onSaveChange={handleSaveChange} />
                 ))}
               </div>
             </section>
