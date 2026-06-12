@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Map as LeafletMap, Marker as LeafletMarker, LayerGroup, TileLayer, LatLngBounds, MarkerClusterGroup } from 'leaflet';
 
@@ -500,7 +500,9 @@ function FilterSection({ title, options, selected, onToggle, renderLabel }: Filt
   );
 }
 
-function InfluencerViewportSlice({ pin, onHoverStart, onHoverEnd }: InfluencerViewportSliceProps) {
+// memo: rendered per viewport pin; without it every parent render (bounds change,
+// filter toggle, hover) re-rendered the whole drawer list (BOR-59).
+const InfluencerViewportSlice = memo(function InfluencerViewportSlice({ pin, onHoverStart, onHoverEnd }: InfluencerViewportSliceProps) {
   const guideMeta = [pin.guidePrimaryCity || pin.region, pin.guideCountry].filter(Boolean).join(' · ');
   const guideStats = [
     pin.guideDayCount !== null ? `${pin.guideDayCount} days` : null,
@@ -551,9 +553,9 @@ function InfluencerViewportSlice({ pin, onHoverStart, onHoverEnd }: InfluencerVi
       </Link>
     </div>
   );
-}
+});
 
-function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
+const MemoryViewportSlice = memo(function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
   const visibilityLabel = memory.visibility === 'FOLLOWERS_PUBLIC'
     ? 'Followers'
     : memory.visibility === 'SHARED_LINK'
@@ -579,7 +581,7 @@ function MemoryViewportSlice({ memory, onSelect }: MemoryViewportSliceProps) {
       </div>
     </button>
   );
-}
+});
 
 // Max reply nesting surfaced in the UI: original (level 0) → reply (1) → reply-back (2).
 const MAX_REPLY_DEPTH = 2;
@@ -982,6 +984,15 @@ export default function MapsExperience({
   useEffect(() => {
     if (!drawerOpen) setDrawerShowAllMemories(false);
   }, [drawerOpen]);
+
+  // Stable handlers for the drawer list items — inline closures here gave every
+  // memo-wrapped slice a fresh prop on each render, re-rendering the whole list
+  // on any map interaction (BOR-59). useState setters are referentially stable.
+  const handleSliceHoverEnd = useCallback(() => setHoveredSlicePinId(null), []);
+  const handleMemorySelect = useCallback((nextMemory: MemoryMapPin) => {
+    setSelectedMemory(nextMemory);
+    setSelectedPin(null);
+  }, []);
 
   // BOR-47: coordinate with the Navbar "upper menu" so the two are mutually
   // exclusive. Opening the drawer marks 'burger' active (closing the upper
@@ -2731,7 +2742,7 @@ export default function MapsExperience({
                         key={pin.userId}
                         pin={pin}
                         onHoverStart={setHoveredSlicePinId}
-                        onHoverEnd={() => setHoveredSlicePinId(null)}
+                        onHoverEnd={handleSliceHoverEnd}
                       />
                     ))}
                   </div>
@@ -2769,20 +2780,14 @@ export default function MapsExperience({
                                     <div className="ring-2 ring-brand-500/40 ring-offset-2 ring-offset-ig-primary rounded-[24px]">
                                       <MemoryViewportSlice
                                         memory={entry.memory}
-                                        onSelect={(nextMemory) => {
-                                          setSelectedMemory(nextMemory);
-                                          setSelectedPin(null);
-                                        }}
+                                        onSelect={handleMemorySelect}
                                       />
                                     </div>
                                   </div>
                                 ) : (
                                   <MemoryViewportSlice
                                     memory={entry.memory}
-                                    onSelect={(nextMemory) => {
-                                      setSelectedMemory(nextMemory);
-                                      setSelectedPin(null);
-                                    }}
+                                    onSelect={handleMemorySelect}
                                   />
                                 )}
                               </li>

@@ -36,6 +36,12 @@ public class StoryService {
     @Value("${app.social.story-expiry-hours:24}")
     private long storyExpiryHours;
 
+    // Caps how many active stories one feed load pulls into memory. Stories expire after
+    // ~24h, so the newest N (query orders by created_at DESC) is the visible set anyway;
+    // unpaged loading scaled with follow count × story count (BOR-59).
+    @Value("${app.social.feed-story-cap:500}")
+    private int feedStoryCap;
+
     @Transactional
     public StoryResponse createStory(String auth0Subject, StoryCreateRequest request) {
         User user = userService.findByAuth0Subject(auth0Subject);
@@ -76,7 +82,7 @@ public class StoryService {
 
         Instant now = Instant.now();
         List<GuideStory> stories = storyRepository.findActiveStoriesByCreatorIds(
-                followingIds, now, org.springframework.data.domain.Pageable.unpaged());
+                followingIds, now, org.springframework.data.domain.PageRequest.of(0, feedStoryCap));
 
         Map<UUID, List<GuideStory>> grouped = stories.stream()
                 .collect(Collectors.groupingBy(GuideStory::getCreatorId, LinkedHashMap::new, Collectors.toList()));

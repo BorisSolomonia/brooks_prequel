@@ -41,4 +41,21 @@ public interface GuidePurchaseRepository extends JpaRepository<GuidePurchase, UU
     long countByGuideIdAndStatus(UUID guideId, GuidePurchaseStatus status);
 
     long countByGuideIdAndStatusAndCreatedAtAfter(UUID guideId, GuidePurchaseStatus status, Instant createdAt);
+
+    /** Batch per-guide purchase counts so list mappers avoid one query per guide (BOR-59). */
+    interface GuideCount {
+        UUID getGuideId();
+        long getTotal();
+    }
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT p.guideId AS guideId, COUNT(p) AS total
+        FROM GuidePurchase p
+        WHERE p.guideId IN :guideIds
+          AND p.status = :status
+          AND p.createdAt > :since
+        GROUP BY p.guideId
+        """)
+    List<GuideCount> countByGuideIdsAndStatusAndCreatedAtAfter(
+            java.util.Collection<UUID> guideIds, GuidePurchaseStatus status, Instant since);
 }

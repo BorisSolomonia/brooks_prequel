@@ -77,7 +77,7 @@ export default function GiftsPage() {
           {offers!.map((offer) => (
             <li key={offer.purchaseId} className="flex gap-3 rounded-xl border border-ig-border bg-ig-elevated p-3">
               <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-ig-border bg-ig-secondary">
-                {offer.coverImageUrl && <img src={offer.coverImageUrl} alt="" className="h-full w-full object-cover" />}
+                {offer.coverImageUrl && <img src={offer.coverImageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-ig-text-primary">{offer.guideTitle}</p>

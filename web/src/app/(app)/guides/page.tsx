@@ -373,7 +373,7 @@ export default function MyGuidesPage() {
               <Link href={itemHref(guide)} className="block">
                 {guide.coverImageUrl ? (
                   <div className="h-36 bg-ig-secondary">
-                    <img src={guide.coverImageUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={guide.coverImageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <div className="h-36 bg-ig-secondary flex items-center justify-center">

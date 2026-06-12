@@ -48,11 +48,12 @@ export default function CreatorProfilePage({ params }: { params: { username: str
   }, [mapboxStyle]);
 
   useEffect(() => {
+    // Profile and guides are independent — fetch them in parallel instead of
+    // chaining (the chain added a full round-trip before guides loaded).
     api.get<Profile>(`/api/creators/${params.username}`)
-      .then((profileResponse) => {
-        setProfile(profileResponse);
-        return api.get<PageResponse<GuideListItem>>(`/api/creators/${params.username}/guides`);
-      })
+      .then((profileResponse) => setProfile(profileResponse))
+      .catch((err) => setError(err instanceof Error ? err.message : t('account.creatorProfile.errorLoad')));
+    api.get<PageResponse<GuideListItem>>(`/api/creators/${params.username}/guides`)
       .then((response) => setGuides(response.content))
       .catch((err) => setError(err instanceof Error ? err.message : t('account.creatorProfile.errorLoad')))
       .finally(() => setGuidesLoading(false));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import GuideCard from '@/components/ui/GuideCard';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -20,14 +20,16 @@ interface GuideSearchCardProps {
   onSaveChange?: (guideId: string, saved: boolean) => void;
 }
 
-export default function GuideSearchCard({ guide, initialSaved = false, onSaveChange }: GuideSearchCardProps) {
+// memo: search/discover pages render this in lists of 10-20+; without it every
+// filter/sort change in the parent re-renders every card (BOR-59).
+const GuideSearchCard = memo(function GuideSearchCard({ guide, initialSaved = false, onSaveChange }: GuideSearchCardProps) {
   const { t } = useTranslation();
   const { token } = useAccessToken();
   const toast = useToast();
   const [saved, setSaved] = useState(initialSaved);
   const [saving, setSaving] = useState(false);
 
-  const handleSaveClick = async () => {
+  const handleSaveClick = useCallback(async () => {
     if (!token) {
       void startAuthFlow();
       return;
@@ -54,7 +56,7 @@ export default function GuideSearchCard({ guide, initialSaved = false, onSaveCha
     } finally {
       setSaving(false);
     }
-  };
+  }, [token, saving, saved, guide.id, onSaveChange, toast, t]);
 
   return (
     <GuideCard
@@ -73,11 +75,13 @@ export default function GuideSearchCard({ guide, initialSaved = false, onSaveCha
       reviewCount={guide.reviewCount}
       popularThisWeek={guide.popularThisWeek}
       savedByViewer={saved}
-      onSaveClick={saving ? undefined : handleSaveClick}
+      onSaveClick={handleSaveClick}
       saveLabel={saving ? t('discovery.search.saveLabelSaving') : saved ? t('discovery.search.saveLabelSaved') : t('discovery.search.saveLabelSave')}
       creatorName={guide.creatorDisplayName || guide.creatorUsername}
       creatorAvatarUrl={guide.creatorAvatarUrl}
       creatorHref={guide.creatorUsername ? `/creators/${guide.creatorUsername}` : undefined}
     />
   );
-}
+});
+
+export default GuideSearchCard;

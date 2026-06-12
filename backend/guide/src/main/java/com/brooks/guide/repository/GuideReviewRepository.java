@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,4 +26,16 @@ public interface GuideReviewRepository extends JpaRepository<GuideReview, UUID> 
 
     @Query("SELECT COALESCE(AVG(CAST(r.rating AS double)), 0.0) FROM GuideReview r WHERE r.guideId = :guideId")
     double averageRatingByGuideId(UUID guideId);
+
+    /** Batch rating aggregate so list mappers avoid two queries per guide (BOR-59). */
+    interface RatingAggregate {
+        UUID getGuideId();
+        long getReviewCount();
+        double getAverageRating();
+    }
+
+    @Query("SELECT r.guideId AS guideId, COUNT(r) AS reviewCount, " +
+           "COALESCE(AVG(CAST(r.rating AS double)), 0.0) AS averageRating " +
+           "FROM GuideReview r WHERE r.guideId IN :guideIds GROUP BY r.guideId")
+    List<RatingAggregate> aggregateRatingsByGuideIds(Collection<UUID> guideIds);
 }
