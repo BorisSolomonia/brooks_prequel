@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -55,10 +56,9 @@ export default function FollowersPage() {
                 href={p.username ? `/creators/${p.username}` : '#'}
                 className="mw-card flex items-center gap-3 p-3 transition-colors hover:bg-ig-hover"
               >
-                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-ig-secondary">
+                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-ig-secondary">
                   {p.avatarUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.avatarUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    <Image src={p.avatarUrl} alt="" fill sizes="40px" className="object-cover" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
