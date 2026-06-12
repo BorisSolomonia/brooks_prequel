@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
@@ -372,8 +373,8 @@ export default function MyGuidesPage() {
             >
               <Link href={itemHref(guide)} className="block">
                 {guide.coverImageUrl ? (
-                  <div className="h-36 bg-ig-secondary">
-                    <img src={guide.coverImageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                  <div className="relative h-36 bg-ig-secondary">
+                    <Image src={guide.coverImageUrl} alt="" fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
                   </div>
                 ) : (
                   <div className="h-36 bg-ig-secondary flex items-center justify-center">

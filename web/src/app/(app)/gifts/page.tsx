@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
@@ -76,8 +77,8 @@ export default function GiftsPage() {
         <ul className="space-y-3">
           {offers!.map((offer) => (
             <li key={offer.purchaseId} className="flex gap-3 rounded-xl border border-ig-border bg-ig-elevated p-3">
-              <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-ig-border bg-ig-secondary">
-                {offer.coverImageUrl && <img src={offer.coverImageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />}
+              <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-ig-border bg-ig-secondary">
+                {offer.coverImageUrl && <Image src={offer.coverImageUrl} alt="" fill sizes="64px" className="object-cover" />}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-ig-text-primary">{offer.guideTitle}</p>

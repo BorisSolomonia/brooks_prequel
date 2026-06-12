@@ -1,4 +1,5 @@
 import type { MediaUploadResponse, MediaUsage } from '@/types';
+import { compressImageFile, maxEdgeForUsage } from '@/lib/imageCompression';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
@@ -103,8 +104,14 @@ export const api = {
     request<T>(path, { method: 'DELETE', token }),
 
   uploadMedia: async (file: File, usage: MediaUsage, token: string): Promise<MediaUploadResponse> => {
+    // BOR-60: downscale/recompress images client-side before they ever leave
+    // the device. Audio and non-image files pass through untouched, and any
+    // compression failure falls back to the original file.
+    const payload = file.type.startsWith('image/')
+      ? await compressImageFile(file, maxEdgeForUsage(usage))
+      : file;
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', payload);
     formData.append('usage', usage);
 
     const response = await fetch(`${API_BASE_URL}/api/media`, {

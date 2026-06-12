@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import Avatar from '@/components/ui/Avatar';
 import BuyButton from '@/components/ui/BuyButton';
 import ReviewComposer from '@/components/reviews/ReviewComposer';
@@ -252,7 +253,14 @@ export default function ViewGuidePage() {
       <div className="mb-6">
         {(displayGuide?.coverImageUrl || displayPreview?.coverImageUrl) && (
           <div className="mw-photo-frame relative mb-4 h-52 overflow-hidden rounded-xl bg-ig-secondary">
-            <img src={displayGuide?.coverImageUrl || displayPreview?.coverImageUrl || ''} alt="" className="h-full w-full object-cover saturate-[0.92] contrast-[1.04]" />
+            <Image
+              src={displayGuide?.coverImageUrl || displayPreview?.coverImageUrl || ''}
+              alt=""
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover saturate-[0.92] contrast-[1.04]"
+            />
             {displayPreview?.bestSeasonLabel && (
               <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${
                 inSeason ? 'bg-green-500/90 text-white' : 'bg-black/60 text-white/80'
@@ -411,8 +419,8 @@ export default function ViewGuidePage() {
                           {place.images && place.images.length > 0 && (
                             <div className="mt-2 flex gap-2">
                               {place.images.map((image) => (
-                                <div key={image.id} className="h-20 w-20 overflow-hidden rounded-md bg-ig-secondary">
-                                  <img src={image.imageUrl} alt={image.caption || ''} loading="lazy" className="h-full w-full object-cover" />
+                                <div key={image.id} className="relative h-20 w-20 overflow-hidden rounded-md bg-ig-secondary">
+                                  <Image src={image.imageUrl} alt={image.caption || ''} fill sizes="80px" className="object-cover" />
                                 </div>
                               ))}
                             </div>
