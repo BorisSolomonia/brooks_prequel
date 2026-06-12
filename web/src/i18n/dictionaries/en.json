@@ -878,7 +878,8 @@
       "themeToggle": "Theme toggle",
       "light": "Bright",
       "dark": "Dark",
-      "ariaLabel": "Theme: {{current}}. Click to switch to {{next}}."
+      "ariaLabel": "Theme: {{current}}. Click to switch to {{next}}.",
+      "dim": "Dim"
     }
   },
   "account": {
