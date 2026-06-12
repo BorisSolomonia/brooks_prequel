@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import type { GuideSearchResult, PageResponse } from '@/types';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
@@ -11,15 +12,6 @@ import GuideFilterSheet, { countActiveFilters } from '@/components/search/GuideF
 import Spinner from '@/components/ui/Spinner';
 import Link from 'next/link';
 
-const GUIDE_SORTS: SortOption[] = [
-  { value: 'RELEVANCE', label: 'Relevance' },
-  { value: 'NEWEST', label: 'Newest' },
-  { value: 'OLDEST', label: 'Oldest' },
-  { value: 'TOP_RATED', label: 'Top rated' },
-  { value: 'PRICE_ASC', label: 'Price: low to high' },
-  { value: 'PRICE_DESC', label: 'Price: high to low' },
-  { value: 'POPULAR', label: 'Popular' },
-];
 
 // Major currency units (e.g. "9.99") → integer minor units for the query.
 function toMinor(major: string): string | null {
@@ -28,22 +20,34 @@ function toMinor(major: string): string | null {
   return String(Math.round(n * 100));
 }
 
-const PERSONAS = [
-  { value: 'SOLO', label: 'Solo' },
-  { value: 'FAMILY', label: 'Family' },
-  { value: 'BUDGET', label: 'Budget' },
-  { value: 'LUXURY', label: 'Luxury' },
-  { value: 'DIGITAL_NOMAD', label: 'Digital Nomad' },
-];
-
-const STAGES = [
-  { value: '', label: 'Any stage' },
-  { value: 'DREAMING', label: 'Dreaming' },
-  { value: 'PLANNING', label: 'Planning' },
-  { value: 'EXPERIENCING', label: 'Experiencing' },
-];
-
 function SearchGuidesPageContent() {
+  const { t } = useTranslation();
+
+  const GUIDE_SORTS: SortOption[] = [
+    { value: 'RELEVANCE', label: t('discovery.search.sortRelevance') },
+    { value: 'NEWEST', label: t('discovery.search.sortNewest') },
+    { value: 'OLDEST', label: t('discovery.search.sortOldest') },
+    { value: 'TOP_RATED', label: t('discovery.search.sortTopRated') },
+    { value: 'PRICE_ASC', label: t('discovery.search.sortPriceLowHigh') },
+    { value: 'PRICE_DESC', label: t('discovery.search.sortPriceHighLow') },
+    { value: 'POPULAR', label: t('discovery.search.sortPopular') },
+  ];
+
+  const PERSONAS = [
+    { value: 'SOLO', label: t('discovery.search.personaSolo') },
+    { value: 'FAMILY', label: t('discovery.search.personaFamily') },
+    { value: 'BUDGET', label: t('discovery.search.personaBudget') },
+    { value: 'LUXURY', label: t('discovery.search.personaLuxury') },
+    { value: 'DIGITAL_NOMAD', label: t('discovery.search.personaDigitalNomad') },
+  ];
+
+  const STAGES = [
+    { value: '', label: t('discovery.search.stageAny') },
+    { value: 'DREAMING', label: t('discovery.search.stageDreaming') },
+    { value: 'PLANNING', label: t('discovery.search.stagePlanning') },
+    { value: 'EXPERIENCING', label: t('discovery.search.stageExperiencing') },
+  ];
+
   const searchParams = useSearchParams();
   const q = searchParams.get('q') || '';
   const [results, setResults] = useState<GuideSearchResult[]>([]);
@@ -106,27 +110,27 @@ function SearchGuidesPageContent() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link href={`/search?q=${encodeURIComponent(q)}`} className="mb-4 inline-block font-display text-sm font-black uppercase tracking-[0.06em] text-brand-500 hover:text-brand-400">
-        &larr; Back to search
+        {t('discovery.search.backToSearch')}
       </Link>
-      <h1 className="mw-section-title mb-1 text-xl">Guides</h1>
+      <h1 className="mw-section-title mb-1 text-xl">{t('discovery.search.guidesTitle')}</h1>
       {/* Result count + Filters trigger share one row (button pinned right). The
           category chips get their OWN full-width scroll row below, so the Filters
           button can never overlap them. Previously the button + a flex-1 scroll
           container without min-w-0 collided (the chips couldn't shrink). */}
       <div className="mb-3 mt-1 flex items-center justify-between gap-3">
         <p className="min-w-0 truncate text-sm text-ig-text-secondary">
-          {total > 0 ? (q.trim() ? <>{total} results for &ldquo;{q}&rdquo;</> : <>{total} guides</>) : null}
+          {total > 0 ? (q.trim() ? t('discovery.search.totalResultsForQuery', { total, q }) : t('discovery.search.totalGuides', { count: total })) : null}
         </p>
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
-          aria-label="Open filters"
+          aria-label={t('discovery.search.openFiltersAriaLabel')}
           className="relative inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:border-brand-500/40 lg:min-h-0 lg:px-3 lg:py-1 lg:text-xs"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 5h18M6 12h12M10 19h4" />
           </svg>
-          Filters
+          {t('discovery.search.filtersTitle')}
           {activeFilterCount > 0 && (
             <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[11px] font-bold text-white">
               {activeFilterCount}
@@ -139,7 +143,7 @@ function SearchGuidesPageContent() {
       {error && <p className="mt-8 text-center text-ig-error">{error}</p>}
 
       {!loading && results.length === 0 && (
-        <p className="text-ig-text-secondary text-center mt-16">No guides found.</p>
+        <p className="text-ig-text-secondary text-center mt-16">{t('discovery.search.noGuidesFound')}</p>
       )}
 
       <div data-tour="guides-list" className="space-y-3">
@@ -157,7 +161,7 @@ function SearchGuidesPageContent() {
           className="mw-button-secondary mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
         >
           {loadingMore && <Spinner />}
-          {loadingMore ? 'Loading...' : 'Load more'}
+          {loadingMore ? t('discovery.search.loadingMore') : t('discovery.search.loadMore')}
         </button>
       )}
 

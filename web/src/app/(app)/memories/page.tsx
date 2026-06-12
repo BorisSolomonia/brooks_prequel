@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 
@@ -41,6 +42,7 @@ function personLabel(name: string | null, username: string | null): string {
 }
 
 export default function MyMemoriesPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const [tab, setTab] = useState<Tab>('created');
   const [created, setCreated] = useState<Memory[] | null>(null);
@@ -115,13 +117,13 @@ export default function MyMemoriesPage() {
     });
   }, [items, personFilter, sortOrder, tab]);
 
-  const filterLabel = tab === 'created' ? 'Shared with' : 'From';
+  const filterLabel = tab === 'created' ? t('account.memories.filterSharedWith') : t('account.memories.filterFrom');
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-black uppercase tracking-[0.04em] text-ig-text-primary">
-          Memories
+          {t('account.memories.title')}
         </h1>
         {/* BOR-45: routes to the map AND auto-opens the create-memory composer
             on arrival (the map listens for ?action=create_memory). */}
@@ -129,7 +131,7 @@ export default function MyMemoriesPage() {
           href="/maps?action=create_memory"
           className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm"
         >
-          Create memory
+          {t('account.memories.createMemory')}
         </Link>
       </div>
 
@@ -143,7 +145,7 @@ export default function MyMemoriesPage() {
               : 'border-transparent text-ig-text-tertiary hover:text-ig-text-secondary'
           }`}
         >
-          My Memories
+          {t('account.memories.tabs.myMemories')}
         </button>
         <button
           type="button"
@@ -154,7 +156,7 @@ export default function MyMemoriesPage() {
               : 'border-transparent text-ig-text-tertiary hover:text-ig-text-secondary'
           }`}
         >
-          Received
+          {t('account.memories.tabs.received')}
         </button>
       </div>
 
@@ -162,14 +164,14 @@ export default function MyMemoriesPage() {
           (recipient on My Memories, sender on Received) — BOR-30. */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-xs font-semibold text-ig-text-secondary">
-          Sort
+          {t('account.memories.sort')}
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as SortOrder)}
             className="min-h-10 rounded-lg border-2 border-ig-border bg-ig-elevated px-3 py-1.5 text-sm font-normal text-ig-text-primary outline-none focus:border-brand-500"
           >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
+            <option value="newest">{t('account.memories.sortNewest')}</option>
+            <option value="oldest">{t('account.memories.sortOldest')}</option>
           </select>
         </label>
 
@@ -181,7 +183,7 @@ export default function MyMemoriesPage() {
             disabled={personOptions.length === 0}
             className="min-h-10 rounded-lg border-2 border-ig-border bg-ig-elevated px-3 py-1.5 text-sm font-normal text-ig-text-primary outline-none focus:border-brand-500 disabled:opacity-50"
           >
-            <option value="">Everyone</option>
+            <option value="">{t('account.memories.filterEveryone')}</option>
             {personOptions.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
@@ -194,14 +196,14 @@ export default function MyMemoriesPage() {
       {error && <p className="mb-4 text-sm text-ig-error">{error}</p>}
 
       {loading ? (
-        <p className="text-center text-sm text-ig-text-tertiary">Loading…</p>
+        <p className="text-center text-sm text-ig-text-tertiary">{t('account.memories.loading')}</p>
       ) : visibleItems.length === 0 ? (
         <p className="text-center text-sm text-ig-text-tertiary">
           {personFilter
-            ? 'No memories match this filter.'
+            ? t('account.memories.emptyFiltered')
             : tab === 'created'
-              ? "You haven't created any memories yet."
-              : 'Nobody has shared a memory with you yet.'}
+              ? t('account.memories.emptyCreated')
+              : t('account.memories.emptyReceived')}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -212,19 +214,19 @@ export default function MyMemoriesPage() {
                 className="mw-card block p-4 transition-colors hover:bg-ig-hover"
               >
                 <p className="line-clamp-3 text-sm text-ig-text-primary">
-                  {m.revealed ? m.textContent : '🔒 Hidden — go to the location to unlock it'}
+                  {m.revealed ? m.textContent : t('account.memories.hiddenUnlock')}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ig-text-tertiary">
                   {m.placeLabel && <span>{m.placeLabel}</span>}
                   <span>{new Date(m.createdAt).toLocaleDateString()}</span>
                   {tab === 'created' && m.recipients && m.recipients.length > 0 && (
                     <span>
-                      Shared with {personLabel(m.recipients[0].displayName, m.recipients[0].username)}
+                      {t('account.memories.sharedWith', { name: personLabel(m.recipients[0].displayName, m.recipients[0].username) })}
                       {m.recipients.length > 1 ? ` +${m.recipients.length - 1}` : ''}
                     </span>
                   )}
                   {tab === 'shared' && (
-                    <span>From {personLabel(m.creatorDisplayName, m.creatorUsername)}</span>
+                    <span>{t('account.memories.fromCreator', { name: personLabel(m.creatorDisplayName, m.creatorUsername) })}</span>
                   )}
                 </div>
               </Link>

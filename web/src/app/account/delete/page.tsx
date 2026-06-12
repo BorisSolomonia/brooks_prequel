@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { compliance } from '@/lib/compliance';
 import Spinner from '@/components/ui/Spinner';
 
@@ -12,6 +13,7 @@ import Spinner from '@/components/ui/Spinner';
 // flow at /settings/account/delete instead.
 
 export default function PublicAccountDeletePage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export default function PublicAccountDeletePage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSubmitted(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Request failed');
+      setError(err instanceof Error ? err.message : t('account.deletePublic.errorRequest'));
     } finally {
       setLoading(false);
     }
@@ -40,11 +42,10 @@ export default function PublicAccountDeletePage() {
   if (submitted) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="mw-section-title text-3xl">Check your email</h1>
+        <h1 className="mw-section-title text-3xl">{t('account.deletePublic.checkEmailTitle')}</h1>
         <p className="mt-4 text-ig-text-secondary">
-          If an account exists for <strong>{email}</strong>, we have sent a
-          confirmation link. Click it within 48 hours to permanently delete the
-          account. If no email arrives, please contact {compliance.email}.
+          {/* LEGAL EXCEPTION: confirmation details left mostly hardcoded */}
+          {t('account.deletePublic.checkEmailBody', { email, supportEmail: compliance.email })}
         </p>
       </div>
     );
@@ -52,8 +53,8 @@ export default function PublicAccountDeletePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <p className="mw-eyebrow">Account</p>
-      <h1 className="mw-section-title mt-2 text-3xl">Delete your Brooks account</h1>
+      <p className="mw-eyebrow">{t('account.deletePublic.eyebrow')}</p>
+      <h1 className="mw-section-title mt-2 text-3xl">{t('account.deletePublic.title')}</h1>
 
       <div className="mt-6 space-y-4 text-sm leading-6 text-ig-text-secondary">
         <p>
@@ -78,7 +79,7 @@ export default function PublicAccountDeletePage() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <label className="block text-sm">
           <span className="block font-medium text-ig-text-primary">
-            Email address on your Brooks account
+            {t('account.deletePublic.emailLabel')}
           </span>
           <input
             type="email"
@@ -92,7 +93,7 @@ export default function PublicAccountDeletePage() {
 
         <label className="block text-sm">
           <span className="block font-medium text-ig-text-primary">
-            Reason (optional)
+            {t('account.deletePublic.reasonLabel')}
           </span>
           <textarea
             value={reason}
@@ -110,11 +111,11 @@ export default function PublicAccountDeletePage() {
           className="mw-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm disabled:opacity-50"
         >
           {loading && <Spinner />}
-          Email me a deletion link
+          {t('account.deletePublic.emailButton')}
         </button>
 
         <p className="text-xs text-ig-text-tertiary">
-          Need help? {compliance.email} · {compliance.supportResponseTime}
+          {t('account.deletePublic.needHelp', { email: compliance.email, responseTime: compliance.supportResponseTime })}
         </p>
       </form>
     </div>

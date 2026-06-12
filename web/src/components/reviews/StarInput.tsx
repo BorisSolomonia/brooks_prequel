@@ -1,11 +1,14 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 interface StarInputProps {
   value: number;
   onChange: (next: number) => void;
 }
 
 export default function StarInput({ value, onChange }: StarInputProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -18,7 +21,7 @@ export default function StarInput({ value, onChange }: StarInputProps) {
               ? 'text-accent-500 drop-shadow-[2px_2px_0_rgba(0,0,0,0.2)]'
               : 'text-ig-border hover:text-accent-400'
           }`}
-          aria-label={`Rate ${star} star${star === 1 ? '' : 's'}`}
+          aria-label={t('widgets.reviews.rateStar', { count: star })}
         >
           &#9733;
         </button>

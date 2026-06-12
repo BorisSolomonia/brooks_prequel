@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Replaces window.confirm() — a blocking, jarring browser modal that ignores
 // the app's design language. This renders as a bottom-sheet on mobile and a
@@ -70,6 +71,7 @@ function ConfirmSurface({
   req: ActiveRequest;
   onChoice: (choice: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const titleId = `confirm-title-${useId()}`;
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -101,7 +103,7 @@ function ConfirmSurface({
       {/* Backdrop — tap to dismiss (cancel). */}
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={t('common.actions.dismiss')}
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={() => onChoice(false)}
       />
@@ -128,7 +130,7 @@ function ConfirmSurface({
             onClick={() => onChoice(false)}
             className="mw-button-secondary inline-flex min-h-touch items-center justify-center rounded-2xl px-5 text-sm font-semibold text-ig-text-primary"
           >
-            {req.cancelLabel ?? 'Cancel'}
+            {req.cancelLabel ?? t('common.actions.cancel')}
           </button>
           <button
             type="button"
@@ -139,7 +141,7 @@ function ConfirmSurface({
                 : 'bg-brand-500 text-white hover:bg-brand-600'
             }`}
           >
-            {req.confirmLabel ?? (req.destructive ? 'Delete' : 'Confirm')}
+            {req.confirmLabel ?? (req.destructive ? t('common.actions.delete') : t('common.actions.confirm'))}
           </button>
         </div>
       </div>

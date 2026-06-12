@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import type { GuideSearchResult, PageResponse } from '@/types';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
@@ -10,6 +11,7 @@ import SearchSkeleton from '@/components/search/SearchSkeleton';
 const SEARCH_DEBOUNCE_MS = 250;
 
 function ExploreContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -79,16 +81,16 @@ function ExploreContent() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mw-section-title mb-6 text-2xl">Explore</h1>
+      <h1 className="mw-section-title mb-6 text-2xl">{t('discovery.search.exploreTitle')}</h1>
 
       <div className="relative mb-8">
         <input
           type="text"
-          placeholder="Search guides..."
+          placeholder={t('discovery.search.exploreInputPlaceholder')}
           value={input}
           onChange={(e) => handleChange(e.target.value)}
           className="min-h-12 w-full rounded-xl border-2 border-ig-border bg-ig-elevated px-4 py-3 pl-10 text-base text-ig-text-primary placeholder-ig-text-tertiary outline-none transition focus:border-brand-500"
-          aria-label="Search guides"
+          aria-label={t('discovery.search.exploreInputAriaLabel')}
         />
         <svg className="absolute left-3 top-3.5 h-5 w-5 text-ig-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -97,7 +99,7 @@ function ExploreContent() {
 
       {/* Default state is the relevance feed, not a blank screen (BOR-36). */}
       <p className="mw-eyebrow mb-3">
-        {query ? <>Results for &ldquo;{query}&rdquo;</> : 'Top guides for you'}
+        {query ? t('discovery.search.resultsFor', { q: query }) : t('discovery.search.topGuidesForYou')}
       </p>
 
       {loading && <SearchSkeleton />}
@@ -106,7 +108,7 @@ function ExploreContent() {
 
       {!loading && !error && results.length === 0 && (
         <p className="mt-16 text-center text-ig-text-secondary">
-          {query ? <>No guides found for &ldquo;{query}&rdquo;</> : 'No guides available yet.'}
+          {query ? t('discovery.search.noGuidesFoundForQuery', { q: query }) : t('discovery.search.noGuidesAvailable')}
         </p>
       )}
 
@@ -117,7 +119,7 @@ function ExploreContent() {
           ))}
           {total > results.length && (
             <p className="pt-2 text-center text-xs text-ig-text-tertiary">
-              Showing {results.length} of {total} guides — refine your search to narrow it down.
+              {t('discovery.search.showingOf', { shown: results.length, total })}
             </p>
           )}
         </div>

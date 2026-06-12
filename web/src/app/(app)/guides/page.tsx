@@ -12,6 +12,7 @@ import GuideSearchCard from '@/components/search/GuideSearchCard';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useTranslation } from 'react-i18next';
 
 type LibraryTab = 'discover' | 'created' | 'saved' | 'purchased';
 
@@ -19,6 +20,7 @@ type LibraryTab = 'discover' | 'created' | 'saved' | 'purchased';
 const DISCOVER_PAGE_SIZE = 10;
 
 export default function MyGuidesPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const { formatAmount } = useCurrency();
   const router = useRouter();
@@ -73,7 +75,7 @@ export default function MyGuidesPage() {
       })
       .catch((err) => {
         console.error('[guides] library load failed:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load guides');
+        setError(err instanceof Error ? err.message : t('guidePages.guidesList.errorFailedToLoad'));
       })
       .finally(() => setLoading(false));
   }, [token, tokenLoading, router]);
@@ -91,7 +93,7 @@ export default function MyGuidesPage() {
         setDiscoverTotal(res.totalElements);
         setDiscoverPage(pageNum);
       })
-      .catch((err) => setDiscoverError(err instanceof Error ? err.message : 'Failed to load guides'))
+      .catch((err) => setDiscoverError(err instanceof Error ? err.message : t('guidePages.guidesList.errorFailedToLoad')))
       .finally(() => setDiscoverLoading(false));
   };
 
@@ -125,7 +127,7 @@ export default function MyGuidesPage() {
   }, [activeTab, discover.length, discoverTotal, discoverLoading, discoverPage]);
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">{t('guidePages.guidesList.loading')}</div>;
   }
 
   if (error) {
@@ -137,16 +139,16 @@ export default function MyGuidesPage() {
           onClick={() => window.location.reload()}
           className="mt-3 text-sm text-ig-text-secondary underline"
         >
-          Retry
+          {t('guidePages.guidesList.retry')}
         </button>
       </div>
     );
   }
 
   const tabs: { key: LibraryTab; label: string; items: GuideLibraryItem[] }[] = [
-    { key: 'created', label: 'Created', items: library?.created ?? [] },
-    { key: 'saved', label: 'Saved', items: library?.saved ?? [] },
-    { key: 'purchased', label: 'Purchased', items: library?.purchased ?? [] },
+    { key: 'created', label: t('guidePages.guidesList.tabCreated'), items: library?.created ?? [] },
+    { key: 'saved', label: t('guidePages.guidesList.tabSaved'), items: library?.saved ?? [] },
+    { key: 'purchased', label: t('guidePages.guidesList.tabPurchased'), items: library?.purchased ?? [] },
   ];
 
   const activeItems = tabs.find((tab) => tab.key === activeTab)?.items ?? [];
@@ -154,9 +156,9 @@ export default function MyGuidesPage() {
   // BOR-28: exactly three tabs — Purchased, Discover, Created (in that order).
   // "Saved" is no longer a tab; saved guides surface at the top of Discover.
   const tabButtons: { key: LibraryTab; label: string; count: number | null }[] = [
-    { key: 'purchased', label: 'Purchased', count: library?.purchased.length ?? 0 },
-    { key: 'discover', label: 'Discover', count: null }, // no count on Discover (BOR-29)
-    { key: 'created', label: 'Created', count: library?.created.length ?? 0 },
+    { key: 'purchased', label: t('guidePages.guidesList.tabPurchased'), count: library?.purchased.length ?? 0 },
+    { key: 'discover', label: t('guidePages.guidesList.tabDiscover'), count: null }, // no count on Discover (BOR-29)
+    { key: 'created', label: t('guidePages.guidesList.tabCreated'), count: library?.created.length ?? 0 },
   ];
 
   // Saved guides (still loaded in the library) are pinned at the top of Discover,
@@ -210,9 +212,9 @@ export default function MyGuidesPage() {
     if (!token || deletingGuideId) return;
 
     const ok = await confirm({
-      title: `Delete "${guide.title}"?`,
-      body: 'This removes it from your guides and cannot be undone.',
-      confirmLabel: 'Delete',
+      title: t('guidePages.guidesList.deleteConfirmTitle', { title: guide.title }),
+      body: t('guidePages.guidesList.deleteConfirmBody'),
+      confirmLabel: t('guidePages.guidesList.delete'),
       destructive: true,
     });
     if (!ok) return;
@@ -224,9 +226,9 @@ export default function MyGuidesPage() {
         ...current,
         created: current.created.filter((item) => item.id !== guide.id),
       } : current);
-      toast.success('Guide deleted');
+      toast.success(t('guidePages.guidesList.guideDeleted'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete guide');
+      toast.error(err instanceof Error ? err.message : t('guidePages.guidesList.errorFailedToDelete'));
     } finally {
       setDeletingGuideId(null);
     }
@@ -241,7 +243,7 @@ export default function MyGuidesPage() {
         : await api.get<MyTripSummary>(`/api/me/trips/by-guide/${guide.id}`, token);
       setCalendarTripId(trip.id);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to prepare calendar trip');
+      toast.error(err instanceof Error ? err.message : t('guidePages.guidesList.errorFailedToPreparCalendar'));
     } finally {
       setCalendarLoadingGuideId(null);
     }
@@ -250,13 +252,13 @@ export default function MyGuidesPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="mw-section-title text-xl">My Guides</h1>
+        <h1 className="mw-section-title text-xl">{t('guidePages.guidesList.pageTitle')}</h1>
         <Link
           href="/guides/new"
           data-tour="create-guide"
           className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm"
         >
-          + New Guide
+          {t('guidePages.guidesList.newGuide')}
         </Link>
       </div>
 
@@ -285,7 +287,7 @@ export default function MyGuidesPage() {
               ahead of the relevance feed. */}
           {savedGuides.length > 0 && (
             <section className="mb-6">
-              <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">Saved</h2>
+              <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">{t('guidePages.guidesList.savedSectionTitle')}</h2>
               <div className="space-y-3">
                 {savedGuides.map((g) => (
                   <GuideSearchCard key={`saved-${g.id}`} guide={g} initialSaved />
@@ -297,22 +299,22 @@ export default function MyGuidesPage() {
             <div className="mw-card py-12 text-center">
               <p className="text-sm text-ig-error">{discoverError}</p>
               <button type="button" onClick={() => loadDiscover(0, false)} className="mt-3 text-sm text-ig-text-secondary underline">
-                Retry
+                {t('guidePages.guidesList.retry')}
               </button>
             </div>
           ) : discoverLoading && discover.length === 0 ? (
-            <div className="py-12 text-center text-ig-text-tertiary">Loading guides…</div>
+            <div className="py-12 text-center text-ig-text-tertiary">{t('guidePages.guidesList.loadingGuides')}</div>
           ) : discover.length === 0 ? (
             savedGuides.length === 0 ? (
               <div className="mw-card py-12 text-center">
-                <p className="text-ig-text-secondary mb-2">No guides to discover yet</p>
-                <p className="text-sm text-ig-text-tertiary">New guides ranked by relevance will appear here.</p>
+                <p className="text-ig-text-secondary mb-2">{t('guidePages.guidesList.noGuidesToDiscover')}</p>
+                <p className="text-sm text-ig-text-tertiary">{t('guidePages.guidesList.noGuidesToDiscoverDesc')}</p>
               </div>
             ) : null
           ) : (
             <>
               {savedGuides.length > 0 && (
-                <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">Discover</h2>
+                <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">{t('guidePages.guidesList.tabDiscover')}</h2>
               )}
               <div className="space-y-3">
                 {discover.map((g) => (
@@ -330,14 +332,14 @@ export default function MyGuidesPage() {
       ) : activeItems.length === 0 ? (
         <div className="mw-card py-12 text-center">
           <p className="text-ig-text-secondary mb-2">
-            {activeTab === 'created' && "You haven't created any guides yet"}
-            {activeTab === 'saved' && "You haven't saved any guides yet"}
-            {activeTab === 'purchased' && "You haven't purchased any guides yet"}
+            {activeTab === 'created' && t('guidePages.guidesList.emptyCreated')}
+            {activeTab === 'saved' && t('guidePages.guidesList.emptySaved')}
+            {activeTab === 'purchased' && t('guidePages.guidesList.emptyPurchased')}
           </p>
           <p className="text-sm text-ig-text-tertiary">
-            {activeTab === 'created' && 'Create your first travel guide to start sharing your adventures.'}
-            {activeTab === 'saved' && 'Save guides you want to revisit before buying them.'}
-            {activeTab === 'purchased' && 'Purchased guides will appear here after checkout completes.'}
+            {activeTab === 'created' && t('guidePages.guidesList.emptyCreatedDesc')}
+            {activeTab === 'saved' && t('guidePages.guidesList.emptySavedDesc')}
+            {activeTab === 'purchased' && t('guidePages.guidesList.emptyPurchasedDesc')}
           </p>
         </div>
       ) : (
@@ -362,34 +364,34 @@ export default function MyGuidesPage() {
                     <h3 className="text-sm font-semibold text-ig-text-primary truncate">{guide.title}</h3>
                     {activeTab === 'saved' && (
                     <span className="mw-badge shrink-0">
-                        Saved
+                        {t('guidePages.guidesList.badgeSaved')}
                       </span>
                     )}
                     {activeTab === 'purchased' && (
                       <span className="shrink-0 rounded-pill bg-ig-success/15 px-2 py-0.5 text-xs font-semibold text-ig-success">
-                        Purchased
+                        {t('guidePages.guidesList.badgePurchased')}
                       </span>
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ig-text-tertiary">
                     {(guide.displayLocation || guide.region) && <span>{guide.displayLocation || guide.region}</span>}
-                    <span>{guide.dayCount} days</span>
-                    <span>{guide.spotCount ?? guide.placeCount} spots</span>
+                    <span>{t('guidePages.guidesList.dayStat', { count: guide.dayCount })}</span>
+                    <span>{t('guidePages.guidesList.spotStat', { count: guide.spotCount ?? guide.placeCount })}</span>
                     <span>{formatPrice(guide)}</span>
                   </div>
                   {guide.popularThisWeek && (
                     <span className="mt-2 inline-flex rounded-pill bg-brand-500/15 px-2.5 py-1 text-xs font-semibold text-brand-500">
-                      Popular this week
+                      {t('guidePages.guidesList.popularThisWeek')}
                     </span>
                   )}
                   {guide.creatorUsername && activeTab !== 'created' && (
                     <p className="mt-2 text-xs text-ig-text-tertiary">@{guide.creatorUsername}</p>
                   )}
                   {activeTab === 'saved' && formatDate(guide.savedAt) && (
-                    <p className="mt-2 text-xs text-ig-text-tertiary">Saved {formatDate(guide.savedAt)}</p>
+                    <p className="mt-2 text-xs text-ig-text-tertiary">{t('guidePages.guidesList.savedOn', { date: formatDate(guide.savedAt) })}</p>
                   )}
                   {activeTab === 'purchased' && formatDate(guide.purchasedAt) && (
-                    <p className="mt-2 text-xs text-ig-text-tertiary">Purchased {formatDate(guide.purchasedAt)}</p>
+                    <p className="mt-2 text-xs text-ig-text-tertiary">{t('guidePages.guidesList.purchasedOn', { date: formatDate(guide.purchasedAt) })}</p>
                   )}
                 </div>
               </Link>
@@ -402,7 +404,7 @@ export default function MyGuidesPage() {
                     className="mw-button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
                   >
                     {calendarLoadingGuideId === guide.id && <Spinner />}
-                    {calendarLoadingGuideId === guide.id ? 'Preparing...' : 'Add to calendar'}
+                    {calendarLoadingGuideId === guide.id ? t('guidePages.guidesList.preparingCalendar') : t('guidePages.guidesList.addToCalendar')}
                   </button>
                 </div>
               )}
@@ -414,7 +416,7 @@ export default function MyGuidesPage() {
                     disabled={deletingGuideId === guide.id}
                     className="min-h-11 w-full rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
                   >
-                    {deletingGuideId === guide.id ? 'Deleting…' : 'Delete'}
+                    {deletingGuideId === guide.id ? t('guidePages.guidesList.deleting') : t('guidePages.guidesList.delete')}
                   </button>
                 </div>
               )}

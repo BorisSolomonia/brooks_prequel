@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 import StoryStrip from '@/components/ui/StoryStrip';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useRouter } from 'next/navigation';
@@ -10,6 +11,7 @@ import { api } from '@/lib/api';
 import type { CreatorStoryStrip, FeedItem, PageResponse } from '@/types';
 
 export default function FeedPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const router = useRouter();
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
@@ -35,7 +37,7 @@ export default function FeedPage() {
   }, [token, tokenLoading, router]);
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">{t('account.feed.loading')}</div>;
   }
 
   return (
@@ -50,8 +52,8 @@ export default function FeedPage() {
       <div className="space-y-4 mt-4">
         {feedItems.length === 0 ? (
           <div className="mw-card py-12 text-center">
-            <p className="mb-2 font-display text-lg font-black uppercase tracking-[0.08em] text-ig-text-primary">Your feed is empty</p>
-            <p className="text-sm text-ig-text-tertiary">Follow some creators to see their guides and stories here.</p>
+            <p className="mb-2 font-display text-lg font-black uppercase tracking-[0.08em] text-ig-text-primary">{t('account.feed.emptyTitle')}</p>
+            <p className="text-sm text-ig-text-tertiary">{t('account.feed.emptyBody')}</p>
           </div>
         ) : (
           feedItems.map((item) => (

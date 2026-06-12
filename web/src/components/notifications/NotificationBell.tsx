@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
@@ -28,6 +29,7 @@ type FeedResponse = {
 const POLL_INTERVAL_MS = 60_000;
 
 export default function NotificationBell() {
+  const { t } = useTranslation();
   const { token } = useAccessToken();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -135,7 +137,7 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={handleOpen}
-        aria-label={unread > 0 ? `${unread} unread notifications` : 'Notifications'}
+        aria-label={unread > 0 ? t('widgets.notifications.unreadCount', { count: unread }) : t('widgets.notifications.notifications')}
         className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
       >
         <BellIcon />
@@ -165,7 +167,7 @@ export default function NotificationBell() {
         >
           <div className="border-b-2 border-ig-border bg-ig-secondary px-4 py-2.5">
             <p className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-primary">
-              Notifications
+              {t('widgets.notifications.notifications')}
             </p>
           </div>
           {/* Height capped to viewport minus the navbar + safe-area so the
@@ -174,7 +176,7 @@ export default function NotificationBell() {
           <div className="overflow-y-auto" style={{ maxHeight: 'calc(100dvh - 9rem - env(safe-area-inset-bottom))' }}>
             {items.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-ig-text-tertiary">
-                Nothing yet. You&apos;ll see memory shares, follows and updates here.
+                {t('widgets.notifications.empty')}
               </div>
             ) : (
               items.map((n) => (

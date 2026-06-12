@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
@@ -42,6 +43,7 @@ export function ImageUploadField({
   helpText,
   previewShape = 'wide',
 }: ImageUploadFieldProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +56,14 @@ export function ImageUploadField({
     try {
       const uploaded = await api.uploadMedia(file, usage, token);
       onChange(uploaded.url);
-      toast.success('Image uploaded.');
+      toast.success(t('widgets.imageUpload.uploadedSuccess'));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Upload failed';
+      const msg = err instanceof Error ? err.message : t('widgets.imageUpload.uploadFailed');
       console.error('[ImageUploadField] upload failed:', err);
       setError(msg);
       // Also surface as a toast so the user can't miss it. The inline
       // <p> below is a nicety; the toast is the loud signal.
-      toast.error(`Upload failed: ${msg}`);
+      toast.error(t('widgets.imageUpload.uploadFailedWithMsg', { msg }));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -78,7 +80,7 @@ export function ImageUploadField({
             onClick={() => onChange('')}
             className="min-h-11 rounded-md px-3 text-sm font-semibold text-ig-text-tertiary transition-colors hover:text-ig-error lg:min-h-0 lg:px-0 lg:text-xs"
           >
-            Remove
+            {t('widgets.imageUpload.remove')}
           </button>
         )}
       </div>
@@ -92,7 +94,7 @@ export function ImageUploadField({
           />
         ) : (
           <div className={`${previewClasses[previewShape]} flex items-center justify-center border border-dashed border-ig-border text-sm text-ig-text-tertiary`}>
-            No image selected
+            {t('widgets.imageUpload.noImageSelected')}
           </div>
         )}
 
@@ -104,7 +106,7 @@ export function ImageUploadField({
             className="mw-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm disabled:opacity-60"
           >
             {uploading && <Spinner />}
-            {uploading ? 'Uploading...' : value ? 'Replace image' : 'Upload image'}
+            {uploading ? t('widgets.imageUpload.uploading') : value ? t('widgets.imageUpload.replaceImage') : t('widgets.imageUpload.uploadImage')}
           </button>
           {helpText && <p className="text-xs text-ig-text-tertiary">{helpText}</p>}
         </div>
@@ -130,6 +132,7 @@ export function ImageUploadList({
   onChange,
   maxImages,
 }: ImageUploadListProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +153,7 @@ export function ImageUploadList({
       }
       onChange([...values, ...uploadedUrls]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : t('widgets.imageUpload.uploadFailed'));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -174,7 +177,7 @@ export function ImageUploadList({
                 onClick={() => onChange(values.filter((item) => item !== url))}
                 className="absolute right-1 top-1 min-h-10 rounded bg-black/70 px-3 py-1 text-xs font-semibold text-white lg:min-h-0 lg:px-2"
               >
-                Remove
+                {t('widgets.imageUpload.remove')}
               </button>
             </div>
           ))}
@@ -188,7 +191,7 @@ export function ImageUploadList({
         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-ig-border bg-ig-elevated px-4 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:opacity-60"
       >
         {uploading && <Spinner />}
-        {uploading ? 'Uploading...' : remaining === 0 ? 'Image limit reached' : 'Upload place image'}
+        {uploading ? t('widgets.imageUpload.uploading') : remaining === 0 ? t('widgets.imageUpload.imageLimitReached') : t('widgets.imageUpload.uploadPlaceImage')}
       </button>
       {error && <p className="text-xs text-ig-error">{error}</p>}
       <input

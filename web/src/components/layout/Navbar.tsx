@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
 import GlobalSearchBar from '@/components/layout/GlobalSearchBar';
 import ThemeToggle from '@/components/theme/ThemeToggle';
-import LanguageSelector from '@/components/i18n/LanguageSelector';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { startAuthFlow, startLogoutFlow } from '@/lib/capacitor';
 import { clearAccessTokenCache } from '@/hooks/useAccessToken';
@@ -162,7 +161,6 @@ export default function Navbar() {
                 </Link>
               ))}
               <NotificationBell />
-              <LanguageSelector />
               <ThemeToggle />
               {user ? (
                 <a
@@ -187,7 +185,6 @@ export default function Navbar() {
 
         <div className="flex shrink-0 items-center gap-2 md:hidden">
           <NotificationBell />
-          <LanguageSelector />
           <ThemeToggle />
           {isLoading ? (
             <div className="h-12 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />

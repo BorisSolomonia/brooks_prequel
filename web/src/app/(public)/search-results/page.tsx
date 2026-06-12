@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import type { UnifiedSearchResponse } from '@/types';
 import SearchSection from '@/components/search/SearchSection';
@@ -20,6 +21,7 @@ import SearchSkeleton from '@/components/search/SearchSkeleton';
 // `/api/search` endpoint + the premium Creator/Guide/Place cards) — no bespoke
 // search logic is introduced here.
 function SearchResultsContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const query = (searchParams.get('q') ?? '').trim();
 
@@ -69,16 +71,16 @@ function SearchResultsContent() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mw-section-title mb-1 text-2xl">Search results</h1>
+      <h1 className="mw-section-title mb-1 text-2xl">{t('discovery.search.searchResultsTitle')}</h1>
       {query && (
         <p className="mb-6 text-sm text-ig-text-secondary">
-          for &ldquo;{query}&rdquo;
+          {t('discovery.search.searchResultsFor', { q: query })}
         </p>
       )}
 
       {!query && (
         <p className="mt-16 text-center text-ig-text-secondary">
-          Type a search and press Enter to see creators, guides, and places.
+          {t('discovery.search.searchResultsEmptyHint')}
         </p>
       )}
 
@@ -88,14 +90,14 @@ function SearchResultsContent() {
 
       {!loading && !error && query && results && !hasResults && (
         <p className="mt-16 text-center text-ig-text-secondary">
-          No results found for &ldquo;{query}&rdquo;
+          {t('discovery.search.noResultsFoundForQuery', { q: query })}
         </p>
       )}
 
       {!loading && !error && hasResults && (
         <>
           <SearchSection
-            title="Creators"
+            title={t('discovery.search.sectionCreators')}
             totalCount={results!.creatorsTotalCount}
             seeAllHref={`/search/creators?q=${encodeURIComponent(query)}`}
           >
@@ -105,7 +107,7 @@ function SearchResultsContent() {
           </SearchSection>
 
           <SearchSection
-            title="Guides"
+            title={t('discovery.search.sectionGuides')}
             totalCount={results!.guidesTotalCount}
             seeAllHref={`/search/guides?q=${encodeURIComponent(query)}`}
           >
@@ -115,7 +117,7 @@ function SearchResultsContent() {
           </SearchSection>
 
           <SearchSection
-            title="Places"
+            title={t('discovery.search.sectionPlaces')}
             totalCount={results!.placesTotalCount}
             seeAllHref={`/search/places?q=${encodeURIComponent(query)}`}
           >

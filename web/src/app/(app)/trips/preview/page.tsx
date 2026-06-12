@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Mock data — a fully-static "preview trip" used by the onboarding tour so a brand-new
 // user (who has no purchased trips yet) can see the trip-detail layout with the real
@@ -40,6 +41,7 @@ const PREVIEW = {
 };
 
 export default function PreviewTripPage() {
+  const { t } = useTranslation();
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   return (
@@ -47,14 +49,14 @@ export default function PreviewTripPage() {
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Link href="/trips" className="text-sm text-brand-500 hover:text-brand-400">
-            ← Back to Purchased guides
+            {t('guidePages.tripsPreview.backToPurchased')}
           </Link>
           <span className="ml-3 inline-flex items-center rounded-full border border-brand-500/40 bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-500">
-            Preview
+            {t('guidePages.tripsPreview.previewBadge')}
           </span>
           <h1 className="mw-section-title mt-3 text-2xl md:text-3xl">{PREVIEW.title}</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
-            This is what a purchased guide looks like in your library. After buying a guide on Brooks it appears here with the same layout.
+            {t('guidePages.tripsPreview.description')}
           </p>
           <p className="mt-3 text-xs text-ig-text-tertiary">
             {PREVIEW.region} • {PREVIEW.dayCount} days • {PREVIEW.placeCount} places • {PREVIEW.priceLabel}
@@ -67,14 +69,14 @@ export default function PreviewTripPage() {
             rel="noreferrer"
             className="mw-button-secondary min-h-11 flex-1 rounded-md px-4 py-2 text-sm md:flex-none"
           >
-            Open in Maps
+            {t('guidePages.tripsPreview.openInMaps')}
           </a>
           <button
             data-tour="add-to-calendar"
             onClick={() => setCalendarOpen(true)}
             className="mw-button-primary min-h-11 flex-1 rounded-md px-4 py-2 text-sm md:flex-none"
           >
-            📅 Add to Calendar
+            📅 {t('guidePages.tripsPreview.addToCalendar')}
           </button>
         </div>
       </div>
@@ -82,13 +84,13 @@ export default function PreviewTripPage() {
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="order-2 space-y-6 lg:order-1">
           <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
-            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Itinerary</h2>
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">{t('guidePages.tripsPreview.itinerary')}</h2>
             <div className="mt-4 space-y-6">
               {PREVIEW.days.map((day) => (
                 <div key={day.number}>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold uppercase tracking-wide text-brand-400">Day {day.number} — {day.title}</span>
-                    <span className="text-xs text-ig-text-tertiary">{day.places.length} places</span>
+                    <span className="text-sm font-semibold uppercase tracking-wide text-brand-400">{t('guidePages.tripsPreview.dayTitle', { n: day.number, title: day.title })}</span>
+                    <span className="text-xs text-ig-text-tertiary">{t('guidePages.tripsPreview.placeStat', { count: day.places.length })}</span>
                   </div>
                   <div className="space-y-3">
                     {day.places.map((place) => (
@@ -121,10 +123,10 @@ export default function PreviewTripPage() {
 
         <div className="order-1 space-y-6 lg:order-2">
           <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
-            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Trip map</h2>
-            <p className="mt-1 text-sm text-ig-text-secondary">After purchase, every place renders here as a numbered pin.</p>
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">{t('guidePages.tripsPreview.tripMap')}</h2>
+            <p className="mt-1 text-sm text-ig-text-secondary">{t('guidePages.tripsPreview.tripMapDesc')}</p>
             <div className="mt-4 flex h-64 items-center justify-center rounded-xl border-2 border-dashed border-ig-border bg-ig-primary text-sm text-ig-text-tertiary">
-              Sample map preview
+              {t('guidePages.tripsPreview.sampleMapPreview')}
             </div>
           </div>
         </div>
@@ -138,15 +140,15 @@ export default function PreviewTripPage() {
           aria-modal="true"
         >
           <div className="w-full max-w-sm rounded-2xl border border-ig-border bg-ig-elevated p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-1 text-base font-semibold text-ig-text-primary">Add to Calendar — preview</h2>
+            <h2 className="mb-1 text-base font-semibold text-ig-text-primary">{t('guidePages.tripsPreview.calendarModalTitle')}</h2>
             <p className="mb-4 text-sm text-ig-text-secondary">
-              On a real purchased guide, this opens options to sync with Google Calendar or download an .ics file.
+              {t('guidePages.tripsPreview.calendarModalDesc')}
             </p>
             <button
               onClick={() => setCalendarOpen(false)}
               className="mw-button-primary w-full min-h-11 rounded-md px-4 py-2 text-sm"
             >
-              Got it
+              {t('guidePages.tripsPreview.calendarModalGotIt')}
             </button>
           </div>
         </div>

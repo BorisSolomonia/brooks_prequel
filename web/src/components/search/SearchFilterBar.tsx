@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 // Reusable filter + sort bar shared by the Guides and Creators search pages.
 // Renders a star-rating selector + a sort/date dropdown, and OPTIONALLY a
 // "verified only" toggle (creators) and a price range (guides). Each control is
@@ -33,24 +35,26 @@ interface Props {
   onPriceMax?: (value: string) => void;
 }
 
-const RATING_CHOICES: { label: string; value: number | null }[] = [
-  { label: 'Any rating', value: null },
-  { label: '★ 3+', value: 3 },
-  { label: '★ 4+', value: 4 },
-  { label: '★ 4.5+', value: 4.5 },
-];
-
 export default function SearchFilterBar({
   minRating, onMinRating,
   sort, onSort, sortOptions,
   verified, onVerified,
   showPrice, priceMin, priceMax, onPriceMin, onPriceMax,
 }: Props) {
+  const { t } = useTranslation();
+
+  const RATING_CHOICES: { label: string; value: number | null }[] = [
+    { label: t('discovery.search.ratingAny'), value: null },
+    { label: '★ 3+', value: 3 },
+    { label: '★ 4+', value: 4 },
+    { label: '★ 4.5+', value: 4.5 },
+  ];
+
   return (
     <div className="mb-6 space-y-3 rounded-xl border border-ig-border bg-ig-elevated/60 p-3">
       {/* Star rating */}
       <div>
-        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">Rating</span>
+        <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">{t('discovery.search.ratingLabel')}</span>
         <div className="flex flex-wrap gap-2">
           {RATING_CHOICES.map((c) => {
             const active = minRating === c.value;
@@ -76,7 +80,7 @@ export default function SearchFilterBar({
       {/* Sort / date + optional verified */}
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">Sort by</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">{t('discovery.search.sortByLabel')}</span>
           <select
             value={sort}
             onChange={(e) => onSort(e.target.value)}
@@ -96,7 +100,7 @@ export default function SearchFilterBar({
               onChange={(e) => onVerified(e.target.checked)}
               className="h-4 w-4 accent-brand-500"
             />
-            Verified only
+            {t('discovery.search.verifiedOnly')}
           </label>
         )}
       </div>
@@ -105,7 +109,7 @@ export default function SearchFilterBar({
       {showPrice && onPriceMin && onPriceMax && (
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">Min price</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">{t('discovery.search.minPriceLabel')}</span>
             <input
               type="number" min={0} step="0.01" inputMode="decimal" placeholder="0"
               value={priceMin ?? ''}
@@ -114,9 +118,9 @@ export default function SearchFilterBar({
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">Max price</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">{t('discovery.search.maxPriceLabel')}</span>
             <input
-              type="number" min={0} step="0.01" inputMode="decimal" placeholder="Any"
+              type="number" min={0} step="0.01" inputMode="decimal" placeholder={t('discovery.search.maxPricePlaceholder')}
               value={priceMax ?? ''}
               onChange={(e) => onPriceMax(e.target.value)}
               className="min-h-11 w-28 rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-sm text-ig-text-primary focus:border-ig-blue focus:outline-none"

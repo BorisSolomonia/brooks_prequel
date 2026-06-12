@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import { bpsToPercent } from '@/lib/formatting';
@@ -26,6 +27,7 @@ function daysRemaining(endsAt: string) {
 }
 
 export default function PromotionsPage() {
+  const { t } = useTranslation();
   const { token } = useAccessToken();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,17 +88,17 @@ export default function PromotionsPage() {
   const active = promotions.filter((p) => p.active && new Date(p.endsAt) > new Date());
   const past = promotions.filter((p) => !p.active || new Date(p.endsAt) <= new Date());
 
-  if (loading) return <div className="text-[var(--text-secondary)]">Loading…</div>;
+  if (loading) return <div className="text-[var(--text-secondary)]">{t('creatorTools.admin.loading')}</div>;
 
   return (
     <div className="max-w-3xl space-y-10">
-      <h1 className="text-xl font-semibold text-[var(--text-primary)]">Promotions</h1>
+      <h1 className="text-xl font-semibold text-[var(--text-primary)]">{t('creatorTools.admin.promotionsTitle')}</h1>
 
       {/* Active */}
       <section>
-        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">Active</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">{t('creatorTools.admin.sectionActive')}</h2>
         {active.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)]">No active promotions.</p>
+          <p className="text-sm text-[var(--text-tertiary)]">{t('creatorTools.admin.noActivePromotions')}</p>
         ) : (
           <div className="space-y-3">
             {active.map((p) => {
@@ -108,7 +110,7 @@ export default function PromotionsPage() {
                       <span className="font-medium text-[var(--text-primary)]">{p.name}</span>
                       {days !== null && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--brand-primary)] text-white">
-                          {days}d left
+                          {t('creatorTools.admin.daysLeft', { count: days })}
                         </span>
                       )}
                     </div>
@@ -118,7 +120,7 @@ export default function PromotionsPage() {
                     {p.description && <p className="text-xs text-[var(--text-tertiary)]">{p.description}</p>}
                   </div>
                   <button onClick={() => deactivate(p.id)} className="text-xs text-red-500 hover:underline shrink-0">
-                    End early
+                    {t('creatorTools.admin.endEarly')}
                   </button>
                 </div>
               );
@@ -129,11 +131,11 @@ export default function PromotionsPage() {
 
       {/* Create */}
       <section>
-        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">Create Promotion</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">{t('creatorTools.admin.sectionCreatePromotion')}</h2>
         <div className="border border-[var(--border)] rounded-xl p-5 bg-[var(--bg-elevated)] space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Name *</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelName')}</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -141,7 +143,7 @@ export default function PromotionsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Rate (%)</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelRatePercent')}</label>
               <input
                 type="number"
                 min="0"
@@ -153,20 +155,20 @@ export default function PromotionsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Target</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelTarget')}</label>
               <select
                 value={targetType}
                 onChange={(e) => setTargetType(e.target.value as typeof targetType)}
                 className="w-full px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
               >
-                <option value="ALL">All creators</option>
-                <option value="REGION">Region</option>
-                <option value="CREATOR_LIST">Creator list</option>
+                <option value="ALL">{t('creatorTools.admin.optionAllCreators')}</option>
+                <option value="REGION">{t('creatorTools.admin.optionRegion')}</option>
+                <option value="CREATOR_LIST">{t('creatorTools.admin.optionCreatorList')}</option>
               </select>
             </div>
             {targetType === 'REGION' && (
               <div>
-                <label className="block text-xs text-[var(--text-tertiary)] mb-1">Region</label>
+                <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelRegion')}</label>
                 <input
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
@@ -176,7 +178,7 @@ export default function PromotionsPage() {
             )}
             {targetType === 'CREATOR_LIST' && (
               <div>
-                <label className="block text-xs text-[var(--text-tertiary)] mb-1">Creator UUIDs (comma-separated)</label>
+                <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelCreatorUuids')}</label>
                 <textarea
                   value={creatorList}
                   onChange={(e) => setCreatorList(e.target.value)}
@@ -186,7 +188,7 @@ export default function PromotionsPage() {
               </div>
             )}
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Starts at *</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelStartsAt')}</label>
               <input
                 type="datetime-local"
                 value={startsAt}
@@ -195,7 +197,7 @@ export default function PromotionsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Ends at *</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelEndsAt')}</label>
               <input
                 type="datetime-local"
                 value={endsAt}
@@ -204,7 +206,7 @@ export default function PromotionsPage() {
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Description</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelDescription')}</label>
               <input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -217,7 +219,7 @@ export default function PromotionsPage() {
             disabled={creating || !name || !startsAt || !endsAt}
             className="px-5 py-2 text-sm rounded-lg bg-[var(--brand-primary)] text-white font-medium disabled:opacity-40"
           >
-            {creating ? 'Creating…' : 'Create Promotion'}
+            {creating ? t('creatorTools.admin.creating') : t('creatorTools.admin.createPromotion')}
           </button>
         </div>
       </section>
@@ -225,7 +227,7 @@ export default function PromotionsPage() {
       {/* Past */}
       {past.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">Past / Ended</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">{t('creatorTools.admin.sectionPastEnded')}</h2>
           <div className="space-y-2">
             {past.map((p) => (
               <div key={p.id} className="border border-[var(--border-light)] rounded-xl p-3 bg-[var(--bg-secondary)] flex justify-between">

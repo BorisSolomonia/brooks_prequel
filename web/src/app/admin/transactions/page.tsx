@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api, API_BASE_URL } from '@/lib/api';
 import { formatCents } from '@/lib/formatting';
@@ -64,6 +65,7 @@ const fmtTime = (iso: string | null) => {
 };
 
 export default function AdminTransactionsPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const [data, setData] = useState<Page<AdminTransaction> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -117,40 +119,40 @@ export default function AdminTransactionsPage() {
     }
   };
 
-  if (tokenLoading) return <div className="px-4 py-12 text-center text-ig-text-tertiary">Loading…</div>;
+  if (tokenLoading) return <div className="px-4 py-12 text-center text-ig-text-tertiary">{t('creatorTools.admin.loading')}</div>;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-ig-text-primary">Transactions</h1>
+        <h1 className="text-2xl font-bold text-ig-text-primary">{t('creatorTools.admin.transactionsTitle')}</h1>
         <button
           onClick={exportCsv}
           disabled={exporting}
           className="rounded-md bg-ig-blue px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {exporting ? 'Exporting…' : 'Export CSV'}
+          {exporting ? t('creatorTools.admin.exporting') : t('creatorTools.admin.exportCsv')}
         </button>
       </div>
 
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-ig-border bg-ig-secondary p-3">
-        <label className="flex flex-col text-xs text-ig-text-secondary">From
+        <label className="flex flex-col text-xs text-ig-text-secondary">{t('creatorTools.admin.labelFrom')}
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
             className="mt-1 rounded-md border border-ig-border bg-ig-primary px-2 py-1.5 text-sm text-ig-text-primary" />
         </label>
-        <label className="flex flex-col text-xs text-ig-text-secondary">To
+        <label className="flex flex-col text-xs text-ig-text-secondary">{t('creatorTools.admin.labelTo')}
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
             className="mt-1 rounded-md border border-ig-border bg-ig-primary px-2 py-1.5 text-sm text-ig-text-primary" />
         </label>
-        <label className="flex flex-col text-xs text-ig-text-secondary">Creator ID
+        <label className="flex flex-col text-xs text-ig-text-secondary">{t('creatorTools.admin.labelCreatorId')}
           <input type="text" value={creatorId} onChange={(e) => setCreatorId(e.target.value)} placeholder="uuid"
             className="mt-1 w-64 rounded-md border border-ig-border bg-ig-primary px-2 py-1.5 text-sm text-ig-text-primary" />
         </label>
-        <label className="flex flex-col text-xs text-ig-text-secondary">Guide ID
+        <label className="flex flex-col text-xs text-ig-text-secondary">{t('creatorTools.admin.labelGuideId')}
           <input type="text" value={guideId} onChange={(e) => setGuideId(e.target.value)} placeholder="uuid"
             className="mt-1 w-64 rounded-md border border-ig-border bg-ig-primary px-2 py-1.5 text-sm text-ig-text-primary" />
         </label>
         <button onClick={applyFilters} className="rounded-md border border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue">
-          Apply
+          {t('creatorTools.admin.apply')}
         </button>
       </div>
 
@@ -159,22 +161,22 @@ export default function AdminTransactionsPage() {
       {loading ? (
         <div className="py-12 text-center"><Spinner /></div>
       ) : !data || data.content.length === 0 ? (
-        <p className="py-12 text-center text-ig-text-tertiary">No transactions.</p>
+        <p className="py-12 text-center text-ig-text-tertiary">{t('creatorTools.admin.noTransactions')}</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-ig-border">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-ig-secondary text-xs uppercase text-ig-text-tertiary">
               <tr>
-                <th className="px-3 py-2">Sale time</th>
-                <th className="px-3 py-2">Guide</th>
-                <th className="px-3 py-2">Creator</th>
-                <th className="px-3 py-2">Buyer</th>
-                <th className="px-3 py-2 text-right">Gross</th>
-                <th className="px-3 py-2 text-right">Commission</th>
-                <th className="px-3 py-2 text-right">Net</th>
-                <th className="px-3 py-2">Payout</th>
-                <th className="px-3 py-2">Creator IBAN</th>
-                <th className="px-3 py-2">BOG refs</th>
+                <th className="px-3 py-2">{t('creatorTools.admin.thSaleTime')}</th>
+                <th className="px-3 py-2">{t('creatorTools.admin.thGuide')}</th>
+                <th className="px-3 py-2">{t('creatorTools.admin.thCreator')}</th>
+                <th className="px-3 py-2">{t('creatorTools.admin.thBuyer')}</th>
+                <th className="px-3 py-2 text-right">{t('creatorTools.admin.thGross')}</th>
+                <th className="px-3 py-2 text-right">{t('creatorTools.admin.thCommission')}</th>
+                <th className="px-3 py-2 text-right">{t('creatorTools.admin.thNet')}</th>
+                <th className="px-3 py-2">{t('creatorTools.admin.thPayout')}</th>
+                <th className="px-3 py-2">{t('creatorTools.admin.thCreatorIban')}</th>
+                <th className="px-3 py-2">{t('creatorTools.admin.thBogRefs')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ig-border text-ig-text-primary">
@@ -218,12 +220,12 @@ export default function AdminTransactionsPage() {
 
       {data && data.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm text-ig-text-secondary">
-          <span>{data.totalElements} total · page {data.page + 1} of {data.totalPages}</span>
+          <span>{t('creatorTools.admin.paginationInfo', { total: data.totalElements, page: data.page + 1, totalPages: data.totalPages })}</span>
           <div className="flex gap-2">
             <button disabled={data.page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="rounded-md border border-ig-border px-3 py-1.5 disabled:opacity-40">Prev</button>
+              className="rounded-md border border-ig-border px-3 py-1.5 disabled:opacity-40">{t('creatorTools.admin.prev')}</button>
             <button disabled={data.last} onClick={() => setPage((p) => p + 1)}
-              className="rounded-md border border-ig-border px-3 py-1.5 disabled:opacity-40">Next</button>
+              className="rounded-md border border-ig-border px-3 py-1.5 disabled:opacity-40">{t('creatorTools.admin.next')}</button>
           </div>
         </div>
       )}

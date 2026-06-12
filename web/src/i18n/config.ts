@@ -60,8 +60,8 @@ if (!i18n.isInitialized) {
 }
 
 // Switch the app language and persist it as the manual override (wins over
-// device detection on return visits). Shared by the navbar Globe selector AND
-// the Settings language section so there is one code path.
+// device detection on return visits). BOR-52: the global-header Globe selector
+// was removed; the Settings language section is now the sole caller.
 export function setAppLanguage(code: string): void {
   void i18n.changeLanguage(code);
   try {

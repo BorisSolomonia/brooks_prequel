@@ -2,6 +2,7 @@
 
 import { useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
@@ -15,6 +16,7 @@ interface PayoutDetails {
 const CURRENCIES = ['GEL', 'USD', 'EUR', 'GBP'];
 
 export default function PayoutDetailsPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const [iban, setIban] = useState('');
   const [name, setName] = useState('');
@@ -37,7 +39,7 @@ export default function PayoutDetailsPage() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Failed to load payout details');
+        setError(err instanceof Error ? err.message : t('account.payout.errorLoad'));
         setLoading(false);
       });
     return () => { cancelled = true; };
@@ -62,33 +64,31 @@ export default function PayoutDetailsPage() {
       setIban(updated.payoutIban ?? '');
       setName(updated.payoutBeneficiaryName ?? '');
       setCurrency(updated.payoutCurrency ?? 'GEL');
-      setSavedMessage('Saved. The admin will use these details when transferring your share.');
+      setSavedMessage(t('account.payout.savedMessage'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save payout details');
+      setError(err instanceof Error ? err.message : t('account.payout.errorSave'));
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="px-4 py-6 text-sm text-ig-text-secondary">Loading…</div>;
+    return <div className="px-4 py-6 text-sm text-ig-text-secondary">{t('account.payout.loading')}</div>;
   }
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
       <div className="mb-4 flex items-center gap-3">
-        <Link href="/profile" className="text-sm text-ig-text-secondary hover:text-ig-text-primary">← Back to Profile</Link>
+        <Link href="/profile" className="text-sm text-ig-text-secondary hover:text-ig-text-primary">{t('account.payout.backToProfile')}</Link>
       </div>
-      <h1 className="mw-section-title text-2xl">Payout details</h1>
+      <h1 className="mw-section-title text-2xl">{t('account.payout.title')}</h1>
       <p className="mt-2 text-sm text-ig-text-secondary">
-        Provide your bank details so the platform can send you your share of guide sales.
-        Brooks takes a platform fee on each sale; the remainder is owed to you and listed on
-        the Admin earnings page until it is paid out.
+        {t('account.payout.description')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <label className="block">
-          <span className="block text-sm font-semibold text-ig-text-secondary">IBAN</span>
+          <span className="block text-sm font-semibold text-ig-text-secondary">{t('account.payout.fields.iban')}</span>
           <input
             type="text"
             value={iban}
@@ -99,23 +99,23 @@ export default function PayoutDetailsPage() {
             className="mt-1 block w-full rounded-md border-2 border-ig-border bg-ig-elevated px-3 py-2 font-mono text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-brand-500 focus:outline-none md:text-sm"
           />
           <span className="mt-1 block text-xs text-ig-text-tertiary">
-            Up to 34 characters, starts with your country code (e.g., GE, GB, DE).
+            {t('account.payout.fields.ibanHelp')}
           </span>
         </label>
 
         <label className="block">
-          <span className="block text-sm font-semibold text-ig-text-secondary">Beneficiary name</span>
+          <span className="block text-sm font-semibold text-ig-text-secondary">{t('account.payout.fields.beneficiaryName')}</span>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Full legal name as on the bank account"
+            placeholder={t('account.payout.fields.beneficiaryNamePlaceholder')}
             className="mt-1 block w-full rounded-md border-2 border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-brand-500 focus:outline-none md:text-sm"
           />
         </label>
 
         <label className="block">
-          <span className="block text-sm font-semibold text-ig-text-secondary">Currency</span>
+          <span className="block text-sm font-semibold text-ig-text-secondary">{t('account.payout.fields.currency')}</span>
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
@@ -136,7 +136,7 @@ export default function PayoutDetailsPage() {
           className="mw-button-primary inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md py-3 text-sm disabled:opacity-60"
         >
           {saving && <Spinner />}
-          {saving ? 'Saving…' : 'Save payout details'}
+          {saving ? t('account.payout.saving') : t('account.payout.saveButton')}
         </button>
       </form>
     </div>

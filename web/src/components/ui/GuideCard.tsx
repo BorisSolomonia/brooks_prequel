@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/hooks/useCurrency';
 
 interface GuideCardProps {
@@ -35,13 +36,6 @@ interface GuideCardProps {
 }
 
 
-function formatDuration(dayCount?: number) {
-  if (!dayCount) {
-    return 'Guide';
-  }
-  return `${dayCount}-day guide`;
-}
-
 export default function GuideCard({
   href,
   title,
@@ -70,8 +64,10 @@ export default function GuideCard({
   creatorAvatarUrl,
   creatorHref,
 }: GuideCardProps) {
+  const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const location = displayLocation || region || 'Destination';
+  const location = displayLocation || region || t('guideCard.destination');
+  const duration = dayCount ? t('guideCard.durationDays', { count: dayCount }) : t('guideCard.durationGuide');
   const spots = spotCount ?? placeCount ?? 0;
   const cardPrice = effectivePriceCents ?? priceCents ?? 0;
   const showCreatorBadge = Boolean(creatorName && creatorHref);
@@ -90,7 +86,7 @@ export default function GuideCard({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-ig-text-primary">
-              Add cover image
+              {t('guideCard.addCover')}
             </div>
           )}
         </Link>
@@ -106,7 +102,7 @@ export default function GuideCard({
             type="button"
             onClick={onSaveClick}
             className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full border-2 border-ig-border bg-black/60 text-white shadow-lg backdrop-blur transition hover:bg-black/80"
-            aria-label={saveLabel ?? (savedByViewer ? 'Saved guide' : 'Save guide')}
+            aria-label={saveLabel ?? (savedByViewer ? t('guideCard.savedGuide') : t('guideCard.saveGuide'))}
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill={savedByViewer ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
@@ -124,7 +120,7 @@ export default function GuideCard({
         {showCreatorBadge && (
           <Link
             href={creatorHref!}
-            aria-label={`View ${creatorName}'s profile`}
+            aria-label={t('guideCard.viewProfile', { name: creatorName })}
             className="group/badge absolute -top-7 left-4 z-30 inline-flex flex-col items-start"
           >
             <span className="relative">
@@ -141,7 +137,7 @@ export default function GuideCard({
               </span>
             </span>
             <span className="mt-1 max-w-[8.5rem] truncate text-xs font-medium text-ig-text-secondary group-hover/badge:text-brand-500">
-              By {creatorName}
+              {t('guideCard.byCreator', { name: creatorName })}
             </span>
           </Link>
         )}
@@ -151,16 +147,16 @@ export default function GuideCard({
             {title}
           </h3>
           <p className="mt-2 text-sm text-ig-text-secondary">
-            {location} - {formatDuration(dayCount)} - {spots} {spots === 1 ? 'spot' : 'spots'}
+            {location} - {duration} - {t('guideCard.spots', { count: spots })}
           </p>
           <p className="mt-1 text-sm text-ig-text-tertiary">
-          {spots} {spots === 1 ? 'spot' : 'spots'} included
+          {t('guideCard.spotsIncluded', { count: spots })}
         </p>
 
         <div className="mt-3 min-h-6">
           {popularThisWeek && (
             <span className="mw-badge inline-flex rounded-full px-3 py-1 text-xs">
-              Popular this week
+              {t('guideCard.popular')}
             </span>
           )}
         </div>
@@ -170,19 +166,19 @@ export default function GuideCard({
             {reviewCount > 0 ? (
               <span className="font-medium text-ig-text-primary"><span className="text-accent-500">&#9733;</span> {averageRating.toFixed(1)} <span className="text-ig-text-tertiary">({reviewCount})</span></span>
             ) : (
-              <span>No reviews yet</span>
+              <span>{t('guideCard.noReviews')}</span>
             )}
           </div>
           <p className="font-display shrink-0 text-sm font-black text-accent-500">
-            {cardPrice <= 0 ? 'Free' : (
+            {cardPrice <= 0 ? t('guideCard.free') : (
               (effectivePriceCents != null && (priceCents ?? 0) > effectivePriceCents) ? (
                 <>
-                  From {formatAmount(effectivePriceCents, currency)}{' '}
+                  {t('guideCard.priceFrom', { amount: formatAmount(effectivePriceCents, currency) })}{' '}
                   <span className="text-xs font-normal text-ig-text-tertiary line-through">
                     {formatAmount(priceCents ?? 0, currency)}
                   </span>
                 </>
-              ) : `From ${formatAmount(cardPrice, currency)}`
+              ) : t('guideCard.priceFrom', { amount: formatAmount(cardPrice, currency) })
             )}
           </p>
         </div>

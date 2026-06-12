@@ -8,9 +8,11 @@ import { useAccessToken } from '@/hooks/useAccessToken';
 import { useRouter } from 'next/navigation';
 import { redirectToLogin } from '@/lib/capacitor';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useTranslation } from 'react-i18next';
 import type { MyTripSummary, MyTripsResponse } from '@/types';
 
 export default function MyTripsPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const router = useRouter();
   const { formatAmount } = useCurrency();
@@ -25,7 +27,7 @@ export default function MyTripsPage() {
     setLoading(true);
     api.get<MyTripsResponse>(hidden ? '/api/me/trips/hidden' : '/api/me/trips', token)
       .then((response) => setTrips(response.trips))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load trips'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('guidePages.tripsList.errorFailedToLoad')))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -42,7 +44,7 @@ export default function MyTripsPage() {
       await api.delete<void>(`/api/me/trips/${tripId}`, token);
       setTrips((cur) => cur.filter((t) => t.id !== tripId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to hide guide');
+      setError(err instanceof Error ? err.message : t('guidePages.tripsList.errorFailedToHide'));
     } finally {
       setBusyId(null);
     }
@@ -55,28 +57,28 @@ export default function MyTripsPage() {
       await api.post<void>(`/api/me/trips/${tripId}/restore`, undefined, token);
       setTrips((cur) => cur.filter((t) => t.id !== tripId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to unhide guide');
+      setError(err instanceof Error ? err.message : t('guidePages.tripsList.errorFailedToUnhide'));
     } finally {
       setBusyId(null);
     }
   };
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-ig-text-tertiary">Loading trips...</div>;
+    return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-ig-text-tertiary">{t('guidePages.tripsList.loading')}</div>;
   }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between gap-4">
         <div>
-          <p className="mw-eyebrow">Buyer Library</p>
+          <p className="mw-eyebrow">{t('guidePages.tripsList.eyebrow')}</p>
           <h1 data-tour="trips-page-header" className="mw-section-title mt-2 text-3xl">
-            {showHidden ? 'Hidden guides' : 'Purchased guides'}
+            {showHidden ? t('guidePages.tripsList.titleHidden') : t('guidePages.tripsList.titlePurchased')}
           </h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
             {showHidden
-              ? 'Guides you have hidden. Unhide to bring one back to your purchased list — it stays yours.'
-              : 'Purchased guide versions live here. Open a trip to set dates, review the map, and export it to your calendar.'}
+              ? t('guidePages.tripsList.descHidden')
+              : t('guidePages.tripsList.descPurchased')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -84,10 +86,10 @@ export default function MyTripsPage() {
             onClick={() => setShowHidden((v) => !v)}
             className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm"
           >
-            {showHidden ? 'Back to purchased' : 'Show hidden'}
+            {showHidden ? t('guidePages.tripsList.backToPurchased') : t('guidePages.tripsList.showHidden')}
           </button>
           {!showHidden && (
-            <Link href="/search" className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm">Find guides</Link>
+            <Link href="/search" className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm">{t('guidePages.tripsList.findGuides')}</Link>
           )}
         </div>
       </div>
@@ -97,10 +99,10 @@ export default function MyTripsPage() {
       {trips.length === 0 ? (
         <div className="mw-card p-8 text-center">
           <p className="font-display text-lg font-black text-ig-text-primary">
-            {showHidden ? 'No hidden guides' : 'No purchased trips yet'}
+            {showHidden ? t('guidePages.tripsList.noHiddenGuides') : t('guidePages.tripsList.noPurchasedTrips')}
           </p>
           <p className="mt-2 text-sm text-ig-text-secondary">
-            {showHidden ? 'Hidden guides will appear here.' : 'Buy a guide from a creator to move it into your map and calendar workflow.'}
+            {showHidden ? t('guidePages.tripsList.noHiddenDesc') : t('guidePages.tripsList.noPurchasedDesc')}
           </p>
         </div>
       ) : (
@@ -113,7 +115,7 @@ export default function MyTripsPage() {
                     <Image src={trip.coverImageUrl} alt="" fill sizes="(max-width: 768px) 100vw, 384px" className="object-cover" />
                     {trip.noLongerSold && (
                       <span className="absolute left-3 top-3 rounded-pill bg-black/70 px-2.5 py-1 text-xs font-semibold text-white">
-                        No longer sold
+                        {t('guidePages.tripsList.noLongerSold')}
                       </span>
                     )}
                   </div>
@@ -127,12 +129,12 @@ export default function MyTripsPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-3 text-xs text-ig-text-tertiary">
                     {trip.region && <span>{trip.region}</span>}
-                    <span>{trip.dayCount} days</span>
-                    <span>{trip.placeCount} places</span>
+                    <span>{t('guidePages.tripsList.dayStat', { count: trip.dayCount })}</span>
+                    <span>{t('guidePages.tripsList.placeStat', { count: trip.placeCount })}</span>
                     <span>{formatAmount(trip.amountCents)}</span>
                   </div>
                   {!trip.coverImageUrl && trip.noLongerSold && (
-                    <span className="mt-2 inline-block rounded-pill bg-ig-secondary px-2.5 py-1 text-xs font-semibold text-ig-text-secondary">No longer sold</span>
+                    <span className="mt-2 inline-block rounded-pill bg-ig-secondary px-2.5 py-1 text-xs font-semibold text-ig-text-secondary">{t('guidePages.tripsList.noLongerSold')}</span>
                   )}
                 </div>
               </Link>
@@ -140,12 +142,12 @@ export default function MyTripsPage() {
                 {showHidden ? (
                   <button onClick={() => unhideTrip(trip.id)} disabled={busyId === trip.id}
                     className="text-xs font-semibold text-brand-500 hover:underline disabled:opacity-50">
-                    {busyId === trip.id ? 'Unhiding…' : 'Unhide'}
+                    {busyId === trip.id ? t('guidePages.tripsList.unhiding') : t('guidePages.tripsList.unhide')}
                   </button>
                 ) : (
                   <button onClick={() => hideTrip(trip.id)} disabled={busyId === trip.id}
                     className="text-xs font-semibold text-ig-text-tertiary hover:text-ig-error disabled:opacity-50">
-                    {busyId === trip.id ? 'Hiding…' : 'Hide'}
+                    {busyId === trip.id ? t('guidePages.tripsList.hiding') : t('guidePages.tripsList.hide')}
                   </button>
                 )}
               </div>

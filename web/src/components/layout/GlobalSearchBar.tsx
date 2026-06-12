@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import CreatorSearchCard from '@/components/search/CreatorSearchCard';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
@@ -61,6 +62,7 @@ function SearchSection({ title, count, href, onNavigate, children }: SearchSecti
 }
 
 export default function GlobalSearchBar() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -207,7 +209,7 @@ export default function GlobalSearchBar() {
           }}
           placeholder=""
           className="h-12 w-full rounded-full border-2 border-ig-border bg-ig-elevated pl-10 pr-12 text-base text-ig-text-primary outline-none transition placeholder:text-sm focus:border-brand-500 focus:bg-ig-primary md:h-10 md:pr-20 md:text-sm"
-          aria-label="Search creators, guides, and places"
+          aria-label={t('discovery.search.inputAriaLabel')}
         />
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
           {(loading || isPending) && (
@@ -218,7 +220,7 @@ export default function GlobalSearchBar() {
               type="button"
               onClick={clearSearch}
               className="flex h-10 w-10 items-center justify-center rounded-full text-ig-text-tertiary transition hover:bg-ig-hover hover:text-ig-text-primary lg:h-7 lg:w-7"
-              aria-label="Clear search"
+              aria-label={t('discovery.search.clearAriaLabel')}
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M6 18L18 6M6 6l12 12" />
@@ -252,7 +254,7 @@ export default function GlobalSearchBar() {
                   deep-dive to the filtered list (?q= carries the typed query).
                   Each card is wrapped so a click also closes the dropdown. */}
               <SearchSection
-                title="Creators"
+                title={t('discovery.search.sectionCreators')}
                 count={results?.creators.length ?? 0}
                 href={`/search/creators?q=${encodeURIComponent(inputValue.trim())}`}
                 onNavigate={() => setOpen(false)}
@@ -265,7 +267,7 @@ export default function GlobalSearchBar() {
               </SearchSection>
 
               <SearchSection
-                title="Guides"
+                title={t('discovery.search.sectionGuides')}
                 count={results?.guides.length ?? 0}
                 href={`/search/guides?q=${encodeURIComponent(inputValue.trim())}`}
                 onNavigate={() => setOpen(false)}
@@ -278,7 +280,7 @@ export default function GlobalSearchBar() {
               </SearchSection>
 
               <SearchSection
-                title="Places"
+                title={t('discovery.search.sectionPlaces')}
                 count={results?.places.length ?? 0}
                 href={`/search/places?q=${encodeURIComponent(inputValue.trim())}`}
                 onNavigate={() => setOpen(false)}
@@ -292,9 +294,9 @@ export default function GlobalSearchBar() {
             </div>
           ) : (
             <div className="rounded-2xl border-2 border-ig-border bg-ig-primary px-4 py-4">
-              <p className="text-sm font-medium text-ig-text-primary">No direct matches</p>
+              <p className="text-sm font-medium text-ig-text-primary">{t('discovery.search.noDirectMatches')}</p>
               <p className="mt-1 text-xs text-ig-text-secondary">
-                Press Enter to open Explore for &ldquo;{inputValue.trim()}&rdquo;.
+                {t('discovery.search.pressEnterHint', { q: inputValue.trim() })}
               </p>
             </div>
           )}
@@ -305,7 +307,7 @@ export default function GlobalSearchBar() {
               onClick={handleSubmit}
               className="mw-button-secondary min-h-12 w-full rounded-2xl px-4 py-3 text-left text-sm transition hover:bg-ig-hover"
             >
-              Search everything for &ldquo;{inputValue.trim()}&rdquo;
+              {t('discovery.search.searchEverything', { q: inputValue.trim() })}
             </button>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { compliance } from '@/lib/compliance';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -13,14 +14,16 @@ const POLL_INTERVAL_MS = 4000;
 const POLL_MAX_ATTEMPTS = 8;
 
 export default function PurchaseSuccessPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">Loading...</div>}>
+    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">{t('account.purchaseSuccess.loading')}</div>}>
       <PurchaseSuccessInner />
     </Suspense>
   );
 }
 
 function PurchaseSuccessInner() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const shopOrderId = searchParams.get('shop_order_id');
   const { token, loading: tokenLoading } = useAccessToken();
@@ -54,7 +57,7 @@ function PurchaseSuccessInner() {
         }
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Could not load purchase');
+        setError(err instanceof Error ? err.message : t('account.purchaseSuccess.errorLoad'));
       }
     };
 
@@ -83,10 +86,10 @@ function PurchaseSuccessInner() {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
         <div className="mw-card p-6">
-          <h1 className="mw-section-title text-xl">Purchase complete</h1>
-          <p className="mt-2 text-sm text-ig-text-secondary">Your guide has been added to your purchases.</p>
+          <h1 className="mw-section-title text-xl">{t('account.purchaseSuccess.completeTitle')}</h1>
+          <p className="mt-2 text-sm text-ig-text-secondary">{t('account.purchaseSuccess.addedToPurchases')}</p>
           <Link href="/purchases" className="mw-button-primary mt-6 inline-block min-h-11 rounded-lg px-6 py-2.5 text-sm">
-            View my purchases
+            {t('account.purchaseSuccess.viewMyPurchases')}
           </Link>
         </div>
       </div>
@@ -94,7 +97,7 @@ function PurchaseSuccessInner() {
   }
 
   if (tokenLoading || (!purchase && !error)) {
-    return <div className="mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">Loading receipt...</div>;
+    return <div className="mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">{t('account.purchaseSuccess.loadingReceipt')}</div>;
   }
 
   if (error) {
@@ -102,7 +105,7 @@ function PurchaseSuccessInner() {
       <div className="mx-auto max-w-md px-4 py-16 text-center">
         <p className="text-sm text-ig-error">{error}</p>
         <Link href="/purchases" className="mw-button-primary mt-6 inline-block min-h-11 rounded-lg px-6 py-2.5 text-sm">
-          View my purchases
+          {t('account.purchaseSuccess.viewMyPurchases')}
         </Link>
       </div>
     );
@@ -126,12 +129,12 @@ function PurchaseSuccessInner() {
             <div>
               <p className="mw-eyebrow">Receipt</p>
               <h1 className="mw-section-title mt-1 text-2xl">
-                {isPending ? 'Payment received — finalizing' : 'Purchase complete'}
+                {isPending ? t('account.purchaseSuccess.pendingTitle') : t('account.purchaseSuccess.completeTitle')}
               </h1>
               <p className="mt-1 text-sm text-ig-text-secondary">
                 {isPending
-                  ? 'We received your payment. Your access will appear shortly.'
-                  : 'Your guide has been added to your purchases.'}
+                  ? t('account.purchaseSuccess.pendingBody')
+                  : t('account.purchaseSuccess.addedToPurchases')}
               </p>
             </div>
             {!isPending && (
@@ -144,17 +147,17 @@ function PurchaseSuccessInner() {
           </div>
 
           <dl className="mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-            <ReceiptRow label="Order ID" value={purchase.bogOrderId || '—'} />
-            <ReceiptRow label="Status" value={purchase.status} />
-            <ReceiptRow label="Order date" value={formatDate(purchase.createdAt)} />
-            <ReceiptRow label="Completed at" value={formatDate(purchase.completedAt)} />
-            <ReceiptRow label="Item" value={purchase.guideTitle || `Guide v${purchase.guideVersionNumber}`} />
-            <ReceiptRow label="Amount paid" value={`${formatAmount(purchase.priceCentsPaid)} ${purchase.currency}`} />
-            <ReceiptRow label="Payment method" value="Bank of Georgia iPay" />
+            <ReceiptRow label={t('account.purchaseSuccess.receipt.orderId')} value={purchase.bogOrderId || '—'} />
+            <ReceiptRow label={t('account.purchaseSuccess.receipt.status')} value={purchase.status} />
+            <ReceiptRow label={t('account.purchaseSuccess.receipt.orderDate')} value={formatDate(purchase.createdAt)} />
+            <ReceiptRow label={t('account.purchaseSuccess.receipt.completedAt')} value={formatDate(purchase.completedAt)} />
+            <ReceiptRow label={t('account.purchaseSuccess.receipt.item')} value={purchase.guideTitle || `Guide v${purchase.guideVersionNumber}`} />
+            <ReceiptRow label={t('account.purchaseSuccess.receipt.amountPaid')} value={`${formatAmount(purchase.priceCentsPaid)} ${purchase.currency}`} />
+            <ReceiptRow label={t('account.purchaseSuccess.receipt.paymentMethod')} value={t('account.purchaseSuccess.receipt.paymentMethodValue')} />
           </dl>
 
           <div className="mt-6 border-t border-ig-border pt-4 text-xs text-ig-text-secondary">
-            <p className="font-semibold text-ig-text-primary">Merchant</p>
+            <p className="font-semibold text-ig-text-primary">{t('account.purchaseSuccess.receipt.merchant')}</p>
             <p className="mt-1">{compliance.legalEntity}</p>
             <p>Legal identifier: {compliance.legalIdentifier}</p>
             <p>Email: {compliance.email}</p>
@@ -170,7 +173,7 @@ function PurchaseSuccessInner() {
                 href={`/guides/${purchase.guideId}/view`}
                 className="mw-button-primary inline-block min-h-11 rounded-lg px-6 py-2.5 text-sm"
               >
-                View your guide
+                {t('account.purchaseSuccess.viewYourGuide')}
               </Link>
             )}
             <button
@@ -178,10 +181,10 @@ function PurchaseSuccessInner() {
               onClick={() => window.print()}
               className="mw-button-secondary min-h-11 rounded-lg px-6 py-2.5 text-sm"
             >
-              Print / Save PDF
+              {t('account.purchaseSuccess.printSavePdf')}
             </button>
             <Link href="/purchases" className="mw-button-secondary inline-block min-h-11 rounded-lg px-6 py-2.5 text-sm">
-              View my purchases
+              {t('account.purchaseSuccess.viewMyPurchases')}
             </Link>
           </div>
         </div>

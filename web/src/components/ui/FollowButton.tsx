@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import { startAuthFlow } from '@/lib/capacitor';
@@ -14,6 +15,7 @@ interface FollowButtonProps {
 }
 
 export default function FollowButton({ userId, initialFollowing = false, onFollowChange }: FollowButtonProps) {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const [following, setFollowing] = useState(initialFollowing);
   const [busy, setBusy] = useState(false);
@@ -56,7 +58,7 @@ export default function FollowButton({ userId, initialFollowing = false, onFollo
         disabled
         className="mw-button-secondary min-h-11 rounded-md px-5 py-2 text-sm opacity-70"
       >
-        Follow
+        {t('followButton.follow')}
       </button>
     );
   }
@@ -73,7 +75,7 @@ export default function FollowButton({ userId, initialFollowing = false, onFollo
       } ${busy ? 'opacity-70' : ''}`}
     >
       {busy && <Spinner />}
-      {following ? 'Following' : 'Follow'}
+      {following ? t('followButton.following') : t('followButton.follow')}
     </button>
   );
 }

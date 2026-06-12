@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap, Marker as LeafletMarker, Polyline as LeafletPolyline } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTranslation } from 'react-i18next';
 import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
 import type { MyTripItem } from '@/types';
 
@@ -13,14 +14,7 @@ import type { MyTripItem } from '@/types';
 // textures to leak, so this stays bounded even with many guides/places open
 // across the app. See POSTMORTEM_MAPS_GPU_OOM.md.
 
-const CATEGORY_FILTERS = [
-  { value: 'ALL', label: 'All' },
-  { value: 'ACTIVITY', label: 'Activity' },
-  { value: 'TRANSPORT', label: 'Transport' },
-  { value: 'SAFETY', label: 'Safety' },
-  { value: 'ACCOMMODATION', label: 'Stay' },
-  { value: 'SHOPPING', label: 'Shopping' },
-];
+const CATEGORY_FILTER_VALUES = ['ALL', 'ACTIVITY', 'TRANSPORT', 'SAFETY', 'ACCOMMODATION', 'SHOPPING'] as const;
 
 interface Props {
   items: MyTripItem[];
@@ -35,6 +29,7 @@ function chronologicalSort(a: MyTripItem, b: MyTripItem): number {
 }
 
 export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapStylePropIgnored }: Props) {
+  const { t } = useTranslation();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markersRef = useRef<LeafletMarker[]>([]);
@@ -42,6 +37,15 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapSty
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [mapReady, setMapReady] = useState(false);
   const themedStyle = useMapboxStyle();
+
+  const CATEGORY_FILTERS = [
+    { value: 'ALL', label: t('guidePages.purchasedMap.filterAll') },
+    { value: 'ACTIVITY', label: t('guidePages.purchasedMap.filterActivity') },
+    { value: 'TRANSPORT', label: t('guidePages.purchasedMap.filterTransport') },
+    { value: 'SAFETY', label: t('guidePages.purchasedMap.filterSafety') },
+    { value: 'ACCOMMODATION', label: t('guidePages.purchasedMap.filterAccommodation') },
+    { value: 'SHOPPING', label: t('guidePages.purchasedMap.filterShopping') },
+  ];
 
   const initialCenterRef = useRef<[number, number] | null>(null);
   const initialZoomRef = useRef<number>(3);
@@ -177,7 +181,7 @@ export default function PurchasedTripMap({ items, mapboxToken, mapStyle: _mapSty
   if (!mapboxToken || !themedStyle) {
     return (
       <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-tertiary">
-        Map configuration is missing. Set `MAPBOX_PUBLIC_TOKEN` and `MAPBOX_STYLE` to show purchased guide places on a map.
+        {t('guidePages.purchasedMap.missingConfig')}
       </div>
     );
   }

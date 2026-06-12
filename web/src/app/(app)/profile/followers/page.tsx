@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 
@@ -13,6 +14,7 @@ type Person = {
 };
 
 export default function FollowersPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function FollowersPage() {
     if (tokenLoading || !token) return;
     api.get<Person[]>('/api/me/followers', token)
       .then(setPeople)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load followers'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('account.followers.errorLoad')))
       .finally(() => setLoading(false));
   }, [token, tokenLoading]);
 
@@ -30,20 +32,20 @@ export default function FollowersPage() {
     <div className="mx-auto max-w-3xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display text-2xl font-black uppercase tracking-[0.04em] text-ig-text-primary">
-          Followers
+          {t('account.followers.title')}
         </h1>
         <Link href="/profile" className="text-sm text-ig-text-tertiary hover:text-ig-text-primary">
-          ← Back to profile
+          {t('account.followers.backToProfile')}
         </Link>
       </div>
 
       {tokenLoading || loading ? (
-        <p className="text-center text-sm text-ig-text-tertiary">Loading…</p>
+        <p className="text-center text-sm text-ig-text-tertiary">{t('account.followers.loading')}</p>
       ) : error ? (
         <p className="text-center text-sm text-ig-error">{error}</p>
       ) : people.length === 0 ? (
         <p className="text-center text-sm text-ig-text-tertiary">
-          No followers yet. Share your profile to grow your audience.
+          {t('account.followers.empty')}
         </p>
       ) : (
         <ul className="space-y-2">

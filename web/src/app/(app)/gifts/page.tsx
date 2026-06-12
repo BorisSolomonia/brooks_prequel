@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useToast } from '@/components/ui/Toast';
@@ -9,6 +10,7 @@ import Spinner from '@/components/ui/Spinner';
 import type { GiftOffer, GuideCheckoutSessionResponse } from '@/types';
 
 export default function GiftsPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const router = useRouter();
   const toast = useToast();
@@ -33,11 +35,11 @@ export default function GiftsPage() {
       const res = await api.post<GuideCheckoutSessionResponse>(
         `/api/me/gifts/${offer.purchaseId}/accept`, undefined, token,
       );
-      toast.success('Guide added to your trips!');
+      toast.success(t('account.gifts.acceptedToast'));
       if (res.tripId) router.push(`/trips/${res.tripId}`);
       else setOffers((prev) => (prev ?? []).filter((o) => o.purchaseId !== offer.purchaseId));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not accept gift');
+      toast.error(err instanceof Error ? err.message : t('account.gifts.errorAccept'));
     } finally {
       setBusyId(null);
     }
@@ -49,9 +51,9 @@ export default function GiftsPage() {
     try {
       await api.post(`/api/me/gifts/${offer.purchaseId}/decline`, undefined, token);
       setOffers((prev) => (prev ?? []).filter((o) => o.purchaseId !== offer.purchaseId));
-      toast.info('Gift declined.');
+      toast.info(t('account.gifts.declinedToast'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not decline gift');
+      toast.error(err instanceof Error ? err.message : t('account.gifts.errorDecline'));
     } finally {
       setBusyId(null);
     }
@@ -61,14 +63,14 @@ export default function GiftsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <h1 className="mb-1 text-xl font-semibold text-ig-text-primary">Gifts for you</h1>
-      <p className="mb-5 text-sm text-ig-text-tertiary">Free guides creators have sent you. Accept to add one to your trips, or decline.</p>
+      <h1 className="mb-1 text-xl font-semibold text-ig-text-primary">{t('account.gifts.title')}</h1>
+      <p className="mb-5 text-sm text-ig-text-tertiary">{t('account.gifts.subtitle')}</p>
 
       {loading ? (
-        <p className="text-center text-sm text-ig-text-tertiary">Loading…</p>
+        <p className="text-center text-sm text-ig-text-tertiary">{t('account.gifts.loading')}</p>
       ) : offers!.length === 0 ? (
         <p className="rounded-xl border border-ig-border bg-ig-elevated px-4 py-10 text-center text-sm text-ig-text-tertiary">
-          No gift offers right now.
+          {t('account.gifts.empty')}
         </p>
       ) : (
         <ul className="space-y-3">
@@ -80,7 +82,7 @@ export default function GiftsPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-ig-text-primary">{offer.guideTitle}</p>
                 <p className="mt-0.5 text-xs text-ig-text-tertiary">
-                  {offer.gifterName ? `From @${offer.gifterName} · free gift` : 'Free gift'}
+                  {offer.gifterName ? t('account.gifts.fromGifter', { name: offer.gifterName }) : t('account.gifts.freeGift')}
                 </p>
                 <div className="mt-2 flex gap-2">
                   <button
@@ -90,7 +92,7 @@ export default function GiftsPage() {
                     className="mw-button-primary inline-flex min-h-10 items-center gap-2 rounded-md px-4 text-sm disabled:opacity-60"
                   >
                     {busyId === offer.purchaseId && <Spinner />}
-                    Accept
+                    {t('account.gifts.accept')}
                   </button>
                   <button
                     type="button"
@@ -98,7 +100,7 @@ export default function GiftsPage() {
                     onClick={() => decline(offer)}
                     className="min-h-10 rounded-md border border-ig-border px-4 text-sm text-ig-text-secondary transition-colors hover:text-ig-error disabled:opacity-60"
                   >
-                    Decline
+                    {t('account.gifts.decline')}
                   </button>
                 </div>
               </div>

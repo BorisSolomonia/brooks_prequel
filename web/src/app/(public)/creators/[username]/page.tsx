@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { Map as LeafletMap, TileLayer as LeafletTileLayer } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTranslation } from 'react-i18next';
 import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
 import Avatar from '@/components/ui/Avatar';
 import FollowButton from '@/components/ui/FollowButton';
@@ -19,6 +20,7 @@ import type { CreatorReviewItem, CreatorReviewListResponse, GuideListItem, PageR
 type Tab = 'guides' | 'reviews' | 'about';
 
 export default function CreatorProfilePage({ params }: { params: { username: string } }) {
+  const { t } = useTranslation();
   const { token } = useAccessToken();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('guides');
@@ -52,7 +54,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
         return api.get<PageResponse<GuideListItem>>(`/api/creators/${params.username}/guides`);
       })
       .then((response) => setGuides(response.content))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load creator profile'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('account.creatorProfile.errorLoad')))
       .finally(() => setGuidesLoading(false));
   }, [params.username]);
 
@@ -80,7 +82,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
         setReviewSummary(response);
         setReviews(response.reviews.content);
       })
-      .catch((err) => setReviewsError(err instanceof Error ? err.message : 'Failed to load creator reviews'))
+      .catch((err) => setReviewsError(err instanceof Error ? err.message : t('account.creatorProfile.errorLoadReviews')))
       .finally(() => setReviewsLoading(false));
   }, [params.username, token]);
 
@@ -160,7 +162,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
 
   const handleReviewSubmit = async (payload: { rating: number; reviewText: string | null }) => {
     if (!token) {
-      throw new Error('Sign in to review this creator');
+      throw new Error(t('account.creatorProfile.errorSignInToReview'));
     }
     await api.post(`/api/creators/${params.username}/reviews/me`, payload, token);
     await reloadReviews();
@@ -168,7 +170,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
 
   const handleReviewDelete = async () => {
     if (!token) {
-      throw new Error('Sign in to delete your review');
+      throw new Error(t('account.creatorProfile.errorSignInToDelete'));
     }
     await api.delete(`/api/creators/${params.username}/reviews/me`, token);
     await reloadReviews();
@@ -176,7 +178,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
 
   const handleVote = async (reviewId: string, vote: 'HELPFUL' | 'NOT_HELPFUL') => {
     if (!token) {
-      throw new Error('Sign in to vote on reviews');
+      throw new Error(t('account.creatorProfile.errorSignInToVote'));
     }
     await api.post(`/api/creators/${params.username}/reviews/${reviewId}/vote`, { vote }, token);
     await reloadReviews();
@@ -212,7 +214,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
   }
 
   if (!profile) {
-    return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">{t('account.creatorProfile.loading')}</div>;
   }
 
   return (
@@ -224,7 +226,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
             <h1 data-tour="creator-profile-header" className="text-xl font-bold text-ig-text-primary">{profile.displayName ?? profile.username}</h1>
             {profile.verified && (
               <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-500">
-                Verified
+                {t('account.creatorProfile.verified')}
               </span>
             )}
           </div>
@@ -233,15 +235,15 @@ export default function CreatorProfilePage({ params }: { params: { username: str
           <div className="mb-3 flex flex-wrap gap-4 sm:gap-6">
             <div className="text-center">
               <div className="font-semibold text-ig-text-primary">{profile.guideCount}</div>
-              <div className="text-xs text-ig-text-tertiary">Guides</div>
+              <div className="text-xs text-ig-text-tertiary">{t('account.creatorProfile.stats.guides')}</div>
             </div>
             <div className="text-center">
               <div className="font-semibold text-ig-text-primary">{profile.followerCount}</div>
-              <div className="text-xs text-ig-text-tertiary">Followers</div>
+              <div className="text-xs text-ig-text-tertiary">{t('account.creatorProfile.stats.followers')}</div>
             </div>
             <div className="text-center">
               <div className="font-semibold text-ig-text-primary">{profile.followingCount}</div>
-              <div className="text-xs text-ig-text-tertiary">Following</div>
+              <div className="text-xs text-ig-text-tertiary">{t('account.creatorProfile.stats.following')}</div>
             </div>
           </div>
 
@@ -254,7 +256,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                 </span>
               </div>
             ) : (
-              <span className="text-sm text-ig-text-tertiary">No creator reviews yet</span>
+              <span className="text-sm text-ig-text-tertiary">{t('account.creatorProfile.noReviewsYet')}</span>
             )}
             {!isOwnProfile && <FollowButton userId={profile.userId} />}
             {isOwnProfile && (
@@ -262,7 +264,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                 href="/guides"
                 className="inline-flex min-h-11 items-center rounded-md border border-ig-border px-4 py-2 text-sm font-medium text-ig-text-primary transition-colors hover:bg-ig-secondary"
               >
-                Manage guides
+                {t('account.creatorProfile.manageGuides')}
               </Link>
             )}
           </div>
@@ -270,7 +272,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
       </div>
 
       {profile.bio && <p className="mb-4 text-ig-text-secondary">{profile.bio}</p>}
-      {profile.region && <p className="mb-6 text-sm text-ig-text-tertiary">Based in {profile.region}</p>}
+      {profile.region && <p className="mb-6 text-sm text-ig-text-tertiary">{t('account.creatorProfile.basedIn', { region: profile.region })}</p>}
 
       <div className="mb-6 flex overflow-x-auto border-b border-ig-border">
         {(['guides', 'reviews', 'about'] as Tab[]).map((tab) => (
@@ -283,20 +285,20 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                 : 'border-transparent text-ig-text-tertiary hover:text-ig-text-primary'
             }`}
           >
-            {tab}
+            {t(`account.creatorProfile.tabs.${tab}`)}
           </button>
         ))}
       </div>
 
       {activeTab === 'guides' && (
         guidesLoading ? (
-          <div className="py-8 text-center text-sm text-ig-text-tertiary">Loading guides...</div>
+          <div className="py-8 text-center text-sm text-ig-text-tertiary">{t('account.creatorProfile.loadingGuides')}</div>
         ) : guides.length === 0 ? (
           <div className="py-12 text-center">
-            <p className="mb-2 text-ig-text-secondary">No guides yet</p>
+            <p className="mb-2 text-ig-text-secondary">{t('account.creatorProfile.noGuidesYet')}</p>
             {isOwnProfile && (
               <Link href="/guides/new" className="text-sm text-brand-500 hover:underline">
-                Create your first guide -&gt;
+                {t('account.creatorProfile.createFirstGuide')}
               </Link>
             )}
           </div>
@@ -314,7 +316,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
               >
                 {isOwnProfile && (
                   <span className="absolute right-3 top-3 z-10 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white">
-                    Drag
+                    {t('account.creatorProfile.drag')}
                   </span>
                 )}
                 <GuideCard
@@ -345,12 +347,12 @@ export default function CreatorProfilePage({ params }: { params: { username: str
         <div className="space-y-4">
           {reviewSummary?.canReview && (
             <ReviewComposer
-              title="Rate this creator's guides"
+              title={t('account.creatorProfile.rateTitle')}
               textLimit={reviewSummary.reviewTextLimit}
               initialRating={reviewSummary.myReview?.rating ?? 0}
               initialReviewText={reviewSummary.myReview?.reviewText ?? ''}
-              submitLabel={reviewSummary.myReview ? 'Update review' : 'Publish review'}
-              savingLabel={reviewSummary.myReview ? 'Updating...' : 'Publishing...'}
+              submitLabel={reviewSummary.myReview ? t('account.creatorProfile.updateReview') : t('account.creatorProfile.publishReview')}
+              savingLabel={reviewSummary.myReview ? t('account.creatorProfile.updatingReview') : t('account.creatorProfile.publishingReview')}
               onSubmit={handleReviewSubmit}
               onDelete={reviewSummary.myReview ? handleReviewDelete : undefined}
             />
@@ -358,7 +360,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
 
           {!reviewSummary?.canReview && (
             <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-secondary">
-              Purchase a guide from this creator to leave a review.
+              {t('account.creatorProfile.purchaseToReview')}
             </div>
           )}
 
@@ -369,10 +371,10 @@ export default function CreatorProfilePage({ params }: { params: { username: str
           )}
 
           {reviewsLoading ? (
-            <div className="text-sm text-ig-text-tertiary">Loading reviews...</div>
+            <div className="text-sm text-ig-text-tertiary">{t('account.creatorProfile.loadingReviews')}</div>
           ) : reviews.length === 0 ? (
             <div className="rounded-xl border border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-secondary">
-              No creator reviews yet.
+              {t('account.creatorProfile.noCreatorReviews')}
             </div>
           ) : (
             <div className="space-y-3">
@@ -402,26 +404,26 @@ export default function CreatorProfilePage({ params }: { params: { username: str
                         <button
                           type="button"
                           disabled={!review.canVote}
-                          onClick={() => handleVote(review.id, 'HELPFUL').catch((err) => toast.error(err instanceof Error ? err.message : 'Failed to vote'))}
+                          onClick={() => handleVote(review.id, 'HELPFUL').catch((err) => toast.error(err instanceof Error ? err.message : t('account.creatorProfile.errorVote')))}
                           className={`min-h-11 rounded-full border px-4 py-2 text-sm transition lg:min-h-9 lg:px-3 lg:py-1 lg:text-xs ${
                             review.viewerVote === 'HELPFUL'
                               ? 'border-brand-500/30 bg-brand-500/10 text-brand-500'
                               : 'border-ig-border text-ig-text-secondary'
                           } disabled:cursor-default disabled:opacity-60`}
                         >
-                          Helpful {review.helpfulCount}
+                          {t('account.creatorProfile.helpful', { count: review.helpfulCount })}
                         </button>
                         <button
                           type="button"
                           disabled={!review.canVote}
-                          onClick={() => handleVote(review.id, 'NOT_HELPFUL').catch((err) => toast.error(err instanceof Error ? err.message : 'Failed to vote'))}
+                          onClick={() => handleVote(review.id, 'NOT_HELPFUL').catch((err) => toast.error(err instanceof Error ? err.message : t('account.creatorProfile.errorVote')))}
                           className={`min-h-11 rounded-full border px-4 py-2 text-sm transition lg:min-h-9 lg:px-3 lg:py-1 lg:text-xs ${
                             review.viewerVote === 'NOT_HELPFUL'
                               ? 'border-ig-error/30 bg-ig-error/10 text-ig-error'
                               : 'border-ig-border text-ig-text-secondary'
                           } disabled:cursor-default disabled:opacity-60`}
                         >
-                          Not helpful {review.notHelpfulCount}
+                          {t('account.creatorProfile.notHelpful', { count: review.notHelpfulCount })}
                         </button>
                       </div>
                     </div>
@@ -438,17 +440,17 @@ export default function CreatorProfilePage({ params }: { params: { username: str
           {profile.bio ? (
             <p className="text-ig-text-secondary">{profile.bio}</p>
           ) : (
-            <p className="italic text-ig-text-tertiary">No bio yet.</p>
+            <p className="italic text-ig-text-tertiary">{t('account.creatorProfile.noBioYet')}</p>
           )}
           {profile.region && (
             <div>
-              <h3 className="mb-1 text-sm font-medium text-ig-text-primary">Region</h3>
+              <h3 className="mb-1 text-sm font-medium text-ig-text-primary">{t('account.creatorProfile.regionLabel')}</h3>
               <p className="text-ig-text-secondary">{profile.region}</p>
             </div>
           )}
           {profile.latitude && profile.longitude && (
             <div>
-              <h3 className="mb-2 text-sm font-medium text-ig-text-primary">Location</h3>
+              <h3 className="mb-2 text-sm font-medium text-ig-text-primary">{t('account.creatorProfile.locationLabel')}</h3>
               <div
                 ref={mapContainerRef}
                 className="w-full overflow-hidden rounded-xl border border-ig-border"

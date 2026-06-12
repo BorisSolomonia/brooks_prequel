@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import { formatCents } from '@/lib/formatting';
@@ -21,6 +22,7 @@ interface EarningsSummary {
 }
 
 export default function EarningsPage() {
+  const { t } = useTranslation();
   const { token } = useAccessToken();
   const [summary, setSummary] = useState<EarningsSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,28 +68,27 @@ export default function EarningsPage() {
       closePayoutDialog();
       fetchSummary();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to mark as paid');
+      setError(err instanceof Error ? err.message : t('creatorTools.admin.errorMarkPaid'));
     } finally {
       setMarking(false);
     }
   };
 
-  if (loading) return <div className="text-[var(--text-secondary)]">Loading…</div>;
+  if (loading) return <div className="text-[var(--text-secondary)]">{t('creatorTools.admin.loading')}</div>;
   if (!summary) return null;
 
   return (
     <div className="max-w-3xl space-y-8">
-      <h1 className="text-xl font-semibold text-[var(--text-primary)]">Earnings</h1>
+      <h1 className="text-xl font-semibold text-[var(--text-primary)]">{t('creatorTools.admin.earningsTitle')}</h1>
       <p className="text-sm text-[var(--text-tertiary)]">
-        Totals below show amounts still <strong>PENDING</strong> payout. After you transfer a creator their share through your bank,
-        click <strong>Mark as paid</strong> on that row and record the bank transaction reference for audit.
+        <Trans i18nKey="creatorTools.admin.earningsDesc" components={{ strong: <strong /> }} />
       </p>
 
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Pending Gross', value: summary.totalGrossCents },
-          { label: 'Pending Platform Revenue', value: summary.totalCommissionCents },
-          { label: 'Creator Payouts Owed', value: summary.totalNetCents },
+          { label: t('creatorTools.admin.pendingGross'), value: summary.totalGrossCents },
+          { label: t('creatorTools.admin.pendingPlatformRevenue'), value: summary.totalCommissionCents },
+          { label: t('creatorTools.admin.creatorPayoutsOwed'), value: summary.totalNetCents },
         ].map(({ label, value }) => (
           <div key={label} className="border border-[var(--border)] rounded-xl p-4 bg-[var(--bg-elevated)]">
             <p className="text-xs text-[var(--text-tertiary)] mb-1">{label}</p>
@@ -97,17 +98,17 @@ export default function EarningsPage() {
       </div>
 
       <section>
-        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">Per Creator</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">{t('creatorTools.admin.sectionPerCreator')}</h2>
         {summary.byCreator.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)]">Nothing pending. All sales are paid out.</p>
+          <p className="text-sm text-[var(--text-tertiary)]">{t('creatorTools.admin.noPendingEarnings')}</p>
         ) : (
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--text-tertiary)]">
-                <th className="py-2 pr-4">Creator</th>
-                <th className="py-2 pr-4">Gross</th>
-                <th className="py-2 pr-4">Commission</th>
-                <th className="py-2 pr-4">Net (owed)</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thCreator')}</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thGross')}</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thCommission')}</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thNetOwed')}</th>
                 <th className="py-2 w-32" />
               </tr>
             </thead>
@@ -124,7 +125,7 @@ export default function EarningsPage() {
                       onClick={() => openPayoutDialog(c)}
                       className="mw-button-secondary min-h-9 rounded-md px-3 py-1.5 text-xs"
                     >
-                      Mark as paid
+                      {t('creatorTools.admin.markAsPaid')}
                     </button>
                   </td>
                 </tr>
@@ -137,18 +138,21 @@ export default function EarningsPage() {
       {payoutTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-2xl border-2 border-ig-border bg-ig-elevated p-5 shadow-2xl">
-            <h3 className="font-display text-lg font-black text-ig-text-primary">Mark as paid</h3>
+            <h3 className="font-display text-lg font-black text-ig-text-primary">{t('creatorTools.admin.markAsPaid')}</h3>
             <p className="mt-2 text-sm text-ig-text-secondary">
-              This marks <strong>all pending earnings</strong> for creator <span className="font-mono text-xs">{payoutTarget.creatorId}</span> as PAID.
-              The amount transferred should be <strong>{formatCents(payoutTarget.netCents)}</strong>.
+              <Trans
+                i18nKey="creatorTools.admin.markPaidDesc"
+                values={{ creatorId: payoutTarget.creatorId, amount: formatCents(payoutTarget.netCents) }}
+                components={{ strong: <strong />, code: <span className="font-mono text-xs" /> }}
+              />
             </p>
             <label className="mt-4 block">
-              <span className="block text-sm font-semibold text-ig-text-secondary">Payment reference</span>
+              <span className="block text-sm font-semibold text-ig-text-secondary">{t('creatorTools.admin.labelPaymentRef')}</span>
               <input
                 type="text"
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="Bank transaction ID, date, or any audit reference"
+                placeholder={t('creatorTools.admin.placeholderPaymentRef')}
                 className="mt-1 block w-full rounded-md border-2 border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-brand-500 focus:outline-none md:text-sm"
               />
             </label>
@@ -160,7 +164,7 @@ export default function EarningsPage() {
                 disabled={marking}
                 className="min-h-11 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary hover:bg-ig-hover disabled:opacity-50"
               >
-                Cancel
+                {t('creatorTools.admin.cancel')}
               </button>
               <button
                 type="button"
@@ -169,7 +173,7 @@ export default function EarningsPage() {
                 className="mw-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm disabled:opacity-50"
               >
                 {marking && <Spinner />}
-                {marking ? 'Saving…' : 'Confirm paid'}
+                {marking ? t('creatorTools.admin.saving') : t('creatorTools.admin.confirmPaid')}
               </button>
             </div>
           </div>

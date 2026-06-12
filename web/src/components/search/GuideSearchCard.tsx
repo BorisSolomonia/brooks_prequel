@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import GuideCard from '@/components/ui/GuideCard';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
@@ -16,6 +17,7 @@ interface GuideSearchCardProps {
 }
 
 export default function GuideSearchCard({ guide, initialSaved = false }: GuideSearchCardProps) {
+  const { t } = useTranslation();
   const { token } = useAccessToken();
   const toast = useToast();
   const [saved, setSaved] = useState(initialSaved);
@@ -34,7 +36,7 @@ export default function GuideSearchCard({ guide, initialSaved = false }: GuideSe
         : await api.post<GuideSaveStatusResponse>(`/api/guides/${guide.id}/save`, undefined, token);
       setSaved(response.saved);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update save state');
+      toast.error(error instanceof Error ? error.message : t('discovery.search.saveError'));
     } finally {
       setSaving(false);
     }
@@ -58,7 +60,7 @@ export default function GuideSearchCard({ guide, initialSaved = false }: GuideSe
       popularThisWeek={guide.popularThisWeek}
       savedByViewer={saved}
       onSaveClick={saving ? undefined : handleSaveClick}
-      saveLabel={saving ? 'Saving guide' : saved ? 'Saved guide' : 'Save guide'}
+      saveLabel={saving ? t('discovery.search.saveLabelSaving') : saved ? t('discovery.search.saveLabelSaved') : t('discovery.search.saveLabelSave')}
       creatorName={guide.creatorDisplayName || guide.creatorUsername}
       creatorAvatarUrl={guide.creatorAvatarUrl}
       creatorHref={guide.creatorUsername ? `/creators/${guide.creatorUsername}` : undefined}

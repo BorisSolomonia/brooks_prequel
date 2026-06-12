@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import type { CreatorSearchResult, PageResponse } from '@/types';
 import CreatorSearchCard from '@/components/search/CreatorSearchCard';
@@ -10,14 +11,16 @@ import SearchFilterBar, { type SortOption } from '@/components/search/SearchFilt
 import Spinner from '@/components/ui/Spinner';
 import Link from 'next/link';
 
-const CREATOR_SORTS: SortOption[] = [
-  { value: 'RELEVANCE', label: 'Relevance' },
-  { value: 'TOP_RATED', label: 'Top rated' },
-  { value: 'MOST_FOLLOWERS', label: 'Most followers' },
-  { value: 'NEWEST', label: 'Newest' },
-];
-
 function SearchCreatorsPageContent() {
+  const { t } = useTranslation();
+
+  const CREATOR_SORTS: SortOption[] = [
+    { value: 'RELEVANCE', label: t('discovery.search.sortRelevance') },
+    { value: 'TOP_RATED', label: t('discovery.search.sortTopRated') },
+    { value: 'MOST_FOLLOWERS', label: t('discovery.search.sortMostFollowers') },
+    { value: 'NEWEST', label: t('discovery.search.sortNewest') },
+  ];
+
   const searchParams = useSearchParams();
   const q = searchParams.get('q') || '';
   const [results, setResults] = useState<CreatorSearchResult[]>([]);
@@ -64,12 +67,12 @@ function SearchCreatorsPageContent() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link href={`/search?q=${encodeURIComponent(q)}`} className="mb-4 inline-block font-display text-sm font-black uppercase tracking-[0.06em] text-brand-500 hover:text-brand-400">
-        &larr; Back to search
+        {t('discovery.search.backToSearch')}
       </Link>
-      <h1 data-tour="creators-page" className="mw-section-title mb-1 text-xl">Creators</h1>
+      <h1 data-tour="creators-page" className="mw-section-title mb-1 text-xl">{t('discovery.search.creatorsTitle')}</h1>
       {total > 0 && (
         <p className="text-sm text-ig-text-secondary mb-6">
-          {total} {q.trim() ? <>results for &ldquo;{q}&rdquo;</> : 'creators'}
+          {q.trim() ? t('discovery.search.totalResultsForQuery', { total, q }) : t('discovery.search.totalCreators', { count: total })}
         </p>
       )}
 
@@ -88,7 +91,7 @@ function SearchCreatorsPageContent() {
       {error && <p className="mt-8 text-center text-ig-error">{error}</p>}
 
       {!loading && results.length === 0 && (
-        <p className="text-ig-text-secondary text-center mt-16">No creators found.</p>
+        <p className="text-ig-text-secondary text-center mt-16">{t('discovery.search.noCreatorsFound')}</p>
       )}
 
       <div className="space-y-3">
@@ -106,7 +109,7 @@ function SearchCreatorsPageContent() {
           className="mw-button-secondary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 disabled:opacity-50"
         >
           {loadingMore && <Spinner />}
-          {loadingMore ? 'Loading...' : 'Load more'}
+          {loadingMore ? t('discovery.search.loadingMore') : t('discovery.search.loadMore')}
         </button>
       )}
     </div>

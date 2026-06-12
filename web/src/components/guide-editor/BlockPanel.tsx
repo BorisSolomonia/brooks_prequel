@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { GuideBlock } from '@/types';
 import { BLOCK_CATEGORIES, findBlockCategory } from '@/lib/guideEditorConstants';
 import PlaceCard from './PlaceCard';
@@ -26,6 +27,7 @@ function minutesToDuration(minutes: number): string {
 }
 
 export default function BlockPanel({ dayId, block }: Props) {
+  const { t } = useTranslation();
   const { updateBlock, deleteBlock, addPlace } = useGuideEdit();
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(block.title || '');
@@ -78,12 +80,12 @@ export default function BlockPanel({ dayId, block }: Props) {
                 className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); }}
               />
-              <button onClick={handleSaveTitle} className="min-h-11 rounded-md px-3 text-sm font-semibold text-ig-blue">Save</button>
-              <button onClick={() => setEditingTitle(false)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary">Cancel</button>
+              <button onClick={handleSaveTitle} className="min-h-11 rounded-md px-3 text-sm font-semibold text-ig-blue">{t('guideEditor.blockPanel.saveBtn')}</button>
+              <button onClick={() => setEditingTitle(false)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary">{t('guideEditor.blockPanel.cancelBtn')}</button>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
-                <label className="text-xs text-ig-text-tertiary">Start (min)</label>
+                <label className="text-xs text-ig-text-tertiary">{t('guideEditor.blockPanel.startMin')}</label>
                 <input
                   type="number"
                   min={0}
@@ -94,7 +96,7 @@ export default function BlockPanel({ dayId, block }: Props) {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-ig-text-tertiary">Duration (min)</label>
+                <label className="text-xs text-ig-text-tertiary">{t('guideEditor.blockPanel.durationMin')}</label>
                 <input
                   type="number"
                   min={1}
@@ -105,7 +107,7 @@ export default function BlockPanel({ dayId, block }: Props) {
               </div>
             </div>
             <div>
-              <p className="text-xs text-ig-text-tertiary mb-1.5">Block category</p>
+              <p className="text-xs text-ig-text-tertiary mb-1.5">{t('guideEditor.blockPanel.blockCategory')}</p>
               <div className="flex flex-wrap gap-1.5">
                 {BLOCK_CATEGORIES.map((cat) => (
                   <button
@@ -137,7 +139,7 @@ export default function BlockPanel({ dayId, block }: Props) {
               </span>
             )}
             <h4 className="text-sm font-semibold text-ig-text-primary cursor-pointer hover:text-ig-blue" onClick={() => setEditingTitle(true)}>
-              {block.title || 'Untitled Block'}
+              {block.title || t('guideEditor.blockPanel.untitledBlock')}
             </h4>
             {block.suggestedStartMinute !== null && block.suggestedStartMinute !== undefined && (
               <span className="text-xs text-ig-text-tertiary">
@@ -147,7 +149,7 @@ export default function BlockPanel({ dayId, block }: Props) {
             )}
           </div>
         )}
-        <button onClick={() => deleteBlock(dayId, block.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error sm:ml-2 lg:min-h-9 lg:px-2 lg:text-xs">Delete</button>
+        <button onClick={() => deleteBlock(dayId, block.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error sm:ml-2 lg:min-h-9 lg:px-2 lg:text-xs">{t('guideEditor.blockPanel.deleteBtn')}</button>
       </div>
 
       <div className="space-y-2">
@@ -174,19 +176,19 @@ export default function BlockPanel({ dayId, block }: Props) {
             value={newPlaceName}
             onChange={(e) => setNewPlaceName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleAddPlace(); }}
-            placeholder="Place name"
+            placeholder={t('guideEditor.blockPanel.placeNamePlaceholder')}
             className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
             autoFocus
           />
-          <button onClick={handleAddPlace} className="mw-button-primary min-h-11 rounded px-4 py-2 text-sm">Add</button>
-          <button onClick={() => setAddingPlace(false)} className="min-h-11 rounded px-4 py-2 text-sm text-ig-text-secondary">Cancel</button>
+          <button onClick={handleAddPlace} className="mw-button-primary min-h-11 rounded px-4 py-2 text-sm">{t('guideEditor.blockPanel.addBtn')}</button>
+          <button onClick={() => setAddingPlace(false)} className="min-h-11 rounded px-4 py-2 text-sm text-ig-text-secondary">{t('guideEditor.blockPanel.cancelBtn')}</button>
         </div>
       ) : (
         <button
           onClick={() => setAddingPlace(true)}
           className="mt-2 min-h-11 rounded-md px-2 text-sm font-semibold text-ig-blue hover:text-ig-blue-hover"
         >
-          + Add Place
+          + {t('guideEditor.blockPanel.addPlaceBtn')}
         </button>
       )}
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import StarInput from './StarInput';
 import Spinner from '@/components/ui/Spinner';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -26,6 +27,7 @@ export default function ReviewComposer({
   onSubmit,
   onDelete,
 }: ReviewComposerProps) {
+  const { t } = useTranslation();
   const [rating, setRating] = useState(initialRating);
   const [reviewText, setReviewText] = useState(initialReviewText ?? '');
   const [saving, setSaving] = useState(false);
@@ -41,11 +43,11 @@ export default function ReviewComposer({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (rating < 1 || rating > 5) {
-      setError('Select a star rating');
+      setError(t('widgets.reviews.selectStarRating'));
       return;
     }
     if (reviewText.length > textLimit) {
-      setError(`Review must be ${textLimit} characters or fewer`);
+      setError(t('widgets.reviews.reviewTooLong', { limit: textLimit }));
       return;
     }
 
@@ -57,7 +59,7 @@ export default function ReviewComposer({
         reviewText: reviewText.trim() ? reviewText.trim() : null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save review');
+      setError(err instanceof Error ? err.message : t('widgets.reviews.failedSaveReview'));
     } finally {
       setSaving(false);
     }
@@ -66,9 +68,9 @@ export default function ReviewComposer({
   const handleDelete = async () => {
     if (!onDelete) return;
     const ok = await confirm({
-      title: 'Delete this review?',
-      body: 'Your rating and text will be removed and you can write a new review later if you change your mind.',
-      confirmLabel: 'Delete review',
+      title: t('widgets.reviews.deleteTitle'),
+      body: t('widgets.reviews.deleteBody'),
+      confirmLabel: t('widgets.reviews.deleteConfirm'),
       destructive: true,
     });
     if (!ok) return;
@@ -79,7 +81,7 @@ export default function ReviewComposer({
       setRating(0);
       setReviewText('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete review');
+      setError(err instanceof Error ? err.message : t('widgets.reviews.failedDeleteReview'));
     } finally {
       setDeleting(false);
     }
@@ -90,7 +92,7 @@ export default function ReviewComposer({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-primary">{title}</h3>
-          <p className="mt-1 text-xs text-ig-text-tertiary">Rating is required. Text review is optional.</p>
+          <p className="mt-1 text-xs text-ig-text-tertiary">{t('widgets.reviews.ratingRequired')}</p>
         </div>
         <StarInput value={rating} onChange={setRating} />
       </div>
@@ -100,7 +102,7 @@ export default function ReviewComposer({
         onChange={(event) => setReviewText(event.target.value)}
         maxLength={textLimit}
         rows={4}
-        placeholder="Share what stood out. Line breaks and links are supported."
+        placeholder={t('widgets.reviews.placeholder')}
         className="mt-4 w-full rounded-xl border-2 border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary outline-none transition focus:border-brand-500 md:text-sm"
       />
       <div className="mt-2 flex items-center justify-between gap-3 text-xs">
@@ -127,7 +129,7 @@ export default function ReviewComposer({
             className="mw-button-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
           >
             {deleting && <Spinner />}
-            {deleting ? 'Deleting...' : 'Delete'}
+            {deleting ? t('widgets.reviews.deleting') : t('widgets.reviews.delete')}
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import { bpsToPercent } from '@/lib/formatting';
@@ -56,6 +57,7 @@ function RateInput({ value, onChange }: { value: number; onChange: (v: number) =
 }
 
 export default function CommissionPage() {
+  const { t } = useTranslation();
   const { token } = useAccessToken();
   const [rules, setRules] = useState<CommissionRule[]>([]);
   const [creators, setCreators] = useState<Creator[]>([]);
@@ -139,7 +141,7 @@ export default function CommissionPage() {
   });
 
   if (loading) {
-    return <div className="text-[var(--text-secondary)]">Loading…</div>;
+    return <div className="text-[var(--text-secondary)]">{t('creatorTools.admin.loading')}</div>;
   }
 
   const global = globalRule();
@@ -148,18 +150,18 @@ export default function CommissionPage() {
 
   return (
     <div className="max-w-4xl space-y-10">
-      <h1 className="text-xl font-semibold text-[var(--text-primary)]">Commission Rules</h1>
+      <h1 className="text-xl font-semibold text-[var(--text-primary)]">{t('creatorTools.admin.commissionTitle')}</h1>
 
       {/* Global default */}
       <section>
-        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">Global Default</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">{t('creatorTools.admin.sectionGlobalDefault')}</h2>
         <div className="border border-[var(--border)] rounded-xl p-5 bg-[var(--bg-elevated)] flex items-center gap-6">
           <div>
             <p className="text-3xl font-bold text-[var(--text-primary)]">
               {global ? bpsToPercent(global.rateBps) : '20'}%
             </p>
             <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
-              {global ? 'Set globally' : 'Hardcoded fallback'}
+              {global ? t('creatorTools.admin.setGlobally') : t('creatorTools.admin.hardcodedFallback')}
             </p>
           </div>
           {global && (
@@ -167,7 +169,7 @@ export default function CommissionPage() {
               onClick={() => deleteRule(global.id)}
               className="text-xs text-red-500 hover:underline ml-auto"
             >
-              Remove override
+              {t('creatorTools.admin.removeOverride')}
             </button>
           )}
         </div>
@@ -175,53 +177,53 @@ export default function CommissionPage() {
 
       {/* Add new rule */}
       <section>
-        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">Add Rule</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">{t('creatorTools.admin.sectionAddRule')}</h2>
         <div className="border border-[var(--border)] rounded-xl p-5 bg-[var(--bg-elevated)] space-y-4">
           <div className="flex gap-3 flex-wrap items-end">
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Type</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelType')}</label>
               <select
                 value={newRuleType}
                 onChange={(e) => setNewRuleType(e.target.value as typeof newRuleType)}
                 className="px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
               >
-                <option value="GLOBAL">Global</option>
-                <option value="REGION">Region</option>
-                <option value="CREATOR">Creator</option>
+                <option value="GLOBAL">{t('creatorTools.admin.optionGlobal')}</option>
+                <option value="REGION">{t('creatorTools.admin.optionRegion')}</option>
+                <option value="CREATOR">{t('creatorTools.admin.optionCreator')}</option>
               </select>
             </div>
             {newRuleType === 'REGION' && (
               <div>
-                <label className="block text-xs text-[var(--text-tertiary)] mb-1">Region</label>
+                <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelRegion')}</label>
                 <input
                   value={newRegion}
                   onChange={(e) => setNewRegion(e.target.value)}
-                  placeholder="e.g. Europe"
+                  placeholder={t('creatorTools.admin.placeholderRegion')}
                   className="px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
                 />
               </div>
             )}
             {newRuleType === 'CREATOR' && (
               <div>
-                <label className="block text-xs text-[var(--text-tertiary)] mb-1">Creator UUID</label>
+                <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelCreatorUuid')}</label>
                 <input
                   value={newCreatorId}
                   onChange={(e) => setNewCreatorId(e.target.value)}
-                  placeholder="UUID"
+                  placeholder={t('creatorTools.admin.placeholderUuid')}
                   className="px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)] w-72"
                 />
               </div>
             )}
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Rate</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelRate')}</label>
               <RateInput value={newRateBps} onChange={setNewRateBps} />
             </div>
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Notes</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelNotes')}</label>
               <input
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
-                placeholder="Optional"
+                placeholder={t('creatorTools.admin.placeholderOptional')}
                 className="px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
               />
             </div>
@@ -229,7 +231,7 @@ export default function CommissionPage() {
               onClick={createRule}
               className="px-4 py-1.5 text-sm rounded-lg bg-[var(--brand-primary)] text-white font-medium"
             >
-              Add
+              {t('creatorTools.admin.add')}
             </button>
           </div>
         </div>
@@ -237,16 +239,16 @@ export default function CommissionPage() {
 
       {/* Region rules */}
       <section>
-        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">Region Rules</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">{t('creatorTools.admin.sectionRegionRules')}</h2>
         {regionRules.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)]">No region rules configured.</p>
+          <p className="text-sm text-[var(--text-tertiary)]">{t('creatorTools.admin.noRegionRules')}</p>
         ) : (
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--text-tertiary)]">
-                <th className="py-2 pr-4">Region</th>
-                <th className="py-2 pr-4">Rate</th>
-                <th className="py-2 pr-4">Notes</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thRegion')}</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thRate')}</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thNotes')}</th>
                 <th className="py-2" />
               </tr>
             </thead>
@@ -257,7 +259,7 @@ export default function CommissionPage() {
                   <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{bpsToPercent(r.rateBps)}%</td>
                   <td className="py-2 pr-4 text-[var(--text-secondary)]">{r.notes ?? '—'}</td>
                   <td className="py-2 text-right">
-                    <button onClick={() => deleteRule(r.id)} className="text-xs text-red-500 hover:underline">Remove</button>
+                    <button onClick={() => deleteRule(r.id)} className="text-xs text-red-500 hover:underline">{t('creatorTools.admin.remove')}</button>
                   </td>
                 </tr>
               ))}
@@ -268,16 +270,16 @@ export default function CommissionPage() {
 
       {/* Creator-specific rules */}
       <section>
-        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">Creator-Specific Rules</h2>
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">{t('creatorTools.admin.sectionCreatorRules')}</h2>
         {creatorRules.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)]">No creator-specific rules configured.</p>
+          <p className="text-sm text-[var(--text-tertiary)]">{t('creatorTools.admin.noCreatorRules')}</p>
         ) : (
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--text-tertiary)]">
-                <th className="py-2 pr-4">Creator ID</th>
-                <th className="py-2 pr-4">Rate</th>
-                <th className="py-2 pr-4">Notes</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thCreatorId')}</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thRate')}</th>
+                <th className="py-2 pr-4">{t('creatorTools.admin.thNotes')}</th>
                 <th className="py-2" />
               </tr>
             </thead>
@@ -292,7 +294,7 @@ export default function CommissionPage() {
                     <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{bpsToPercent(r.rateBps)}%</td>
                     <td className="py-2 pr-4 text-[var(--text-secondary)]">{r.notes ?? '—'}</td>
                     <td className="py-2 text-right">
-                      <button onClick={() => deleteRule(r.id)} className="text-xs text-red-500 hover:underline">Remove</button>
+                      <button onClick={() => deleteRule(r.id)} className="text-xs text-red-500 hover:underline">{t('creatorTools.admin.remove')}</button>
                     </td>
                   </tr>
                 );
@@ -305,33 +307,33 @@ export default function CommissionPage() {
       {/* Bulk commission */}
       <section>
         <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
-          Bulk Assign ({selectedCreators.size} selected)
+          {t('creatorTools.admin.bulkAssign', { count: selectedCreators.size })}
         </h2>
         <div className="border border-[var(--border)] rounded-xl p-5 bg-[var(--bg-elevated)] space-y-4">
           <div className="flex gap-3 flex-wrap items-end">
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Filter by region</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelFilterByRegion')}</label>
               <input
                 value={regionFilter}
                 onChange={(e) => setRegionFilter(e.target.value)}
-                placeholder="Any"
+                placeholder={t('creatorTools.admin.placeholderAny')}
                 className="px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
               />
             </div>
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Verified</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelVerified')}</label>
               <select
                 value={verifiedFilter === null ? '' : String(verifiedFilter)}
                 onChange={(e) => setVerifiedFilter(e.target.value === '' ? null : e.target.value === 'true')}
                 className="px-3 py-1.5 text-sm border border-[var(--border)] rounded bg-[var(--bg-primary)] text-[var(--text-primary)]"
               >
-                <option value="">Any</option>
-                <option value="true">Verified only</option>
-                <option value="false">Unverified only</option>
+                <option value="">{t('creatorTools.admin.optionAny')}</option>
+                <option value="true">{t('creatorTools.admin.optionVerifiedOnly')}</option>
+                <option value="false">{t('creatorTools.admin.optionUnverifiedOnly')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[var(--text-tertiary)] mb-1">Rate to apply</label>
+              <label className="block text-xs text-[var(--text-tertiary)] mb-1">{t('creatorTools.admin.labelRateToApply')}</label>
               <RateInput value={bulkRateBps} onChange={setBulkRateBps} />
             </div>
             <button
@@ -339,7 +341,7 @@ export default function CommissionPage() {
               disabled={selectedCreators.size === 0}
               className="px-4 py-1.5 text-sm rounded-lg bg-[var(--brand-primary)] text-white font-medium disabled:opacity-40"
             >
-              Apply to {selectedCreators.size} creator{selectedCreators.size !== 1 ? 's' : ''}
+              {t('creatorTools.admin.applyToCreators', { count: selectedCreators.size })}
             </button>
           </div>
 
@@ -364,10 +366,10 @@ export default function CommissionPage() {
                       }}
                     />
                   </th>
-                  <th className="py-2 pr-4">Creator</th>
-                  <th className="py-2 pr-4">Region</th>
-                  <th className="py-2 pr-4">Current Rate</th>
-                  <th className="py-2">Source</th>
+                  <th className="py-2 pr-4">{t('creatorTools.admin.thCreator')}</th>
+                  <th className="py-2 pr-4">{t('creatorTools.admin.thRegion')}</th>
+                  <th className="py-2 pr-4">{t('creatorTools.admin.thCurrentRate')}</th>
+                  <th className="py-2">{t('creatorTools.admin.thSource')}</th>
                 </tr>
               </thead>
               <tbody>

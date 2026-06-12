@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { streamPost } from '@/lib/api';
 import type { AiProvider } from '@/types';
@@ -24,6 +25,7 @@ const PROVIDER_LABELS: Record<Provider, string> = {
 };
 
 export function BuyerChatPanel({ tripId, availableProviders }: Props) {
+  const { t } = useTranslation();
   const { token } = useAccessToken();
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<Provider>(availableProviders[0]);
@@ -66,8 +68,8 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
           next[next.length - 1] = {
             ...next[next.length - 1],
             content: status === 401
-              ? 'Your session expired. Please sign in again.'
-              : 'Sorry — the AI is unavailable right now. Please try again in a moment.',
+              ? t('creatorTools.ai.errorSessionExpired')
+              : t('creatorTools.ai.errorUnavailableMoment'),
           };
           return next;
         });
@@ -84,7 +86,7 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
         className="flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-2 text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)]"
       >
         <span>✨</span>
-        <span>Ask AI about this guide</span>
+        <span>{t('creatorTools.ai.askAiButton')}</span>
       </button>
     );
   }
@@ -94,7 +96,7 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-[var(--text-primary)]">✨ Ask AI</span>
+          <span className="text-sm font-medium text-[var(--text-primary)]">{t('creatorTools.ai.askAiHeader')}</span>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as Provider)}
@@ -105,7 +107,7 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
             ))}
           </select>
         </div>
-        <button onClick={() => setOpen(false)} className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" aria-label="Close AI chat">
+        <button onClick={() => setOpen(false)} className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" aria-label={t('creatorTools.ai.closeAiChat')}>
           ✕
         </button>
       </div>
@@ -114,7 +116,7 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && (
           <p className="text-xs text-[var(--text-tertiary)] text-center mt-8">
-            Ask anything about this guide — restaurants, timing, transport, and more.
+            {t('creatorTools.ai.buyerEmptyHint')}
           </p>
         )}
         {messages.map((m, i) => (
@@ -139,7 +141,7 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="Ask about this guide…"
+          placeholder={t('creatorTools.ai.buyerPlaceholder')}
           disabled={streaming}
           className="min-h-11 flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-base text-[var(--text-primary)] disabled:opacity-50 md:text-sm"
         />
@@ -148,7 +150,7 @@ export function BuyerChatPanel({ tripId, availableProviders }: Props) {
           disabled={streaming || !input.trim()}
           className="min-h-11 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
         >
-          {streaming ? '…' : 'Send'}
+          {streaming ? '…' : t('creatorTools.ai.send')}
         </button>
       </div>
     </div>

@@ -10,6 +10,7 @@ import ReviewText from '@/components/reviews/ReviewText';
 import StarRating from '@/components/reviews/StarRating';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { redirectToLogin } from '@/lib/capacitor';
@@ -51,6 +52,7 @@ function seasonIsNow(start: number | null | undefined, end: number | null | unde
 }
 
 export default function ViewGuidePage() {
+  const { t } = useTranslation();
   const params = useParams();
   const guideId = params.id as string;
   const { token, loading: tokenLoading } = useAccessToken();
@@ -172,7 +174,7 @@ export default function ViewGuidePage() {
         : await api.post<GuideSaveStatusResponse>(`/api/guides/${guideId}/save`, undefined, token);
       setSaved(response.saved);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update save state');
+      toast.error(err instanceof Error ? err.message : t('guidePages.guideView.errorFailedToSave'));
     } finally {
       setSaveLoading(false);
     }
@@ -180,7 +182,7 @@ export default function ViewGuidePage() {
 
   const handleReviewSubmit = async (payload: { rating: number; reviewText: string | null }) => {
     if (!token) {
-      throw new Error('Sign in to review this guide');
+      throw new Error(t('guidePages.guideView.errorSignInToReview'));
     }
     await api.post(`/api/guides/${guideId}/reviews/me`, payload, token);
     await reloadReviews();
@@ -188,7 +190,7 @@ export default function ViewGuidePage() {
 
   const handleReviewDelete = async () => {
     if (!token) {
-      throw new Error('Sign in to delete your review');
+      throw new Error(t('guidePages.guideView.errorSignInToDelete'));
     }
     await api.delete(`/api/guides/${guideId}/reviews/me`, token);
     await reloadReviews();
@@ -203,18 +205,18 @@ export default function ViewGuidePage() {
       await api.post(`/api/guides/${guideId}/reviews/${reviewId}/vote`, { vote }, token);
       await reloadReviews();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to register vote');
+      toast.error(error instanceof Error ? error.message : t('guidePages.guideView.errorFailedToVote'));
     }
   };
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-3xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-12 text-center text-ig-text-tertiary">{t('guidePages.guideView.loading')}</div>;
   }
 
   if (!guide && !preview) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 text-center">
-        <p className="text-ig-error">Guide not found</p>
+        <p className="text-ig-error">{t('guidePages.guideView.guideNotFound')}</p>
       </div>
     );
   }
@@ -229,19 +231,19 @@ export default function ViewGuidePage() {
     <div className="mx-auto max-w-3xl px-4 py-6">
       {mode === 'owner' && (
         <div className="mw-card mb-4 px-3 py-2 text-sm text-ig-text-secondary">
-          You own this guide.{' '}
-          <Link href={`/guides/${guideId}/edit`} className="font-semibold text-brand-500 hover:text-brand-400">Edit</Link>
+          {t('guidePages.guideView.youOwnThisGuide')}{' '}
+          <Link href={`/guides/${guideId}/edit`} className="font-semibold text-brand-500 hover:text-brand-400">{t('guidePages.guideView.edit')}</Link>
         </div>
       )}
       {mode === 'buyer' && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
-          <span className="text-sm text-green-400">You own this guide.</span>
+          <span className="text-sm text-green-400">{t('guidePages.guideView.youOwnThisGuide')}</span>
           {tripId && (
             <button
               onClick={() => router.push(`/trips/${tripId}`)}
             className="mw-button-primary min-h-11 rounded-lg px-4 py-2 text-sm"
             >
-              Go to your trip
+              {t('guidePages.guideView.goToYourTrip')}
             </button>
           )}
         </div>
@@ -255,7 +257,7 @@ export default function ViewGuidePage() {
               <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${
                 inSeason ? 'bg-green-500/90 text-white' : 'bg-black/60 text-white/80'
               }`}>
-                {inSeason ? 'In season now' : `Best in ${MONTH_NAMES[(displayPreview.bestSeasonStartMonth ?? 1) - 1]}`}
+                {inSeason ? t('guidePages.guideView.inSeasonNow') : t('guidePages.guideView.bestIn', { month: MONTH_NAMES[(displayPreview.bestSeasonStartMonth ?? 1) - 1] })}
               </span>
             )}
           </div>
@@ -268,7 +270,7 @@ export default function ViewGuidePage() {
             </h1>
             {mode === 'buyer' && noLongerSold && (
               <span className="mb-1 inline-block rounded-pill bg-ig-secondary px-2.5 py-1 text-xs font-semibold text-ig-text-secondary">
-                No longer sold — kept in your purchases
+                {t('guidePages.guideView.noLongerSold')}
               </span>
             )}
             {displayGuide?.description && (
@@ -278,13 +280,13 @@ export default function ViewGuidePage() {
               {(displayGuide?.region || displayPreview?.region) && (
                 <span>{displayGuide?.region || displayPreview?.region}</span>
               )}
-              <span>{displayGuide?.dayCount || displayPreview?.dayCount} days</span>
-              <span>{displayGuide?.placeCount || displayPreview?.placeCount} places</span>
+              <span>{t('guidePages.guideView.dayStat', { count: displayGuide?.dayCount || displayPreview?.dayCount })}</span>
+              <span>{t('guidePages.guideView.placeStat', { count: displayGuide?.placeCount || displayPreview?.placeCount })}</span>
               {mode !== 'buyer' && (displayGuide?.priceCents || displayPreview?.priceCents || 0) > 0 && (
                 <span className="inline-flex items-center gap-1 font-semibold text-ig-text-primary">
                   {formatAmount((displayGuide?.priceCents ?? displayPreview?.priceCents) ?? 0, displayGuide?.currency ?? displayPreview?.currency)}
                   <select
-                    aria-label="Display currency"
+                    aria-label={t('guidePages.guideView.displayCurrencyLabel')}
                     value={displayCurrency}
                     onChange={(e) => setDisplayCurrency(e.target.value)}
                     className="ml-1 rounded border border-ig-border bg-ig-secondary px-1 py-0.5 text-xs text-ig-text-secondary focus:outline-none"
@@ -340,7 +342,7 @@ export default function ViewGuidePage() {
                   <path d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75v18.114a.375.375 0 0 1-.614.291L12 17.72l-5.386 4.435A.375.375 0 0 1 6 21.864V3.75Z" />
                 </svg>
                 {saveLoading && <Spinner />}
-                {saveLoading ? 'Saving...' : saved ? 'Saved' : 'Save'}
+                {saveLoading ? t('guidePages.guideView.saving') : saved ? t('guidePages.guideView.saved') : t('guidePages.guideView.save')}
               </button>
             ) : (
               <Link
@@ -350,7 +352,7 @@ export default function ViewGuidePage() {
                 <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
                   <path d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75v18.114a.375.375 0 0 1-.614.291L12 17.72l-5.386 4.435A.375.375 0 0 1 6 21.864V3.75Z" />
                 </svg>
-                Sign in to save
+                {t('guidePages.guideView.signInToSave')}
               </Link>
             )}
 
@@ -369,7 +371,7 @@ export default function ViewGuidePage() {
                 href="/api/auth/login"
                 className="mw-button-primary min-h-11 rounded-lg px-6 py-2.5 text-sm"
               >
-                {displayPreview.priceCents === 0 ? 'Sign in to get guide' : 'Sign in to purchase'}
+                {displayPreview.priceCents === 0 ? t('guidePages.guideView.signInToGetFree') : t('guidePages.guideView.signInToPurchase')}
               </Link>
             )}
           </div>
@@ -381,7 +383,7 @@ export default function ViewGuidePage() {
           {displayGuide.days.map((day) => (
             <div key={day.id}>
               <div className="mb-3 flex items-center gap-2">
-                <span className="mw-badge">Day {day.dayNumber}</span>
+                <span className="mw-badge">{t('guidePages.guideView.dayLabel', { n: day.dayNumber })}</span>
                 {day.title && <span className="text-sm text-ig-text-primary">{day.title}</span>}
               </div>
               {day.description && <p className="mb-3 text-sm text-ig-text-secondary">{day.description}</p>}
@@ -401,7 +403,7 @@ export default function ViewGuidePage() {
                           <div className="flex items-center gap-2">
                             <h4 className="text-sm font-semibold text-ig-text-primary">{place.name}</h4>
                             {place.sponsored && (
-                              <span className="rounded-full bg-accent-500/20 px-1.5 py-0.5 text-xs text-accent-500">Sponsored</span>
+                              <span className="rounded-full bg-accent-500/20 px-1.5 py-0.5 text-xs text-accent-500">{t('guidePages.guideView.sponsored')}</span>
                             )}
                           </div>
                           {place.address && <p className="mt-0.5 text-xs text-ig-text-tertiary">{place.address}</p>}
@@ -429,7 +431,7 @@ export default function ViewGuidePage() {
           {displayPreview?.firstDay ? (
             <div>
               <div className="mb-3 flex items-center gap-2">
-                <span className="text-sm font-semibold text-ig-blue">Day {displayPreview.firstDay.dayNumber}</span>
+                <span className="text-sm font-semibold text-ig-blue">{t('guidePages.guideView.dayLabel', { n: displayPreview.firstDay.dayNumber })}</span>
                 {displayPreview.firstDay.title && (
                   <span className="text-sm text-ig-text-primary">{displayPreview.firstDay.title}</span>
                 )}
@@ -469,16 +471,16 @@ export default function ViewGuidePage() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-ig-border bg-ig-elevated/40 p-5 opacity-60"
             >
               <div>
-                <p className="text-sm font-semibold text-brand-400">Day {stub.dayNumber}</p>
+                <p className="text-sm font-semibold text-brand-400">{t('guidePages.guideView.dayLabel', { n: stub.dayNumber })}</p>
                 {stub.title && <p className="mt-0.5 text-sm text-ig-text-secondary">{stub.title}</p>}
               </div>
-              <span className="rounded-full bg-ig-border px-2.5 py-1 text-xs text-ig-text-tertiary">Purchase to unlock</span>
+              <span className="rounded-full bg-ig-border px-2.5 py-1 text-xs text-ig-text-tertiary">{t('guidePages.guideView.purchaseToUnlock')}</span>
             </div>
           ))}
 
           {!displayPreview?.firstDay && (
             <div className="rounded-xl border border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-secondary">
-              Purchase this guide to see the full day-by-day itinerary with places, descriptions, and images.
+              {t('guidePages.guideView.purchaseToSeeItinerary')}
             </div>
           )}
         </div>
@@ -487,9 +489,9 @@ export default function ViewGuidePage() {
       <div className="mt-10 space-y-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-base font-semibold text-ig-text-primary">Traveler reviews</h2>
+            <h2 className="text-base font-semibold text-ig-text-primary">{t('guidePages.guideView.travelerReviews')}</h2>
             <p className="mt-1 text-sm text-ig-text-tertiary">
-              {reviewCount > 0 ? `${averageRating.toFixed(1)} avg • ${reviewCount} review${reviewCount === 1 ? '' : 's'}` : 'No reviews yet'}
+              {reviewCount > 0 ? t('guidePages.guideView.reviewSummary', { avg: averageRating.toFixed(1), count: reviewCount }) : t('guidePages.guideView.noReviewsYet')}
             </p>
           </div>
           {reviewCount > 0 && <StarRating rating={averageRating} />}
@@ -510,7 +512,7 @@ export default function ViewGuidePage() {
 
         {!reviewSummary?.canReview && mode === 'preview' && (
           <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-secondary">
-            Purchase this guide to rate it and vote on reviews.
+            {t('guidePages.guideView.purchaseToRate')}
           </div>
         )}
 
@@ -521,10 +523,10 @@ export default function ViewGuidePage() {
         )}
 
         {reviewsLoading ? (
-          <div className="text-sm text-ig-text-tertiary">Loading reviews...</div>
+          <div className="text-sm text-ig-text-tertiary">{t('guidePages.guideView.loadingReviews')}</div>
         ) : reviews.length === 0 ? (
           <div className="rounded-xl border border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-secondary">
-            No traveler reviews yet.
+            {t('guidePages.guideView.noTravelerReviews')}
           </div>
         ) : (
           <div className="space-y-3">
@@ -565,7 +567,7 @@ export default function ViewGuidePage() {
                         : 'border-ig-border text-ig-text-secondary'
                     } disabled:cursor-default disabled:opacity-60`}
                   >
-                    Helpful {review.helpfulCount}
+                    {t('guidePages.guideView.helpful', { count: review.helpfulCount })}
                   </button>
                   <button
                     type="button"
@@ -577,7 +579,7 @@ export default function ViewGuidePage() {
                         : 'border-ig-border text-ig-text-secondary'
                     } disabled:cursor-default disabled:opacity-60`}
                   >
-                    Not helpful {review.notHelpfulCount}
+                    {t('guidePages.guideView.notHelpful', { count: review.notHelpfulCount })}
                   </button>
                 </div>
               </div>

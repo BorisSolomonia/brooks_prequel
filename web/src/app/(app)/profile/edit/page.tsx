@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap, Marker as LeafletMarker, TileLayer as LeafletTileLayer, LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useRouter } from 'next/navigation';
 import { redirectToLogin } from '@/lib/capacitor';
@@ -115,6 +116,7 @@ const INTEREST_OPTIONS = [
 ];
 
 export default function EditProfilePage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const router = useRouter();
 
@@ -156,7 +158,7 @@ export default function EditProfilePage() {
             : [],
         );
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load profile'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('account.edit.errorLoad')))
       .finally(() => setLoading(false));
   }, [router, token, tokenLoading]);
 
@@ -189,21 +191,21 @@ export default function EditProfilePage() {
 
     try {
       await api.patch<Profile>('/api/me/profile', request, token);
-      setMessage('Profile saved. Your map location is now available to the influencer map when coordinates are set.');
+      setMessage(t('account.edit.savedMessage'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save profile');
+      setError(err instanceof Error ? err.message : t('account.edit.errorSave'));
     } finally {
       setSaving(false);
     }
   };
 
   if (tokenLoading || loading) {
-    return <div className="max-w-lg mx-auto px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="max-w-lg mx-auto px-4 py-12 text-center text-ig-text-tertiary">{t('account.edit.loading')}</div>;
   }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 text-ig-text-primary">Complete Your Profile</h1>
+      <h1 className="text-2xl font-bold mb-6 text-ig-text-primary">{t('account.edit.title')}</h1>
 
       {message && (
         <div className="mb-4 rounded-lg border border-ig-success/30 bg-ig-success/10 px-4 py-3 text-sm text-ig-success">
@@ -218,7 +220,7 @@ export default function EditProfilePage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-ig-text-secondary mb-1">Display Name</label>
+          <label className="block text-sm font-medium text-ig-text-secondary mb-1">{t('account.edit.fields.displayName')}</label>
           <input
             type="text"
             value={displayName}
@@ -229,7 +231,7 @@ export default function EditProfilePage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ig-text-secondary mb-1">Username</label>
+          <label className="block text-sm font-medium text-ig-text-secondary mb-1">{t('account.edit.fields.username')}</label>
           <input
             type="text"
             value={username}
@@ -240,7 +242,7 @@ export default function EditProfilePage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ig-text-secondary mb-1">Bio</label>
+          <label className="block text-sm font-medium text-ig-text-secondary mb-1">{t('account.edit.fields.bio')}</label>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -253,21 +255,21 @@ export default function EditProfilePage() {
         <ImageUploadField
           token={token!}
           usage="PROFILE_AVATAR"
-          label="Profile picture"
+          label={t('account.edit.fields.profilePicture')}
           value={avatarUrl}
           onChange={setAvatarUrl}
           previewShape="circle"
-          helpText="JPEG, PNG, or WebP. This image appears on your public profile."
+          helpText={t('account.edit.fields.profilePictureHelp')}
         />
 
         <div>
-          <label className="block text-sm font-medium text-ig-text-secondary mb-1">Region</label>
+          <label className="block text-sm font-medium text-ig-text-secondary mb-1">{t('account.edit.fields.region')}</label>
           <select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
             className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary"
           >
-            <option value="">Select your region</option>
+            <option value="">{t('account.edit.fields.regionPlaceholder')}</option>
             {REGIONS.map((item) => (
               <option key={item} value={item}>{item}</option>
             ))}
@@ -275,8 +277,8 @@ export default function EditProfilePage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ig-text-secondary mb-1">Your location</label>
-          <p className="text-xs text-ig-text-tertiary mb-2">Click or drag the pin to set where you&apos;re based. This places you on the creator map.</p>
+          <label className="block text-sm font-medium text-ig-text-secondary mb-1">{t('account.edit.fields.yourLocation')}</label>
+          <p className="text-xs text-ig-text-tertiary mb-2">{t('account.edit.fields.yourLocationHelp')}</p>
           {MAPBOX_TOKEN ? (
             <ProfileLocationMap
               lat={latitude}
@@ -286,11 +288,11 @@ export default function EditProfilePage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-ig-text-secondary mb-1">Latitude</label>
+                <label className="block text-sm font-medium text-ig-text-secondary mb-1">{t('account.edit.fields.latitude')}</label>
                 <input type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ig-text-secondary mb-1">Longitude</label>
+                <label className="block text-sm font-medium text-ig-text-secondary mb-1">{t('account.edit.fields.longitude')}</label>
                 <input type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-base text-ig-text-primary" />
               </div>
             </div>
@@ -301,7 +303,7 @@ export default function EditProfilePage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ig-text-secondary mb-2">Interests</label>
+          <label className="block text-sm font-medium text-ig-text-secondary mb-2">{t('account.edit.fields.interests')}</label>
           <div className="flex flex-wrap gap-2">
             {INTEREST_OPTIONS.map((interest) => (
               <button
@@ -326,15 +328,15 @@ export default function EditProfilePage() {
           className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-500 py-3 font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
         >
           {saving && <Spinner />}
-          {saving ? 'Saving...' : 'Save Profile'}
+          {saving ? t('account.edit.saving') : t('account.edit.saveButton')}
         </button>
 
         <a
           href="/profile/payout"
           className="mt-4 block rounded-lg border-2 border-ig-border bg-ig-elevated p-4 text-sm text-ig-text-secondary transition-colors hover:border-brand-500/60 hover:text-ig-text-primary"
         >
-          <span className="font-display text-xs font-black uppercase tracking-[0.08em] text-brand-500">Payout details</span>
-          <span className="mt-1 block">Set or update your IBAN so the platform can send you your share of guide sales →</span>
+          <span className="font-display text-xs font-black uppercase tracking-[0.08em] text-brand-500">{t('account.edit.payoutDetails.title')}</span>
+          <span className="mt-1 block">{t('account.edit.payoutDetails.body')}</span>
         </a>
       </form>
     </div>

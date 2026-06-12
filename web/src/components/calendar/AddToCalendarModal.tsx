@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
 import type {
@@ -65,6 +66,7 @@ async function fetchJson<T>(path: string, token: string, init: RequestInit = {})
 }
 
 export default function AddToCalendarModal({ tripId, token, onClose }: AddToCalendarModalProps) {
+  const { t } = useTranslation();
   const [trip, setTrip] = useState<MyTripDetail | null>(null);
   const [connection, setConnection] = useState<CalendarConnectionStatusResponse | null>(null);
   const [tripStartDate, setTripStartDate] = useState(today());
@@ -91,7 +93,7 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
         setTripStartTime((tripResponse.tripStartTime || '09:00').slice(0, 5));
         setTripTimezone(tripResponse.tripTimezone || tripResponse.guide.timezone || 'UTC');
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load calendar options'));
+      .catch((err) => setError(err instanceof Error ? err.message : t('widgets.calendar.failedLoadOptions')));
   }, [token, tripId]);
 
   const itemById = useMemo(() => {
@@ -147,14 +149,14 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
         body: JSON.stringify({ acknowledgedLateItemIds: Array.from(acknowledgedLateIds) }),
       });
       setLateEvents([]);
-      setMessage(`Synced to Google Calendar. Created ${response.created}, updated ${response.updated}, deleted ${response.deleted}.`);
+      setMessage(t('widgets.calendar.syncedGoogleCalendar', { created: response.created, updated: response.updated, deleted: response.deleted }));
       if (response.calendarUrl) {
         window.open(response.calendarUrl, '_blank', 'noreferrer');
       }
     } catch (err) {
       const typed = err as Error & { status?: number; body?: unknown };
       if (typed.status === 409 && handleLateConflict(typed.body)) return;
-      setError(typed.message || 'Failed to sync Google Calendar');
+      setError(typed.message || t('widgets.calendar.failedSyncGoogle'));
     } finally {
       setSaving(false);
     }
@@ -173,8 +175,8 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
         return;
       }
       if (!response.ok) {
-        const body = await response.json().catch(() => ({ detail: 'Failed to download calendar file' }));
-        throw new Error(body.detail || 'Failed to download calendar file');
+        const body = await response.json().catch(() => ({ detail: t('widgets.calendar.failedDownloadFile') }));
+        throw new Error(body.detail || t('widgets.calendar.failedDownloadFile'));
       }
       const blob = await response.blob();
       const href = URL.createObjectURL(blob);
@@ -186,9 +188,9 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
       link.remove();
       URL.revokeObjectURL(href);
       setLateEvents([]);
-      setMessage('Calendar file is ready for Apple Calendar, Google Calendar, and Outlook.');
+      setMessage(t('widgets.calendar.icsReady'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to download calendar file');
+      setError(err instanceof Error ? err.message : t('widgets.calendar.failedDownloadFile'));
     } finally {
       setSaving(false);
     }
@@ -202,9 +204,9 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
       setLateEvents([]);
       setAcknowledgedLateIds(new Set());
       setLateEdits({});
-      setMessage('Updated event times. Try adding to calendar again.');
+      setMessage(t('widgets.calendar.updatedEventTimes'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update event times');
+      setError(err instanceof Error ? err.message : t('widgets.calendar.failedUpdateTimes'));
     } finally {
       setSaving(false);
     }
@@ -215,39 +217,39 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
       <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-ig-border bg-ig-elevated p-5 pb-[calc(1.25rem_+_env(safe-area-inset-bottom))] shadow-xl sm:rounded-2xl sm:pb-5" onClick={(event) => event.stopPropagation()}>
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-ig-text-primary">Add to calendar</h2>
-            <p className="mt-1 text-sm text-ig-text-secondary">{trip?.guide.title || 'Loading trip...'}</p>
+            <h2 className="text-base font-semibold text-ig-text-primary">{t('widgets.calendar.addToCalendar')}</h2>
+            <p className="mt-1 text-sm text-ig-text-secondary">{trip?.guide.title || t('widgets.calendar.loadingTrip')}</p>
           </div>
           <button type="button" onClick={onClose} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary">
-            Close
+            {t('widgets.calendar.close')}
           </button>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block text-sm">
-            <span className="mb-1 block text-ig-text-secondary">Start date</span>
+            <span className="mb-1 block text-ig-text-secondary">{t('widgets.calendar.startDate')}</span>
             <input type="date" value={tripStartDate} onChange={(event) => setTripStartDate(event.target.value)} className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary" />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block text-ig-text-secondary">Start time</span>
+            <span className="mb-1 block text-ig-text-secondary">{t('widgets.calendar.startTime')}</span>
             <input type="time" value={tripStartTime} onChange={(event) => setTripStartTime(event.target.value)} className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary" />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block text-ig-text-secondary">Timezone</span>
+            <span className="mb-1 block text-ig-text-secondary">{t('widgets.calendar.timezone')}</span>
             <input type="text" value={tripTimezone} onChange={(event) => setTripTimezone(event.target.value)} className="min-h-11 w-full rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-base text-ig-text-primary" />
           </label>
         </div>
 
         {lateEvents.length > 0 && (
           <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-            <h3 className="text-sm font-semibold text-ig-text-primary">Review events after 20:00</h3>
+            <h3 className="text-sm font-semibold text-ig-text-primary">{t('widgets.calendar.reviewLateEvents')}</h3>
             <div className="mt-3 space-y-3">
               {lateEvents.map((event) => {
                 const item = itemById.get(event.itemId);
                 return (
                   <div key={event.itemId} className="rounded-lg border border-ig-border bg-ig-primary p-3">
                     <div className="text-sm font-medium text-ig-text-primary">{event.placeName}</div>
-                    <div className="mt-1 text-xs text-ig-text-tertiary">Starts at {event.localStartTime}</div>
+                    <div className="mt-1 text-xs text-ig-text-tertiary">{t('widgets.calendar.startsAt', { time: event.localStartTime })}</div>
                     <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
                       <input
                         type="datetime-local"
@@ -266,7 +268,7 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
                             return next;
                           })}
                         />
-                        Keep
+                        {t('widgets.calendar.keep')}
                       </label>
                     </div>
                   </div>
@@ -275,7 +277,7 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
             </div>
             <button type="button" onClick={saveLateEdits} disabled={saving} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50">
               {saving && <Spinner />}
-              Save edited times
+              {t('widgets.calendar.saveEditedTimes')}
             </button>
           </div>
         )}
@@ -287,16 +289,16 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
           {connection?.googleConnected ? (
             <button type="button" onClick={syncGoogle} disabled={saving || !trip} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
               {saving && <Spinner />}
-              {saving ? 'Working...' : 'Sync to Google Calendar'}
+              {saving ? t('widgets.calendar.working') : t('widgets.calendar.syncToGoogle')}
             </button>
           ) : (
             <a href={`/api/calendar/google/connect?returnTo=${encodeURIComponent(returnTo)}`} className="block min-h-12 w-full rounded-xl bg-brand-500 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-brand-600">
-              Connect Google Calendar
+              {t('widgets.calendar.connectGoogle')}
             </a>
           )}
           <button type="button" onClick={downloadIcs} disabled={saving || !trip} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-ig-border bg-ig-primary px-4 py-3 text-sm font-semibold text-ig-text-primary hover:border-brand-500/50 disabled:opacity-50">
             {saving && <Spinner />}
-            Add to Apple Calendar (.ics)
+            {t('widgets.calendar.addAppleCalendar')}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SearchFilterBar, { type SortOption } from '@/components/search/SearchFilterBar';
 
 // Mobile-first filter bottom sheet for the Guides page (BOR-26). Houses the
@@ -63,6 +64,7 @@ export default function GuideFilterSheet({
   defaultSort = 'RELEVANCE',
   onApply,
 }: Props) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState<GuideFilterValues>(committed);
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -134,13 +136,13 @@ export default function GuideFilterSheet({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Filters"
+      aria-label={t('discovery.search.filtersAriaLabel')}
       className="fixed inset-0 z-[110] flex items-end justify-center md:items-center"
     >
       {/* Backdrop — tap to dismiss (no commit). */}
       <button
         type="button"
-        aria-label="Dismiss filters"
+        aria-label={t('discovery.search.filtersDismissAriaLabel')}
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -162,12 +164,12 @@ export default function GuideFilterSheet({
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-ig-border" />
           <div className="mb-1 flex items-center justify-between">
             <h2 className="font-display text-base font-black uppercase tracking-[0.08em] text-ig-text-primary">
-              Filters
+              {t('discovery.search.filtersTitle')}
             </h2>
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close filters"
+              aria-label={t('discovery.search.filtersCloseAriaLabel')}
               className="flex h-9 w-9 items-center justify-center rounded-full text-ig-text-tertiary transition hover:bg-ig-hover hover:text-ig-text-primary"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,7 +183,7 @@ export default function GuideFilterSheet({
             from the main viewport (BOR-28), above the shared rating/sort/price bar. */}
         <div className="min-h-0 flex-1 overflow-y-auto px-5">
           <div className="mb-3 rounded-xl border border-ig-border bg-ig-elevated/60 p-3">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">Stage</span>
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">{t('discovery.search.filterStageLabel')}</span>
             <div className="flex flex-wrap gap-2">
               {stages.map((s) => {
                 const active = draft.stage === s.value;
@@ -202,7 +204,7 @@ export default function GuideFilterSheet({
                 );
               })}
             </div>
-            <span className="mb-1.5 mt-3 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">Traveler type</span>
+            <span className="mb-1.5 mt-3 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">{t('discovery.search.filterTravelerTypeLabel')}</span>
             <div className="flex flex-wrap gap-2">
               {personas.map((p) => {
                 const active = draft.personas.includes(p.value);
@@ -248,14 +250,14 @@ export default function GuideFilterSheet({
             onClick={clearAll}
             className="mw-button-secondary inline-flex min-h-touch flex-1 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-ig-text-primary"
           >
-            Clear all
+            {t('discovery.search.filterClearAll')}
           </button>
           <button
             type="button"
             onClick={apply}
             className="inline-flex min-h-touch flex-1 items-center justify-center rounded-2xl bg-brand-500 px-4 text-sm font-semibold text-white transition hover:bg-brand-600"
           >
-            Apply
+            {t('discovery.search.filterApply')}
           </button>
         </div>
 

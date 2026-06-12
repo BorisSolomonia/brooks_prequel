@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Map as LeafletMap, Marker as LeafletMarker, TileLayer as LeafletTileLayer, LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
@@ -59,6 +60,7 @@ function CityAutocomplete({ value, onType, onSelect }: {
     }, 300);
   };
 
+  const { t } = useTranslation();
   return (
     <div className="relative">
       <input
@@ -69,7 +71,7 @@ function CityAutocomplete({ value, onType, onSelect }: {
         onFocus={() => { if (suggestions.length) setOpen(true); }}
         // Delay close so a suggestion's onMouseDown registers before blur.
         onBlur={() => window.setTimeout(() => setOpen(false), 150)}
-        placeholder="Start typing a city…"
+        placeholder={t('guideEditor.cityAutocomplete.placeholder')}
         className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
       />
       {open && suggestions.length > 0 && (
@@ -235,11 +237,12 @@ function HookGenerator({ title, currentDescription, city, region, token, provide
   const [error, setError] = useState<string | null>(null);
   const accRef = useRef('');
 
+  const { t } = useTranslation();
   const canGenerate = !!provider && title.trim().length > 0;
   const disabledReason = !provider
-    ? 'Add an AI key in Settings → AI Keys to use this'
+    ? t('guideEditor.hookGenerator.disabledNoKey')
     : title.trim().length === 0
-      ? 'Add a title first'
+      ? t('guideEditor.hookGenerator.disabledNoTitle')
       : undefined;
 
   // baseDraft = the text the AI should improve (the user's current/edited draft, or '' for a fresh
@@ -265,9 +268,9 @@ function HookGenerator({ title, currentDescription, city, region, token, provide
       undefined,
       (status) => {
         setError(
-          status === 400 ? 'No AI key configured. Add one in Settings → AI Keys.'
-          : status === 401 ? 'Your session expired. Please sign in again.'
-          : 'Could not generate a hook. Please try again.',
+          status === 400 ? t('guideEditor.hookGenerator.errorNoKey')
+          : status === 401 ? t('guideEditor.hookGenerator.errorSession')
+          : t('guideEditor.hookGenerator.errorGeneric'),
         );
       },
     );
@@ -284,7 +287,7 @@ function HookGenerator({ title, currentDescription, city, region, token, provide
         onClick={() => { setOpen(true); setInstruction(''); generate('', currentDescription); }}
         className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-ig-border px-3 py-1.5 text-xs font-semibold text-ig-text-secondary transition-colors hover:border-ig-blue hover:text-ig-blue disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <span aria-hidden>✨</span> Add a hook — what makes this guide unmissable?
+        <span aria-hidden>✨</span> {t('guideEditor.hookGenerator.openBtn')}
       </button>
     );
   }
@@ -293,17 +296,17 @@ function HookGenerator({ title, currentDescription, city, region, token, provide
     <div className="mt-2 rounded-md border border-ig-border bg-ig-secondary p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-xs font-semibold text-ig-text-secondary">
-          <span aria-hidden>✨</span> AI hook
+          <span aria-hidden>✨</span> {t('guideEditor.hookGenerator.panelTitle')}
         </span>
         <button type="button" onClick={() => setOpen(false)} className="text-xs text-ig-text-tertiary hover:text-ig-text-primary">
-          Close
+          {t('guideEditor.hookGenerator.close')}
         </button>
       </div>
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         rows={4}
-        placeholder={streaming ? 'Writing…' : 'The AI draft appears here — edit it freely, then Apply or Resend.'}
+        placeholder={streaming ? t('guideEditor.hookGenerator.writing') : t('guideEditor.hookGenerator.draftPlaceholder')}
         className="w-full resize-none rounded-md border border-ig-border bg-ig-primary px-3 py-2 text-sm text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
       />
       {error && <p className="text-xs text-red-400">{error}</p>}
@@ -312,21 +315,21 @@ function HookGenerator({ title, currentDescription, city, region, token, provide
           type="text"
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
-          placeholder="Tell the AI what to change (optional)…"
+          placeholder={t('guideEditor.hookGenerator.instructionPlaceholder')}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); generate(instruction, draft); } }}
           className="min-w-0 flex-1 rounded-md border border-ig-border bg-ig-primary px-3 py-1.5 text-xs text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
         />
         <button type="button" disabled={streaming} onClick={() => generate(instruction, draft)}
           className="rounded-md border border-ig-border px-3 py-1.5 text-xs font-semibold text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue disabled:opacity-50">
-          {streaming ? 'Generating…' : 'Resend'}
+          {streaming ? t('guideEditor.hookGenerator.generating') : t('guideEditor.hookGenerator.resend')}
         </button>
         <button type="button" disabled={streaming} onClick={() => { setInstruction(''); generate('', ''); }}
           className="rounded-md border border-ig-border px-3 py-1.5 text-xs font-semibold text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue disabled:opacity-50">
-          Regenerate
+          {t('guideEditor.hookGenerator.regenerate')}
         </button>
         <button type="button" disabled={streaming || !draft.trim()} onClick={() => { onApply(draft.trim()); setOpen(false); }}
           className="rounded-md bg-ig-blue px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
-          Apply
+          {t('guideEditor.hookGenerator.apply')}
         </button>
       </div>
     </div>
@@ -334,6 +337,7 @@ function HookGenerator({ title, currentDescription, city, region, token, provide
 }
 
 export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, onTagInputChange, onAddTag, onRemoveTag, token, aiKeys = [] }: Props) {
+  const { t } = useTranslation();
   // Single-field write via the functional patch (immune to stale snapshots).
   const update = (field: string, value: unknown) => {
     onPatch({ [field]: value } as Partial<GuideUpdateRequest>);
@@ -384,31 +388,31 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
     const hints: string[] = [];
     // The "Add a hook" prompt is now the clickable AI generator below, not a passive hint.
     const match = description.match(GENERIC_ADJECTIVES);
-    if (match) hints.push(`Replace "${match[0]}" with sensory detail — what does it smell/sound/feel like?`);
+    if (match) hints.push(t('guideEditor.metadata.hintGenericAdj', { word: match[0] }));
     const hasHook = /\?|why|secret|skip|instead|actually|surprising|unlike/i.test(description);
-    if (descWordCount >= 15 && !hasHook) hints.push('Make it bolder — add a surprising angle or contrarian take.');
+    if (descWordCount >= 15 && !hasHook) hints.push(t('guideEditor.metadata.hintBolder'));
     return hints;
-  }, [description, descWordCount]);
+  }, [description, descWordCount, t]);
 
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Title *</label>
+        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.titleLabel')}</label>
         <input
           type="text"
           value={data.title || ''}
           onChange={(e) => update('title', e.target.value)}
-          placeholder="e.g. 3 Days in Tokyo"
+          placeholder={t('guideEditor.metadata.titlePlaceholder')}
           className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Description</label>
+        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.descriptionLabel')}</label>
         <textarea
           value={data.description || ''}
           onChange={(e) => update('description', e.target.value)}
-          placeholder="Describe your travel guide..."
+          placeholder={t('guideEditor.metadata.descriptionPlaceholder')}
           rows={3}
           className="w-full resize-none rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
         />
@@ -441,23 +445,23 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
           className="inline-flex min-h-11 items-center gap-2 rounded-md border border-ig-border bg-ig-elevated px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:opacity-60"
         >
           <span aria-hidden>📍</span>
-          {locating ? 'Locating…' : 'Use my current location'}
+          {locating ? t('guideEditor.metadata.locating') : t('guideEditor.metadata.useMyLocation')}
         </button>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Region</label>
+          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.regionLabel')}</label>
           <input
             type="text"
             value={data.region || ''}
             onChange={(e) => update('region', e.target.value)}
-            placeholder="e.g. East Asia"
+            placeholder={t('guideEditor.metadata.regionPlaceholder')}
             className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Primary City</label>
+          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.primaryCityLabel')}</label>
           <CityAutocomplete
             value={data.primaryCity || ''}
             onType={(text) => update('primaryCity', text)}
@@ -468,27 +472,27 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Country</label>
+          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.countryLabel')}</label>
           <input
             type="text"
             value={data.country || ''}
             onChange={(e) => update('country', e.target.value)}
-            placeholder="e.g. Japan"
+            placeholder={t('guideEditor.metadata.countryPlaceholder')}
             className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Timezone</label>
+          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.timezoneLabel')}</label>
           <input
             type="text"
             value={data.timezone || ''}
             onChange={(e) => update('timezone', e.target.value)}
-            placeholder="e.g. Europe/Tbilisi"
+            placeholder={t('guideEditor.metadata.timezonePlaceholder')}
             className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Price</label>
+          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.priceLabel')}</label>
           <div className="flex gap-2">
             <input
               type="number"
@@ -499,7 +503,7 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
                 const major = parseFloat(e.target.value);
                 update('priceCents', isNaN(major) || major < 0 ? 0 : Math.round(major * 100));
               }}
-              placeholder="e.g. 10.00"
+              placeholder={t('guideEditor.metadata.pricePlaceholder')}
               className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none"
             />
             <select
@@ -511,7 +515,7 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
             </select>
           </div>
           <p className="mt-1 text-xs text-ig-text-tertiary">
-            Set your price in your currency. Buyers see it converted to their local currency; payment is charged in GEL.
+            {t('guideEditor.metadata.priceHint')}
           </p>
         </div>
       </div>
@@ -519,19 +523,19 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
       {(data.priceCents ?? 0) > 0 && (
         <div className="rounded-lg border border-ig-border bg-ig-secondary/50 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-ig-text-secondary">Discount / Sale</span>
+            <span className="text-sm font-semibold text-ig-text-secondary">{t('guideEditor.metadata.discountLabel')}</span>
             {(data as GuideUpdateRequest).discountPercent != null && (
               <button
                 type="button"
                 onClick={() => onPatch({ discountPercent: null, salePriceCents: null, saleEndsAt: null })}
                 className="text-xs text-ig-text-tertiary hover:text-ig-error transition-colors"
               >
-                Clear discount
+                {t('guideEditor.metadata.clearDiscount')}
               </button>
             )}
           </div>
           <div>
-            <label className="block text-xs text-ig-text-tertiary mb-1">Discount (%) — leave blank or 0 to disable</label>
+            <label className="block text-xs text-ig-text-tertiary mb-1">{t('guideEditor.metadata.discountPctLabel')}</label>
             <input
               type="number"
               step="1"
@@ -546,7 +550,7 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
                 }
                 onPatch({ discountPercent: Math.min(95, Math.round(pct)), saleEndsAt: (data as GuideUpdateRequest).saleEndsAt ?? null });
               }}
-              placeholder="e.g. 20"
+              placeholder={t('guideEditor.metadata.discountPlaceholder')}
               className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
             />
             {((data as GuideUpdateRequest).discountPercent ?? 0) > 0 && (data.priceCents ?? 0) > 0 && (() => {
@@ -562,7 +566,7 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
           </div>
           {((data as GuideUpdateRequest).discountPercent ?? 0) > 0 && (
             <div>
-              <label className="block text-xs text-ig-text-tertiary mb-1">Sale ends (optional)</label>
+              <label className="block text-xs text-ig-text-tertiary mb-1">{t('guideEditor.metadata.saleEndsLabel')}</label>
               <input
                 type="datetime-local"
                 value={(data as GuideUpdateRequest).saleEndsAt ? (data as GuideUpdateRequest).saleEndsAt!.slice(0, 16) : ''}
@@ -577,29 +581,29 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
       <ImageUploadField
         token={token}
         usage="GUIDE_COVER"
-        label="Cover image"
+        label={t('guideEditor.metadata.coverImageLabel')}
         value={data.coverImageUrl || ''}
         onChange={(url) => update('coverImageUrl', url)}
         previewShape="wide"
-        helpText="Landscape images work best for guide cards and previews."
+        helpText={t('guideEditor.metadata.coverImageHint')}
       />
 
       <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Traveler stage</label>
+        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.travelerStageLabel')}</label>
         <select
           value={(data as GuideUpdateRequest).travelerStage ?? ''}
           onChange={(e) => update('travelerStage', e.target.value || null)}
           className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
         >
-          <option value="">— any stage —</option>
-          <option value="DREAMING">Dreaming — inspiring wanderlust</option>
-          <option value="PLANNING">Planning — helping book the trip</option>
-          <option value="EXPERIENCING">Experiencing — use while traveling</option>
+          <option value="">{t('guideEditor.metadata.stageAny')}</option>
+          <option value="DREAMING">{t('guideEditor.metadata.stageDreaming')}</option>
+          <option value="PLANNING">{t('guideEditor.metadata.stagePlanning')}</option>
+          <option value="EXPERIENCING">{t('guideEditor.metadata.stageExperiencing')}</option>
         </select>
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Traveler personas</label>
+        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.personasLabel')}</label>
         <div className="flex flex-wrap gap-2">
           {(['SOLO', 'FAMILY', 'BUDGET', 'LUXURY', 'DIGITAL_NOMAD'] as const).map((persona) => {
             const selected = ((data as GuideUpdateRequest).personas ?? []).includes(persona);
@@ -625,30 +629,30 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Best time to visit</label>
-        <p className="text-xs text-ig-text-tertiary mb-2">Shown as a badge on your guide to signal when to book.</p>
+        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.bestTimeLabel')}</label>
+        <p className="text-xs text-ig-text-tertiary mb-2">{t('guideEditor.metadata.bestTimeHint')}</p>
         <div className="mb-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="block text-xs text-ig-text-tertiary mb-1">From month</label>
+            <label className="block text-xs text-ig-text-tertiary mb-1">{t('guideEditor.metadata.fromMonth')}</label>
             <select
               value={(data as GuideUpdateRequest).bestSeasonStartMonth ?? ''}
               onChange={(e) => update('bestSeasonStartMonth', e.target.value ? parseInt(e.target.value) : null)}
               className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
             >
-              <option value="">— any —</option>
+              <option value="">{t('guideEditor.metadata.monthAny')}</option>
               {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
                 <option key={m} value={i + 1}>{m}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-ig-text-tertiary mb-1">To month</label>
+            <label className="block text-xs text-ig-text-tertiary mb-1">{t('guideEditor.metadata.toMonth')}</label>
             <select
               value={(data as GuideUpdateRequest).bestSeasonEndMonth ?? ''}
               onChange={(e) => update('bestSeasonEndMonth', e.target.value ? parseInt(e.target.value) : null)}
               className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
             >
-              <option value="">— any —</option>
+              <option value="">{t('guideEditor.metadata.monthAny')}</option>
               {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
                 <option key={m} value={i + 1}>{m}</option>
               ))}
@@ -659,7 +663,7 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
           type="text"
           value={(data as GuideUpdateRequest).bestSeasonLabel ?? ''}
           onChange={(e) => update('bestSeasonLabel', e.target.value || null)}
-          placeholder="e.g. Spring cherry blossom season"
+          placeholder={t('guideEditor.metadata.seasonLabelPlaceholder')}
           maxLength={60}
           className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none md:text-sm"
         />
@@ -667,8 +671,8 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
 
       {MAPBOX_TOKEN && (
         <div>
-          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Destination pin</label>
-          <p className="text-xs text-ig-text-tertiary mb-2">Tap &ldquo;Use my current location&rdquo;, search a city above, or click/drag the pin. The city, region and country fill in automatically.</p>
+          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.destinationPinLabel')}</label>
+          <p className="text-xs text-ig-text-tertiary mb-2">{t('guideEditor.metadata.destinationPinHint')}</p>
           <DestinationMap
             lat={guideData.latitude}
             lng={guideData.longitude}
@@ -682,7 +686,7 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
       )}
 
       <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">Tags</label>
+        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.tagsLabel')}</label>
         <div className="flex gap-2 mb-2 flex-wrap">
           {(data.tags || []).map((tag) => (
             <span key={tag} className="inline-flex min-h-11 items-center gap-1 rounded-pill border border-ig-border bg-ig-elevated px-3 py-1 text-sm text-ig-text-primary lg:min-h-9 lg:px-2">
@@ -697,10 +701,10 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
             value={tagInput}
             onChange={(e) => onTagInputChange(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onAddTag(); } }}
-            placeholder="Add a tag..."
+            placeholder={t('guideEditor.metadata.tagPlaceholder')}
             className="min-h-11 min-w-0 flex-1 rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none"
           />
-          <button onClick={onAddTag} className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm">Add</button>
+          <button onClick={onAddTag} className="mw-button-primary min-h-11 rounded-md px-4 py-2 text-sm">{t('guideEditor.metadata.addTagBtn')}</button>
         </div>
       </div>
     </div>

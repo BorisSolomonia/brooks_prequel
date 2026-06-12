@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import type { GuidePlaceImage } from '@/types';
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function PlaceCarousel({ images, altPrefix }: Props) {
+  const { t } = useTranslation();
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -54,11 +56,11 @@ export default function PlaceCarousel({ images, altPrefix }: Props) {
               type="button"
               onClick={() => setLightboxIndex(index)}
               className="relative h-14 w-14 flex-shrink-0 snap-center overflow-hidden md:h-16 md:w-16"
-              title={image.caption || `${altPrefix} photo ${index + 1}`}
+              title={image.caption || t('widgets.placeCarousel.photoAlt', { prefix: altPrefix, n: index + 1 })}
             >
               <Image
                 src={image.imageUrl}
-                alt={image.caption || `${altPrefix} photo ${index + 1}`}
+                alt={image.caption || t('widgets.placeCarousel.photoAlt', { prefix: altPrefix, n: index + 1 })}
                 width={64}
                 height={64}
                 className="h-full w-full object-cover"
@@ -85,7 +87,7 @@ export default function PlaceCarousel({ images, altPrefix }: Props) {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={`${altPrefix} photo viewer`}
+          aria-label={t('widgets.placeCarousel.photoViewer', { prefix: altPrefix })}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4 py-6"
           onClick={() => setLightboxIndex(null)}
         >
@@ -95,7 +97,7 @@ export default function PlaceCarousel({ images, altPrefix }: Props) {
           >
             <Image
               src={images[lightboxIndex].imageUrl}
-              alt={images[lightboxIndex].caption || `${altPrefix} photo ${lightboxIndex + 1}`}
+              alt={images[lightboxIndex].caption || t('widgets.placeCarousel.photoAlt', { prefix: altPrefix, n: lightboxIndex + 1 })}
               width={1600}
               height={1200}
               sizes="(max-width: 1024px) 100vw, 1024px"
@@ -127,9 +129,9 @@ export default function PlaceCarousel({ images, altPrefix }: Props) {
                 type="button"
                 onClick={() => setLightboxIndex(null)}
                 className="min-h-11 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-sm font-semibold text-white"
-                aria-label="Close"
+                aria-label={t('widgets.placeCarousel.close')}
               >
-                Close
+                {t('widgets.placeCarousel.close')}
               </button>
             </div>
           </div>

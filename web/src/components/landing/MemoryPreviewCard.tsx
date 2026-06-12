@@ -1,4 +1,9 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
+
 export default function MemoryPreviewCard() {
+  const { t } = useTranslation();
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
       <div
@@ -22,10 +27,10 @@ export default function MemoryPreviewCard() {
             marginBottom: 4,
           }}
         >
-          Memory found nearby
+          {t('widgets.landing.memoryFoundNearby')}
         </p>
         <p style={{ fontSize: 13, fontWeight: 700, color: '#ef2f6d', marginBottom: 12 }}>
-          120 m from you
+          {t('widgets.landing.memoryDistance')}
         </p>
         <div
           style={{
@@ -45,10 +50,10 @@ export default function MemoryPreviewCard() {
             whiteSpace: 'pre-line',
           }}
         >
-          {'"Sunset here hit\ndifferent."'}
+          {t('widgets.landing.memoryQuote')}
         </p>
         <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 8 }}>
-          Alex, 2 years ago
+          {t('widgets.landing.memoryAttribution')}
         </p>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import type { MemoryRevealResponse, MemoryShareTeaser } from '@/types';
@@ -44,6 +45,7 @@ const locationErrorMessage = (error: GeolocationPositionError) => {
 };
 
 export default function SharedMemoryPage() {
+  const { t } = useTranslation();
   const params = useParams<{ token: string }>();
   const token = params.token;
   const { token: accessToken, loading: tokenLoading } = useAccessToken();
@@ -60,7 +62,7 @@ export default function SharedMemoryPage() {
   useEffect(() => {
     api.get<MemoryShareTeaser>(`/api/memory-shares/${token}`)
       .then(setTeaser)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Memory is unavailable'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('account.memoryReveal.unavailable')))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -86,15 +88,15 @@ export default function SharedMemoryPage() {
       return;
     }
     if (isMetaBrowser) {
-      setError('Open this link in Chrome or Safari so Brooks can verify your location.');
+      setError(t('account.memoryReveal.errorMetaBrowser'));
       return;
     }
     if (!window.isSecureContext) {
-      setError('Location detection requires a secure connection. Open this link on brooksweb.uk, then try again.');
+      setError(t('account.memoryReveal.errorInsecure'));
       return;
     }
     if (!navigator.geolocation) {
-      setError('This browser does not support location detection. Open the link in a browser with location services enabled.');
+      setError(t('account.memoryReveal.errorNoGeolocation'));
       return;
     }
     setRevealing(true);
@@ -107,7 +109,7 @@ export default function SharedMemoryPage() {
     const hardTimeoutId = window.setTimeout(() => {
       if (settled) return;
       settled = true;
-      setError('We could not get your location. On iPhone open Settings → Privacy & Security → Location Services → Safari and choose Ask or Allow, then reload this page. Make sure you are outdoors or near a window for GPS.');
+      setError(t('account.memoryReveal.errorLocationTimeout'));
       setRevealing(false);
     }, 15000);
 
@@ -121,7 +123,7 @@ export default function SharedMemoryPage() {
           longitude: coords.longitude,
         }, accessToken)
           .then(setReveal)
-          .catch((err) => setError(err instanceof Error ? err.message : 'Could not reveal memory'))
+          .catch((err) => setError(err instanceof Error ? err.message : t('account.memoryReveal.errorReveal')))
           .finally(() => setRevealing(false));
       },
       (geoError) => {
@@ -143,16 +145,16 @@ export default function SharedMemoryPage() {
     : '#';
 
   if (loading) {
-    return <div className="flex min-h-dvh items-center justify-center bg-ig-primary text-ig-text-secondary">Loading hidden memory...</div>;
+    return <div className="flex min-h-dvh items-center justify-center bg-ig-primary text-ig-text-secondary">{t('account.memoryReveal.loading')}</div>;
   }
 
   if (!teaser || !teaser.available) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-ig-primary px-4">
         <section className="max-w-md rounded-3xl border border-ig-border bg-ig-elevated p-6 text-center">
-          <h1 className="text-2xl font-semibold text-ig-text-primary">Memory unavailable</h1>
-          <p className="mt-3 text-sm text-ig-text-secondary">{teaser?.unavailableReason || error || 'This hidden memory cannot be opened.'}</p>
-          <Link href="/" className="mt-5 inline-flex min-h-11 items-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white">Go to Brooks</Link>
+          <h1 className="text-2xl font-semibold text-ig-text-primary">{t('account.memoryReveal.unavailableTitle')}</h1>
+          <p className="mt-3 text-sm text-ig-text-secondary">{teaser?.unavailableReason || error || t('account.memoryReveal.unavailableBody')}</p>
+          <Link href="/" className="mt-5 inline-flex min-h-11 items-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white">{t('account.memoryReveal.goToBrooks')}</Link>
         </section>
       </main>
     );
@@ -164,7 +166,7 @@ export default function SharedMemoryPage() {
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 overflow-hidden rounded-full bg-ig-hover">
             {teaser.senderAvatarUrl ? (
-              <img src={teaser.senderAvatarUrl} alt={teaser.senderName || 'Memory sender'} className="h-full w-full object-cover" />
+              <img src={teaser.senderAvatarUrl} alt={teaser.senderName || t('account.memoryReveal.senderAlt')} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-ig-text-secondary">
                 {(teaser.senderName || 'B').charAt(0).toUpperCase()}
@@ -172,35 +174,35 @@ export default function SharedMemoryPage() {
             )}
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-brand-500">Hidden memory</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-brand-500">{t('account.memoryReveal.hiddenMemoryLabel')}</p>
             <h1 className="text-xl font-semibold text-ig-text-primary">
-              {teaser.senderName || 'Someone'} left you a memory
+              {t('account.memoryReveal.leftYouMemory', { name: teaser.senderName || t('account.memoryReveal.someone') })}
             </h1>
           </div>
         </div>
 
         <div className="mt-6 rounded-3xl border border-ig-border bg-ig-primary p-4">
           <p className="text-sm text-ig-text-secondary">
-            Register or sign in to reveal this memory at the location. After sign-in, Brooks will ask for location access and unlock it when you are within 100m.
+            {t('account.memoryReveal.registerToReveal')}
           </p>
           <p className="mt-2 text-sm font-semibold text-ig-text-primary">
-            Memory location: {teaser.placeLabel || `${formatCoordinate(teaser.approximateLatitude)}, ${formatCoordinate(teaser.approximateLongitude)}`}
+            {t('account.memoryReveal.memoryLocation')}: {teaser.placeLabel || `${formatCoordinate(teaser.approximateLatitude)}, ${formatCoordinate(teaser.approximateLongitude)}`}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="min-h-11 rounded-2xl border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary hover:text-ig-text-primary">
-              Open Google Maps
+              {t('account.memoryReveal.openGoogleMaps')}
             </a>
             <a href={appleMapsUrl} target="_blank" rel="noreferrer" className="min-h-11 rounded-2xl border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-secondary hover:text-ig-text-primary">
-              Open Apple Maps
+              {t('account.memoryReveal.openAppleMaps')}
             </a>
           </div>
         </div>
 
         {isMetaBrowser && (
           <div className="mt-5 rounded-3xl border border-brand-500/30 bg-brand-500/10 p-4">
-            <p className="text-sm font-semibold text-ig-text-primary">Open this memory in your browser</p>
+            <p className="text-sm font-semibold text-ig-text-primary">{t('account.memoryReveal.openInBrowserTitle')}</p>
             <p className="mt-1 text-sm text-ig-text-secondary">
-              Facebook and Messenger cannot reliably share location with Brooks. Open this same link in Chrome or Safari, then sign in and allow location access there.
+              {t('account.memoryReveal.openInBrowserBody')}
             </p>
 
             {mobilePlatform === 'android' && currentUrl && (
@@ -208,13 +210,13 @@ export default function SharedMemoryPage() {
                 href={buildChromeIntentUrl(currentUrl)}
                 className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600"
               >
-                Open in Chrome
+                {t('account.memoryReveal.openInChrome')}
               </a>
             )}
 
             {mobilePlatform === 'ios' && (
               <div className="mt-4 rounded-2xl border border-ig-border bg-ig-primary px-4 py-3 text-sm text-ig-text-secondary">
-                On iPhone, tap the Messenger menu and choose Open in browser, or copy this link and paste it into Safari.
+                {t('account.memoryReveal.iosInstructions')}
               </div>
             )}
 
@@ -223,7 +225,7 @@ export default function SharedMemoryPage() {
               onClick={copyCurrentLink}
               className="mt-3 min-h-12 w-full rounded-2xl border border-ig-border px-5 text-sm font-semibold text-ig-text-primary transition hover:bg-ig-hover"
             >
-              {copyStatus === 'copied' ? 'Link copied' : 'Copy link'}
+              {copyStatus === 'copied' ? t('account.memoryReveal.linkCopied') : t('account.memoryReveal.copyLink')}
             </button>
 
             {copyStatus === 'manual' && currentUrl && (
@@ -239,15 +241,15 @@ export default function SharedMemoryPage() {
             href={`/api/auth/login?returnTo=/m/${encodeURIComponent(token)}`}
             className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white"
           >
-            Register or sign in to reveal
+            {t('account.memoryReveal.registerOrSignIn')}
           </Link>
         )}
 
         {!isMetaBrowser && accessToken && (
           <div className="mt-5 rounded-3xl border border-brand-500/30 bg-brand-500/10 p-4">
-            <p className="text-sm font-semibold text-ig-text-primary">Location permission is needed to unlock this memory.</p>
+            <p className="text-sm font-semibold text-ig-text-primary">{t('account.memoryReveal.locationNeeded')}</p>
             <p className="mt-1 text-sm text-ig-text-secondary">
-              Tap the button below, then choose Allow when your browser asks for location access.
+              {t('account.memoryReveal.tapToAllow')}
             </p>
             <button
               type="button"
@@ -255,7 +257,7 @@ export default function SharedMemoryPage() {
               disabled={revealing}
               className="mt-4 min-h-12 w-full rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60"
             >
-              {revealing ? 'Checking location...' : 'Allow location to reveal memory'}
+              {revealing ? t('account.memoryReveal.checkingLocation') : t('account.memoryReveal.allowLocationButton')}
             </button>
           </div>
         )}
@@ -264,7 +266,7 @@ export default function SharedMemoryPage() {
 
         {reveal && !reveal.revealed && (
           <p className="mt-4 rounded-2xl border border-ig-border px-4 py-3 text-sm text-ig-text-secondary">
-            You are about {Math.round(reveal.distanceMeters)}m away. Come within {Math.round(reveal.unlockRadiusMeters)}m to unlock it.
+            {t('account.memoryReveal.distanceAway', { distance: Math.round(reveal.distanceMeters), radius: Math.round(reveal.unlockRadiusMeters) })}
           </p>
         )}
 
@@ -273,7 +275,7 @@ export default function SharedMemoryPage() {
             <p className="whitespace-pre-line text-lg font-semibold text-ig-text-primary">{reveal.memory.textContent}</p>
             {reveal.memory.media.map((media) => (
               media.mediaType === 'IMAGE' ? (
-                <img key={media.id} src={media.url} alt="Memory" className="mt-4 max-h-80 w-full rounded-2xl object-cover" />
+                <img key={media.id} src={media.url} alt={t('account.memoryReveal.mediaAlt')} className="mt-4 max-h-80 w-full rounded-2xl object-cover" />
               ) : (
                 <audio key={media.id} src={media.url} controls className="mt-4 w-full" />
               )

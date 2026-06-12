@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Material-3-style Snackbar pattern adapted to Brooks's parchment palette.
 // One toast at a time (queued if multiple fire); slides up from the bottom
@@ -94,6 +95,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 function ToastSurface({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) {
+  const { t } = useTranslation();
   const palette = paletteFor(item.kind);
   return (
     <div
@@ -115,7 +117,7 @@ function ToastSurface({ item, onDismiss }: { item: ToastItem; onDismiss: () => v
         }}
       >
         <span className="flex-1 text-left leading-5">{item.message}</span>
-        <span className={`text-xs uppercase tracking-wide ${palette.dismiss}`}>Dismiss</span>
+        <span className={`text-xs uppercase tracking-wide ${palette.dismiss}`}>{t('common.actions.dismiss')}</span>
       </button>
       <style jsx global>{`
         @keyframes mw-toast-in {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Map as LeafletMap, Marker as LeafletMarker, LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { PLACE_IMAGE_MAX_COUNT } from '@/lib/config';
@@ -129,6 +130,7 @@ function MapPickerModal({ initialLat, initialLng, onPick, onClose }: {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<LeafletMarker | null>(null);
+  const { t } = useTranslation();
   const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(
     initialLat != null && initialLng != null ? { lat: initialLat, lng: initialLng } : null,
   );
@@ -193,20 +195,20 @@ function MapPickerModal({ initialLat, initialLng, onPick, onClose }: {
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-ig-primary">
       <div className="flex items-center justify-between border-b border-ig-border px-4 py-3">
-        <h2 className="text-sm font-semibold text-ig-text-primary">Pick location on map</h2>
-        <button type="button" onClick={onClose} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary">Close</button>
+        <h2 className="text-sm font-semibold text-ig-text-primary">{t('guideEditor.mapPicker.title')}</h2>
+        <button type="button" onClick={onClose} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary">{t('guideEditor.mapPicker.close')}</button>
       </div>
-      <p className="px-4 pt-2 text-xs text-ig-text-tertiary">Tap the map to drop the pin on your place.</p>
+      <p className="px-4 pt-2 text-xs text-ig-text-tertiary">{t('guideEditor.mapPicker.hint')}</p>
       <div ref={containerRef} className="m-4 flex-1 overflow-hidden rounded-lg border border-ig-border" />
       <div className="flex items-center justify-between gap-3 border-t border-ig-border px-4 py-3">
-        <span className="text-xs text-ig-text-tertiary">{picked ? `${picked.lat}, ${picked.lng}` : 'No point selected'}</span>
+        <span className="text-xs text-ig-text-tertiary">{picked ? `${picked.lat}, ${picked.lng}` : t('guideEditor.mapPicker.noPointSelected')}</span>
         <button
           type="button"
           onClick={confirm}
           disabled={!picked || saving}
           className="mw-button-primary min-h-11 rounded px-5 text-sm disabled:opacity-60"
         >
-          {saving ? 'Setting…' : 'Set location'}
+          {saving ? t('guideEditor.mapPicker.setting') : t('guideEditor.mapPicker.setLocation')}
         </button>
       </div>
     </div>
@@ -220,6 +222,7 @@ function PhotoSheet({ placeName, token, onAddUrl, onClose }: {
   onAddUrl: (url: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
@@ -232,10 +235,10 @@ function PhotoSheet({ placeName, token, onAddUrl, onClose }: {
     try {
       const r = await api.uploadMedia(file, 'PLACE_IMAGE' as MediaUsage, token);
       onAddUrl(r.url);
-      toast.success('Photo added.');
+      toast.success(t('guideEditor.photoSheet.photoAdded'));
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
+      toast.error(err instanceof Error ? err.message : t('guideEditor.photoSheet.uploadFailed'));
     } finally {
       setBusy(false);
     }
@@ -263,7 +266,7 @@ function PhotoSheet({ placeName, token, onAddUrl, onClose }: {
       const file = await urlToFile(img.fullUrl, `web-${img.id}`);
       await upload(file);
     } catch {
-      toast.error('Could not add that image');
+      toast.error(t('guideEditor.photoSheet.imageAddFailed'));
       setBusy(false);
     }
   };
@@ -275,40 +278,40 @@ function PhotoSheet({ placeName, token, onAddUrl, onClose }: {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-ig-text-primary">{webMode ? 'Web suggestions' : 'Add a photo'}</h3>
-          <button type="button" onClick={onClose} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary">Close</button>
+          <h3 className="text-sm font-semibold text-ig-text-primary">{webMode ? t('guideEditor.photoSheet.webSuggestions') : t('guideEditor.photoSheet.addPhoto')}</h3>
+          <button type="button" onClick={onClose} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary">{t('guideEditor.photoSheet.close')}</button>
         </div>
 
         {!webMode ? (
           <div className="grid grid-cols-1 gap-2">
-            <button type="button" disabled={busy} onClick={handleCapture} className="min-h-12 rounded-lg border border-ig-border bg-ig-secondary px-4 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-60">📷 Capture photo</button>
-            <button type="button" disabled={busy} onClick={handleLibrary} className="min-h-12 rounded-lg border border-ig-border bg-ig-secondary px-4 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-60">🖼️ Open library</button>
+            <button type="button" disabled={busy} onClick={handleCapture} className="min-h-12 rounded-lg border border-ig-border bg-ig-secondary px-4 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-60">📷 {t('guideEditor.photoSheet.capture')}</button>
+            <button type="button" disabled={busy} onClick={handleLibrary} className="min-h-12 rounded-lg border border-ig-border bg-ig-secondary px-4 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-60">🖼️ {t('guideEditor.photoSheet.openLibrary')}</button>
             <button
               type="button"
               disabled={busy || !unsplashConfigured()}
               onClick={openWeb}
-              title={unsplashConfigured() ? undefined : 'Set NEXT_PUBLIC_UNSPLASH_ACCESS_KEY to enable web suggestions'}
+              title={unsplashConfigured() ? undefined : t('guideEditor.photoSheet.webNeedsKeyTitle')}
               className="min-h-12 rounded-lg border border-ig-border bg-ig-secondary px-4 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-60"
             >
-              🌐 Select from web suggestions{unsplashConfigured() ? '' : ' (needs key)'}
+              🌐 {unsplashConfigured() ? t('guideEditor.photoSheet.selectFromWeb') : t('guideEditor.photoSheet.selectFromWebNeedsKey')}
             </button>
           </div>
         ) : (
           <div>
             {webLoading ? (
-              <p className="py-6 text-center text-sm text-ig-text-tertiary">Searching…</p>
+              <p className="py-6 text-center text-sm text-ig-text-tertiary">{t('guideEditor.photoSheet.searching')}</p>
             ) : webResults.length === 0 ? (
-              <p className="py-6 text-center text-sm text-ig-text-tertiary">No images found for &ldquo;{placeName}&rdquo;.</p>
+              <p className="py-6 text-center text-sm text-ig-text-tertiary">{t('guideEditor.photoSheet.noImagesFound', { name: placeName })}</p>
             ) : (
               <div className="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto">
                 {webResults.map((img) => (
                   <button key={img.id} type="button" disabled={busy} onClick={() => pickWeb(img)} className="relative aspect-square overflow-hidden rounded-md border border-ig-border disabled:opacity-60">
-                    <img src={img.thumbUrl} alt={`by ${img.authorName}`} className="h-full w-full object-cover" />
+                    <img src={img.thumbUrl} alt={t('guideEditor.photoSheet.imgAlt', { author: img.authorName })} className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>
             )}
-            <button type="button" onClick={() => setWebMode(false)} className="mt-3 min-h-11 w-full rounded border border-ig-border text-sm text-ig-text-secondary hover:text-ig-text-primary">← Back</button>
+            <button type="button" onClick={() => setWebMode(false)} className="mt-3 min-h-11 w-full rounded border border-ig-border text-sm text-ig-text-secondary hover:text-ig-text-primary">← {t('guideEditor.photoSheet.back')}</button>
           </div>
         )}
 
@@ -326,6 +329,7 @@ function PhotoSheet({ placeName, token, onAddUrl, onClose }: {
 }
 
 export default function PlaceCard({ blockId, place, defaultStartMinute }: Props) {
+  const { t } = useTranslation();
   const { token, updatePlace, deletePlace } = useGuideEdit();
   const [editing, setEditing] = useState(false);
   const [editingLocation, setEditingLocation] = useState(false);
@@ -395,10 +399,10 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
     return (
       <div className="rounded-lg border border-ig-border bg-ig-primary p-3 space-y-3">
         <div>
-          <label className="mb-1 block text-xs text-ig-text-tertiary">Name — search to auto-fill address &amp; coordinates</label>
+          <label className="mb-1 block text-xs text-ig-text-tertiary">{t('guideEditor.placeCard.nameLabel')}</label>
           <PlaceSearchInput
             value={form.name}
-            placeholder="e.g. Rustaveli Theatre"
+            placeholder={t('guideEditor.placeCard.namePlaceholder')}
             kinds="poi,address,place"
             onType={(text) => update('name', text)}
             onSelect={applyNamePoi}
@@ -406,10 +410,10 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-ig-text-tertiary">Address — or search it to fill coordinates</label>
+          <label className="mb-1 block text-xs text-ig-text-tertiary">{t('guideEditor.placeCard.addressLabel')}</label>
           <PlaceSearchInput
             value={form.address}
-            placeholder="Address"
+            placeholder={t('guideEditor.placeCard.addressPlaceholder')}
             kinds="address,poi,place"
             onType={(text) => update('address', text)}
             onSelect={applyAddressPoi}
@@ -419,24 +423,24 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
         <textarea
           value={form.description}
           onChange={(e) => update('description', e.target.value)}
-          placeholder="Description"
+          placeholder={t('guideEditor.placeCard.descriptionPlaceholder')}
           rows={2}
           className="w-full rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary resize-none focus:border-ig-blue focus:outline-none md:text-sm"
         />
 
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setMapPicker(true)} className="min-h-11 rounded border border-ig-border px-3 text-sm text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue">
-            📍 Choose on map
+            📍 {t('guideEditor.placeCard.chooseOnMap')}
           </button>
           <span className="text-xs text-ig-text-tertiary">
-            {form.latStr && form.lngStr ? `${form.latStr}, ${form.lngStr}` : 'No coordinates yet'}
+            {form.latStr && form.lngStr ? `${form.latStr}, ${form.lngStr}` : t('guideEditor.placeCard.noCoords')}
           </span>
         </div>
 
         {/* Start Time (native spinner) + duration presets */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="mb-1 block text-xs text-ig-text-tertiary">Start time</label>
+            <label className="mb-1 block text-xs text-ig-text-tertiary">{t('guideEditor.placeCard.startTime')}</label>
             <input
               type="time"
               value={startVal}
@@ -448,7 +452,7 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-ig-text-tertiary">Duration</label>
+            <label className="mb-1 block text-xs text-ig-text-tertiary">{t('guideEditor.placeCard.duration')}</label>
             <div className="flex flex-wrap gap-1.5">
               {DURATION_PRESETS.map((d) => (
                 <button
@@ -477,7 +481,7 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
         </div>
 
         <div>
-          <p className="text-xs text-ig-text-tertiary mb-1.5">Tags</p>
+          <p className="text-xs text-ig-text-tertiary mb-1.5">{t('guideEditor.placeCard.tagsLabel')}</p>
           {form.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {form.tags.map((tag) => (
@@ -506,18 +510,18 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
               value={form.tagInput}
               onChange={(e) => update('tagInput', e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(form.tagInput); } }}
-              placeholder="Custom tag..."
+              placeholder={t('guideEditor.placeCard.customTagPlaceholder')}
               className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none md:text-sm"
             />
             <button type="button" onClick={() => addTag(form.tagInput)} className="min-h-11 rounded border border-ig-border px-3 text-sm text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue">
-              Add
+              {t('guideEditor.placeCard.addTagBtn')}
             </button>
           </div>
         </div>
 
         {/* Photos: thumbnail grid + contextual source sheet */}
         <div>
-          <p className="text-xs text-ig-text-tertiary mb-1.5">Photos ({form.imageUrls.length}/{PLACE_IMAGE_MAX_COUNT})</p>
+          <p className="text-xs text-ig-text-tertiary mb-1.5">{t('guideEditor.placeCard.photosLabel', { count: form.imageUrls.length, max: PLACE_IMAGE_MAX_COUNT })}</p>
           {form.imageUrls.length > 0 && (
             <div className="mb-2 grid grid-cols-4 gap-2">
               {form.imageUrls.map((url) => (
@@ -536,14 +540,14 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
           )}
           {form.imageUrls.length < PLACE_IMAGE_MAX_COUNT && (
             <button type="button" onClick={() => setPhotoSheet(true)} className="min-h-11 rounded border border-ig-border px-4 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover">
-              + Add photo
+              + {t('guideEditor.placeCard.addPhotoBtn')}
             </button>
           )}
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button onClick={handleSave} className="mw-button-primary min-h-11 rounded px-4 py-2 text-sm">Save</button>
-          <button onClick={() => setEditing(false)} className="min-h-11 rounded px-4 py-2 text-sm text-ig-text-secondary">Cancel</button>
+          <button onClick={handleSave} className="mw-button-primary min-h-11 rounded px-4 py-2 text-sm">{t('guideEditor.placeCard.saveBtn')}</button>
+          <button onClick={() => setEditing(false)} className="min-h-11 rounded px-4 py-2 text-sm text-ig-text-secondary">{t('guideEditor.placeCard.cancelBtn')}</button>
         </div>
 
         {mapPicker && (
@@ -594,12 +598,12 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
             <p className="text-sm font-semibold text-ig-text-primary truncate">{place.name}</p>
             <div className="flex items-center gap-1 flex-shrink-0">
               {mapsUrl ? (
-                <a href={mapsUrl} target="_blank" rel="noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7" title="View on map">📍</a>
+                <a href={mapsUrl} target="_blank" rel="noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7" title={t('guideEditor.placeCard.viewOnMap')}>📍</a>
               ) : (
-                <button onClick={() => setEditingLocation(true)} className="flex h-11 w-11 items-center justify-center rounded-full text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-brand-400 lg:h-7 lg:w-7" title="Set location">📍</button>
+                <button onClick={() => setEditingLocation(true)} className="flex h-11 w-11 items-center justify-center rounded-full text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-brand-400 lg:h-7 lg:w-7" title={t('guideEditor.placeCard.setLocation')}>📍</button>
               )}
               <div className="flex opacity-100 transition-opacity [&>button]:min-h-11 [&>button]:px-3 [&>button]:text-sm lg:opacity-0 lg:group-hover:opacity-100 lg:[&>button]:min-h-9 lg:[&>button]:px-2 lg:[&>button]:text-xs">
-                <button onClick={() => setEditing(true)} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary lg:min-h-9 lg:px-2 lg:text-xs">Edit</button>
+                <button onClick={() => setEditing(true)} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary lg:min-h-9 lg:px-2 lg:text-xs">{t('guideEditor.placeCard.editBtn')}</button>
                 <button onClick={() => deletePlace(blockId, place.id)} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">✕</button>
               </div>
             </div>
@@ -612,13 +616,13 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
 
       {editingLocation && (
         <div className="border-t border-ig-border px-3 pb-3 pt-2 space-y-2">
-          <p className="text-xs text-ig-text-tertiary">Set location coordinates</p>
+          <p className="text-xs text-ig-text-tertiary">{t('guideEditor.placeCard.setLocationCoords')}</p>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setMapPicker(true)} className="min-h-11 rounded border border-ig-border px-3 text-sm text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue lg:min-h-9 lg:px-2 lg:text-xs">📍 Choose on map</button>
-            <input type="number" step="any" value={form.latStr} onChange={(e) => update('latStr', e.target.value)} placeholder="Latitude" className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-9 lg:w-32 lg:flex-none lg:px-2 lg:py-1 lg:text-xs" />
-            <input type="number" step="any" value={form.lngStr} onChange={(e) => update('lngStr', e.target.value)} placeholder="Longitude" className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-9 lg:w-32 lg:flex-none lg:px-2 lg:py-1 lg:text-xs" />
-            <button onClick={handleSaveLocation} className="mw-button-primary min-h-11 rounded px-4 text-sm lg:min-h-9 lg:px-3 lg:text-xs">Set</button>
-            <button onClick={() => setEditingLocation(false)} className="min-h-11 rounded px-4 text-sm text-ig-text-secondary hover:text-ig-text-primary lg:min-h-9 lg:px-3 lg:text-xs">Cancel</button>
+            <button type="button" onClick={() => setMapPicker(true)} className="min-h-11 rounded border border-ig-border px-3 text-sm text-ig-text-secondary hover:border-ig-blue hover:text-ig-blue lg:min-h-9 lg:px-2 lg:text-xs">📍 {t('guideEditor.placeCard.chooseOnMap')}</button>
+            <input type="number" step="any" value={form.latStr} onChange={(e) => update('latStr', e.target.value)} placeholder={t('guideEditor.placeCard.latitudePlaceholder')} className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-9 lg:w-32 lg:flex-none lg:px-2 lg:py-1 lg:text-xs" />
+            <input type="number" step="any" value={form.lngStr} onChange={(e) => update('lngStr', e.target.value)} placeholder={t('guideEditor.placeCard.longitudePlaceholder')} className="min-h-11 min-w-0 flex-1 rounded border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none lg:min-h-9 lg:w-32 lg:flex-none lg:px-2 lg:py-1 lg:text-xs" />
+            <button onClick={handleSaveLocation} className="mw-button-primary min-h-11 rounded px-4 text-sm lg:min-h-9 lg:px-3 lg:text-xs">{t('guideEditor.placeCard.setBtn')}</button>
+            <button onClick={() => setEditingLocation(false)} className="min-h-11 rounded px-4 text-sm text-ig-text-secondary hover:text-ig-text-primary lg:min-h-9 lg:px-3 lg:text-xs">{t('guideEditor.placeCard.cancelBtn')}</button>
           </div>
         </div>
       )}

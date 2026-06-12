@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import type { CreatorStoryStrip } from '@/types';
 
 interface StoryStripProps {
@@ -10,6 +11,7 @@ interface StoryStripProps {
 }
 
 export default function StoryStrip({ strips }: StoryStripProps) {
+  const { t } = useTranslation();
   const [activeStory, setActiveStory] = useState<{ stripIndex: number; storyIndex: number } | null>(null);
 
   if (strips.length === 0) return null;
@@ -65,7 +67,7 @@ export default function StoryStrip({ strips }: StoryStripProps) {
             <button
               onClick={() => setActiveStory(null)}
               className="absolute right-3 top-3 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 border-white/20 bg-black/45 text-2xl text-white/80 transition-colors hover:text-white"
-              aria-label="Close story"
+              aria-label={t('widgets.storyStrip.closeStory')}
             >
               &times;
             </button>
@@ -124,7 +126,7 @@ export default function StoryStrip({ strips }: StoryStripProps) {
                       href={`/guides/${story.guideId}/view`}
                       className="mt-3 inline-flex min-h-11 items-center rounded-md border-2 border-white bg-white px-4 py-2 font-display text-sm font-black uppercase tracking-[0.06em] text-black transition hover:bg-accent-500"
                     >
-                      Open guide preview
+                      {t('widgets.storyStrip.openGuidePreview')}
                     </Link>
                   </div>
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { compliance } from '@/lib/compliance';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 import SettingsLanguageSection from '@/components/i18n/SettingsLanguageSection';
@@ -83,88 +84,85 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   // Help button invokes the in-app onboarding tour. Replaces the Footer's
   // Help link 1:1 — same behaviour, more discoverable on mobile.
   const { start: startOnboarding } = useOnboarding();
 
   return (
     <main className="mx-auto min-h-dvh max-w-2xl px-4 py-8 pb-24 md:py-12">
-      <p className="mw-eyebrow">Account</p>
-      <h1 className="mw-section-title mt-2 text-3xl">Settings</h1>
+      <p className="mw-eyebrow">{t('account.settings.eyebrow')}</p>
+      <h1 className="mw-section-title mt-2 text-3xl">{t('account.settings.title')}</h1>
       <p className="mt-3 text-sm text-ig-text-secondary">
-        Manage your Brooks account, find help, and review legal documents. For
-        anything else, write to{' '}
-        <a className="text-brand-500 underline hover:text-brand-400" href={`mailto:${compliance.email}`}>
-          {compliance.email}
-        </a>
-        .
+        {t('account.settings.description', { email: compliance.email })}
       </p>
 
       {/* — Account group — */}
-      <Group title="Account">
+      <Group title={t('account.settings.groups.account')}>
         <SettingsRow
           href="/profile/edit"
-          title="Profile"
-          body="Update your display name, avatar, bio, and region."
+          title={t('account.settings.rows.profile.title')}
+          body={t('account.settings.rows.profile.body')}
         />
         <SettingsRow
           href="/settings/ai-keys"
-          title="AI keys"
-          body="Manage personal AI provider keys used by the assistant."
+          title={t('account.settings.rows.aiKeys.title')}
+          body={t('account.settings.rows.aiKeys.body')}
         />
         <SettingsRow
           href="/settings/account/delete"
-          title="Delete account"
-          body="Permanently remove your profile, purchases, and uploaded content."
+          title={t('account.settings.rows.deleteAccount.title')}
+          body={t('account.settings.rows.deleteAccount.body')}
           destructive
         />
       </Group>
 
-      {/* — Language group (BOR-41): same selector as the navbar Globe — */}
-      <Group title="Language">
+      {/* — Language group (BOR-41/BOR-52): the app's sole language selector,
+          relocated here from the global header per BOR-52. — */}
+      <Group title={t('account.settings.groups.language')}>
         <SettingsLanguageSection />
       </Group>
 
       {/* — Support group — */}
-      <Group title="Support">
+      <Group title={t('account.settings.groups.support')}>
         <SettingsRow
           onClick={startOnboarding}
-          title="Help & tour"
-          body="Restart the in-app onboarding walkthrough."
+          title={t('account.settings.rows.helpTour.title')}
+          body={t('account.settings.rows.helpTour.body')}
           testid="settings-help-tour"
           tourId="help-tour-button"
         />
         <SettingsRow
           href="/contact"
-          title="Contact us"
-          body={`Email ${compliance.email} or write through the form.`}
+          title={t('account.settings.rows.contactUs.title')}
+          body={t('account.settings.rows.contactUs.body', { email: compliance.email })}
         />
         <SettingsRow
           href="/guides/academy"
-          title="Creator Academy"
-          body="Standards and tips for publishing guides that sell."
+          title={t('account.settings.rows.creatorAcademy.title')}
+          body={t('account.settings.rows.creatorAcademy.body')}
         />
       </Group>
 
       {/* — Legal & company group — */}
-      <Group title="Legal & company">
-        <SettingsRow href="/terms" title="Terms of Service" />
-        <SettingsRow href="/privacy" title="Privacy Policy" />
-        <SettingsRow href="/refund" title="Refund Policy" />
-        <SettingsRow href="/delivery" title="Delivery & access" />
-        <SettingsRow href="/about" title={`About ${compliance.companyName}`} />
+      <Group title={t('account.settings.groups.legal')}>
+        <SettingsRow href="/terms" title={t('account.settings.rows.terms.title')} />
+        <SettingsRow href="/privacy" title={t('account.settings.rows.privacy.title')} />
+        <SettingsRow href="/refund" title={t('account.settings.rows.refund.title')} />
+        <SettingsRow href="/delivery" title={t('account.settings.rows.delivery.title')} />
+        <SettingsRow href="/about" title={t('account.settings.rows.about.title', { company: compliance.companyName })} />
       </Group>
 
       <p className="mt-8 text-xs leading-5 text-ig-text-tertiary">
         {compliance.legalEntity} · ID {compliance.legalIdentifier}
         <br />
-        Support: {compliance.email} · {compliance.phone}
+        {t('account.settings.supportLine', { email: compliance.email, phone: compliance.phone })}
         <br />
-        Lost access? Request deletion at{' '}
+        {t('account.settings.lostAccess')}{' '}
         <Link className="underline" href="/account/delete">
           {compliance.domain.replace('https://', '')}/account/delete
         </Link>{' '}
-        without signing in.
+        {t('account.settings.withoutSigningIn')}
       </p>
     </main>
   );

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import PurchasedTripMap from '@/components/maps/PurchasedTripMap';
 import PlaceCarousel from '@/components/places/PlaceCarousel';
 import PlaceReviewPanel from '@/components/reviews/PlaceReviewPanel';
@@ -51,6 +52,7 @@ function buildGoogleMapsAllUrl(items: MyTripItem[]): string {
 }
 
 function NavigateMenu({ lat, lng }: { lat: number; lng: number }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -58,7 +60,7 @@ function NavigateMenu({ lat, lng }: { lat: number; lng: number }) {
         onClick={() => setOpen((v) => !v)}
         className="min-h-11 rounded-full border border-ig-border px-4 py-2 text-sm text-ig-text-secondary transition-colors hover:border-brand-500/50 hover:text-brand-400 lg:min-h-0 lg:px-2.5 lg:py-1 lg:text-xs"
       >
-        Navigate
+        {t('guidePages.tripDetail.navigate')}
       </button>
       {open && (
         <div className="absolute left-0 top-full mt-1 z-10 w-44 rounded-xl border border-ig-border bg-ig-elevated shadow-lg py-1 md:left-auto md:right-0">
@@ -93,6 +95,7 @@ interface ReviewFormState {
 }
 
 export default function TripDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const { confirm } = useConfirm();
@@ -114,9 +117,9 @@ export default function TripDetailPage() {
   const handleRemoveTrip = async () => {
     if (!token || removing) return;
     const ok = await confirm({
-      title: 'Remove this guide?',
-      body: 'It will be removed from your Purchased guides. You can add it back anytime for free — you already own this version.',
-      confirmLabel: 'Remove',
+      title: t('guidePages.tripDetail.removeConfirmTitle'),
+      body: t('guidePages.tripDetail.removeConfirmBody'),
+      confirmLabel: t('guidePages.tripDetail.removeConfirmLabel'),
       destructive: true,
     });
     if (!ok) return;
@@ -125,7 +128,7 @@ export default function TripDetailPage() {
       await api.delete(`/api/me/trips/${tripId}`, token);
       router.push('/trips');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove guide');
+      setError(err instanceof Error ? err.message : t('guidePages.tripDetail.errorCouldNotRemove'));
       setRemoving(false);
     }
   };
@@ -165,7 +168,7 @@ export default function TripDetailPage() {
         setItemEdits(edits);
         setVisitedMap(visited);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load trip'));
+      .catch((err) => setError(err instanceof Error ? err.message : t('guidePages.tripDetail.errorFailedToLoad')));
   }, [router, token, tokenLoading, tripId]);
 
   const visibleItems = useMemo(
@@ -241,7 +244,7 @@ export default function TripDetailPage() {
       });
       setItemEdits(edits);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save trip setup');
+      setError(err instanceof Error ? err.message : t('guidePages.tripDetail.errorFailedToSaveSetup'));
     } finally {
       setSaving(false);
     }
@@ -260,13 +263,13 @@ export default function TripDetailPage() {
       setReview((r) => ({
         ...r,
         submitting: false,
-        error: err instanceof Error ? err.message : 'Failed to submit review',
+        error: err instanceof Error ? err.message : t('guidePages.tripDetail.errorFailedToSubmitReview'),
       }));
     }
   };
 
   if (tokenLoading || !trip) {
-    return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-ig-text-tertiary">{error || 'Loading trip...'}</div>;
+    return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-ig-text-tertiary">{error || t('guidePages.tripDetail.loading')}</div>;
   }
 
   const dayGroups = groupByDay(trip.items);
@@ -278,24 +281,24 @@ export default function TripDetailPage() {
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Link href="/trips" className="text-sm text-brand-500 hover:text-brand-400">
-            ← Back to Purchased guides
+            {t('guidePages.tripDetail.backToPurchased')}
           </Link>
           <h1 className="mw-section-title mt-3 text-2xl md:text-3xl">{trip.guide.title}</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">
-            Purchased version {trip.guideVersionNumber}. Set your dates, track your visits, and export the itinerary.
+            {t('guidePages.tripDetail.purchasedVersionHint', { version: trip.guideVersionNumber })}
           </p>
           <div className="mt-3 text-xs text-ig-text-tertiary">
             <p>
               {[
                 trip.guide.region,
-                `${trip.guide.dayCount} days`,
-                `${trip.guide.placeCount} places`,
+                t('guidePages.tripDetail.dayStat', { count: trip.guide.dayCount }),
+                t('guidePages.tripDetail.placeStat', { count: trip.guide.placeCount }),
                 formatAmount(trip.guide.priceCents),
               ].filter(Boolean).join(' • ')}
             </p>
             {totalPlaces > 0 && (
               <p className="mt-1 font-medium text-brand-400">
-                {visitedCount} of {totalPlaces} places visited
+                {t('guidePages.tripDetail.visitedProgress', { visited: visitedCount, total: totalPlaces })}
               </p>
             )}
           </div>
@@ -315,20 +318,20 @@ export default function TripDetailPage() {
             rel="noreferrer"
             className="mw-button-secondary min-h-11 flex-1 rounded-md px-4 py-2 text-sm md:flex-none"
           >
-            Open in Maps
+            {t('guidePages.tripDetail.openInMaps')}
           </a>
           <button
             onClick={() => setShowCalendarModal(true)}
             className="mw-button-primary min-h-11 flex-1 rounded-md px-4 py-2 text-sm md:flex-none"
           >
-            Add to Calendar
+            {t('guidePages.tripDetail.addToCalendar')}
           </button>
           <button
             onClick={handleRemoveTrip}
             disabled={removing}
             className="min-h-11 flex-1 rounded-md border border-ig-error/30 bg-ig-error/10 px-4 py-2 text-sm font-semibold text-ig-error transition-colors hover:bg-ig-error/15 disabled:opacity-60 md:flex-none"
           >
-            {removing ? 'Removing…' : 'Remove guide'}
+            {removing ? t('guidePages.tripDetail.removingGuide') : t('guidePages.tripDetail.removeGuide')}
           </button>
         </div>
       </div>
@@ -337,8 +340,8 @@ export default function TripDetailPage() {
 
       {showReviewPrompt && (
         <div className="mw-card mb-6 p-5">
-          <h2 className="font-display text-base font-black text-ig-text-primary">How was your trip?</h2>
-          <p className="mt-1 text-sm text-ig-text-secondary">You&rsquo;ve visited more than half the places. Leave a quick review to help other travelers.</p>
+          <h2 className="font-display text-base font-black text-ig-text-primary">{t('guidePages.tripDetail.reviewPromptTitle')}</h2>
+          <p className="mt-1 text-sm text-ig-text-secondary">{t('guidePages.tripDetail.reviewPromptBody')}</p>
           <div className="mt-3 flex gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -351,7 +354,7 @@ export default function TripDetailPage() {
             ))}
           </div>
           <textarea
-            placeholder="Share what made it special (optional)"
+            placeholder={t('guidePages.tripDetail.reviewPlaceholder')}
             value={review.reviewText}
             onChange={(e) => setReview((r) => ({ ...r, reviewText: e.target.value }))}
             rows={2}
@@ -364,14 +367,14 @@ export default function TripDetailPage() {
             className="mw-button-primary mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm disabled:opacity-50"
           >
             {review.submitting && <Spinner />}
-            {review.submitting ? 'Submitting...' : 'Submit review'}
+            {review.submitting ? t('guidePages.tripDetail.reviewSubmitting') : t('guidePages.tripDetail.reviewSubmit')}
           </button>
         </div>
       )}
 
       {review.submitted && (
         <div className="mb-6 rounded-2xl border border-green-500/30 bg-green-500/5 p-4 text-sm text-green-400">
-          Thanks for your review! It helps other travelers discover this guide.
+          {t('guidePages.tripDetail.reviewThankYou')}
         </div>
       )}
 
@@ -380,9 +383,9 @@ export default function TripDetailPage() {
           <div className="mw-card p-4 md:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="font-display text-base font-black text-ig-text-primary md:text-lg">Trip setup</h2>
+                <h2 className="font-display text-base font-black text-ig-text-primary md:text-lg">{t('guidePages.tripDetail.tripSetupTitle')}</h2>
                 <p className="mt-1 hidden text-sm text-ig-text-secondary md:block">
-                  Choose when the itinerary starts. The app will prefill timings from creator hints.
+                  {t('guidePages.tripDetail.tripSetupHint')}
                 </p>
               </div>
               <button
@@ -391,12 +394,12 @@ export default function TripDetailPage() {
                 className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary hover:bg-ig-hover disabled:opacity-50 sm:w-auto"
               >
                 {saving && <Spinner />}
-                {saving ? 'Saving...' : 'Save setup'}
+                {saving ? t('guidePages.tripDetail.saving') : t('guidePages.tripDetail.saveSetup')}
               </button>
             </div>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <label className="block text-sm">
-                <span className="mb-1 block text-ig-text-secondary">Trip start date</span>
+                <span className="mb-1 block text-ig-text-secondary">{t('guidePages.tripDetail.tripStartDate')}</span>
                 <input
                   type="date"
                   value={tripStartDate}
@@ -405,7 +408,7 @@ export default function TripDetailPage() {
                 />
               </label>
               <label className="block text-sm">
-                <span className="mb-1 block text-ig-text-secondary">Start time</span>
+                <span className="mb-1 block text-ig-text-secondary">{t('guidePages.tripDetail.startTime')}</span>
                 <input
                   type="time"
                   value={tripStartTime}
@@ -414,7 +417,7 @@ export default function TripDetailPage() {
                 />
               </label>
               <label className="block text-sm">
-                <span className="mb-1 block text-ig-text-secondary">Timezone</span>
+                <span className="mb-1 block text-ig-text-secondary">{t('guidePages.tripDetail.timezone')}</span>
                 <input
                   type="text"
                   value={tripTimezone}
@@ -426,7 +429,7 @@ export default function TripDetailPage() {
           </div>
 
           <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
-            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Itinerary</h2>
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">{t('guidePages.tripDetail.itinerary')}</h2>
             <div className="mt-4 space-y-6">
               {sortedDays.map((dayNumber) => {
                 const dayItems = dayGroups.get(dayNumber) ?? [];
@@ -435,8 +438,8 @@ export default function TripDetailPage() {
                 return (
                   <div key={dayNumber}>
                     <div className="mb-2 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-brand-400 uppercase tracking-wide">Day {dayNumber}</span>
-                      <span className="text-xs text-ig-text-tertiary">{dayVisited}/{dayTotal} visited</span>
+                      <span className="text-sm font-semibold text-brand-400 uppercase tracking-wide">{t('guidePages.tripDetail.dayLabel', { n: dayNumber })}</span>
+                      <span className="text-xs text-ig-text-tertiary">{t('guidePages.tripDetail.dayVisitedStat', { visited: dayVisited, total: dayTotal })}</span>
                     </div>
                     <div className="mb-3 h-1 rounded-full bg-ig-border overflow-hidden">
                       <div
@@ -465,7 +468,7 @@ export default function TripDetailPage() {
                               <div className="flex flex-col items-center gap-2 md:gap-0">
                                 <button
                                   onClick={() => handleToggleVisited(item)}
-                                  title={isVisited ? 'Mark as not visited' : 'Mark as visited'}
+                                  title={isVisited ? t('guidePages.tripDetail.markNotVisited') : t('guidePages.tripDetail.markVisited')}
                                   className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors md:h-7 md:w-7 lg:h-5 lg:w-5 ${
                                     isVisited
                                       ? 'border-brand-500 bg-brand-500 text-white'
@@ -488,7 +491,7 @@ export default function TripDetailPage() {
                                     }))}
                                     className="h-4 w-4 cursor-pointer"
                                   />
-                                  <span className="text-[10px] font-medium text-ig-text-secondary">Skip</span>
+                                  <span className="text-[10px] font-medium text-ig-text-secondary">{t('guidePages.tripDetail.skip')}</span>
                                 </label>
                               </div>
                               <div className="w-14 flex-shrink-0 md:w-16">
@@ -510,7 +513,7 @@ export default function TripDetailPage() {
                                         target="_blank"
                                         rel="noreferrer"
                                         className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7"
-                                        title="View on map"
+                                        title={t('guidePages.tripDetail.viewOnMap')}
                                       >
                                         📍
                                       </a>
@@ -527,7 +530,7 @@ export default function TripDetailPage() {
                                           [item.placeId]: { ...edit, skipped: e.target.checked },
                                         }))}
                                       />
-                                      Skip
+                                      {t('guidePages.tripDetail.skip')}
                                     </label>
                                   </div>
                                 </div>
@@ -564,8 +567,8 @@ export default function TripDetailPage() {
                               />
                             </div>
                             <p className="hidden px-3 pb-3 text-xs text-ig-text-tertiary md:block">
-                              {item.suggestedStartMinute !== null ? `Creator start hint: +${item.suggestedStartMinute} min.` : 'No creator start hint.'}
-                              {item.suggestedDurationMinutes !== null ? ` Suggested: ${item.suggestedDurationMinutes} min.` : ''}
+                              {item.suggestedStartMinute !== null ? t('guidePages.tripDetail.creatorStartHint', { min: item.suggestedStartMinute }) : t('guidePages.tripDetail.noCreatorStartHint')}
+                              {item.suggestedDurationMinutes !== null ? ` ${t('guidePages.tripDetail.suggestedDuration', { min: item.suggestedDurationMinutes })}` : ''}
                             </p>
                             <div className="px-3 pb-3">
                               <PlaceReviewPanel placeId={item.placeId} placeName={item.placeName} token={token} />
@@ -583,9 +586,9 @@ export default function TripDetailPage() {
 
         <div className="order-1 space-y-6 lg:order-2">
           <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
-            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Trip map</h2>
+            <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">{t('guidePages.tripDetail.tripMap')}</h2>
             <p className="mt-1 text-sm text-ig-text-secondary">
-              Skipped places are hidden from the map.
+              {t('guidePages.tripDetail.skippedHidden')}
             </p>
             <div className="mt-4">
               <PurchasedTripMap
@@ -607,7 +610,7 @@ export default function TripDetailPage() {
 
 
       <div className="mt-6 rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
-        <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">Quick links</h2>
+        <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">{t('guidePages.tripDetail.quickLinks')}</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visibleItems.map((item) => (
             <a

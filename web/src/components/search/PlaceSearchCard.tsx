@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import type { PlaceSearchResult } from '@/types';
 
 interface PlaceSearchCardProps {
@@ -6,6 +9,7 @@ interface PlaceSearchCardProps {
 }
 
 export default function PlaceSearchCard({ place }: PlaceSearchCardProps) {
+  const { t } = useTranslation();
   return (
     <Link
       href={`/guides/${place.guideId}/view`}
@@ -30,7 +34,7 @@ export default function PlaceSearchCard({ place }: PlaceSearchCardProps) {
           <p className="text-sm text-ig-text-secondary truncate">{place.address}</p>
         )}
         <p className="text-xs text-ig-text-tertiary truncate mt-0.5">
-          in {place.guideTitle}{place.guideRegion ? ` \u00B7 ${place.guideRegion}` : ''}
+          {t('discovery.search.placeInGuide', { guideTitle: place.guideTitle })}{place.guideRegion ? ` \u00B7 ${place.guideRegion}` : ''}
         </p>
       </div>
     </Link>

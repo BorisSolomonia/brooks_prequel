@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { confirm } = useConfirm();
   const toast = useToast();
@@ -97,7 +99,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     if (saving) return; // guard against double-submission
     // Validation gate — block the API call if required fields are missing.
     if (!metadata.title || !metadata.title.trim()) {
-      const msg = 'Add a title before saving.';
+      const msg = t('guideEditor.editor.errorNoTitle');
       setError(msg);
       toast.error(msg);
       return;
@@ -118,13 +120,13 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
         router.replace(`/guides/${created.id}/edit`);
       }
       // Success: transient toast + flow toward the inline Publish action.
-      toast.success('Draft saved!');
+      toast.success(t('guideEditor.editor.draftSaved'));
       requestAnimationFrame(() => {
         publishActionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     } catch (err) {
       // Error: block the scroll above, restore the button (finally), show message.
-      const msg = err instanceof Error ? err.message : 'Failed to save';
+      const msg = err instanceof Error ? err.message : t('guideEditor.editor.errorSave');
       setError(msg);
       toast.error(msg);
     } finally {
@@ -137,19 +139,19 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     const hasBlockCategory = (cat: string) => allBlocks.some((b) => b.blockCategory === cat);
     const words = (s: string | null | undefined) => (s ?? '').trim().split(/\s+/).filter(Boolean).length;
     return [
-      { label: 'Title is set with a hook (10+ words)', done: words(metadata.title) >= 10 },
-      { label: 'Description is compelling (30+ words)', done: words(metadata.description) >= 30 },
-      { label: 'Cover image uploaded', done: !!(metadata.coverImageUrl) },
-      { label: 'Region and city set', done: !!(metadata.region && metadata.primaryCity) },
-      { label: 'Traveler stage selected', done: !!(metadata as GuideUpdateRequest).travelerStage },
-      { label: 'Audience persona(s) selected', done: ((metadata as GuideUpdateRequest).personas ?? []).length > 0 },
-      { label: 'Safety or Emergency block added', done: hasBlockCategory('SAFETY') || hasBlockCategory('EMERGENCY') },
-      { label: 'Transport block added', done: hasBlockCategory('TRANSPORT') },
-      { label: 'Accommodation block added', done: hasBlockCategory('ACCOMMODATION') },
-      { label: 'Seasonal info set', done: !!(metadata as GuideUpdateRequest).bestSeasonLabel || hasBlockCategory('SEASONAL') },
-      { label: 'Secret insider tip block added', done: hasBlockCategory('SECRET') },
+      { label: t('guideEditor.completeness.titleHook'), done: words(metadata.title) >= 10 },
+      { label: t('guideEditor.completeness.description'), done: words(metadata.description) >= 30 },
+      { label: t('guideEditor.completeness.coverImage'), done: !!(metadata.coverImageUrl) },
+      { label: t('guideEditor.completeness.regionCity'), done: !!(metadata.region && metadata.primaryCity) },
+      { label: t('guideEditor.completeness.travelerStage'), done: !!(metadata as GuideUpdateRequest).travelerStage },
+      { label: t('guideEditor.completeness.personas'), done: ((metadata as GuideUpdateRequest).personas ?? []).length > 0 },
+      { label: t('guideEditor.completeness.safetyBlock'), done: hasBlockCategory('SAFETY') || hasBlockCategory('EMERGENCY') },
+      { label: t('guideEditor.completeness.transportBlock'), done: hasBlockCategory('TRANSPORT') },
+      { label: t('guideEditor.completeness.accommodationBlock'), done: hasBlockCategory('ACCOMMODATION') },
+      { label: t('guideEditor.completeness.seasonalInfo'), done: !!(metadata as GuideUpdateRequest).bestSeasonLabel || hasBlockCategory('SEASONAL') },
+      { label: t('guideEditor.completeness.secretBlock'), done: hasBlockCategory('SECRET') },
     ];
-  }, [guide, metadata]);
+  }, [guide, metadata, t]);
 
   const completedCount = completenessItems.filter((i) => i.done).length;
 
@@ -159,19 +161,19 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
       await api.post<Guide>(`/api/guides/${guide.id}/publish`, undefined, token);
       // BOR-48: on a successful publish, take the creator straight to the live
       // guide page so they can review their published work immediately.
-      toast.success('Guide published!');
+      toast.success(t('guideEditor.editor.guidePublished'));
       router.push(`/guides/${guide.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to publish');
+      setError(err instanceof Error ? err.message : t('guideEditor.editor.errorPublish'));
     }
   };
 
   const handleDeleteGuide = async () => {
     if (!guide || deleting) return;
     const ok = await confirm({
-      title: `Delete "${guide.title}"?`,
-      body: 'This removes it from your guides and cannot be undone.',
-      confirmLabel: 'Delete',
+      title: t('guideEditor.editor.deleteConfirmTitle', { title: guide.title }),
+      body: t('guideEditor.editor.deleteConfirmBody'),
+      confirmLabel: t('guideEditor.editor.deleteConfirmBtn'),
       destructive: true,
     });
     if (!ok) return;
@@ -182,7 +184,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
       await api.delete<void>(`/api/guides/${guide.id}`, token);
       router.push('/guides');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete guide');
+      setError(err instanceof Error ? err.message : t('guideEditor.editor.errorDelete'));
       setDeleting(false);
     }
   };
@@ -201,7 +203,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
         {/* Header */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-xl font-semibold text-ig-text-primary">
-            {guide ? 'Edit Guide' : 'New Guide'}
+            {guide ? t('guideEditor.editor.editGuideTitle') : t('guideEditor.editor.newGuideTitle')}
           </h1>
           <div ref={publishActionsRef} className="flex flex-wrap items-center gap-3">
             {/* The header "Create with AI" button was removed: on /guides/new it was a
@@ -216,7 +218,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
                 disabled={deleting}
                 className="min-h-11 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {deleting ? 'Deleting…' : 'Delete Guide'}
+                {deleting ? t('guideEditor.editor.deleting') : t('guideEditor.editor.deleteGuideBtn')}
               </button>
             )}
             {guide && guide.status === 'DRAFT' && guide.dayCount > 0 && (
@@ -229,10 +231,10 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
                   onClick={() => setShowGiftModal(true)}
                   className="min-h-11 rounded-lg border border-ig-border bg-ig-elevated px-3 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover"
                 >
-                  🎁 Gift to Follower
+                  🎁 {t('guideEditor.editor.giftBtn')}
                 </button>
-                <PublishButton onPublish={handlePublish} label="Publish Changes" />
-                <span className="inline-flex min-h-9 items-center rounded-pill bg-ig-success/20 px-3 py-1 text-sm font-semibold text-ig-success">Published v{guide.versionNumber}</span>
+                <PublishButton onPublish={handlePublish} label={t('guideEditor.editor.publishChangesBtn')} />
+                <span className="inline-flex min-h-9 items-center rounded-pill bg-ig-success/20 px-3 py-1 text-sm font-semibold text-ig-success">{t('guideEditor.editor.publishedVersion', { version: guide.versionNumber })}</span>
               </>
             )}
           </div>
@@ -259,7 +261,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
         {guide && (
           <div className="mb-6 p-4 bg-ig-elevated border border-ig-border rounded-lg">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-ig-text-primary">Guide completeness</h2>
+              <h2 className="text-sm font-semibold text-ig-text-primary">{t('guideEditor.editor.completenessTitle')}</h2>
               <span className={`text-sm font-bold ${completedCount >= 9 ? 'text-ig-success' : completedCount >= 6 ? 'text-accent-500' : 'text-ig-text-tertiary'}`}>
                 {completedCount}/11
               </span>
@@ -314,7 +316,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
             className="mw-button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm disabled:opacity-50"
           >
             {saving && <Spinner />}
-            {saving ? 'Saving…' : guide ? 'Save Changes' : 'Create Guide'}
+            {saving ? t('guideEditor.editor.saving') : guide ? t('guideEditor.editor.saveChangesBtn') : t('guideEditor.editor.createGuideBtn')}
           </button>
         </div>
       </div>
@@ -347,22 +349,23 @@ interface DaysSectionProps {
 function DaysSection({
   guide, aiKeys, showAiPanel, onToggleAiPanel, onGuideChange, onMetadataChange,
 }: DaysSectionProps) {
+  const { t } = useTranslation();
   // useGuideEdit must be called inside the provider tree, which is why this lives
   // in a child component instead of GuideEditor itself.
   const { addDay } = useGuideEdit();
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-ig-text-primary">Itinerary</h2>
+        <h2 className="text-lg font-semibold text-ig-text-primary">{t('guideEditor.days.itineraryTitle')}</h2>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-ig-text-tertiary">{guide.dayCount} days, {guide.placeCount} places</span>
+          <span className="text-sm text-ig-text-tertiary">{t('guideEditor.days.dayPlaceCount', { days: guide.dayCount, places: guide.placeCount })}</span>
           {aiKeys.length === 0 ? (
             <a
               href="/profile?tab=ai-keys"
               className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-600 hover:shadow-lg lg:min-h-0 lg:py-2 lg:text-xs"
             >
               <span className="text-base leading-none">✨</span>
-              <span>Connect AI</span>
+              <span>{t('guideEditor.days.connectAiBtn')}</span>
             </a>
           ) : (
             <button
@@ -374,7 +377,7 @@ function DaysSection({
               }`}
             >
               <span className="text-base leading-none">✨</span>
-              <span>{showAiPanel ? 'Hide AI' : 'Create with AI'}</span>
+              <span>{showAiPanel ? t('guideEditor.days.hideAiBtn') : t('guideEditor.days.createWithAiBtn')}</span>
             </button>
           )}
         </div>
@@ -422,7 +425,7 @@ function DaysSection({
         onClick={addDay}
         className="min-h-12 w-full rounded-lg border-2 border-dashed border-ig-border py-3 text-sm font-semibold text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50"
       >
-        + Add Day
+        + {t('guideEditor.days.addDayBtn')}
       </button>
     </div>
   );

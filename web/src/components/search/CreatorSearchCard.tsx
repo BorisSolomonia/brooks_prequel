@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 import type { CreatorSearchResult } from '@/types';
 
 interface CreatorSearchCardProps {
@@ -7,6 +10,7 @@ interface CreatorSearchCardProps {
 }
 
 export default function CreatorSearchCard({ creator }: CreatorSearchCardProps) {
+  const { t } = useTranslation();
   return (
     <Link
       href={`/creators/${creator.username}`}
@@ -46,8 +50,8 @@ export default function CreatorSearchCard({ creator }: CreatorSearchCardProps) {
             </span>
           )}
           {creator.region && <span>{creator.region}</span>}
-          <span>{creator.followerCount} followers</span>
-          <span>{creator.guideCount} guides</span>
+          <span>{t('discovery.search.creatorFollowers', { count: creator.followerCount })}</span>
+          <span>{t('discovery.search.creatorGuides', { count: creator.guideCount })}</span>
         </div>
       </div>
     </Link>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 
 type ThemeChoice = 'light' | 'dark';
@@ -10,14 +11,10 @@ const NEXT_CHOICE: Record<ThemeChoice, ThemeChoice> = {
   dark: 'light',
 };
 
-const LABEL: Record<ThemeChoice, string> = {
-  light: 'Bright',
-  dark: 'Dark',
-};
-
 type Variant = 'icon' | 'menu';
 
 export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant }) {
+  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -32,7 +29,7 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
           aria-hidden="true"
           className="flex w-full items-center justify-between px-4 py-3 text-sm text-ig-text-secondary"
         >
-          <span>Theme</span>
+          <span>{t('widgets.themeToggle.theme')}</span>
           <span className="opacity-60">…</span>
         </div>
       );
@@ -40,7 +37,7 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
     return (
       <button
         type="button"
-        aria-label="Theme toggle"
+        aria-label={t('widgets.themeToggle.themeToggle')}
         disabled
         className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated opacity-60"
       />
@@ -49,7 +46,9 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
 
   const current: ThemeChoice = theme === 'dark' ? 'dark' : 'light';
   const next = NEXT_CHOICE[current];
-  const aria = `Theme: ${LABEL[current]}. Click to switch to ${LABEL[next]}.`;
+  const currentLabel = t(`widgets.themeToggle.${current}`);
+  const nextLabel = t(`widgets.themeToggle.${next}`);
+  const aria = t('widgets.themeToggle.ariaLabel', { current: currentLabel, next: nextLabel });
 
   if (variant === 'menu') {
     return (
@@ -59,8 +58,8 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
         aria-label={aria}
         className="flex w-full items-center justify-between px-4 py-3 text-sm text-ig-text-primary transition-colors hover:bg-ig-hover"
       >
-        <span>Theme</span>
-        <span className="text-ig-text-secondary">{LABEL[current]}</span>
+        <span>{t('widgets.themeToggle.theme')}</span>
+        <span className="text-ig-text-secondary">{currentLabel}</span>
       </button>
     );
   }

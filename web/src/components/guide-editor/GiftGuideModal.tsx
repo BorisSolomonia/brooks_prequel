@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import type { FollowerSummary, GuideCheckoutSessionResponse } from '@/types';
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function GiftGuideModal({ guideId, token, onClose }: Props) {
+  const { t } = useTranslation();
   const [followers, setFollowers] = useState<FollowerSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -43,12 +45,12 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
         token
       );
       if (res.alreadyOwned) {
-        setResult({ type: 'already_owned', message: `${selected.displayName ?? selected.username ?? 'They'} already have this guide.` });
+        setResult({ type: 'already_owned', message: t('guideEditor.giftModal.alreadyOwned', { name: selected.displayName ?? selected.username ?? t('guideEditor.giftModal.they') }) });
       } else {
-        setResult({ type: 'success', message: `Gift sent to ${selected.displayName ?? selected.username ?? 'your follower'} — they'll be notified to accept it.` });
+        setResult({ type: 'success', message: t('guideEditor.giftModal.giftSent', { name: selected.displayName ?? selected.username ?? t('guideEditor.giftModal.yourFollower') }) });
       }
     } catch (err) {
-      setResult({ type: 'error', message: err instanceof Error ? err.message : 'Failed to gift guide' });
+      setResult({ type: 'error', message: err instanceof Error ? err.message : t('guideEditor.giftModal.errorGift') });
     } finally {
       setGifting(false);
     }
@@ -59,7 +61,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
       <div className="max-h-[92dvh] w-full max-w-md overflow-hidden rounded-t-2xl border border-ig-border bg-ig-primary shadow-xl sm:rounded-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-ig-border px-5 py-4 [&>button]:min-h-11 [&>button]:rounded-md [&>button]:px-3">
-          <h2 className="text-base font-semibold text-ig-text-primary">Gift to a Follower</h2>
+          <h2 className="text-base font-semibold text-ig-text-primary">{t('guideEditor.giftModal.title')}</h2>
           <button type="button" onClick={onClose} className="text-ig-text-tertiary hover:text-ig-text-primary">✕</button>
         </div>
 
@@ -73,7 +75,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
               onClick={onClose}
               className="mw-button-primary mt-5 min-h-11 rounded-lg px-5 py-2 text-sm"
             >
-              Close
+              {t('guideEditor.giftModal.closeBtn')}
             </button>
           </div>
         ) : (
@@ -82,7 +84,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
             <div className="px-5 pt-4 pb-2">
               <input
                 type="text"
-                placeholder="Search followers…"
+                placeholder={t('guideEditor.giftModal.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="min-h-11 w-full rounded-lg border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none md:text-sm"
@@ -92,10 +94,10 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
             {/* Follower list */}
             <div className="max-h-[48dvh] overflow-y-auto px-2 py-2 sm:max-h-64">
               {loading ? (
-                <p className="py-8 text-center text-sm text-ig-text-tertiary">Loading followers…</p>
+                <p className="py-8 text-center text-sm text-ig-text-tertiary">{t('guideEditor.giftModal.loadingFollowers')}</p>
               ) : filtered.length === 0 ? (
                 <p className="py-8 text-center text-sm text-ig-text-tertiary">
-                  {followers.length === 0 ? 'You have no followers yet.' : 'No followers match your search.'}
+                  {followers.length === 0 ? t('guideEditor.giftModal.noFollowers') : t('guideEditor.giftModal.noMatch')}
                 </p>
               ) : (
                 filtered.map((f) => (
@@ -138,7 +140,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
             <div className="border-t border-ig-border px-5 py-4">
               {selected && (
                 <p className="mb-3 text-xs text-ig-text-tertiary text-center">
-                  Gift this guide to <span className="font-medium text-ig-text-secondary">{selected.displayName ?? selected.username}</span> for free
+                  {t('guideEditor.giftModal.giftConfirmText', { name: selected.displayName ?? selected.username })}
                 </p>
               )}
               <button
@@ -147,7 +149,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
                 disabled={!selected || gifting}
                 className="mw-button-primary min-h-11 w-full rounded-lg py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {gifting ? 'Gifting…' : 'Confirm Gift'}
+                {gifting ? t('guideEditor.giftModal.gifting') : t('guideEditor.giftModal.confirmGiftBtn')}
               </button>
             </div>
           </>

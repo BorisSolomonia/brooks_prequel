@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { compliance } from '@/lib/compliance';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -11,6 +12,7 @@ import Spinner from '@/components/ui/Spinner';
 const CONFIRM_PHRASE = 'delete my account';
 
 export default function DeleteAccountPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { token } = useAccessToken();
   const [phrase, setPhrase] = useState('');
@@ -24,7 +26,7 @@ export default function DeleteAccountPage() {
   const handleSubmit = async () => {
     if (!phraseOk) return;
     if (!token) {
-      setError('Not signed in. Refresh the page and try again.');
+      setError(t('account.deleteInApp.errorNotSignedIn'));
       return;
     }
     setLoading(true);
@@ -34,7 +36,7 @@ export default function DeleteAccountPage() {
       setDone(true);
       setTimeout(() => router.push('/api/auth/logout'), 4000);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Could not start deletion';
+      const msg = err instanceof Error ? err.message : t('account.deleteInApp.errorCouldNotDelete');
       setError(msg);
       setLoading(false);
     }
@@ -43,8 +45,9 @@ export default function DeleteAccountPage() {
   if (done) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="mw-section-title text-3xl">Account deletion requested</h1>
+        <h1 className="mw-section-title text-3xl">{t('account.deleteInApp.doneTitle')}</h1>
         <p className="mt-4 text-ig-text-secondary">
+          {/* LEGAL EXCEPTION: long deletion confirmation prose left hardcoded */}
           Your account is now scheduled for deletion. You will be signed out
           shortly. Profile, purchases, and uploaded content are removed from our
           active database immediately; backup copies are purged within 30 days.
@@ -56,8 +59,8 @@ export default function DeleteAccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <p className="mw-eyebrow">Account</p>
-      <h1 className="mw-section-title mt-2 text-3xl">Delete your account</h1>
+      <p className="mw-eyebrow">{t('account.deleteInApp.eyebrow')}</p>
+      <h1 className="mw-section-title mt-2 text-3xl">{t('account.deleteInApp.title')}</h1>
 
       <div className="mt-6 space-y-4 rounded-lg border border-ig-border bg-ig-elevated p-5 text-sm leading-6 text-ig-text-secondary">
         <p>
@@ -89,20 +92,20 @@ export default function DeleteAccountPage() {
       <div className="mt-6 space-y-4">
         <label className="block text-sm">
           <span className="block font-medium text-ig-text-primary">
-            Reason (optional)
+            {t('account.deleteInApp.reasonLabel')}
           </span>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             className="mt-1 w-full rounded-lg border border-ig-border bg-ig-primary p-3 text-sm text-ig-text-primary"
-            placeholder="Helps us improve — not required."
+            placeholder={t('account.deleteInApp.reasonPlaceholder')}
           />
         </label>
 
         <label className="block text-sm">
           <span className="block font-medium text-ig-text-primary">
-            Type <code>{CONFIRM_PHRASE}</code> to confirm
+            {t('account.deleteInApp.confirmLabel')} <code>{CONFIRM_PHRASE}</code>
           </span>
           <input
             type="text"
@@ -120,11 +123,11 @@ export default function DeleteAccountPage() {
           className="mw-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm disabled:opacity-50"
         >
           {loading && <Spinner />}
-          Delete my account permanently
+          {t('account.deleteInApp.deleteButton')}
         </button>
 
         <p className="text-xs text-ig-text-tertiary">
-          Questions? Email {compliance.email} — we respond {compliance.supportResponseTime}.
+          {t('account.deleteInApp.questionsFooter', { email: compliance.email, responseTime: compliance.supportResponseTime })}
         </p>
       </div>
     </div>

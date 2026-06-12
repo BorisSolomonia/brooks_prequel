@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { tourSteps, type TourStep } from './tourSteps';
 import { useOnboarding } from './OnboardingProvider';
 
@@ -31,6 +32,7 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
   // The active step comes from the provider (role-aware list), not the global tourSteps array —
   // otherwise the Traveler path would index into the full Creator list. Fallback keeps the type
   // non-null; the provider only renders this component while a valid step is active.
+  const { t } = useTranslation();
   const { next, prev, skip, complete, totalSteps, sampleCreatorUsername, currentStep } = useOnboarding();
   const step = currentStep ?? tourSteps[0];
   const router = useRouter();
@@ -359,7 +361,7 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
       className="pointer-events-none fixed inset-0 z-[9999]"
       role="dialog"
       aria-modal="true"
-      aria-label="Onboarding tour"
+      aria-label={t('discovery.onboarding.tourAriaLabel')}
     >
       {isCenteredOverlay ? (
         // Centered mode = target is too large for a useful spotlight, so
@@ -410,16 +412,16 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
               {stepIndex + 1} / {totalSteps}
             </p>
             <h2 className="mt-1 font-display text-sm font-black leading-tight text-ig-text-primary">
-              {step.title}
+              {t(`discovery.onboarding.steps.${step.id}.title`, { defaultValue: step.title })}
             </h2>
           </div>
           <button
             type="button"
             onClick={skip}
             className="-mr-1 -mt-1 min-h-8 rounded-full px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
-            aria-label="Skip tour"
+            aria-label={t('discovery.onboarding.skipAriaLabel')}
           >
-            Skip
+            {t('discovery.onboarding.skip')}
           </button>
         </div>
         {step.kind === 'centered' && (step as { illustration?: string }).illustration && (
@@ -428,11 +430,11 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
             dangerouslySetInnerHTML={{ __html: (step as { illustration: string }).illustration }}
           />
         )}
-        <p className="mt-2 text-xs leading-snug text-ig-text-secondary">{step.body}</p>
+        <p className="mt-2 text-xs leading-snug text-ig-text-secondary">{t(`discovery.onboarding.steps.${step.id}.body`, { defaultValue: step.body })}</p>
         {showLocating && !targetRect && step.kind === 'spotlight' && (
           <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-ig-text-tertiary" aria-live="polite">
             <span className="tour-spinner h-2.5 w-2.5" aria-hidden="true" />
-            Locating…
+            {t('discovery.onboarding.locating')}
           </p>
         )}
         <div className="mt-3 flex items-center justify-between gap-2">
@@ -442,7 +444,7 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
               onClick={prev}
               className="min-h-9 rounded-md px-2 py-1.5 text-xs font-medium text-ig-text-secondary transition-colors hover:text-ig-text-primary"
             >
-              Back
+              {t('discovery.onboarding.back')}
             </button>
           ) : (
             <span aria-hidden="true" />
@@ -457,10 +459,10 @@ export default function OnboardingTour({ stepIndex }: { stepIndex: number }) {
             {isAdvancing ? (
               <>
                 <span className="tour-spinner h-4 w-4" aria-hidden="true" />
-                <span>Loading…</span>
+                <span>{t('discovery.onboarding.loading')}</span>
               </>
             ) : (
-              <>{isLast ? 'Got it' : 'Next'}</>
+              <>{isLast ? t('discovery.onboarding.gotIt') : t('discovery.onboarding.next')}</>
             )}
           </button>
         </div>

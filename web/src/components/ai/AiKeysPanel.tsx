@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
@@ -37,6 +38,7 @@ export const PROVIDER_MODELS: Record<Provider, { id: string; label: string }[]> 
 };
 
 export function AiKeysPanel() {
+  const { t } = useTranslation();
   const { token } = useAccessToken();
   const [keys, setKeys] = useState<AiKeyResponse[]>([]);
   const [editing, setEditing] = useState<Provider | null>(null);
@@ -86,7 +88,7 @@ export function AiKeysPanel() {
   return (
     <div>
       <p className="text-sm text-[var(--text-tertiary)] mb-4">
-        Keys are encrypted and stored securely. Brooks never uses them without your permission.
+        {t('creatorTools.ai.keysIntro')}
       </p>
 
       <div className="space-y-4">
@@ -115,14 +117,14 @@ export function AiKeysPanel() {
                     onClick={() => startEdit(id, saved?.selectedModel ?? null)}
                     className="min-h-11 rounded-md px-2 text-sm text-[var(--brand-primary)] hover:underline"
                   >
-                    {saved ? 'Replace' : 'Add'}
+                    {saved ? t('creatorTools.ai.replace') : t('creatorTools.ai.addKey')}
                   </button>
                   {saved && (
                     <button
                       onClick={() => deleteKey(id)}
                       className="min-h-11 rounded-md px-2 text-sm text-red-500 hover:underline"
                     >
-                      Remove
+                      {t('creatorTools.ai.removeKey')}
                     </button>
                   )}
                 </div>
@@ -155,13 +157,13 @@ export function AiKeysPanel() {
                       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
                     >
                       {saving && <Spinner />}
-                      {saving ? 'Saving…' : 'Save'}
+                      {saving ? t('creatorTools.ai.saving') : t('creatorTools.ai.save')}
                     </button>
                     <button
                       onClick={() => { setEditing(null); setRawKey(''); }}
                       className="min-h-11 rounded-md px-2 text-sm text-[var(--text-tertiary)] hover:underline"
                     >
-                      Cancel
+                      {t('creatorTools.ai.cancel')}
                     </button>
                   </div>
                 </div>

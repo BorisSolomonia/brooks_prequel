@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
 import type { PurchaseResponse, PageResponse } from '@/types';
 
 export default function MyPurchasesPage() {
+  const { t } = useTranslation();
   const { token, loading: tokenLoading } = useAccessToken();
   const { formatAmount } = useCurrency();
   const [purchases, setPurchases] = useState<PurchaseResponse[]>([]);
@@ -30,21 +32,21 @@ export default function MyPurchasesPage() {
   }, [token, tokenLoading, page]);
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">Loading...</div>;
+    return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">{t('account.purchases.loading')}</div>;
   }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <h1 className="mw-section-title mb-6 text-xl">My Purchases</h1>
+      <h1 className="mw-section-title mb-6 text-xl">{t('account.purchases.title')}</h1>
 
       {purchases.length === 0 ? (
         <div className="mw-card py-16 text-center">
-          <p className="text-ig-text-secondary mb-4">You haven&apos;t purchased any guides yet.</p>
+          <p className="text-ig-text-secondary mb-4">{t('account.purchases.empty')}</p>
           <Link
             href="/search"
             className="mw-button-primary min-h-11 rounded-lg px-6 py-2.5 text-sm"
           >
-            Explore Guides
+            {t('account.purchases.exploreGuides')}
           </Link>
         </div>
       ) : (
@@ -68,12 +70,12 @@ export default function MyPurchasesPage() {
                   </div>
                 ) : (
                   <div className="h-36 bg-ig-secondary flex items-center justify-center">
-                    <span className="text-ig-text-tertiary text-sm">No cover</span>
+                    <span className="text-ig-text-tertiary text-sm">{t('account.purchases.noCover')}</span>
                   </div>
                 )}
                 <div className="p-3">
                   <h3 className="text-sm font-semibold text-ig-text-primary truncate">
-                    {purchase.guideTitle || 'Untitled Guide'}
+                    {purchase.guideTitle || t('account.purchases.untitledGuide')}
                   </h3>
                   <div className="flex items-center gap-2 mt-1 text-xs text-ig-text-tertiary">
                     {purchase.guideRegion && <span>{purchase.guideRegion}</span>}
@@ -92,17 +94,17 @@ export default function MyPurchasesPage() {
                 disabled={page === 0}
                 className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5"
               >
-                Previous
+                {t('account.purchases.previous')}
               </button>
               <span className="inline-flex min-h-11 items-center px-3 py-1.5 text-sm text-ig-text-tertiary lg:min-h-0">
-                {page + 1} / {totalPages}
+                {t('account.purchases.pageOf', { page: page + 1, total: totalPages })}
               </span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
                 className="mw-button-secondary min-h-11 rounded-md px-4 py-2 text-sm disabled:opacity-50 lg:min-h-0 lg:px-3 lg:py-1.5"
               >
-                Next
+                {t('account.purchases.next')}
               </button>
             </div>
           )}

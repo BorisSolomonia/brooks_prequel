@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 interface SearchSectionProps {
   title: string;
@@ -8,6 +11,7 @@ interface SearchSectionProps {
 }
 
 export default function SearchSection({ title, totalCount, seeAllHref, children }: SearchSectionProps) {
+  const { t } = useTranslation();
   if (totalCount === 0) return null;
 
   return (
@@ -19,7 +23,7 @@ export default function SearchSection({ title, totalCount, seeAllHref, children 
             href={seeAllHref}
             className="inline-flex min-h-11 items-center font-display text-sm font-black uppercase tracking-[0.08em] text-brand-500 hover:text-brand-400 lg:min-h-0"
           >
-            See all {totalCount} results
+            {t('discovery.search.seeAllResults', { count: totalCount })}
           </Link>
         )}
       </div>

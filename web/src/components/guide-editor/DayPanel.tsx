@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { GuideDay } from '@/types';
 import { BLOCK_CATEGORIES } from '@/lib/guideEditorConstants';
 import BlockPanel from './BlockPanel';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function DayPanel({ day }: Props) {
+  const { t } = useTranslation();
   const { updateDay, deleteDay, addBlock } = useGuideEdit();
   const [collapsed, setCollapsed] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -34,7 +36,7 @@ export default function DayPanel({ day }: Props) {
       <div className="flex cursor-pointer flex-col gap-3 bg-ig-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between" onClick={() => setCollapsed(!collapsed)}>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <span className="text-xs text-ig-text-tertiary">{collapsed ? '▶' : '▼'}</span>
-          <span className="text-sm font-semibold text-ig-blue">Day {day.dayNumber}</span>
+          <span className="text-sm font-semibold text-ig-blue">{t('guideEditor.dayPanel.dayNumber', { number: day.dayNumber })}</span>
           {editingTitle ? (
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
               <input
@@ -45,20 +47,20 @@ export default function DayPanel({ day }: Props) {
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); }}
                 autoFocus
               />
-              <button onClick={handleSaveTitle} className="min-h-11 rounded-md px-3 text-sm font-semibold text-ig-blue">Save</button>
+              <button onClick={handleSaveTitle} className="min-h-11 rounded-md px-3 text-sm font-semibold text-ig-blue">{t('guideEditor.dayPanel.saveBtn')}</button>
             </div>
           ) : (
             <span
               className="text-sm text-ig-text-primary hover:text-ig-blue"
               onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
             >
-              {day.title || 'Click to add title'}
+              {day.title || t('guideEditor.dayPanel.clickToAddTitle')}
             </span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <span className="text-xs text-ig-text-tertiary">{day.blocks.length} blocks</span>
-          <button onClick={() => deleteDay(day.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">Delete</button>
+          <span className="text-xs text-ig-text-tertiary">{t('guideEditor.dayPanel.blockCount', { count: day.blocks.length })}</span>
+          <button onClick={() => deleteDay(day.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">{t('guideEditor.dayPanel.deleteBtn')}</button>
         </div>
       </div>
 
@@ -70,7 +72,7 @@ export default function DayPanel({ day }: Props) {
 
           {addingBlock ? (
             <div className="border border-ig-border rounded-lg p-3 bg-ig-secondary/30">
-              <p className="text-xs text-ig-text-tertiary mb-2">Choose block type:</p>
+              <p className="text-xs text-ig-text-tertiary mb-2">{t('guideEditor.dayPanel.chooseBlockType')}</p>
               <div className="flex flex-wrap gap-2 mb-3">
                 {BLOCK_CATEGORIES.map((cat) => (
                   <button
@@ -95,13 +97,13 @@ export default function DayPanel({ day }: Props) {
                   onClick={handleAddBlock}
                   className="mw-button-primary min-h-11 rounded-lg px-4 py-2 text-sm"
                 >
-                  Add Block
+                  {t('guideEditor.dayPanel.addBlockBtn')}
                 </button>
                 <button
                   onClick={() => { setAddingBlock(false); setNewBlockCategory('ACTIVITY'); }}
                   className="min-h-11 rounded-lg border border-ig-border px-4 py-2 text-sm text-ig-text-secondary transition-colors hover:border-ig-blue/40"
                 >
-                  Cancel
+                  {t('guideEditor.dayPanel.cancelBtn')}
                 </button>
               </div>
             </div>
@@ -110,7 +112,7 @@ export default function DayPanel({ day }: Props) {
               onClick={() => setAddingBlock(true)}
               className="min-h-11 w-full rounded-lg border border-dashed border-ig-border py-2 text-sm text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50"
             >
-              + Add Block
+              + {t('guideEditor.dayPanel.addBlockInlineBtn')}
             </button>
           )}
         </div>
