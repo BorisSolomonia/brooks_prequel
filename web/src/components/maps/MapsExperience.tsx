@@ -1068,6 +1068,10 @@ export default function MapsExperience({
   const [selectedFollowerIds, setSelectedFollowerIds] = useState<string[]>([]);
   // BOR-50: "Self" time-capsule — lock my own memory until I return to the spot.
   const [shareSelf, setShareSelf] = useState(false);
+  // Recipient picker: collapsed dropdown with a name filter (was a flat list of
+  // ALL followers). Lets the user search and bulk select instead of scrolling.
+  const [recipientMenuOpen, setRecipientMenuOpen] = useState(false);
+  const [recipientQuery, setRecipientQuery] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<BlobPart[]>([]);
   // BOR-40: hidden capture-enabled input used as the web / no-native-camera
@@ -1507,6 +1511,8 @@ export default function MapsExperience({
     setShareMode('follower');
     setSelectedFollowerIds([]);
     setShareSelf(false);
+    setRecipientMenuOpen(false);
+    setRecipientQuery('');
 
     let created: { id: string };
     try {
@@ -2980,48 +2986,111 @@ export default function MapsExperience({
                   {shareSelf && <span aria-hidden className="shrink-0 text-brand-500">✓</span>}
                 </button>
                 {followersLoading ? (
-                  <p className="text-xs text-ig-text-tertiary">Loading your followers…</p>
+                  <p className="text-xs text-ig-text-tertiary">{t('memory.recipients.loading')}</p>
                 ) : followers.length === 0 ? (
                   <p className="text-xs text-ig-text-tertiary">
-                    No followers yet — you can still time-capsule it for yourself above, or use &quot;Share via link&quot;.
+                    {t('memory.recipients.none')}
                   </p>
                 ) : (
-                  <>
-                    {/* BOR-50: multi-select — tap to toggle each follower. Each
-                        selected recipient gets their own locked grant. */}
-                    <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
-                      {followers.map((f) => {
-                        const checked = selectedFollowerIds.includes(f.userId);
-                        return (
-                          <button
-                            key={f.userId}
-                            type="button"
-                            aria-pressed={checked}
-                            onClick={() =>
-                              setSelectedFollowerIds((prev) =>
-                                checked ? prev.filter((id) => id !== f.userId) : [...prev, f.userId],
+                  <div className="relative">
+                    {/* Collapsed trigger — opens the searchable recipient picker
+                        (was a flat always-open list of every follower). */}
+                    <button
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={recipientMenuOpen}
+                      onClick={() => setRecipientMenuOpen((v) => !v)}
+                      className="flex min-h-touch w-full items-center justify-between gap-2 rounded-2xl border-2 border-ig-border bg-ig-elevated px-3 py-2 text-left text-sm text-ig-text-primary transition hover:bg-ig-hover"
+                    >
+                      <span className="truncate">
+                        {selectedFollowerIds.length === 0
+                          ? t('memory.recipients.choose')
+                          : t('memory.recipients.selectedCount', { count: selectedFollowerIds.length })}
+                      </span>
+                      <span aria-hidden className="shrink-0 text-ig-text-tertiary">{recipientMenuOpen ? '▴' : '▾'}</span>
+                    </button>
+
+                    {recipientMenuOpen && (
+                      <div className="mt-1 rounded-2xl border-2 border-ig-border bg-ig-elevated p-2">
+                        <input
+                          type="text"
+                          value={recipientQuery}
+                          onChange={(e) => setRecipientQuery(e.target.value)}
+                          placeholder={t('memory.recipients.filter')}
+                          className="mb-2 w-full rounded-xl border border-ig-border bg-ig-primary px-3 py-2 text-sm text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-brand-500 focus:outline-none"
+                        />
+                        {(() => {
+                          const q = recipientQuery.trim().toLowerCase();
+                          const filtered = q
+                            ? followers.filter(
+                                (f) =>
+                                  f.displayName.toLowerCase().includes(q) ||
+                                  (f.username ?? '').toLowerCase().includes(q),
                               )
-                            }
-                            className={`flex min-h-touch w-full items-center justify-between gap-2 rounded-2xl border-2 px-3 py-2 text-left text-sm transition ${
-                              checked
-                                ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
-                                : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
-                            }`}
-                          >
-                            <span className="truncate">
-                              {f.displayName}{f.username ? ` (@${f.username})` : ''}
-                            </span>
-                            {checked && <span aria-hidden className="shrink-0 text-brand-500">✓</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {selectedFollowerIds.length > 0 && (
-                      <p className="mt-1 text-[11px] text-ig-text-tertiary">
-                        {selectedFollowerIds.length} selected
-                      </p>
+                            : followers;
+                          const filteredIds = filtered.map((f) => f.userId);
+                          const allFilteredSelected =
+                            filteredIds.length > 0 && filteredIds.every((id) => selectedFollowerIds.includes(id));
+                          return (
+                            <>
+                              <div className="mb-2 flex items-center justify-between px-1">
+                                <button
+                                  type="button"
+                                  disabled={filteredIds.length === 0}
+                                  onClick={() =>
+                                    setSelectedFollowerIds((prev) =>
+                                      allFilteredSelected
+                                        ? prev.filter((id) => !filteredIds.includes(id))
+                                        : Array.from(new Set([...prev, ...filteredIds])),
+                                    )
+                                  }
+                                  className="text-xs font-semibold text-brand-500 hover:underline disabled:opacity-50"
+                                >
+                                  {allFilteredSelected ? t('memory.recipients.clearAll') : t('memory.recipients.selectAll')}
+                                </button>
+                                {selectedFollowerIds.length > 0 && (
+                                  <span className="text-[11px] text-ig-text-tertiary">
+                                    {t('memory.recipients.selectedCount', { count: selectedFollowerIds.length })}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
+                                {filtered.length === 0 ? (
+                                  <p className="px-1 py-2 text-xs text-ig-text-tertiary">{t('memory.recipients.noMatches')}</p>
+                                ) : (
+                                  filtered.map((f) => {
+                                    const checked = selectedFollowerIds.includes(f.userId);
+                                    return (
+                                      <button
+                                        key={f.userId}
+                                        type="button"
+                                        aria-pressed={checked}
+                                        onClick={() =>
+                                          setSelectedFollowerIds((prev) =>
+                                            checked ? prev.filter((id) => id !== f.userId) : [...prev, f.userId],
+                                          )
+                                        }
+                                        className={`flex min-h-touch w-full items-center justify-between gap-2 rounded-2xl border-2 px-3 py-2 text-left text-sm transition ${
+                                          checked
+                                            ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
+                                            : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
+                                        }`}
+                                      >
+                                        <span className="truncate">
+                                          {f.displayName}{f.username ? ` (@${f.username})` : ''}
+                                        </span>
+                                        {checked && <span aria-hidden className="shrink-0 text-brand-500">✓</span>}
+                                      </button>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             )}

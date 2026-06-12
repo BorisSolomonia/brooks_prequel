@@ -155,7 +155,18 @@
     "p2": "The product is designed for travelers who want context before they arrive: what to see, what to skip, how to plan a day, and how to move discoveries into maps and calendars without rebuilding everything manually."
   },
   "memory": {
-    "createPill": "Create a memory"
+    "createPill": "Create a memory",
+    "recipients": {
+      "loading": "Loading your followers…",
+      "none": "No followers yet — you can still time-capsule it for yourself above, or use 'Share via link'.",
+      "choose": "Choose recipients",
+      "selectedCount_one": "{{count}} selected",
+      "selectedCount_other": "{{count}} selected",
+      "filter": "Filter by name",
+      "selectAll": "Select all",
+      "clearAll": "Clear all",
+      "noMatches": "No matches"
+    }
   },
   "guideCard": {
     "destination": "Destination",
