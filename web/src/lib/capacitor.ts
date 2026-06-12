@@ -201,3 +201,22 @@ export async function setupNativeAuthListener(): Promise<() => void> {
     return () => {};
   }
 }
+
+// BOR-55: open THIS app's system settings screen (Android App Info), used by
+// the microphone-denial recovery UI — once the user denies the mic, Android
+// won't re-prompt, so the only path to re-enable it is the device settings.
+// Bridges to the native AppSettingsPlugin (registered in MainActivity). Returns
+// true if the native screen was opened, false on web or if the bridge is absent
+// (the caller leaves its explanatory UI up so the user still has guidance).
+export async function openAppSettings(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const { registerPlugin } = await import('@capacitor/core');
+    const AppSettings = registerPlugin<{ openAppSettings(): Promise<void> }>('AppSettings');
+    await AppSettings.openAppSettings();
+    return true;
+  } catch (err) {
+    console.warn('[capacitor] openAppSettings failed:', err);
+    return false;
+  }
+}

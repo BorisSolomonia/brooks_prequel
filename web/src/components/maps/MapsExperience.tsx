@@ -15,7 +15,7 @@ import { useMapboxStyle } from '@/lib/mapboxStyle';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import Spinner from '@/components/ui/Spinner';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
-import { isNative } from '@/lib/capacitor';
+import { isNative, openAppSettings } from '@/lib/capacitor';
 import { capturePhotoDetailed } from '@/lib/camera';
 import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
 import { useTranslation } from 'react-i18next';
@@ -1057,6 +1057,10 @@ export default function MapsExperience({
   const [memoryAudio, setMemoryAudio] = useState<MemoryMediaRequest | null>(null);
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [recording, setRecording] = useState(false);
+  // BOR-55: true when the user has denied microphone access — drives the
+  // in-composer recovery UI (explanation + Open settings) instead of failing
+  // silently behind the composer.
+  const [micDenied, setMicDenied] = useState(false);
   // Memory share mode: 'link' = current behavior (token URL after save),
   // 'follower' = direct in-app share to a follower (no link).
   const [shareMode, setShareMode] = useState<'link' | 'follower'>('follower');
@@ -1397,10 +1401,14 @@ export default function MapsExperience({
   };
 
   const startRecording = async () => {
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
-      setPageError('Audio recording is not available in this browser');
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setPageError('Audio recording is not available on this device');
       return;
     }
+    // BOR-55: this getUserMedia call is what triggers the JUST-IN-TIME native
+    // microphone prompt on the first tap (Capacitor's WebChromeClient requests
+    // RECORD_AUDIO at runtime). Clear any prior denial banner before re-asking.
+    setMicDenied(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
@@ -1419,8 +1427,18 @@ export default function MapsExperience({
       mediaRecorderRef.current = recorder;
       recorder.start();
       setRecording(true);
-    } catch {
-      setPageError('Microphone permission is required to record a memory');
+    } catch (err) {
+      // Distinguish the failure modes so denial is handled GRACEFULLY (visible
+      // recovery UI) rather than as a hidden pageError behind the composer.
+      const name = err instanceof DOMException ? err.name : '';
+      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') {
+        // User denied the mic (now, or previously with "don't ask again").
+        setMicDenied(true);
+      } else if (name === 'NotFoundError' || name === 'NotReadableError' || name === 'OverconstrainedError') {
+        setPageError('No microphone was found on this device.');
+      } else {
+        setPageError('Could not start recording. Please try again.');
+      }
     }
   };
 
@@ -1429,6 +1447,12 @@ export default function MapsExperience({
     mediaRecorderRef.current = null;
     setRecording(false);
   };
+
+  // BOR-55: clear the mic-denied banner whenever the composer closes so a fresh
+  // open starts clean.
+  useEffect(() => {
+    if (!createMemoryOpen) setMicDenied(false);
+  }, [createMemoryOpen]);
 
   const handleCreateMemory = async () => {
     // Specific pre-checks so the user knows EXACTLY what's missing rather
@@ -2917,6 +2941,35 @@ export default function MapsExperience({
                 {recording ? 'Stop' : memoryAudio ? 'Re-rec' : 'Record'}
               </button>
             </div>
+
+            {/* BOR-55: graceful microphone-denial recovery. Shown when the user
+                denies (or previously denied) the mic, instead of failing
+                silently. Open settings deep-links to the app's settings; Try
+                again re-requests (works once they re-enable it). */}
+            {micDenied && (
+              <div className="mt-3 rounded-2xl border-2 border-ig-error/40 bg-ig-error/10 p-3" role="alert">
+                <p className="text-sm font-semibold text-ig-text-primary">Microphone access needed</p>
+                <p className="mt-1 text-xs text-ig-text-secondary">
+                  Allow microphone access to record an audio memory. If you denied it, re-enable the microphone for Brooks in your device settings.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void openAppSettings()}
+                    className="mw-button-primary min-h-touch rounded-xl px-3 py-1.5 text-xs font-semibold"
+                  >
+                    Open settings
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void startRecording()}
+                    className="mw-button-secondary min-h-touch rounded-xl px-3 py-1.5 text-xs font-semibold"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* BOR-50: a PRIVATE memory is never shared — hide the share UI
                 entirely so the user can just Save (resolves the "must share a

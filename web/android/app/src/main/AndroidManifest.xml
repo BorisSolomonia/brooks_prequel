@@ -102,4 +102,19 @@
     -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!--
+      BOR-55: microphone for the "Record Audio" memory feature. Capacitor's
+      WebChromeClient surfaces the JUST-IN-TIME native runtime prompt for the
+      WebView's getUserMedia({audio:true}) ONLY when RECORD_AUDIO is declared
+      here (the same just-in-time pattern CAMERA above uses for photo capture).
+      Without this line the web mic request is auto-denied and recording fails
+      silently. MODIFY_AUDIO_SETTINGS is the companion (install-time) permission
+      Capacitor pairs with audio capture. The mic prompt is NOT shown at startup
+      — it fires on the first tap of Record, by design. Microphone is NOT
+      required so the app still installs on mic-less devices.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>
