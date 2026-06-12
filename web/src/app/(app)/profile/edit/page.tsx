@@ -162,6 +162,20 @@ export default function EditProfilePage() {
       .finally(() => setLoading(false));
   }, [router, token, tokenLoading]);
 
+  // Deep-link: the profile "Map Location" tile links to /profile/edit#location.
+  // The form (and Leaflet map) only mount once loading is false, so a plain hash
+  // can't scroll on its own — scroll to the location section after load, with a
+  // short defer so the map has laid out. scroll-mt-24 on the target clears the
+  // sticky navbar.
+  useEffect(() => {
+    if (loading || typeof window === 'undefined') return;
+    if (window.location.hash !== '#location') return;
+    const id = window.setTimeout(() => {
+      document.getElementById('location')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [loading]);
+
   const toggleInterest = (interest: string) => {
     setSelectedInterests((prev) =>
       prev.includes(interest) ? prev.filter((item) => item !== interest) : [...prev, interest],
@@ -276,7 +290,7 @@ export default function EditProfilePage() {
           </select>
         </div>
 
-        <div>
+        <div id="location" className="scroll-mt-24">
           <label className="block text-sm font-medium text-ig-text-secondary mb-1">{t('account.edit.fields.yourLocation')}</label>
           <p className="text-xs text-ig-text-tertiary mb-2">{t('account.edit.fields.yourLocationHelp')}</p>
           {MAPBOX_TOKEN ? (

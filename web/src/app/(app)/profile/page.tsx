@@ -103,16 +103,22 @@ function ProfilePageInner() {
                   <p className="text-xs uppercase tracking-wide text-ig-text-tertiary">{t('account.profile.stats.following')}</p>
                   <p className="mt-2 text-xl font-semibold text-ig-text-primary">{profile.followingCount}</p>
                 </Link>
-                <div className="rounded-xl border border-ig-border bg-ig-primary p-3">
+                <Link
+                  href="/guides?tab=created"
+                  className="rounded-xl border border-ig-border bg-ig-primary p-3 transition-colors hover:bg-ig-hover"
+                >
                   <p className="text-xs uppercase tracking-wide text-ig-text-tertiary">{t('account.profile.stats.guides')}</p>
                   <p className="mt-2 text-xl font-semibold text-ig-text-primary">{profile.guideCount}</p>
-                </div>
-                <div className="rounded-xl border border-ig-border bg-ig-primary p-3">
+                </Link>
+                <Link
+                  href="/profile/edit#location"
+                  className="rounded-xl border border-ig-border bg-ig-primary p-3 transition-colors hover:bg-ig-hover"
+                >
                   <p className="text-xs uppercase tracking-wide text-ig-text-tertiary">{t('account.profile.stats.mapLocation')}</p>
                   <p className="mt-2 text-sm font-semibold text-ig-text-primary">
                     {profile.latitude !== null && profile.longitude !== null ? t('account.profile.stats.locationConfigured') : t('account.profile.stats.locationMissing')}
                   </p>
-                </div>
+                </Link>
               </div>
 
               <div className="mt-6 text-sm text-ig-text-secondary">

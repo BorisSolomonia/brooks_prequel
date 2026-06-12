@@ -31,6 +31,16 @@ export default function MyGuidesPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<LibraryTab>('purchased');
   const [discover, setDiscover] = useState<GuideSearchResult[]>([]);
+
+  // Deep-link support: open the tab named in ?tab= (the profile "Guides" tile
+  // links to ?tab=created). Read once on mount — client-only so it neither
+  // bails static rendering nor causes a hydration mismatch with the default.
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab === 'discover' || tab === 'created' || tab === 'saved' || tab === 'purchased') {
+      setActiveTab(tab);
+    }
+  }, []);
   const [discoverPage, setDiscoverPage] = useState(0);
   const [discoverTotal, setDiscoverTotal] = useState(0);
   const [discoverLoading, setDiscoverLoading] = useState(false);
