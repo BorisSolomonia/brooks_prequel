@@ -306,7 +306,7 @@ function PhotoSheet({ placeName, token, onAddUrl, onClose }: {
               <div className="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto">
                 {webResults.map((img) => (
                   <button key={img.id} type="button" disabled={busy} onClick={() => pickWeb(img)} className="relative aspect-square overflow-hidden rounded-md border border-ig-border disabled:opacity-60">
-                    <img src={img.thumbUrl} alt={t('guideEditor.photoSheet.imgAlt', { author: img.authorName })} className="h-full w-full object-cover" />
+                    <img src={img.thumbUrl} alt={t('guideEditor.photoSheet.imgAlt', { author: img.authorName })} loading="lazy" className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -526,7 +526,7 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
             <div className="mb-2 grid grid-cols-4 gap-2">
               {form.imageUrls.map((url) => (
                 <div key={url} className="relative aspect-square overflow-hidden rounded-md border border-ig-border">
-                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => update('imageUrls', form.imageUrls.filter((u) => u !== url))}
@@ -590,7 +590,7 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
     <div className="group rounded-lg border border-ig-border bg-ig-primary overflow-hidden">
       <div className="flex gap-3 p-3">
         <div className="h-16 w-16 flex-shrink-0 rounded-lg border border-ig-border bg-ig-elevated overflow-hidden">
-          {firstImage && <img src={firstImage} alt="" className="h-full w-full object-cover" />}
+          {firstImage && <img src={firstImage} alt="" loading="lazy" className="h-full w-full object-cover" />}
         </div>
 
         <div className="flex-1 min-w-0">

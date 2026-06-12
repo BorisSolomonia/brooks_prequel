@@ -58,7 +58,7 @@ export default function FollowingPage() {
                 <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-ig-secondary">
                   {p.avatarUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    <img src={p.avatarUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">

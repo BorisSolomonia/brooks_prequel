@@ -412,7 +412,7 @@ export default function ViewGuidePage() {
                             <div className="mt-2 flex gap-2">
                               {place.images.map((image) => (
                                 <div key={image.id} className="h-20 w-20 overflow-hidden rounded-md bg-ig-secondary">
-                                  <img src={image.imageUrl} alt={image.caption || ''} className="h-full w-full object-cover" />
+                                  <img src={image.imageUrl} alt={image.caption || ''} loading="lazy" className="h-full w-full object-cover" />
                                 </div>
                               ))}
                             </div>

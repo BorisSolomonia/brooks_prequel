@@ -113,7 +113,7 @@ export default function GiftGuideModal({ guideId, token, onClose }: Props) {
                   >
                     <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-ig-secondary">
                       {f.avatarUrl ? (
-                        <img src={f.avatarUrl} alt="" className="h-full w-full object-cover" />
+                        <img src={f.avatarUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-xs font-bold text-ig-text-tertiary">
                           {(f.displayName ?? f.username ?? '?')[0].toUpperCase()}
