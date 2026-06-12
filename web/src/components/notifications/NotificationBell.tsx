@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
 import { api } from '@/lib/api';
 
 // In-app notification bell. Polls /api/me/notifications every 60 s for
@@ -32,10 +33,13 @@ export default function NotificationBell() {
   const { t } = useTranslation();
   const { token } = useAccessToken();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  // Open-state is owned by the shared MenuCoordinator so the bell is mutually
+  // exclusive with the navbar menu and the map drawer — opening any one closes
+  // the others. Tap-outside is handled by the scrim rendered below.
+  const { openMenuId, openMenu, closeMenu } = useMenuCoordinator();
+  const open = openMenuId === 'bell';
   const [items, setItems] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -58,22 +62,13 @@ export default function NotificationBell() {
     return () => window.clearInterval(id);
   }, [token, refresh]);
 
-  // Close dropdown on outside click.
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [open]);
-
   const handleOpen = async () => {
-    const wasOpen = open;
-    setOpen((v) => !v);
-    if (!wasOpen && unread > 0 && token) {
+    if (open) {
+      closeMenu('bell');
+      return;
+    }
+    openMenu('bell');
+    if (unread > 0 && token) {
       // Mark all read the moment the dropdown opens. We OPTIMISTICALLY drop
       // the badge, then await the POST. If it fails (network, auth, missing
       // @Transactional on the backend, etc.), the next poll will resurrect
@@ -90,7 +85,7 @@ export default function NotificationBell() {
   };
 
   const handleTap = (n: Notification) => {
-    setOpen(false);
+    closeMenu('bell');
     try {
       const data = n.dataJson ? (JSON.parse(n.dataJson) as Record<string, string>) : {};
       // Route by notification type. New types extend this switch.
@@ -133,7 +128,7 @@ export default function NotificationBell() {
   if (!token) return null;
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       <button
         type="button"
         onClick={handleOpen}
@@ -152,19 +147,21 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        // FIXED positioning anchored to the viewport's right edge — not
-        // absolute-to-the-bell. Previously `absolute right-0` anchored the
-        // dropdown's right edge to the bell button, but on mobile the bell
-        // isn't at the screen's right (theme toggle + menu sit to its right),
-        // so a 320 px-wide dropdown going LEFT from the bell overflowed
-        // past the screen's left edge on narrow phones. `fixed right-3`
-        // pins the dropdown 12 px from the viewport's right edge, which
-        // matches the navbar's horizontal padding (px-3).
-        // top = navbar bottom (h-16) + safe-area-top + small gap.
-        <div
-          className="fixed right-3 z-50 w-80 max-w-[calc(100vw-24px)] overflow-hidden rounded-xl border-2 border-ig-border bg-ig-elevated shadow-2xl"
-          style={{ top: 'calc(env(safe-area-inset-top) + 4rem + 0.5rem)' }}
-        >
+        <>
+          {/* Tap-outside scrim — closes the bell; opening any other menu also
+              closes it via the shared coordinator (only one menu open at a time). */}
+          <button
+            type="button"
+            aria-label={t('common.actions.close')}
+            onClick={() => closeMenu('bell')}
+            className="fixed inset-0 z-40 cursor-default"
+          />
+          {/* `fixed right-3` pins the dropdown 12 px from the viewport's right edge
+              (matches navbar px-3); top = navbar bottom (h-16) + safe-area-top + gap. */}
+          <div
+            className="fixed right-3 z-50 w-80 max-w-[calc(100vw-24px)] overflow-hidden rounded-xl border-2 border-ig-border bg-ig-elevated shadow-2xl"
+            style={{ top: 'calc(env(safe-area-inset-top) + 4rem + 0.5rem)' }}
+          >
           <div className="border-b-2 border-ig-border bg-ig-secondary px-4 py-2.5">
             <p className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-primary">
               {t('widgets.notifications.notifications')}
@@ -198,6 +195,7 @@ export default function NotificationBell() {
             )}
           </div>
         </div>
+        </>
       )}
     </div>
   );

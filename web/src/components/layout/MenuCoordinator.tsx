@@ -12,7 +12,10 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
-export type MenuId = 'upper' | 'burger';
+// Any unique string identifies a menu/overlay. Current ids: 'upper' (navbar
+// mobile menu), 'burger' (map drawer), 'bell' (notifications). Adding a new
+// exclusive menu anywhere = pick a fresh id and call openMenu/closeMenu with it.
+export type MenuId = string;
 
 interface MenuCoordinatorValue {
   openMenuId: MenuId | null;

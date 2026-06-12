@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
@@ -77,56 +77,20 @@ export default function Navbar() {
   const { t } = useTranslation();
   const { openMenuId, openMenu, closeMenu } = useMenuCoordinator();
   const pathname = usePathname();
-  const mobileMenuRef = useRef<HTMLDetailsElement>(null);
+  const upperOpen = openMenuId === 'upper';
   const visibleDesktopLinks = desktopLinks.filter((link) => !link.auth || user);
   const visibleMobileTabs = mobileTabs.filter((tab) => !tab.auth || user);
 
+  // The mobile "Menu" is a CONTROLLED menu driven entirely by the shared
+  // MenuCoordinator (open ⇔ openMenuId === 'upper'). It used to be a native
+  // <details>, but coordinating <details> across components relied on its
+  // `toggle` event + programmatic open removal, which was unreliable in the
+  // Android WebView and let the map burger and this menu both stay open at once.
+  // Controlled state + a tap-outside scrim makes "only one menu open" deterministic.
+  // Close it whenever the route changes (a nav link was tapped).
   useEffect(() => {
-    if (mobileMenuRef.current?.open) {
-      mobileMenuRef.current.removeAttribute('open');
-    }
-  }, [pathname]);
-
-  // BOR-35: dismiss the mobile <details> menu when the user taps anywhere
-  // outside it. A <details> only closes via its <summary> by default; this
-  // adds the expected click-outside UX. The listener is registered only while
-  // the menu is open (toggled via the native `toggle` event) and removed on
-  // close, and it ignores taps inside the menu so links/buttons still work.
-  useEffect(() => {
-    const menu = mobileMenuRef.current;
-    if (!menu) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (menu && menu.open && !menu.contains(event.target as Node)) {
-        menu.removeAttribute('open');
-      }
-    }
-    function handleToggle() {
-      if (menu?.open) {
-        // BOR-47: announce the upper menu as the active one (closes the burger).
-        openMenu('upper');
-        document.addEventListener('pointerdown', handlePointerDown);
-      } else {
-        closeMenu('upper');
-        document.removeEventListener('pointerdown', handlePointerDown);
-      }
-    }
-
-    menu.addEventListener('toggle', handleToggle);
-    return () => {
-      menu.removeEventListener('toggle', handleToggle);
-      document.removeEventListener('pointerdown', handlePointerDown);
-    };
-  }, [openMenu, closeMenu]);
-
-  // BOR-47: when another primary menu (the map burger) becomes active, close
-  // this upper menu. Closing fires `toggle` → closeMenu('upper'), which is a
-  // no-op while another menu owns the id, so there's no update loop.
-  useEffect(() => {
-    if (openMenuId !== 'upper' && mobileMenuRef.current?.open) {
-      mobileMenuRef.current.removeAttribute('open');
-    }
-  }, [openMenuId]);
+    closeMenu('upper');
+  }, [pathname, closeMenu]);
 
   return (
     <>
@@ -189,22 +153,40 @@ export default function Navbar() {
           {isLoading ? (
             <div className="h-12 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />
           ) : user ? (
-            <details ref={mobileMenuRef} className="group relative">
-              <summary className="flex h-12 min-w-12 cursor-pointer list-none items-center justify-center rounded-full border-2 border-ig-border bg-ig-elevated px-3 text-sm font-semibold text-ig-text-primary [&::-webkit-details-marker]:hidden">
+            <div className="relative">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={upperOpen}
+                onClick={() => (upperOpen ? closeMenu('upper') : openMenu('upper'))}
+                className="flex h-12 min-w-12 cursor-pointer items-center justify-center rounded-full border-2 border-ig-border bg-ig-elevated px-3 text-sm font-semibold text-ig-text-primary"
+              >
                 {t('nav.menu.open')}
-              </summary>
-              <div className="mw-panel absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-2xl">
-                <Link href="/search" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.explore')}</Link>
-                <Link href="/maps" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.maps')}</Link>
-                <Link href="/guides" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.myGuides')}</Link>
-                <Link href="/trips" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.purchasedGuides')}</Link>
-                <Link href="/profile" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.profile')}</Link>
-                <Link href="/settings" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.settings')}</Link>
-                <Link href="/pricing" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.pricing')}</Link>
-                <Link href="/contact" className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.contact')}</Link>
-                <a href="/api/auth/logout" onClick={handleLogoutClick} className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.auth.logOut')}</a>
-              </div>
-            </details>
+              </button>
+              {upperOpen && (
+                <>
+                  {/* Tap-outside scrim — deterministic close (no native <details>
+                      toggle-event reliance, which let two menus stay open on Android). */}
+                  <button
+                    type="button"
+                    aria-label={t('common.actions.close')}
+                    onClick={() => closeMenu('upper')}
+                    className="fixed inset-0 z-40 cursor-default"
+                  />
+                  <div role="menu" className="mw-panel absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-2xl">
+                    <Link href="/search" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.explore')}</Link>
+                    <Link href="/maps" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.maps')}</Link>
+                    <Link href="/guides" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.myGuides')}</Link>
+                    <Link href="/trips" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.purchasedGuides')}</Link>
+                    <Link href="/profile" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.profile')}</Link>
+                    <Link href="/settings" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.settings')}</Link>
+                    <Link href="/pricing" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.pricing')}</Link>
+                    <Link href="/contact" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.contact')}</Link>
+                    <a href="/api/auth/logout" onClick={(e) => { closeMenu('upper'); handleLogoutClick(e); }} className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.auth.logOut')}</a>
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
             <Link
               href="/api/auth/login"
