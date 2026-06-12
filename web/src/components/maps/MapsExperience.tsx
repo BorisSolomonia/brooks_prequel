@@ -1052,7 +1052,6 @@ export default function MapsExperience({
   const [activeLayers, setActiveLayers] = useState<MapLayerState>(DEFAULT_LAYERS);
   const [createMemoryOpen, setCreateMemoryOpen] = useState(false);
   const [memoryText, setMemoryText] = useState('');
-  const [memoryPlaceLabel, setMemoryPlaceLabel] = useState('');
   const [memoryVisibility, setMemoryVisibility] = useState<MemoryVisibility>('SHARED_LINK');
   const [memoryPhoto, setMemoryPhoto] = useState<MemoryMediaRequest | null>(null);
   const [memoryAudio, setMemoryAudio] = useState<MemoryMediaRequest | null>(null);
@@ -1467,7 +1466,7 @@ export default function MapsExperience({
       textPreview: trimmedText.slice(0, 200),
       latitude: userCoordinates[1],
       longitude: userCoordinates[0],
-      placeLabel: memoryPlaceLabel.trim() || null,
+      placeLabel: null,
       visibility: memoryVisibility,
       ownedByViewer: true,
       sharedWithViewer: false,
@@ -1481,7 +1480,6 @@ export default function MapsExperience({
     // POST sees the user's actual input even though the UI has moved on.
     const snapshot = {
       text: trimmedText,
-      placeLabel: memoryPlaceLabel.trim() || undefined,
       visibility: memoryVisibility,
       media: [memoryPhoto, memoryAudio].filter(
         (item): item is MemoryMediaRequest => Boolean(item),
@@ -1502,7 +1500,6 @@ export default function MapsExperience({
     // Drop UI state + show the optimistic pin in a single React commit.
     setMemories((prev) => [...prev, optimisticPin]);
     setMemoryText('');
-    setMemoryPlaceLabel('');
     setMemoryPhoto(null);
     setMemoryAudio(null);
     setCreateMemoryOpen(false);
@@ -1520,7 +1517,6 @@ export default function MapsExperience({
         textContent: snapshot.text,
         latitude: snapshot.latitude,
         longitude: snapshot.longitude,
-        placeLabel: snapshot.placeLabel,
         visibility: snapshot.visibility,
         media: snapshot.media,
       }, token);
@@ -2857,16 +2853,6 @@ export default function MapsExperience({
             <p className="mt-2 text-xs text-ig-text-tertiary">
               {Array.isArray(userCoordinates) ? 'Using your current map location' : 'Location required'}
             </p>
-
-            <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
-              Place label
-            </label>
-            <input
-              value={memoryPlaceLabel}
-              onChange={(event) => setMemoryPlaceLabel(event.target.value)}
-              placeholder={"Optional - e.g. \"The corner everyone walks past\""}
-              className="mt-1 min-h-touch w-full rounded-2xl border-2 border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
-            />
 
             <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
               Who can see this
