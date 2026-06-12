@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { compliance } from '@/lib/compliance';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
 import SettingsLanguageSection from '@/components/i18n/SettingsLanguageSection';
+import SettingsThemeSection from '@/components/theme/SettingsThemeSection';
 
 // Settings landing page. Three-tier IA per the May 2026 mobile-first cleanup:
 //   1. Account — what's mine to manage
@@ -115,6 +116,11 @@ export default function SettingsPage() {
           body={t('account.settings.rows.deleteAccount.body')}
           destructive
         />
+      </Group>
+
+      {/* — Appearance group (BOR-57): Light / Dark / Dim / System theme. — */}
+      <Group title={t('account.settings.groups.appearance')}>
+        <SettingsThemeSection />
       </Group>
 
       {/* — Language group (BOR-41/BOR-52): the app's sole language selector,

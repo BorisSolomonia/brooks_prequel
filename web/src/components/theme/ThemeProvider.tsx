@@ -12,9 +12,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     <NextThemesProvider
       attribute="class"
       defaultTheme="light"
-      enableSystem={false}
+      enableSystem
       disableTransitionOnChange
-      themes={['light', 'dark']}
+      themes={['light', 'dark', 'dim']}
     >
       {children}
     </NextThemesProvider>

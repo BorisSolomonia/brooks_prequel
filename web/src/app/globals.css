@@ -143,6 +143,31 @@
   --mw-hard-shadow: 7px 7px 0 rgba(201, 90, 125, 0.14);
 }
 
+/*
+  BOR-57: "Dim / Cool Light" — a cool, low-glare light theme anchored on #f2f3f5.
+  It is light-based, so the brand/accent/ig colour ramps intentionally INHERIT
+  the light :root values (no need to redeclare them); only the cool neutral
+  surfaces, text and borders are overridden here. Because next-themes applies
+  `class="dim"` (not "dark"), Tailwind `dark:` utilities don't fire — correct for
+  a light theme. Avoids pure black per the WCAG/visual-hierarchy guidance.
+*/
+.dim {
+  --bg-primary: #f2f3f5;     /* base background */
+  --bg-secondary: #e9ecf1;   /* subtly recessed cool gray */
+  --bg-elevated: #ffffff;    /* surfaces / cards — elevation against the base */
+  --bg-hover: #e8eaee;
+  --border: #e2e8f0;         /* dividers / borders */
+  --border-light: #eef1f5;
+  --text-primary: #1e293b;   /* deep slate (not pure black) */
+  --text-secondary: #64748b; /* medium cool gray */
+  --text-tertiary: #94a3b8;
+  --separator: #cbd5e1;
+
+  --grain: rgba(30, 41, 59, 0.02);
+  --mw-card-shadow: 0 18px 42px rgba(30, 41, 59, 0.10);
+  --mw-hard-shadow: 7px 7px 0 rgba(100, 116, 139, 0.12);
+}
+
 body {
   color: var(--text-primary);
   background: var(--bg-primary);

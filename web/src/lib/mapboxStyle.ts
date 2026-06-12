@@ -14,13 +14,16 @@ const DARK_STYLE = process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? 'mapbox://styles/mapb
 // platform that can afford the 3D style (desktop, future native iOS).
 const LIGHT_STYLE = process.env.NEXT_PUBLIC_MAPBOX_STYLE_LIGHT ?? 'mapbox://styles/mapbox/light-v11';
 
+// BOR-57: only the actual dark theme gets dark map tiles. light AND the new
+// "dim" (cool-light) theme both use the light style — keying on `=== 'dark'`
+// (rather than `=== 'light'`) makes dim fall through to light tiles correctly.
 export function useMapboxStyle(): string {
   const { resolvedTheme } = useTheme();
-  return resolvedTheme === 'light' ? LIGHT_STYLE : DARK_STYLE;
+  return resolvedTheme === 'dark' ? DARK_STYLE : LIGHT_STYLE;
 }
 
 export function getMapboxStyleForResolvedTheme(resolvedTheme: string | undefined): string {
-  return resolvedTheme === 'light' ? LIGHT_STYLE : DARK_STYLE;
+  return resolvedTheme === 'dark' ? DARK_STYLE : LIGHT_STYLE;
 }
 
 // Convert the mapbox style URL (mapbox://styles/<user>/<style>) into a Mapbox

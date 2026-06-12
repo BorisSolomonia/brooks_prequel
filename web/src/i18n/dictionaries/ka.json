@@ -1026,7 +1026,8 @@
         "account": "ანგარიში",
         "language": "ენა",
         "support": "მხარდაჭერა",
-        "legal": "სამართლებრივი და კომპანია"
+        "legal": "სამართლებრივი და კომპანია",
+        "appearance": "გარეგნობა"
       },
       "rows": {
         "profile": {
@@ -1071,7 +1072,13 @@
       },
       "supportLine": "მხარდაჭერა: {{email}} · {{phone}}",
       "lostAccess": "წვდომა დაკარგეთ? მოითხოვეთ წაშლა:",
-      "withoutSigningIn": "შესვლის გარეშე."
+      "withoutSigningIn": "შესვლის გარეშე.",
+      "theme": {
+        "light": "ნათელი",
+        "dark": "მუქი",
+        "dim": "მკრთალი",
+        "system": "სისტემური"
+      }
     },
     "deleteInApp": {
       "eyebrow": "ანგარიში",

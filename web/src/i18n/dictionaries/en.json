@@ -1029,7 +1029,8 @@
         "account": "Account",
         "language": "Language",
         "support": "Support",
-        "legal": "Legal & company"
+        "legal": "Legal & company",
+        "appearance": "Appearance"
       },
       "rows": {
         "profile": {
@@ -1074,7 +1075,13 @@
       },
       "supportLine": "Support: {{email}} · {{phone}}",
       "lostAccess": "Lost access? Request deletion at",
-      "withoutSigningIn": "without signing in."
+      "withoutSigningIn": "without signing in.",
+      "theme": {
+        "light": "Light",
+        "dark": "Dark",
+        "dim": "Dim",
+        "system": "System"
+      }
     },
     "deleteInApp": {
       "eyebrow": "Account",
