@@ -124,10 +124,24 @@ public class FollowService {
     }
 
     private FollowResponse buildFollowResponse(UUID followerId, UUID targetUserId, boolean isFollowing) {
+        // BOR-61: read the denormalised counts on user_profiles instead of two live
+        // COUNT(*) scans. These columns are maintained atomically on every
+        // follow/unfollow (adjustFollowerCount/adjustFollowingCount) and are already
+        // the source of truth the profile UI displays, so this is both faster and more
+        // consistent. In the write paths the counts are updated earlier in the same
+        // transaction, so this read-after-write reflects the change. Fall back to the
+        // exact COUNT only if a profile row is somehow absent (legacy/edge case).
+        UserProfile targetProfile = profileRepository.findByUserId(targetUserId).orElse(null);
+        long followerCount = targetProfile != null
+                ? targetProfile.getFollowerCount()
+                : followRepository.countByFollowingId(targetUserId);
+        long followingCount = targetProfile != null
+                ? targetProfile.getFollowingCount()
+                : followRepository.countByFollowerId(targetUserId);
         return FollowResponse.builder()
                 .following(isFollowing)
-                .followerCount(followRepository.countByFollowingId(targetUserId))
-                .followingCount(followRepository.countByFollowerId(targetUserId))
+                .followerCount(followerCount)
+                .followingCount(followingCount)
                 .build();
     }
 }
