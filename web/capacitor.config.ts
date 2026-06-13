@@ -41,7 +41,15 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1500,
+      // The web app calls SplashScreen.hide() from AppShell the moment React
+      // hydrates (see web/src/lib/capacitor.ts hideSplash), so on a normal load
+      // the splash drops as soon as content paints — typically well under the
+      // old fixed 1.5s. autoHide stays ON as a safety net: launchShowDuration is
+      // now just the ceiling if that JS call never runs (e.g. a load failure),
+      // and it's raised so a slow network keeps the branded splash up instead of
+      // flashing a blank WebView at 1.5s.
+      launchShowDuration: 3000,
+      launchAutoHide: true,
       backgroundColor: '#F7F1E7',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,

@@ -202,6 +202,22 @@ export async function setupNativeAuthListener(): Promise<() => void> {
   }
 }
 
+// Dismiss the native splash screen as soon as the web app has mounted and is
+// painting, instead of waiting out the fixed Capacitor `launchShowDuration`
+// timer. Called once from AppShell's startup effect (which only fires after
+// React has hydrated — i.e. real content is on screen). No-op on web. The
+// config still keeps `autoHide` on as a safety net, so a JS failure that
+// prevents this call from running can never leave the splash stuck forever.
+export async function hideSplash(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const mod = await import('@capacitor/splash-screen');
+    await mod.SplashScreen?.hide?.();
+  } catch (err) {
+    console.warn('[capacitor] hideSplash failed:', err);
+  }
+}
+
 // BOR-55: open THIS app's system settings screen (Android App Info), used by
 // the microphone-denial recovery UI — once the user denies the mic, Android
 // won't re-prompt, so the only path to re-enable it is the device settings.

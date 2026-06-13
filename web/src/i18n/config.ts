@@ -11,8 +11,13 @@
 //    base English map is approved (BOR-41 approval gate); every key therefore
 //    resolves to English until those files are populated.
 //  - useSuspense:false so a missing/empty dictionary never suspends the tree.
+//  - LAZY dictionaries. Only English (the default + fallback) is bundled into
+//    the main chunk. Every other language is code-split into its own chunk and
+//    fetched on demand the first time it's selected/detected — so an English
+//    user never downloads ka.json (~108KB) and a Georgian user never pays for
+//    the others. See loadLocale() below.
 //
-// To add a language: add it to ./locales.ts AND import + register its dictionary
+// To add a language: add it to ./locales.ts AND register its loader in LOADERS
 // below.
 
 import i18n from 'i18next';
@@ -20,35 +25,31 @@ import { initReactI18next } from 'react-i18next';
 
 import { DEFAULT_LOCALE, SUPPORTED_CODES, LOCALE_STORAGE_KEY } from './locales';
 
+// English is the only dictionary in the main bundle: it's the init language,
+// the fallback for every other locale, and what the server renders.
 import en from './dictionaries/en.json';
-import fr from './dictionaries/fr.json';
-import de from './dictionaries/de.json';
-import it from './dictionaries/it.json';
-import es from './dictionaries/es.json';
-import ka from './dictionaries/ka.json';
-import uk from './dictionaries/uk.json';
-import ru from './dictionaries/ru.json';
-import hy from './dictionaries/hy.json';
-import az from './dictionaries/az.json';
 
-// One namespace ('translation') keyed by the nested dictionary structure
-// (e.g. t('landing.guides.button')). Empty dictionaries fall back to `en`.
-const resources = {
-  en: { translation: en },
-  fr: { translation: fr },
-  de: { translation: de },
-  it: { translation: it },
-  es: { translation: es },
-  ka: { translation: ka },
-  uk: { translation: uk },
-  ru: { translation: ru },
-  hy: { translation: hy },
-  az: { translation: az },
-} as const;
+// Non-English dictionaries are loaded on demand. Each import() is a distinct
+// webpack chunk; only the one the user actually uses is ever fetched. Keep this
+// map in sync with ./locales.ts (en is intentionally absent — it's static).
+const LOADERS: Record<string, () => Promise<{ default: Record<string, unknown> }>> = {
+  fr: () => import('./dictionaries/fr.json'),
+  de: () => import('./dictionaries/de.json'),
+  it: () => import('./dictionaries/it.json'),
+  es: () => import('./dictionaries/es.json'),
+  ka: () => import('./dictionaries/ka.json'),
+  uk: () => import('./dictionaries/uk.json'),
+  ru: () => import('./dictionaries/ru.json'),
+  hy: () => import('./dictionaries/hy.json'),
+  az: () => import('./dictionaries/az.json'),
+};
+
+const loadedLocales = new Set<string>([DEFAULT_LOCALE]);
 
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
-    resources,
+    // Only English is registered up front; the rest arrive via addResourceBundle.
+    resources: { en: { translation: en } },
     lng: DEFAULT_LOCALE, // always 'en' at init — see hydration note above
     fallbackLng: DEFAULT_LOCALE,
     supportedLngs: SUPPORTED_CODES,
@@ -59,10 +60,29 @@ if (!i18n.isInitialized) {
   });
 }
 
+// Fetch + register a locale's dictionary chunk if we haven't already. Idempotent
+// and safe to call with any string (unknown codes are a no-op → English
+// fallback). Awaiting this BEFORE changeLanguage avoids a flash of English while
+// the chunk downloads. Failures degrade gracefully to the English fallback.
+export async function loadLocale(code: string): Promise<void> {
+  if (loadedLocales.has(code)) return;
+  const loader = LOADERS[code];
+  if (!loader) return;
+  try {
+    const mod = await loader();
+    i18n.addResourceBundle(code, 'translation', mod.default ?? mod, true, true);
+    loadedLocales.add(code);
+  } catch (err) {
+    console.warn('[i18n] failed to load locale chunk:', code, err);
+  }
+}
+
 // Switch the app language and persist it as the manual override (wins over
 // device detection on return visits). BOR-52: the global-header Globe selector
-// was removed; the Settings language section is now the sole caller.
-export function setAppLanguage(code: string): void {
+// was removed; the Settings language section is now the sole caller. Callers
+// fire-and-forget; the load+switch completes asynchronously.
+export async function setAppLanguage(code: string): Promise<void> {
+  await loadLocale(code);
   void i18n.changeLanguage(code);
   try {
     window.localStorage.setItem(LOCALE_STORAGE_KEY, code);

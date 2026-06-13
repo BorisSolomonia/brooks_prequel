@@ -59,9 +59,11 @@ const PRECONNECT_HOSTS = [
   // The exact tenant URL comes from AUTH0_ISSUER_BASE_URL but the host
   // pattern *.us.auth0.com is correct for current production.
   'https://dev-4zduxht0r6gq1f7f.us.auth0.com',
-  // Mapbox tile + API endpoints — pulled the moment /maps mounts.
+  // Mapbox tile + API endpoints — pulled the moment /maps mounts. We render
+  // raster tiles via Leaflet (NOT mapbox-gl), so the gl-js telemetry host
+  // events.mapbox.com is never contacted — preconnecting it only wasted a
+  // DNS+TLS handshake on every cold start.
   'https://api.mapbox.com',
-  'https://events.mapbox.com',
   // GCS-served images (user avatars, guide covers, memory photos).
   'https://storage.googleapis.com',
   // Google account profile pictures (for Auth0 Google logins).

@@ -8,7 +8,12 @@ http://127.0.0.1 {
 }
 
 {$DOMAIN} {
-  encode gzip zstd
+  # Encoder order is the preference order: list zstd first so modern clients
+  # (Android System WebView is Chromium, which supports zstd Content-Encoding
+  # since Chrome 123) get the smaller, faster-decoding zstd. gzip stays as the
+  # automatic fallback for anything that doesn't advertise zstd. (Previously
+  # `gzip zstd` made Caddy serve gzip even to zstd-capable clients.)
+  encode zstd gzip
 
   @health path /health
   respond @health "OK" 200
