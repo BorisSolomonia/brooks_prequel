@@ -201,20 +201,26 @@ export const tourSteps: TourStep[] = [
 // The user's self-selected onboarding intent. Drives which path runs.
 export type TourRole = 'traveler' | 'creator';
 
-// The abbreviated Traveler path: welcome → the four "create a memory" steps → search.
-// (Strictly "search for a guide + create a memory" per the spec.) Order is preserved from
-// tourSteps. Creators get the full list unchanged.
-const TRAVELER_STEP_IDS = new Set<string>([
-  'welcome',
-  'memory-drawer-trigger',
-  'memory-intro',
-  'memory-button',
-  'memory-form',
-  'search',
+// Steps that teach the guide-AUTHORING tooling — the "creating a guide" learning
+// path. These are the ONLY steps a Traveler skips: they're about building your
+// own guide, which a traveler isn't doing. Everything else in the tour
+// (discovering creators, previewing + buying guides, adding a trip to the
+// calendar, dropping memories) applies to travelers too, so they keep it.
+// Defining the fork as an exclusion set (rather than a hand-picked traveler
+// list) means any NEW non-authoring step is automatically shown to travelers.
+const CREATOR_ONLY_STEP_IDS = new Set<string>([
+  'ai-button', // AI "Add a hook" generator inside the guide editor (/guides/new)
+  'ai-keys',   // Connect-AI-keys panel (powers the editor's AI features)
 ]);
 
-/** Steps for the chosen role. Creator = the full tour, byte-identical to before. */
+/**
+ * Steps for the chosen role.
+ *  - creator  = the full tour (build + use), byte-identical to before.
+ *  - traveler = the full tour MINUS the guide-authoring steps, i.e. the whole
+ *    discover → creator → buy → add-to-calendar journey plus memories, without
+ *    the "how to create a guide" detour.
+ */
 export function stepsForRole(role: TourRole): TourStep[] {
   if (role === 'creator') return tourSteps;
-  return tourSteps.filter((s) => TRAVELER_STEP_IDS.has(s.id));
+  return tourSteps.filter((s) => !CREATOR_ONLY_STEP_IDS.has(s.id));
 }
