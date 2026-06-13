@@ -13,7 +13,7 @@
 import { useEffect } from 'react';
 import { I18nextProvider } from 'react-i18next';
 
-import i18n from '@/i18n/config';
+import i18n, { loadLocale } from '@/i18n/config';
 import {
   DEFAULT_LOCALE,
   LOCALE_STORAGE_KEY,
@@ -54,10 +54,12 @@ function applyHtmlLang(code: string) {
 export default function I18nProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initial = detectInitialLocale();
-    if (initial !== i18n.language) {
-      void i18n.changeLanguage(initial);
-    }
+    // <html lang/dir> can update immediately; the dictionary chunk (if any) is
+    // fetched first so the switch doesn't flash English while it downloads.
     applyHtmlLang(initial);
+    if (initial !== i18n.language) {
+      void loadLocale(initial).then(() => i18n.changeLanguage(initial));
+    }
 
     // Keep <html lang/dir> in sync with any later manual change.
     const onChanged = (lng: string) => applyHtmlLang(lng);
