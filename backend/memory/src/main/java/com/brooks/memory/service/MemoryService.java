@@ -286,7 +286,19 @@ public class MemoryService {
     @Transactional
     public void deleteMemory(String auth0Subject, UUID memoryId) {
         User viewer = userService.findByAuth0Subject(auth0Subject);
-        Memory memory = findOwnedMemory(viewer.getId(), memoryId);
+        // Look up directly (not via findOwnedMemory) so we can distinguish "already
+        // deleted" from "doesn't exist / not yours". A genuinely unknown ID — or one
+        // owned by someone else — still 404s; deleting your own memory that's already
+        // gone is the desired end state, so we treat it as an idempotent no-op. This
+        // is what stops a stale map pin from surfacing a confusing "Memory not found".
+        Memory memory = memoryRepository.findById(memoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Memory", memoryId));
+        if (!memory.getCreatorId().equals(viewer.getId())) {
+            throw new ResourceNotFoundException("Memory", memoryId);
+        }
+        if (memory.getDeletedAt() != null) {
+            return; // already deleted — idempotent success
+        }
         memory.setDeletedAt(Instant.now());
         Instant revokedAt = Instant.now();
         shareRepository.findByMemory_IdAndRevokedAtIsNull(memoryId)
