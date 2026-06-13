@@ -7,6 +7,17 @@ interface RequestOptions extends RequestInit {
   token?: string;
 }
 
+// Error carrying the HTTP status so callers can branch on it (e.g. treat a 404
+// on DELETE as "already gone" rather than surfacing it as a failure).
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, headers: customHeaders, ...rest } = options;
 
@@ -26,7 +37,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+    throw new ApiError(error.detail || `HTTP ${response.status}`, response.status);
   }
 
   if (response.status === 204) {

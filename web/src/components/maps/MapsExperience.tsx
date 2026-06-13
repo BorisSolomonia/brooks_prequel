@@ -9,7 +9,7 @@ import type { Map as LeafletMap, Marker as LeafletMarker, LayerGroup, TileLayer,
 // avoid touching every call site). Convert to Leaflet's [lat, lng] at use.
 type LngLat = [number, number];
 import StarRating from '@/components/reviews/StarRating';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { scoreSearchMatch } from '@/lib/fuzzySearch';
 import { useMapboxStyle } from '@/lib/mapboxStyle';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -1663,7 +1663,15 @@ export default function MapsExperience({
       setSelectedMemory(null);
       refreshMemories(true);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : errorMsg);
+      // A 404 means the memory is already gone (e.g. a stale map pin the viewport
+      // cache still showed). That's the desired end state, so drop the pin and
+      // refresh silently instead of surfacing a confusing "not found" error.
+      if (error instanceof ApiError && error.status === 404) {
+        setSelectedMemory(null);
+        refreshMemories(true);
+      } else {
+        setPageError(error instanceof Error ? error.message : errorMsg);
+      }
     } finally {
       setMemoryBusy(false);
     }
