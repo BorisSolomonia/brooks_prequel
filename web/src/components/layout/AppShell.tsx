@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import OnboardingProvider from '@/components/onboarding/OnboardingProvider';
 import PermissionsBootstrap from '@/components/PermissionsBootstrap';
-import { setupNativeAuthListener } from '@/lib/capacitor';
+import { setupNativeAuthListener, hideSplash } from '@/lib/capacitor';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 import { MenuCoordinatorProvider } from '@/components/layout/MenuCoordinator';
@@ -45,6 +45,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => {
       cleanup?.();
     };
+  }, []);
+
+  // This effect only runs once React has hydrated and real content is on
+  // screen, so it's the right moment to drop the native splash — rather than
+  // waiting out the fixed launchShowDuration timer. No-op on web.
+  useEffect(() => {
+    void hideSplash();
   }, []);
 
   return (
