@@ -186,7 +186,7 @@ export default function BlockPanel({ dayId, block }: Props) {
       ) : (
         <button
           onClick={() => setAddingPlace(true)}
-          className="mt-2 min-h-11 rounded-md px-2 text-sm font-semibold text-ig-blue hover:text-ig-blue-hover"
+          className="mt-2 min-h-11 rounded-md px-2 text-sm font-bold text-ig-blue hover:text-ig-blue-hover"
         >
           + {t('guideEditor.blockPanel.addPlaceBtn')}
         </button>
