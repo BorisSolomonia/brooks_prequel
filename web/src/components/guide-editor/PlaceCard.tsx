@@ -587,15 +587,15 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
     : '';
 
   return (
-    <div className="group rounded-lg border border-ig-border bg-ig-primary overflow-hidden">
+    <div className="group rounded-xl border-2 border-ig-border bg-ig-primary overflow-hidden">
       <div className="flex gap-3 p-3">
-        <div className="h-16 w-16 flex-shrink-0 rounded-lg border border-ig-border bg-ig-elevated overflow-hidden">
+        <div className="h-16 w-16 flex-shrink-0 rounded-lg border-2 border-ig-border bg-ig-elevated overflow-hidden">
           {firstImage && <img src={firstImage} alt="" loading="lazy" className="h-full w-full object-cover" />}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold text-ig-text-primary truncate">{place.name}</p>
+            <p className="font-display text-base font-bold text-ig-text-primary truncate">{place.name}</p>
             <div className="flex items-center gap-1 flex-shrink-0">
               {mapsUrl ? (
                 <a href={mapsUrl} target="_blank" rel="noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7" title={t('guideEditor.placeCard.viewOnMap')}>📍</a>

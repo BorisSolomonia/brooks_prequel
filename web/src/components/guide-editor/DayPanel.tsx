@@ -32,11 +32,11 @@ export default function DayPanel({ day }: Props) {
   };
 
   return (
-    <div className="border border-ig-border rounded-lg overflow-hidden">
-      <div className="flex cursor-pointer flex-col gap-3 bg-ig-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between" onClick={() => setCollapsed(!collapsed)}>
+    <div className="border-2 border-ig-border rounded-xl overflow-hidden">
+      <div className="flex cursor-pointer flex-col gap-3 bg-ig-elevated px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between" onClick={() => setCollapsed(!collapsed)}>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <span className="text-xs text-ig-text-tertiary">{collapsed ? '▶' : '▼'}</span>
-          <span className="text-sm font-semibold text-ig-blue">{t('guideEditor.dayPanel.dayNumber', { number: day.dayNumber })}</span>
+          <span className="text-sm font-bold text-ig-text-secondary">{collapsed ? '▶' : '▼'}</span>
+          <span className="inline-flex items-center rounded-pill border border-ig-blue/30 bg-ig-blue/15 px-3 py-1 font-display text-sm font-black uppercase tracking-[0.06em] text-ig-blue">{t('guideEditor.dayPanel.dayNumber', { number: day.dayNumber })}</span>
           {editingTitle ? (
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
               <input
@@ -51,15 +51,15 @@ export default function DayPanel({ day }: Props) {
             </div>
           ) : (
             <span
-              className="text-sm text-ig-text-primary hover:text-ig-blue"
+              className="font-display text-base font-bold text-ig-text-primary hover:text-ig-blue"
               onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
             >
-              {day.title || t('guideEditor.dayPanel.clickToAddTitle')}
+              {day.title || <span className="font-sans text-sm font-normal text-ig-text-tertiary">{t('guideEditor.dayPanel.clickToAddTitle')}</span>}
             </span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <span className="text-xs text-ig-text-tertiary">{t('guideEditor.dayPanel.blockCount', { count: day.blocks.length })}</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">{t('guideEditor.dayPanel.blockCount', { count: day.blocks.length })}</span>
           <button onClick={() => deleteDay(day.id)} className="min-h-11 rounded-md px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">{t('guideEditor.dayPanel.deleteBtn')}</button>
         </div>
       </div>
