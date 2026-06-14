@@ -423,7 +423,7 @@ function DaysSection({
 
       <button
         onClick={addDay}
-        className="min-h-12 w-full rounded-lg border-2 border-dashed border-ig-border py-3 text-sm font-semibold text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50"
+        className="min-h-12 w-full rounded-lg border-2 border-dashed border-ig-border py-3 font-display text-base font-black text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50"
       >
         + {t('guideEditor.days.addDayBtn')}
       </button>
