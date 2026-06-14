@@ -199,15 +199,15 @@
     "checkoutFailed": "Checkout failed"
   },
   "roleModal": {
-    "aria": "Choose how you will use Brooks",
-    "heading": "How will you use Brooks?",
+    "aria": "Choose how you want to use Brooks",
+    "heading": "How do you want to use Brooks?",
     "subhead": "Pick one so we can tailor your tour — you can still do everything either way.",
     "traveler": {
-      "title": "Traveler",
+      "title": "I am a Traveler",
       "body": "Discover creators, buy guides, plan your trip, and drop memories on the map. We'll skip the guide-building tools."
     },
     "creator": {
-      "title": "Guide Creator",
+      "title": "I am a Guide Creator",
       "body": "Build, manage, and publish your own guides. Full walkthrough of the creator tools."
     }
   },
