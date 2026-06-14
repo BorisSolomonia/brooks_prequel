@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -31,6 +31,9 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
   // (the header) to flow the creator toward publishing, rather than routing to
   // a separate screen.
   const publishActionsRef = useRef<HTMLDivElement>(null);
+  // BOR-67: the "+ Add Day" action, so we can scroll/focus it right after a guide
+  // is created (the creator is routed straight into building the itinerary).
+  const addDayRef = useRef<HTMLButtonElement>(null);
   const [guide, setGuide] = useState<Guide | null>(initialGuide || null);
   const [metadata, setMetadata] = useState<GuideUpdateRequest>({
     title: initialGuide?.title || '',
@@ -78,6 +81,22 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     setMetadata((prev) => ({ ...prev, ...patch }));
   }, []);
 
+  // BOR-67: when we arrive on the editor right after creating a guide
+  // (handleSaveMetadata navigates here with ?focus=addDay), scroll + focus the
+  // "+ Add Day" action so the creator is pushed straight into Stage 2 (itinerary
+  // building) rather than stalling on the metadata form. Runs once and strips the
+  // query param so a later refresh doesn't re-scroll.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (new URLSearchParams(window.location.search).get('focus') !== 'addDay') return;
+    const raf = requestAnimationFrame(() => {
+      addDayRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      addDayRef.current?.focus({ preventScroll: true });
+    });
+    window.history.replaceState(null, '', window.location.pathname);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   const handleAddTag = () => {
     const tag = tagInput.trim();
     if (tag) {
@@ -112,18 +131,21 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
         await api.patch<Guide>(`/api/guides/${guide.id}`, metadata, token);
         const updated = await api.get<Guide>(`/api/guides/${guide.id}`, token);
         setGuide(updated);
+        // BOR-43: an existing-guide save flows toward the inline Publish action.
+        toast.success(t('guideEditor.editor.draftSaved'));
+        requestAnimationFrame(() => {
+          publishActionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
       } else {
-        // router.replace (not push) so Back from the editor never re-triggers
-        // the save or loops (BOR-43 AC).
+        // BOR-67: first creation routes the creator straight into itinerary
+        // building. router.replace (not push) so Back never re-triggers the save
+        // (BOR-43 AC); ?focus=addDay tells the freshly-mounted editor to scroll +
+        // focus the "+ Add Day" action instead of the publish action.
         const created = await api.post<Guide>('/api/guides', metadata, token);
         setGuide(created);
-        router.replace(`/guides/${created.id}/edit`);
+        toast.success(t('guideEditor.editor.draftSaved'));
+        router.replace(`/guides/${created.id}/edit?focus=addDay`);
       }
-      // Success: transient toast + flow toward the inline Publish action.
-      toast.success(t('guideEditor.editor.draftSaved'));
-      requestAnimationFrame(() => {
-        publishActionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
     } catch (err) {
       // Error: block the scroll above, restore the button (finally), show message.
       const msg = err instanceof Error ? err.message : t('guideEditor.editor.errorSave');
@@ -298,6 +320,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
               onToggleAiPanel={() => setShowAiPanel((v) => !v)}
               onGuideChange={setGuide}
               onMetadataChange={setMetadata}
+              addDayRef={addDayRef}
             />
           </GuideEditProvider>
         )}
@@ -339,6 +362,7 @@ interface DaysSectionProps {
   onToggleAiPanel: () => void;
   onGuideChange: (updater: (g: Guide | null) => Guide | null) => void;
   onMetadataChange: (updater: (m: GuideUpdateRequest) => GuideUpdateRequest) => void;
+  addDayRef: React.Ref<HTMLButtonElement>;
 }
 
 /**
@@ -347,7 +371,7 @@ interface DaysSectionProps {
  * to know about CRUD orchestration.
  */
 function DaysSection({
-  guide, aiKeys, showAiPanel, onToggleAiPanel, onGuideChange, onMetadataChange,
+  guide, aiKeys, showAiPanel, onToggleAiPanel, onGuideChange, onMetadataChange, addDayRef,
 }: DaysSectionProps) {
   const { t } = useTranslation();
   // useGuideEdit must be called inside the provider tree, which is why this lives
@@ -422,8 +446,9 @@ function DaysSection({
       ))}
 
       <button
+        ref={addDayRef}
         onClick={addDay}
-        className="min-h-12 w-full rounded-lg border-2 border-dashed border-ig-border py-3 font-display text-base font-black text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50"
+        className="min-h-12 w-full rounded-lg border-2 border-dashed border-ig-border py-3 font-display text-base font-black text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50 focus:outline-none focus-visible:border-ig-blue focus-visible:ring-2 focus-visible:ring-ig-blue/40"
       >
         + {t('guideEditor.days.addDayBtn')}
       </button>
