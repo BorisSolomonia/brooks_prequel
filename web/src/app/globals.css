@@ -369,6 +369,21 @@ textarea {
   }
 }
 
+/* ───────── BOR-62 itinerary timeline reveal ─────────
+   Smooth fade/slide when a Day's blocks expand, so they don't pop in. Collapse
+   stays instant (conditional render) so the negative-left block dots are never
+   clipped and the shared spine keeps its integrity. */
+@keyframes tl-fade-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: none; }
+}
+.tl-reveal {
+  animation: tl-fade-in 160ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-reveal { animation: none; }
+}
+
 /* ───────── Leaflet stacking cap ─────────
    Leaflet defaults its panes to z-index 200–700 and its controls (zoom /
    attribution) to 1000. Those values are high enough that, in the Android

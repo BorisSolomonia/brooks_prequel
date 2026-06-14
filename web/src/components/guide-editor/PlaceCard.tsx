@@ -15,6 +15,7 @@ import { searchWebImages, unsplashConfigured, urlToFile, type WebImage } from '@
 import { capturePhoto } from '@/lib/camera';
 import type { GuidePlace, GuidePlaceRequest, MediaUsage } from '@/types';
 import { useGuideEdit } from './GuideEditContext';
+import { MapPinIcon, XIcon } from './TimelineIcons';
 
 const SUGGESTED_TAGS = [
   'museum', 'art gallery', 'park', 'restaurant', 'cafe', 'bar',
@@ -598,13 +599,13 @@ export default function PlaceCard({ blockId, place, defaultStartMinute }: Props)
             <p className="text-sm font-semibold text-ig-text-primary truncate">{place.name}</p>
             <div className="flex items-center gap-1 flex-shrink-0">
               {mapsUrl ? (
-                <a href={mapsUrl} target="_blank" rel="noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7" title={t('guideEditor.placeCard.viewOnMap')}>📍</a>
+                <a href={mapsUrl} target="_blank" rel="noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-500/10 hover:text-brand-300 lg:h-7 lg:w-7" title={t('guideEditor.placeCard.viewOnMap')} aria-label={t('guideEditor.placeCard.viewOnMap')}><MapPinIcon className="h-4 w-4" /></a>
               ) : (
-                <button onClick={() => setEditingLocation(true)} className="flex h-11 w-11 items-center justify-center rounded-full text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-brand-400 lg:h-7 lg:w-7" title={t('guideEditor.placeCard.setLocation')}>📍</button>
+                <button onClick={() => setEditingLocation(true)} className="flex h-11 w-11 items-center justify-center rounded-full text-ig-text-tertiary transition-colors hover:bg-ig-hover hover:text-brand-400 lg:h-7 lg:w-7" title={t('guideEditor.placeCard.setLocation')} aria-label={t('guideEditor.placeCard.setLocation')}><MapPinIcon className="h-4 w-4" /></button>
               )}
-              <div className="flex opacity-100 transition-opacity [&>button]:min-h-11 [&>button]:px-3 [&>button]:text-sm lg:opacity-0 lg:group-hover:opacity-100 lg:[&>button]:min-h-9 lg:[&>button]:px-2 lg:[&>button]:text-xs">
+              <div className="flex items-center opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100">
                 <button onClick={() => setEditing(true)} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-text-primary lg:min-h-9 lg:px-2 lg:text-xs">{t('guideEditor.placeCard.editBtn')}</button>
-                <button onClick={() => deletePlace(blockId, place.id)} className="min-h-11 rounded px-3 text-sm text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:px-2 lg:text-xs">✕</button>
+                <button onClick={() => deletePlace(blockId, place.id)} aria-label={t('guideEditor.placeCard.deletePlace')} title={t('guideEditor.placeCard.deletePlace')} className="flex min-h-11 min-w-11 items-center justify-center rounded text-ig-text-tertiary hover:text-ig-error lg:min-h-9 lg:min-w-9"><XIcon className="h-4 w-4" /></button>
               </div>
             </div>
           </div>

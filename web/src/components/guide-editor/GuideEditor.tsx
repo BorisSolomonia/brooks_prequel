@@ -8,6 +8,8 @@ import { useToast } from '@/components/ui/Toast';
 import type { Guide, GuideUpdateRequest } from '@/types';
 import GuideMetadataForm from './GuideMetadataForm';
 import DayPanel from './DayPanel';
+import { PlusIcon } from './TimelineIcons';
+import { SPINE_LEFT, SPINE_WIDTH, DAY_NODE, DAY_NODE_LEFT, NODE_TOP, NODE_CENTER, PAD, maskRing } from '@/lib/guideTimeline';
 import PublishButton from './PublishButton';
 import GiftGuideModal from './GiftGuideModal';
 import { CreatorAiPanel } from '@/components/ai/CreatorAiPanel';
@@ -417,16 +419,65 @@ function DaysSection({
         />
       )}
 
-      {guide.days.map((day) => (
-        <DayPanel key={day.id} day={day} />
-      ))}
+      {/* Continuous vertical timeline: one shared spine runs the full height of
+          the days region; day nodes + block dots sit on top and mask it. */}
+      <div className="relative">
+        {/* The single spine line. Nodes/dots punch clean gaps via box-shadow,
+            so this is never segmented and can't over/under-extend on collapse. */}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: SPINE_LEFT,
+            // Run the line from the first day node's centre to the Add-Day ghost
+            // node's centre, so it never overextends past the end caps.
+            top: NODE_CENTER,
+            bottom: NODE_CENTER,
+            width: SPINE_WIDTH,
+            background: 'var(--border)',
+          }}
+        />
 
-      <button
-        onClick={addDay}
-        className="min-h-12 w-full rounded-lg border-2 border-dashed border-ig-border py-3 text-sm font-semibold text-ig-blue transition-colors hover:border-ig-blue hover:bg-ig-secondary/50"
-      >
-        + {t('guideEditor.days.addDayBtn')}
-      </button>
+        <div className="space-y-3">
+          {guide.days.map((day) => (
+            <DayPanel key={day.id} day={day} />
+          ))}
+
+          {/* Global "Add Day" ghost node — a hollow dashed node on the spine. */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={addDay}
+              aria-label={t('guideEditor.days.addDayBtn')}
+              className="group flex min-h-11 w-full items-center gap-2 text-left"
+            >
+              <span
+                aria-hidden
+                className="flex items-center justify-center text-ig-text-tertiary transition-colors group-hover:text-ig-blue"
+                style={{
+                  position: 'absolute',
+                  left: DAY_NODE_LEFT,
+                  top: NODE_TOP,
+                  width: DAY_NODE,
+                  height: DAY_NODE,
+                  borderRadius: '9999px',
+                  border: '2px dashed var(--border)',
+                  background: 'var(--bg-primary)',
+                  boxShadow: maskRing(),
+                }}
+              >
+                <PlusIcon className="h-4 w-4" />
+              </span>
+              <span
+                className="text-sm font-semibold text-ig-blue"
+                style={{ paddingLeft: PAD }}
+              >
+                {t('guideEditor.days.addDayBtn')}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
