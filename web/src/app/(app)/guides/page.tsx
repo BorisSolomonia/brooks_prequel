@@ -8,7 +8,7 @@ import AddToCalendarModal from '@/components/calendar/AddToCalendarModal';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useCurrency } from '@/hooks/useCurrency';
-import type { GuideLibraryItem, GuideLibraryResponse, GuideSearchResult, MyTripSummary, PageResponse, PurchaseResponse } from '@/types';
+import type { GuideLibraryItem, GuideLibraryResponse, GuideSearchResult, MyTripSummary, MyTripsResponse, PageResponse, PurchaseResponse } from '@/types';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
@@ -49,6 +49,13 @@ export default function MyGuidesPage() {
   const [deletingGuideId, setDeletingGuideId] = useState<string | null>(null);
   const [calendarTripId, setCalendarTripId] = useState<string | null>(null);
   const [calendarLoadingGuideId, setCalendarLoadingGuideId] = useState<string | null>(null);
+  // BOR-63: archived (hidden) purchases. Hiding sets guide_purchases.removed_at via
+  // DELETE /me/trips/{id}; the financial purchase record is never touched. These
+  // power the "Archived" section so users can restore a hidden guide.
+  const [hiddenTrips, setHiddenTrips] = useState<MyTripSummary[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivingGuideId, setArchivingGuideId] = useState<string | null>(null);
+  const [restoringTripId, setRestoringTripId] = useState<string | null>(null);
 
   useEffect(() => {
     if (tokenLoading) return;
@@ -62,23 +69,30 @@ export default function MyGuidesPage() {
     Promise.all([
       api.get<GuideLibraryResponse>('/api/me/guides/library', token),
       api.get<PageResponse<PurchaseResponse>>('/api/me/purchases?page=0&size=100', token),
+      // BOR-63: hidden (archived) trips, keyed by guideId, so we can strictly
+      // filter them out of the active Purchased feed and offer restore.
+      api.get<MyTripsResponse>('/api/me/trips/hidden', token),
     ])
-      .then(([guideLibrary, purchases]) => {
-        const purchased: GuideLibraryItem[] = purchases.content.map((purchase) => ({
-          id: purchase.guideId,
-          title: purchase.guideTitle ?? 'Purchased guide',
-          coverImageUrl: purchase.guideCoverImageUrl,
-          region: purchase.guideRegion,
-          dayCount: 0,
-          placeCount: 0,
-          priceCents: purchase.priceCentsPaid,
-          currency: purchase.currency,
-          versionNumber: purchase.guideVersionNumber,
-          creatorUsername: null,
-          savedAt: null,
-          purchasedAt: purchase.completedAt ?? purchase.createdAt,
-        }));
+      .then(([guideLibrary, purchases, hidden]) => {
+        const hiddenGuideIds = new Set(hidden.trips.map((trip) => trip.guideId));
+        const purchased: GuideLibraryItem[] = purchases.content
+          .filter((purchase) => !hiddenGuideIds.has(purchase.guideId))
+          .map((purchase) => ({
+            id: purchase.guideId,
+            title: purchase.guideTitle ?? 'Purchased guide',
+            coverImageUrl: purchase.guideCoverImageUrl,
+            region: purchase.guideRegion,
+            dayCount: 0,
+            placeCount: 0,
+            priceCents: purchase.priceCentsPaid,
+            currency: purchase.currency,
+            versionNumber: purchase.guideVersionNumber,
+            creatorUsername: null,
+            savedAt: null,
+            purchasedAt: purchase.completedAt ?? purchase.createdAt,
+          }));
 
+        setHiddenTrips(hidden.trips);
         setLibrary({
           ...guideLibrary,
           purchased,
@@ -271,6 +285,69 @@ export default function MyGuidesPage() {
     }
   };
 
+  // Rebuild a Purchased-tab card from a trip summary — used when restoring a
+  // previously archived guide back into the active feed without a full reload.
+  const tripToLibraryItem = (trip: MyTripSummary): GuideLibraryItem => ({
+    id: trip.guideId,
+    title: trip.title,
+    coverImageUrl: trip.coverImageUrl,
+    region: trip.region,
+    dayCount: trip.dayCount,
+    placeCount: trip.placeCount,
+    priceCents: trip.amountCents,
+    currency: trip.currency,
+    versionNumber: trip.guideVersionNumber,
+    creatorUsername: null,
+    savedAt: null,
+    purchasedAt: trip.purchasedAt,
+  });
+
+  // BOR-63: hide (archive) a purchased guide. Resolves the trip behind the guide,
+  // then soft-removes it (DELETE /me/trips/{id} → sets removed_at; the financial
+  // purchase row is untouched). Optimistically drops the card from the active feed
+  // and adds it to the Archived section so the change shows with no page refresh.
+  const handleArchiveGuide = async (guide: GuideLibraryItem) => {
+    if (!token || archivingGuideId) return;
+    setArchivingGuideId(guide.id);
+    try {
+      const trip = await api.get<MyTripSummary>(`/api/me/trips/by-guide/${guide.id}`, token);
+      await api.delete<void>(`/api/me/trips/${trip.id}`, token);
+      setLibrary((current) => current ? {
+        ...current,
+        purchased: current.purchased.filter((item) => item.id !== guide.id),
+      } : current);
+      setHiddenTrips((current) =>
+        current.some((trp) => trp.id === trip.id) ? current : [{ ...trip, hidden: true }, ...current],
+      );
+      toast.success(t('guidePages.guidesList.guideHidden'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('guidePages.guidesList.errorFailedToHide'));
+    } finally {
+      setArchivingGuideId(null);
+    }
+  };
+
+  // BOR-63: restore an archived guide back to the active Purchased feed.
+  const handleRestoreTrip = async (trip: MyTripSummary) => {
+    if (!token || restoringTripId) return;
+    setRestoringTripId(trip.id);
+    try {
+      await api.post<void>(`/api/me/trips/${trip.id}/restore`, undefined, token);
+      setHiddenTrips((current) => current.filter((trp) => trp.id !== trip.id));
+      setLibrary((current) => current ? {
+        ...current,
+        purchased: current.purchased.some((item) => item.id === trip.guideId)
+          ? current.purchased
+          : [tripToLibraryItem(trip), ...current.purchased],
+      } : current);
+      toast.success(t('guidePages.guidesList.guideRestored'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('guidePages.guidesList.errorFailedToRestore'));
+    } finally {
+      setRestoringTripId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -418,16 +495,35 @@ export default function MyGuidesPage() {
                 </div>
               </Link>
               {(activeTab === 'created' || activeTab === 'purchased') && (
-                <div className="flex justify-stretch border-t-2 border-ig-border px-3 py-2 sm:justify-end">
+                <div className="flex flex-wrap items-center gap-2 border-t-2 border-ig-border px-3 py-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => openCalendarForGuide(guide)}
                     disabled={calendarLoadingGuideId === guide.id}
-                    className="mw-button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto lg:min-h-9 lg:py-1.5 lg:text-xs"
+                    className="mw-button-secondary inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none lg:min-h-9 lg:py-1.5 lg:text-xs"
                   >
                     {calendarLoadingGuideId === guide.id && <Spinner />}
                     {calendarLoadingGuideId === guide.id ? t('guidePages.guidesList.preparingCalendar') : t('guidePages.guidesList.addToCalendar')}
                   </button>
+                  {activeTab === 'purchased' && (
+                    <button
+                      type="button"
+                      onClick={() => handleArchiveGuide(guide)}
+                      disabled={archivingGuideId === guide.id}
+                      title={t('guidePages.guidesList.hideFromFeed')}
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-md border-2 border-ig-border px-3 py-2 text-sm font-semibold text-ig-text-secondary transition-colors hover:border-ig-blue/40 hover:text-ig-text-primary disabled:cursor-not-allowed disabled:opacity-60 lg:min-h-9 lg:py-1.5 lg:text-xs"
+                    >
+                      {archivingGuideId === guide.id ? <Spinner /> : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                          <path d="M3 3l18 18" />
+                          <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                          <path d="M9.4 5.2A9.5 9.5 0 0 1 12 5c5 0 9 4.5 10 7a13 13 0 0 1-2.2 3" />
+                          <path d="M6.2 6.2A13 13 0 0 0 2 12c1 2.5 5 7 10 7a9.5 9.5 0 0 0 3.4-.6" />
+                        </svg>
+                      )}
+                      <span>{t('guidePages.guidesList.hide')}</span>
+                    </button>
+                  )}
                 </div>
               )}
               {activeTab === 'created' && (
@@ -445,6 +541,51 @@ export default function MyGuidesPage() {
             </div>
           ))}
         </div>
+      )}
+      {/* BOR-63: Archived purchases — hidden guides the user can restore. Only on
+          the Purchased tab, and only when something is archived. */}
+      {activeTab === 'purchased' && hiddenTrips.length > 0 && (
+        <section className="mt-8 border-t-2 border-ig-border pt-5">
+          <button
+            type="button"
+            onClick={() => setShowArchived((v) => !v)}
+            aria-expanded={showArchived}
+            className="flex w-full items-center justify-between gap-2 text-left"
+          >
+            <span className="font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">
+              {t('guidePages.guidesList.archivedSectionTitle', { count: hiddenTrips.length })}
+            </span>
+            <span className="text-ig-text-tertiary">{showArchived ? '▾' : '▸'}</span>
+          </button>
+          {showArchived && (
+            <ul className="mt-3 space-y-2">
+              {hiddenTrips.map((trip) => (
+                <li key={trip.id} className="mw-card flex items-center gap-3 p-3">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-ig-secondary">
+                    {trip.coverImageUrl && (
+                      <Image src={trip.coverImageUrl} alt="" width={48} height={48} className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-ig-text-primary">{trip.title}</p>
+                    {(trip.primaryCity || trip.region) && (
+                      <p className="truncate text-xs text-ig-text-tertiary">{trip.primaryCity || trip.region}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRestoreTrip(trip)}
+                    disabled={restoringTripId === trip.id}
+                    className="mw-button-secondary inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 lg:min-h-9 lg:py-1.5 lg:text-xs"
+                  >
+                    {restoringTripId === trip.id && <Spinner />}
+                    {t('guidePages.guidesList.restore')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
       {calendarTripId && token && (
         <AddToCalendarModal tripId={calendarTripId} token={token} onClose={() => setCalendarTripId(null)} />
