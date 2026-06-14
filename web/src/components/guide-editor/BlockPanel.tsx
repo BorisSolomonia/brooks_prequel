@@ -68,7 +68,7 @@ export default function BlockPanel({ dayId, block }: Props) {
   };
 
   return (
-    <div className={`border rounded-lg p-3 ${isSecret ? 'border-amber-500/40 bg-amber-500/5' : 'border-ig-border-light bg-ig-secondary/50'}`}>
+    <div className={`border-2 rounded-xl p-3.5 ${isSecret ? 'border-amber-500/50 bg-amber-500/5' : 'border-ig-border bg-ig-secondary/50'}`}>
       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {editingTitle ? (
           <div className="flex-1 space-y-3">
@@ -130,15 +130,15 @@ export default function BlockPanel({ dayId, block }: Props) {
         ) : (
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             {isSecret ? (
-              <span className="text-xs px-2 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded-pill text-amber-400">
+              <span className="text-xs font-bold uppercase tracking-wide px-2.5 py-1 bg-amber-500/20 border-2 border-amber-500/50 rounded-pill text-amber-400">
                 🔑 Secret
               </span>
             ) : (
-              <span className="text-xs px-2 py-0.5 bg-ig-elevated border border-ig-border rounded-pill text-ig-text-secondary">
+              <span className="text-xs font-bold uppercase tracking-wide px-2.5 py-1 bg-ig-elevated border-2 border-ig-border rounded-pill text-ig-text-secondary">
                 {catMeta?.icon} {catMeta?.shortLabel ?? catMeta?.label ?? block.blockType}
               </span>
             )}
-            <h4 className="text-sm font-semibold text-ig-text-primary cursor-pointer hover:text-ig-blue" onClick={() => setEditingTitle(true)}>
+            <h4 className="font-display text-base font-bold text-ig-text-primary cursor-pointer hover:text-ig-blue" onClick={() => setEditingTitle(true)}>
               {block.title || t('guideEditor.blockPanel.untitledBlock')}
             </h4>
             {block.suggestedStartMinute !== null && block.suggestedStartMinute !== undefined && (
