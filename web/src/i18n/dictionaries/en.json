@@ -327,7 +327,6 @@
       "cancelBtn": "Cancel",
       "viewOnMap": "View on map",
       "setLocation": "Set location",
-      "deletePlace": "Delete place",
       "editBtn": "Details",
       "setLocationCoords": "Set location coordinates",
       "latitudePlaceholder": "Latitude",
@@ -344,8 +343,7 @@
       "deleteBtn": "Delete",
       "placeNamePlaceholder": "Place name",
       "addBtn": "Add",
-      "addPlaceBtn": "Add Place",
-      "noPlacesYet": "No places yet — add one"
+      "addPlaceBtn": "Add Place"
     },
     "dayPanel": {
       "dayNumber": "Day {{number}}",
@@ -357,10 +355,7 @@
       "chooseBlockType": "Choose block type:",
       "addBlockBtn": "Add Block",
       "cancelBtn": "Cancel",
-      "addBlockInlineBtn": "Add Block",
-      "expand": "Expand day",
-      "collapse": "Collapse day",
-      "noBlocksYet": "This day has no blocks yet"
+      "addBlockInlineBtn": "Add Block"
     },
     "editor": {
       "editGuideTitle": "Edit Guide",

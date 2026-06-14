@@ -324,7 +324,6 @@
       "cancelBtn": "გაუქმება",
       "viewOnMap": "რუკაზე ნახვა",
       "setLocation": "მდებარეობის განსაზღვრა",
-      "deletePlace": "ადგილის წაშლა",
       "editBtn": "დეტალები",
       "setLocationCoords": "მდებარეობის კოორდინატების განსაზღვრა",
       "latitudePlaceholder": "განედი",
@@ -341,8 +340,7 @@
       "deleteBtn": "წაშლა",
       "placeNamePlaceholder": "ადგილის სახელი",
       "addBtn": "დამატება",
-      "addPlaceBtn": "ადგილის დამატება",
-      "noPlacesYet": "ჯერ ადგილები არ არის — დაამატეთ"
+      "addPlaceBtn": "ადგილის დამატება"
     },
     "dayPanel": {
       "dayNumber": "დღე {{number}}",
@@ -354,10 +352,7 @@
       "chooseBlockType": "აირჩიეთ ბლოკის ტიპი:",
       "addBlockBtn": "ბლოკის დამატება",
       "cancelBtn": "გაუქმება",
-      "addBlockInlineBtn": "ბლოკის დამატება",
-      "expand": "დღის გაშლა",
-      "collapse": "დღის ჩაკეცვა",
-      "noBlocksYet": "ამ დღეს ჯერ ბლოკები არ აქვს"
+      "addBlockInlineBtn": "ბლოკის დამატება"
     },
     "editor": {
       "editGuideTitle": "გზამკვლევის რედაქტირება",
