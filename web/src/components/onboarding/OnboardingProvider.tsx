@@ -9,8 +9,13 @@ import OnboardingTour from './OnboardingTour';
 import RoleSelectionModal from './RoleSelectionModal';
 import { tourSteps, stepsForRole, type TourStep, type TourRole } from './tourSteps';
 
-// localStorage mirror of the chosen role, so we don't re-prompt or re-fetch /api/me every load.
-const ROLE_STORAGE_KEY = 'brooks.onboarding.role';
+// Per-user cache of the resolved persona, keyed by Auth0 subject. The SERVER
+// (users.primary_intent, returned by /api/me) is the source of truth for whether
+// to show the must-choose prompt; this cache only prevents re-prompting a user who
+// has already chosen when they happen to be offline. Keying by `sub` stops a second
+// account on the same browser/WebView from inheriting another user's choice — one
+// root cause of the "role modal sometimes shows, sometimes doesn't" bug.
+const roleStorageKey = (sub: string) => `brooks.onboarding.role:${sub}`;
 
 // Every distinct path the tour will navigate to. Strip query because router.prefetch
 // works on path only. Computed once at module load — the step list is static.
@@ -123,18 +128,17 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     setStatus('pending');
   }, [user, token, userLoading, tokenLoading]);
 
-  // Resolve the chosen role: localStorage fast-path, else GET /api/me. Until resolved we don't
-  // show the prompt (avoids a modal flash for returning users). Stays null → prompt for new users.
+  // Resolve the persona from the SERVER (authoritative): the prompt shows iff
+  // /api/me reports primary_intent == null. We deliberately do NOT let a device-local
+  // cache (or the tour-"completed" flag) decide this — those made the prompt appear
+  // or not depending on incidental device state, which is the reported bug. The
+  // per-user cache is consulted only as an OFFLINE fallback so a user who has already
+  // chosen isn't re-prompted with no network. `roleResolved` stays false until this
+  // settles, so returning users never see a modal flash.
   useEffect(() => {
     if (role || !user || !token) return;
-    if (typeof window !== 'undefined') {
-      const cached = window.localStorage.getItem(ROLE_STORAGE_KEY);
-      if (cached === 'traveler' || cached === 'creator') {
-        setRole(cached);
-        setRoleResolved(true);
-        return;
-      }
-    }
+    const sub = user.sub ?? null;
+    const key = sub ? roleStorageKey(sub) : null;
     let cancelled = false;
     (async () => {
       try {
@@ -144,10 +148,18 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
         if (pi === 'TRAVELER' || pi === 'CREATOR') {
           const r = pi.toLowerCase() as TourRole;
           setRole(r);
-          try { window.localStorage.setItem(ROLE_STORAGE_KEY, r); } catch { /* incognito */ }
+          if (key) { try { window.localStorage.setItem(key, r); } catch { /* incognito */ } }
+        } else if (key) {
+          // Server has no persona → drop any stale cache so it can't suppress the prompt.
+          try { window.localStorage.removeItem(key); } catch { /* incognito */ }
         }
       } catch {
-        // Leave role null → show the prompt; the POST on choose persists it.
+        // Offline / API error: fall back to THIS user's cached choice (if any) so
+        // someone who already chose isn't wrongly re-prompted without a network.
+        if (key && typeof window !== 'undefined') {
+          const cached = window.localStorage.getItem(key);
+          if (cached === 'traveler' || cached === 'creator') setRole(cached);
+        }
       } finally {
         if (!cancelled) setRoleResolved(true);
       }
@@ -184,10 +196,12 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
   const chooseRole = useCallback((r: TourRole) => {
     setRole(r);
     setRoleResolved(true);
-    try { window.localStorage.setItem(ROLE_STORAGE_KEY, r); } catch { /* incognito */ }
+    const sub = user?.sub;
+    if (sub) { try { window.localStorage.setItem(roleStorageKey(sub), r); } catch { /* incognito */ } }
     if (token) {
       void api.post('/api/me/onboarding/role', { role: r.toUpperCase() }, token).catch(() => {
-        // Best-effort; localStorage keeps the choice for this session.
+        // Best-effort. If it fails the server stays null and the user is re-prompted
+        // next load (self-healing) rather than silently losing the persona.
       });
     }
     setIsActive(true);
@@ -195,7 +209,7 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     prefetchedRef.current = false;
     setSampleCreatorUsername(null);
     void fetchSampleCreator();
-  }, [token, fetchSampleCreator]);
+  }, [token, user, fetchSampleCreator]);
 
   const next = useCallback(() => {
     setCurrentStepIndex((i) => Math.min(i + 1, activeSteps.length - 1));
@@ -239,12 +253,15 @@ export default function OnboardingProvider({ children }: { children: ReactNode }
     exitToMaps();
   }, [persistComplete, exitToMaps]);
 
-  // New, authed users who haven't chosen a role yet get the must-choose prompt (once the role
-  // has been resolved, to avoid flashing it for returning users). It launches the tour on choose.
-  // Gated to /maps (the post-login landing) so it never appears over public pages the user
+  // New, authed users who haven't chosen a persona yet get the must-choose prompt.
+  // Driven purely by the SERVER's persona (role === null after /api/me resolves) and
+  // deliberately NOT coupled to the tour-"completed" flag/status: a device where
+  // onboarding was completed before must not suppress the prompt for a user who still
+  // has no persona. Gated to roleResolved (never flashes for returning users) and to
+  // /maps (the post-login landing) so it never appears over public pages the user
   // navigated to — e.g. browsing /search/guides while logged-in-but-not-onboarded.
   const needsRoleSelection =
-    status === 'pending' && !isActive && roleResolved && role === null && !!user && !!token
+    !isActive && roleResolved && role === null && !!user && !!token
     && !!pathname && pathname.startsWith('/maps');
 
   return (
