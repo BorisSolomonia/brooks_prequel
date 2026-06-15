@@ -24,6 +24,28 @@ export function platform(): 'web' | 'ios' | 'android' {
   return p === 'ios' || p === 'android' ? p : 'web';
 }
 
+// BOR-68: open the device's native maps app with directions to a coordinate.
+// Used by the locked-memory card so a recipient who is out of range can navigate
+// to the spot. Only the coordinate (already needed to render the map pin) is
+// handed off — never the memory's withheld content. Platform-specific URI
+// schemes: a `geo:` intent on Android (the OS hands off to the default maps app),
+// Apple Maps directions on iOS, and a Google Maps directions URL in a new tab on
+// the web (which deep-links into the app on mobile browsers).
+export function openDirections(latitude: number, longitude: number, label?: string): void {
+  const dest = `${latitude},${longitude}`;
+  const p = platform();
+  if (p === 'android') {
+    const q = label ? `${dest}(${encodeURIComponent(label)})` : dest;
+    window.location.href = `geo:${dest}?q=${q}`;
+    return;
+  }
+  if (p === 'ios') {
+    window.location.href = `https://maps.apple.com/?daddr=${dest}`;
+    return;
+  }
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank', 'noopener,noreferrer');
+}
+
 // Opens an external URL in an Android Custom Tab / iOS SFSafariViewController
 // when running inside Capacitor. On web (or if the plugin isn't loaded yet)
 // falls back to a plain location change so the existing flow keeps working.
