@@ -565,8 +565,10 @@ public class GuideService {
     public GuideLibraryResponse getGuideLibrary(String auth0Subject) {
         User user = userService.findByAuth0Subject(auth0Subject);
 
+        // BOR-69: sort the "Created" tab by created_at DESC so a freshly published
+        // guide lands at the very top of the creator's library.
         List<Guide> createdGuides = guideRepository.findByCreatorIdAndStatusNot(
-                        user.getId(), GuideStatus.DELETED, PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "updatedAt")))
+                        user.getId(), GuideStatus.DELETED, PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .getContent();
 
         List<SavedGuide> savedEntries = savedGuideRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
