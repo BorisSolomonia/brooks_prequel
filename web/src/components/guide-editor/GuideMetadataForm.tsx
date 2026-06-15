@@ -371,6 +371,11 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
   // One-tap geolocate: set coords (the destination map recenters via its prop
   // effect) and reverse-geocode to prefill city/region/country.
   const [locating, setLocating] = useState(false);
+  // BOR-70: the optional granular fields (traveler stage, personas, best time)
+  // live behind a collapsed-by-default "Advanced details" accordion so a fast
+  // creation flow can skip them entirely. They stay mounted (CSS collapse), so
+  // anything the user fills in is preserved in the payload regardless of toggle.
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const useMyLocation = async () => {
     setLocating(true);
     const coords = await getCurrentCoords();
@@ -588,85 +593,114 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
         helpText={t('guideEditor.metadata.coverImageHint')}
       />
 
+      {/* BOR-70: optional granular metadata behind a collapsed-by-default
+          "Advanced details" accordion. Kept mounted (CSS grid-rows collapse) so
+          any values the user enters persist into the payload either way. */}
       <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.travelerStageLabel')}</label>
-        <select
-          value={(data as GuideUpdateRequest).travelerStage ?? ''}
-          onChange={(e) => update('travelerStage', e.target.value || null)}
-          className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          aria-expanded={advancedOpen}
+          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-ig-border bg-ig-secondary/50 px-3 py-2 text-left text-sm font-semibold text-ig-text-secondary transition-colors hover:border-ig-blue/40 hover:text-ig-text-primary"
         >
-          <option value="">{t('guideEditor.metadata.stageAny')}</option>
-          <option value="DREAMING">{t('guideEditor.metadata.stageDreaming')}</option>
-          <option value="PLANNING">{t('guideEditor.metadata.stagePlanning')}</option>
-          <option value="EXPERIENCING">{t('guideEditor.metadata.stageExperiencing')}</option>
-        </select>
-      </div>
+          <span>{t('guideEditor.metadata.advancedDetails')}</span>
+          <svg
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"
+            className="h-4 w-4 shrink-0 text-ig-text-tertiary transition-transform duration-200"
+            style={{ transform: advancedOpen ? 'rotate(90deg)' : 'none' }}
+            aria-hidden
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+        <div
+          className={`grid transition-all duration-200 ease-out ${advancedOpen ? 'mt-4 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-4" aria-hidden={!advancedOpen}>
+              <div>
+                <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.travelerStageLabel')}</label>
+                <select
+                  value={(data as GuideUpdateRequest).travelerStage ?? ''}
+                  onChange={(e) => update('travelerStage', e.target.value || null)}
+                  className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
+                >
+                  <option value="">{t('guideEditor.metadata.stageAny')}</option>
+                  <option value="DREAMING">{t('guideEditor.metadata.stageDreaming')}</option>
+                  <option value="PLANNING">{t('guideEditor.metadata.stagePlanning')}</option>
+                  <option value="EXPERIENCING">{t('guideEditor.metadata.stageExperiencing')}</option>
+                </select>
+              </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.personasLabel')}</label>
-        <div className="flex flex-wrap gap-2">
-          {(['SOLO', 'FAMILY', 'BUDGET', 'LUXURY', 'DIGITAL_NOMAD'] as const).map((persona) => {
-            const selected = ((data as GuideUpdateRequest).personas ?? []).includes(persona);
-            return (
-              <button
-                key={persona}
-                type="button"
-                onClick={() => {
-                  const current = (data as GuideUpdateRequest).personas ?? [];
-                  update('personas', selected ? current.filter((p) => p !== persona) : [...current, persona]);
-                }}
-                className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1.5 lg:text-xs ${
-                  selected
-                    ? 'border-brand-500 bg-brand-500/15 text-brand-400'
-                    : 'border-ig-border bg-ig-secondary text-ig-text-secondary hover:border-brand-500/40'
-                }`}
-              >
-                {persona === 'DIGITAL_NOMAD' ? 'Digital Nomad' : persona.charAt(0) + persona.slice(1).toLowerCase()}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+              <div>
+                <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.personasLabel')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {(['SOLO', 'FAMILY', 'BUDGET', 'LUXURY', 'DIGITAL_NOMAD'] as const).map((persona) => {
+                    const selected = ((data as GuideUpdateRequest).personas ?? []).includes(persona);
+                    return (
+                      <button
+                        key={persona}
+                        type="button"
+                        onClick={() => {
+                          const current = (data as GuideUpdateRequest).personas ?? [];
+                          update('personas', selected ? current.filter((p) => p !== persona) : [...current, persona]);
+                        }}
+                        className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition-colors lg:min-h-0 lg:px-3 lg:py-1.5 lg:text-xs ${
+                          selected
+                            ? 'border-brand-500 bg-brand-500/15 text-brand-400'
+                            : 'border-ig-border bg-ig-secondary text-ig-text-secondary hover:border-brand-500/40'
+                        }`}
+                      >
+                        {persona === 'DIGITAL_NOMAD' ? 'Digital Nomad' : persona.charAt(0) + persona.slice(1).toLowerCase()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.bestTimeLabel')}</label>
-        <p className="text-xs text-ig-text-tertiary mb-2">{t('guideEditor.metadata.bestTimeHint')}</p>
-        <div className="mb-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label className="block text-xs text-ig-text-tertiary mb-1">{t('guideEditor.metadata.fromMonth')}</label>
-            <select
-              value={(data as GuideUpdateRequest).bestSeasonStartMonth ?? ''}
-              onChange={(e) => update('bestSeasonStartMonth', e.target.value ? parseInt(e.target.value) : null)}
-              className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
-            >
-              <option value="">{t('guideEditor.metadata.monthAny')}</option>
-              {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
-                <option key={m} value={i + 1}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-ig-text-tertiary mb-1">{t('guideEditor.metadata.toMonth')}</label>
-            <select
-              value={(data as GuideUpdateRequest).bestSeasonEndMonth ?? ''}
-              onChange={(e) => update('bestSeasonEndMonth', e.target.value ? parseInt(e.target.value) : null)}
-              className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
-            >
-              <option value="">{t('guideEditor.metadata.monthAny')}</option>
-              {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
-                <option key={m} value={i + 1}>{m}</option>
-              ))}
-            </select>
+              <div>
+                <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.bestTimeLabel')}</label>
+                <p className="text-xs text-ig-text-tertiary mb-2">{t('guideEditor.metadata.bestTimeHint')}</p>
+                <div className="mb-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs text-ig-text-tertiary mb-1">{t('guideEditor.metadata.fromMonth')}</label>
+                    <select
+                      value={(data as GuideUpdateRequest).bestSeasonStartMonth ?? ''}
+                      onChange={(e) => update('bestSeasonStartMonth', e.target.value ? parseInt(e.target.value) : null)}
+                      className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
+                    >
+                      <option value="">{t('guideEditor.metadata.monthAny')}</option>
+                      {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                        <option key={m} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-ig-text-tertiary mb-1">{t('guideEditor.metadata.toMonth')}</label>
+                    <select
+                      value={(data as GuideUpdateRequest).bestSeasonEndMonth ?? ''}
+                      onChange={(e) => update('bestSeasonEndMonth', e.target.value ? parseInt(e.target.value) : null)}
+                      className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none md:text-sm"
+                    >
+                      <option value="">{t('guideEditor.metadata.monthAny')}</option>
+                      {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                        <option key={m} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={(data as GuideUpdateRequest).bestSeasonLabel ?? ''}
+                  onChange={(e) => update('bestSeasonLabel', e.target.value || null)}
+                  placeholder={t('guideEditor.metadata.seasonLabelPlaceholder')}
+                  maxLength={60}
+                  className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none md:text-sm"
+                />
+              </div>
+            </div>
           </div>
         </div>
-        <input
-          type="text"
-          value={(data as GuideUpdateRequest).bestSeasonLabel ?? ''}
-          onChange={(e) => update('bestSeasonLabel', e.target.value || null)}
-          placeholder={t('guideEditor.metadata.seasonLabelPlaceholder')}
-          maxLength={60}
-          className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary placeholder:text-ig-text-tertiary focus:border-ig-blue focus:outline-none md:text-sm"
-        />
       </div>
 
       {MAPBOX_TOKEN && (

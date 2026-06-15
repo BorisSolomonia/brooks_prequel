@@ -265,6 +265,7 @@
       "saleEndsLabel": "Sale ends (optional)",
       "coverImageLabel": "Cover image",
       "coverImageHint": "Landscape images work best for guide cards and previews.",
+      "advancedDetails": "Advanced details (optional)",
       "travelerStageLabel": "Traveler stage",
       "stageAny": "— any stage —",
       "stageDreaming": "Dreaming — inspiring wanderlust",
