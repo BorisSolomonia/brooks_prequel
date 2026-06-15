@@ -181,10 +181,12 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
     if (!guide) return;
     try {
       await api.post<Guide>(`/api/guides/${guide.id}/publish`, undefined, token);
-      // BOR-48: on a successful publish, take the creator straight to the live
-      // guide page so they can review their published work immediately.
+      // BOR-69: route the creator to their library's "Created" tab (sorted
+      // created_at DESC, so the just-published guide is at the top) instead of
+      // /guides/{id}, which resolves to the PUBLIC preview page and wrongly shows
+      // a "Sign in to save/purchase" gate to the already-authenticated creator.
       toast.success(t('guideEditor.editor.guidePublished'));
-      router.push(`/guides/${guide.id}`);
+      router.push('/guides?tab=created');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('guideEditor.editor.errorPublish'));
     }
