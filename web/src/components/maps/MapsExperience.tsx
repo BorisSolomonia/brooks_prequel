@@ -15,7 +15,7 @@ import { useMapboxStyle } from '@/lib/mapboxStyle';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import Spinner from '@/components/ui/Spinner';
 import { useOnboarding } from '@/components/onboarding/OnboardingProvider';
-import { isNative, openAppSettings } from '@/lib/capacitor';
+import { isNative, openAppSettings, openDirections } from '@/lib/capacitor';
 import { capturePhotoDetailed } from '@/lib/camera';
 import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
 import { useTranslation } from 'react-i18next';
@@ -840,6 +840,22 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
             >
               {busy && <Spinner />}
               Unlock here
+            </button>
+          )}
+          {/* BOR-68: when the memory is still locked (out of range), let the
+              recipient navigate to the spot. Only the pin coordinate is handed to
+              the maps app — the message + media stay withheld by the server. */}
+          {locked && (
+            <button
+              type="button"
+              onClick={() => openDirections(memory.latitude, memory.longitude, memory.placeLabel || 'Hidden memory')}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-ig-border px-4 py-2 text-sm font-semibold text-ig-text-primary transition-colors hover:bg-ig-hover disabled:opacity-60"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              Get directions
             </button>
           )}
           <button
