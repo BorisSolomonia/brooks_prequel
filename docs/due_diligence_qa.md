@@ -129,7 +129,7 @@
 88. Is this a single-engineer/AI-assisted build? If so, how do you convince investors the velocity is sustainable and the code is maintainable by a future team?
 89. What are the named operational blind spots — areas no one on the team currently owns (e.g., growth, payments ops, trust & safety, legal)?
 90. How do you split time between building features and the unglamorous work (support, fraud, payouts, compliance) that a marketplace actually requires?
-91. What is the hiring plan for the next 12 months, and which is the first hire that most reduces risk?
+!!!91. What is the hiring plan for the next 12 months, and which is the first hire that most reduces risk?
 92. What is the decision-making and prioritization process — how was the bet to build geofenced memories (a hard feature) justified over deepening the core marketplace?
 93. The project has visibly pivoted (Stripe → UniPay → BOG iPay; timeline UI built then reverted). What does this churn say about product conviction and roadmap discipline?
 94. How do you measure success week over week — what are the three north-star and guardrail metrics the team actually watches?

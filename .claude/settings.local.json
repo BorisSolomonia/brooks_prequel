@@ -98,7 +98,14 @@
       "Bash(npx eslint *)",
       "Bash(echo \"EXIT_LINT=$?\")",
       "Bash(echo \"BUILD_EXIT=$?\")",
-      "Bash(grep -iE \"json|[0-9]{3,4}\\\\.\")"
+      "Bash(grep -iE \"json|[0-9]{3,4}\\\\.\")",
+      "Bash(git revert *)",
+      "Bash(grep -rn \"roleModal.traveler.title\\\\|roleModal.creator.title\\\\|roleModal\\\\.\\\\${\" web/src)",
+      "Bash(grep -rn \"'/api/me'\\\\|\\\\\"/api/me\\\\\"\\\\|/api/me\\\\`\" web/src)",
+      "Bash(echo \"GUIDE_COMPILE_EXIT=$?\")",
+      "Read(//c/c/Users/Boris/Dell/Projects/APPS/Brooks_prequel/web/src/components/guide-editor/**)",
+      "Bash(echo \"TSC=$?\")",
+      "Bash(echo \"LINT=$?\")"
     ]
   }
 }
