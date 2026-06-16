@@ -1079,7 +1079,10 @@ export default function MapsExperience({
   const [activeLayers, setActiveLayers] = useState<MapLayerState>(DEFAULT_LAYERS);
   const [createMemoryOpen, setCreateMemoryOpen] = useState(false);
   const [memoryText, setMemoryText] = useState('');
-  const [memoryVisibility, setMemoryVisibility] = useState<MemoryVisibility>('SHARED_LINK');
+  // BOR-71: strict-private default. Removing the separate "Who can see this"
+  // control must never let a new memory default to anything public — the user
+  // opts INTO sharing in the unified "How to share" control below.
+  const [memoryVisibility, setMemoryVisibility] = useState<MemoryVisibility>('PRIVATE');
   const [memoryPhoto, setMemoryPhoto] = useState<MemoryMediaRequest | null>(null);
   const [memoryAudio, setMemoryAudio] = useState<MemoryMediaRequest | null>(null);
   const [memoryBusy, setMemoryBusy] = useState(false);
@@ -1091,6 +1094,24 @@ export default function MapsExperience({
   // Memory share mode: 'link' = current behavior (token URL after save),
   // 'follower' = direct in-app share to a follower (no link).
   const [shareMode, setShareMode] = useState<'link' | 'follower'>('follower');
+  // BOR-71: a single unified ACL controller. The old UI had two overlapping
+  // sections ("Who can see this" → visibility, "How to share" → shareMode) that
+  // could conflict (e.g. PRIVATE + link). We now derive ONE choice from the two
+  // underlying fields and write both atomically through applyShareChoice, so the
+  // selector is the single source of truth and conflicting states are impossible.
+  const shareChoice: 'private' | 'link' | 'followers' | 'public' =
+    memoryVisibility === 'PRIVATE' ? 'private'
+      : memoryVisibility === 'FOLLOWERS_PUBLIC' ? 'public'
+        : shareMode === 'link' ? 'link'
+          : 'followers';
+  const applyShareChoice = useCallback((choice: 'private' | 'link' | 'followers' | 'public') => {
+    switch (choice) {
+      case 'private': setMemoryVisibility('PRIVATE'); break;
+      case 'link': setMemoryVisibility('SHARED_LINK'); setShareMode('link'); break;
+      case 'followers': setMemoryVisibility('SHARED_LINK'); setShareMode('follower'); break;
+      case 'public': setMemoryVisibility('FOLLOWERS_PUBLIC'); setShareMode('follower'); break;
+    }
+  }, []);
   const [followers, setFollowers] = useState<Array<{ userId: string; username: string | null; displayName: string; avatarUrl: string | null }>>([]);
   const [followersLoading, setFollowersLoading] = useState(false);
   const [followersFetched, setFollowersFetched] = useState(false);
@@ -1555,7 +1576,8 @@ export default function MapsExperience({
     setMemoryAudio(null);
     setCreateMemoryOpen(false);
     setMemoryBusy(false);
-    // Reset share mode for the next composer session (default = share with a follower).
+    // Reset to the strict-private default for the next composer session (BOR-71).
+    setMemoryVisibility('PRIVATE');
     setShareMode('follower');
     setSelectedFollowerIds([]);
     setShareSelf(false);
@@ -2908,19 +2930,6 @@ export default function MapsExperience({
             </p>
 
             <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
-              Who can see this
-            </label>
-            <select
-              value={memoryVisibility}
-              onChange={(event) => setMemoryVisibility(event.target.value as MemoryVisibility)}
-              className="mt-1 min-h-touch w-full rounded-2xl border-2 border-ig-border bg-ig-elevated px-3 py-2 text-sm text-ig-text-primary outline-none transition focus:border-brand-500"
-            >
-              <option value="SHARED_LINK">Hidden link</option>
-              <option value="FOLLOWERS_PUBLIC">Followers public</option>
-              <option value="PRIVATE">Private</option>
-            </select>
-
-            <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
               Attach media
             </label>
             <div className="mt-1 grid grid-cols-2 gap-2">
@@ -3000,43 +3009,47 @@ export default function MapsExperience({
               </div>
             )}
 
-            {/* BOR-50: a PRIVATE memory is never shared — hide the share UI
-                entirely so the user can just Save (resolves the "must share a
-                private memory" paradox). */}
-            {memoryVisibility !== 'PRIVATE' && (
-            <>
-            {/* Share mode — link (token URL) vs direct share to followers */}
+            {/* BOR-71: unified "How to share" — the global visibility options
+                (Just you / Hidden link / Your followers) are merged with the
+                specific-recipient selection into ONE control. Always visible;
+                "Just you" (PRIVATE) is the default and needs no recipient. */}
             <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-ig-text-tertiary">
               How to share
             </label>
             <div data-tour="share-mode-container" className="mt-1 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setShareMode('link')}
-                data-tour="share-mode-link"
-                className={`min-h-touch rounded-2xl border-2 px-3 py-2 text-xs font-semibold transition ${
-                  shareMode === 'link'
-                    ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
-                    : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
-                }`}
-              >
-                Share via link
-              </button>
-              <button
-                type="button"
-                onClick={() => setShareMode('follower')}
-                data-tour="share-mode-follower"
-                className={`min-h-touch rounded-2xl border-2 px-3 py-2 text-xs font-semibold transition ${
-                  shareMode === 'follower'
-                    ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
-                    : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
-                }`}
-              >
-                Share with followers
-              </button>
+              {([
+                { key: 'private', label: '🔒 Just you' },
+                { key: 'link', label: '🔗 Hidden link' },
+                { key: 'followers', label: '👥 Specific followers' },
+                { key: 'public', label: '🌐 Your followers' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => applyShareChoice(opt.key)}
+                  aria-pressed={shareChoice === opt.key}
+                  data-tour={opt.key === 'link' ? 'share-mode-link' : opt.key === 'followers' ? 'share-mode-follower' : undefined}
+                  className={`min-h-touch rounded-2xl border-2 px-3 py-2 text-xs font-semibold transition ${
+                    shareChoice === opt.key
+                      ? 'border-brand-500 bg-brand-500/10 text-ig-text-primary'
+                      : 'border-ig-border bg-ig-elevated text-ig-text-secondary hover:bg-ig-hover'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
+            <p className="mt-2 text-xs text-ig-text-tertiary">
+              {shareChoice === 'private'
+                ? 'Only you can see it.'
+                : shareChoice === 'link'
+                  ? 'Anyone with the link can unlock it on the spot.'
+                  : shareChoice === 'followers'
+                    ? 'Only the followers you pick can unlock it on the spot.'
+                    : 'Visible to your followers in their feed.'}
+            </p>
 
-            {shareMode === 'follower' && (
+            {shareChoice === 'followers' && (
               <div className="mt-3 space-y-1">
                 {/* BOR-50: "Self" time-capsule — lock your own memory until you
                     return here. Always available, even with no followers. */}
@@ -3162,16 +3175,14 @@ export default function MapsExperience({
                 )}
               </div>
             )}
-            </>
-            )}
 
             <button
               type="button"
               disabled={
                 memoryBusy ||
-                // BOR-50: a non-private follower share needs at least one recipient —
-                // a follower OR "Self".
-                (memoryVisibility !== 'PRIVATE' && shareMode === 'follower' && selectedFollowerIds.length === 0 && !shareSelf)
+                // BOR-71: only the "Specific followers" choice needs a recipient
+                // (a picked follower OR "Self"); private/link/public never do.
+                (shareChoice === 'followers' && selectedFollowerIds.length === 0 && !shareSelf)
               }
               onClick={handleCreateMemory}
               className="mw-button-primary mt-6 inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold transition hover:bg-brand-600 disabled:opacity-60"
@@ -3179,9 +3190,9 @@ export default function MapsExperience({
               {memoryBusy && <Spinner />}
               {memoryBusy
                 ? 'Saving...'
-                : memoryVisibility === 'PRIVATE'
+                : shareChoice === 'private' || shareChoice === 'public'
                   ? 'Save'
-                  : shareMode === 'follower'
+                  : shareChoice === 'followers'
                     ? 'Save and send'
                     : 'Save and share'}
             </button>
