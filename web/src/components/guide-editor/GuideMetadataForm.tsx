@@ -497,7 +497,7 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-ig-text-secondary mb-1">{t('guideEditor.metadata.priceLabel')}</label>
+          <label className="block text-sm font-bold text-brand-500 mb-1">{t('guideEditor.metadata.priceLabel')}</label>
           <div className="flex gap-2">
             <input
               type="number"
@@ -509,12 +509,12 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
                 update('priceCents', isNaN(major) || major < 0 ? 0 : Math.round(major * 100));
               }}
               placeholder={t('guideEditor.metadata.pricePlaceholder')}
-              className="min-h-11 w-full rounded-md border border-ig-border bg-ig-secondary px-3 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none"
+              className="min-h-11 w-full rounded-md border-2 border-brand-500/40 bg-brand-500/5 px-3 py-2 text-base font-semibold text-ig-text-primary focus:border-brand-500 focus:outline-none"
             />
             <select
               value={(data.currency || 'USD').toUpperCase()}
               onChange={(e) => update('currency', e.target.value)}
-              className="min-h-11 rounded-md border border-ig-border bg-ig-secondary px-2 py-2 text-base text-ig-text-primary focus:border-ig-blue focus:outline-none"
+              className="min-h-11 rounded-md border-2 border-brand-500/40 bg-brand-500/5 px-2 py-2 text-base font-semibold text-ig-text-primary focus:border-brand-500 focus:outline-none"
             >
               {['USD', 'EUR', 'GBP', 'GEL'].map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
