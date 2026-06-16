@@ -601,12 +601,12 @@ export default function GuideMetadataForm({ data, onChange, onPatch, tagInput, o
           type="button"
           onClick={() => setAdvancedOpen((v) => !v)}
           aria-expanded={advancedOpen}
-          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-ig-border bg-ig-secondary/50 px-3 py-2 text-left text-sm font-semibold text-ig-text-secondary transition-colors hover:border-ig-blue/40 hover:text-ig-text-primary"
+          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-ig-blue/30 bg-ig-blue/5 px-3 py-2 text-left text-sm font-bold text-ig-blue transition-colors hover:border-ig-blue/60 hover:bg-ig-blue/10 hover:text-ig-blue-hover"
         >
           <span>{t('guideEditor.metadata.advancedDetails')}</span>
           <svg
             viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"
-            className="h-4 w-4 shrink-0 text-ig-text-tertiary transition-transform duration-200"
+            className="h-4 w-4 shrink-0 text-ig-blue transition-transform duration-200"
             style={{ transform: advancedOpen ? 'rotate(90deg)' : 'none' }}
             aria-hidden
           >
