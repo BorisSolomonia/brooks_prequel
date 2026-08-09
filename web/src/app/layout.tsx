@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Archivo, Bricolage_Grotesque } from 'next/font/google';
 import AppShell from '@/components/layout/AppShell';
 import RootErrorBoundary from '@/components/RootErrorBoundary';
+import GlobalErrorCapture from '@/components/GlobalErrorCapture';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import I18nProvider from '@/components/i18n/I18nProvider';
 import './globals.css';
@@ -86,6 +87,7 @@ export default function RootLayout({
         ))}
       </head>
       <body className={`${archivo.variable} ${bricolage.variable} bg-ig-primary font-sans text-ig-text-primary`}>
+        <GlobalErrorCapture />
         <RootErrorBoundary>
           <ThemeProvider>
             <I18nProvider>

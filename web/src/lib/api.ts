@@ -7,6 +7,37 @@ interface RequestOptions extends RequestInit {
   token?: string;
 }
 
+// React Strict Mode and shared shell providers can request the same resource during
+// one navigation. Coalescing only while a GET is in flight removes duplicate network
+// and JSON work without introducing a stale-data cache.
+const inFlightGets = new Map<string, Promise<unknown>>();
+
+function requestIdentity(path: string, token?: string): string {
+  return (token || 'public') + '\u0000' + path;
+}
+
+function clearInFlightGets(): void {
+  inFlightGets.clear();
+}
+
+function getRequest<T>(path: string, token?: string): Promise<T> {
+  const key = requestIdentity(path, token);
+  const existing = inFlightGets.get(key);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+
+  const pending = request<T>(path, { method: 'GET', token });
+  inFlightGets.set(key, pending);
+  const cleanup = () => {
+    if (inFlightGets.get(key) === pending) {
+      inFlightGets.delete(key);
+    }
+  };
+  pending.then(cleanup, cleanup);
+  return pending;
+}
+
 // Error carrying the HTTP status so callers can branch on it (e.g. treat a 404
 // on DELETE as "already gone" rather than surfacing it as a failure).
 export class ApiError extends Error {
@@ -100,21 +131,30 @@ export async function streamPost(
 
 export const api = {
   get: <T>(path: string, token?: string) =>
-    request<T>(path, { method: 'GET', token }),
+    getRequest<T>(path, token),
 
-  post: <T>(path: string, body?: unknown, token?: string) =>
-    request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined, token }),
+  post: <T>(path: string, body?: unknown, token?: string) => {
+    clearInFlightGets();
+    return request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined, token });
+  },
 
-  put: <T>(path: string, body: unknown, token?: string) =>
-    request<T>(path, { method: 'PUT', body: JSON.stringify(body), token }),
+  put: <T>(path: string, body: unknown, token?: string) => {
+    clearInFlightGets();
+    return request<T>(path, { method: 'PUT', body: JSON.stringify(body), token });
+  },
 
-  patch: <T>(path: string, body: unknown, token?: string) =>
-    request<T>(path, { method: 'PATCH', body: JSON.stringify(body), token }),
+  patch: <T>(path: string, body: unknown, token?: string) => {
+    clearInFlightGets();
+    return request<T>(path, { method: 'PATCH', body: JSON.stringify(body), token });
+  },
 
-  delete: <T>(path: string, token?: string) =>
-    request<T>(path, { method: 'DELETE', token }),
+  delete: <T>(path: string, token?: string) => {
+    clearInFlightGets();
+    return request<T>(path, { method: 'DELETE', token });
+  },
 
   uploadMedia: async (file: File, usage: MediaUsage, token: string): Promise<MediaUploadResponse> => {
+    clearInFlightGets();
     // BOR-60: downscale/recompress images client-side before they ever leave
     // the device. Audio and non-image files pass through untouched, and any
     // compression failure falls back to the original file.

@@ -8,10 +8,15 @@ interface UseAccessTokenResult {
   error: string | null;
 }
 
-// Module-level cache — shared across all components for the page session.
+type TokenFetchResult = {
+  token: string | null;
+  error: string | null;
+};
+
+// Module-level cache shared across all components for the page session.
 let cachedToken: string | null = null;
 let cacheExpiry = 0;
-let inFlight: Promise<string | null> | null = null;
+let inFlight: Promise<TokenFetchResult> | null = null;
 
 // Read the JWT `exp` claim and use it for cache expiry. This avoids the previous 5-minute
 // fixed TTL, which forced every component to re-fetch /api/auth/token 12 times per hour.
@@ -41,39 +46,52 @@ export function clearAccessTokenCache(): void {
   inFlight = null;
 }
 
-function getToken(): Promise<string | null> {
+function getToken(): Promise<TokenFetchResult> {
   if (cachedToken && Date.now() < cacheExpiry) {
-    return Promise.resolve(cachedToken);
+    return Promise.resolve({ token: cachedToken, error: null });
   }
   if (!inFlight) {
     inFlight = fetch('/api/auth/token')
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => {
+        if (res.status === 401) {
+          cachedToken = null;
+          cacheExpiry = 0;
+          return { token: null, error: null };
+        }
+        if (!res.ok) {
+          throw new Error(`Token endpoint failed: HTTP ${res.status}`);
+        }
+        const data = await res.json();
         cachedToken = data.accessToken ?? null;
         cacheExpiry = cachedToken ? expiryFromJwt(cachedToken) : 0;
-        inFlight = null;
-        return cachedToken;
+        return { token: cachedToken, error: null };
       })
-      .catch(() => {
+      .catch((err) => {
+        cachedToken = null;
+        cacheExpiry = 0;
+        const message = err instanceof Error ? err.message : 'Failed to fetch access token';
+        console.error('[auth] token fetch failed:', message);
+        return { token: null, error: message };
+      })
+      .finally(() => {
         inFlight = null;
-        return null;
       });
   }
   return inFlight;
 }
 
 export function useAccessToken(): UseAccessTokenResult {
-  const [token, setToken] = useState<string | null>(cachedToken && Date.now() < cacheExpiry ? cachedToken : null);
-  const [loading, setLoading] = useState(!(cachedToken && Date.now() < cacheExpiry));
+  const hasFreshToken = Boolean(cachedToken && Date.now() < cacheExpiry);
+  const [token, setToken] = useState<string | null>(hasFreshToken ? cachedToken : null);
+  const [loading, setLoading] = useState(!hasFreshToken);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (cachedToken && Date.now() < cacheExpiry) return;
     getToken()
-      .then((t) => {
-        setToken(t);
-        if (!t) setError('Failed to fetch access token');
-        else setError(null);
+      .then((result) => {
+        setToken(result.token);
+        setError(result.error);
       })
       .finally(() => setLoading(false));
   }, []);

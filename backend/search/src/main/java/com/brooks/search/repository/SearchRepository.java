@@ -142,12 +142,33 @@ public class SearchRepository {
             "(CASE WHEN g.sale_price_cents IS NOT NULL AND (g.sale_ends_at IS NULL OR g.sale_ends_at > NOW()) "
           + "THEN g.sale_price_cents ELSE g.price_cents END)";
 
-    // Weekly traction = completed purchases (last 7d) x2 + saves (last 7d). Reused
-    // in SELECT (as weekly_popularity_score) and in the no-query relevance ORDER BY,
-    // so both stay in lock-step (same reason EFFECTIVE_PRICE is a shared constant).
+    // Each guide statistic is aggregated independently. Joining the three raw child
+    // tables multiplies rows (reviews x purchases x saves) before GROUP BY, which makes
+    // discovery latency grow multiplicatively for successful guides.
     private static final String WEEKLY_POPULARITY =
-            "(COUNT(DISTINCT gp.id) FILTER (WHERE gp.status = 'COMPLETED' AND gp.created_at >= NOW() - INTERVAL '7 days') * 2 "
-          + " + COUNT(DISTINCT sg.id) FILTER (WHERE sg.created_at >= NOW() - INTERVAL '7 days'))";
+            "(COALESCE(purchase_stats.weekly_purchases, 0) * 2 "
+          + "+ COALESCE(save_stats.weekly_saves, 0))";
+
+    private static final String GUIDE_STATS_JOINS = """
+             LEFT JOIN LATERAL (
+                 SELECT AVG(gr.rating) AS average_rating, COUNT(*) AS review_count
+                 FROM guide_reviews gr
+                 WHERE gr.guide_id = g.id
+             ) review_stats ON TRUE
+             LEFT JOIN LATERAL (
+                 SELECT COUNT(*) AS weekly_purchases
+                 FROM guide_purchases gp
+                 WHERE gp.guide_id = g.id
+                   AND gp.status = 'COMPLETED'
+                   AND gp.created_at >= NOW() - INTERVAL '7 days'
+             ) purchase_stats ON TRUE
+             LEFT JOIN LATERAL (
+                 SELECT COUNT(*) AS weekly_saves
+                 FROM saved_guides sg
+                 WHERE sg.guide_id = g.id
+                   AND sg.created_at >= NOW() - INTERVAL '7 days'
+             ) save_stats ON TRUE
+            """;
 
     // Bayesian-average priors for the no-query relevance score. A guide's own rating
     // is shrunk toward the global mean until it has enough reviews to be trusted:
@@ -164,8 +185,8 @@ public class SearchRepository {
         return searchGuides(tsQuery, limit, offset, stage, personas, null, null, null, null);
     }
 
-    // Blank tsQuery = browse the whole published catalogue. minRating (HAVING on
-    // AVG review rating), price range, stage and personas narrow the set; sort is
+    // Blank tsQuery = browse the whole published catalogue. minRating, price range,
+    // stage and personas narrow the set; sort is
     // an allowlisted enum (see guideOrderBy) so no user text reaches ORDER BY.
     public List<GuideSearchResult> searchGuides(String tsQuery, int limit, int offset, String stage, List<String> personas,
                                                 Double minRating, Integer minPriceCents, Integer maxPriceCents, String sort) {
@@ -177,8 +198,8 @@ public class SearchRepository {
           + EFFECTIVE_PRICE + " AS effective_price_cents, "
           + "g.currency, "
           + "COALESCE(NULLIF(g.primary_city, ''), NULLIF(g.region, ''), g.country) AS display_location, "
-          + "COALESCE(AVG(gr.rating), 0) AS average_rating, "
-          + "COUNT(DISTINCT gr.id) AS review_count, "
+          + "COALESCE(review_stats.average_rating, 0) AS average_rating, "
+          + "COALESCE(review_stats.review_count, 0) AS review_count, "
           + WEEKLY_POPULARITY + "::int AS weekly_popularity_score, "
           + "g.creator_id AS creator_id, "
           + "u.username AS creator_username, p.display_name AS creator_display_name, "
@@ -186,13 +207,10 @@ public class SearchRepository {
           + "FROM guides g "
           + "JOIN users u ON u.id = g.creator_id "
           + "LEFT JOIN user_profiles p ON p.user_id = g.creator_id "
-          + "LEFT JOIN guide_reviews gr ON gr.guide_id = g.id "
-          + "LEFT JOIN guide_purchases gp ON gp.guide_id = g.id "
-          + "LEFT JOIN saved_guides sg ON sg.guide_id = g.id");
+          + GUIDE_STATS_JOINS);
         appendGuideWhere(sql, params, tsQuery, hasQuery, stage, personas, minPriceCents, maxPriceCents);
-        sql.append(" GROUP BY g.id, u.username, p.display_name, p.avatar_url");
         if (minRating != null) {
-            sql.append(" HAVING COALESCE(AVG(gr.rating), 0) >= ?");
+            sql.append(" AND COALESCE(review_stats.average_rating, 0) >= ?");
             params.add(minRating);
         }
         sql.append(" ORDER BY ").append(guideOrderBy(sort, hasQuery, params, tsQuery));
@@ -281,8 +299,9 @@ public class SearchRepository {
                 // are repeated here. The two params are C*m then C for the Bayesian term.
                 params.add(BAYES_CONFIDENCE * GLOBAL_MEAN_RATING); // C*m (numerator prior)
                 params.add(BAYES_CONFIDENCE);                      // C   (denominator prior)
-                return "0.55 * ((? + COALESCE(AVG(gr.rating), 0) * COUNT(DISTINCT gr.id)) "
-                     + "/ (? + COUNT(DISTINCT gr.id)) / 5.0) "
+                return "0.55 * ((? + COALESCE(review_stats.average_rating, 0) "
+                     + "* COALESCE(review_stats.review_count, 0)) "
+                     + "/ (? + COALESCE(review_stats.review_count, 0)) / 5.0) "
                      + "+ 0.30 * LEAST(" + WEEKLY_POPULARITY + " / 20.0, 1.0) "
                      + "+ 0.15 * EXP(- EXTRACT(EPOCH FROM (NOW() - g.created_at)) / 2592000.0) "
                      + "DESC, g.created_at DESC";
@@ -301,14 +320,10 @@ public class SearchRepository {
                             Double minRating, Integer minPriceCents, Integer maxPriceCents) {
         boolean hasQuery = tsQuery != null && !tsQuery.isBlank();
         List<Object> params = new ArrayList<>();
-        // Wrap in a subquery so minRating's GROUP BY + HAVING is counted correctly.
         StringBuilder inner = new StringBuilder("SELECT g.id FROM guides g");
-        if (minRating != null) {
-            inner.append(" LEFT JOIN guide_reviews gr ON gr.guide_id = g.id");
-        }
         appendGuideWhere(inner, params, tsQuery, hasQuery, stage, personas, minPriceCents, maxPriceCents);
         if (minRating != null) {
-            inner.append(" GROUP BY g.id HAVING COALESCE(AVG(gr.rating), 0) >= ?");
+            inner.append(" AND COALESCE((SELECT AVG(gr.rating) FROM guide_reviews gr WHERE gr.guide_id = g.id), 0) >= ?");
             params.add(minRating);
         }
         Long count = jdbcTemplate.queryForObject(
@@ -330,17 +345,10 @@ public class SearchRepository {
                    END AS effective_price_cents,
                    g.currency,
                    COALESCE(NULLIF(g.primary_city, ''), NULLIF(g.region, ''), g.country) AS display_location,
-                   COALESCE(AVG(gr.rating), 0) AS average_rating,
-                   COUNT(DISTINCT gr.id) AS review_count,
-                   (
-                       COUNT(DISTINCT gp.id) FILTER (
-                           WHERE gp.status = 'COMPLETED'
-                             AND gp.created_at >= NOW() - INTERVAL '7 days'
-                       ) * 2
-                       + COUNT(DISTINCT sg.id) FILTER (
-                           WHERE sg.created_at >= NOW() - INTERVAL '7 days'
-                       )
-                   )::int AS weekly_popularity_score,
+                   COALESCE(review_stats.average_rating, 0) AS average_rating,
+                   COALESCE(review_stats.review_count, 0) AS review_count,
+                   (COALESCE(purchase_stats.weekly_purchases, 0) * 2
+                       + COALESCE(save_stats.weekly_saves, 0))::int AS weekly_popularity_score,
                    g.creator_id AS creator_id,
                    u.username AS creator_username,
                    p.display_name AS creator_display_name,
@@ -348,11 +356,25 @@ public class SearchRepository {
             FROM guides g
             JOIN users u ON u.id = g.creator_id
             LEFT JOIN user_profiles p ON p.user_id = g.creator_id
-            LEFT JOIN guide_reviews gr ON gr.guide_id = g.id
-            LEFT JOIN guide_purchases gp ON gp.guide_id = g.id
-            LEFT JOIN saved_guides sg ON sg.guide_id = g.id
+            LEFT JOIN LATERAL (
+                SELECT AVG(gr.rating) AS average_rating, COUNT(*) AS review_count
+                FROM guide_reviews gr
+                WHERE gr.guide_id = g.id
+            ) review_stats ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) AS weekly_purchases
+                FROM guide_purchases gp
+                WHERE gp.guide_id = g.id
+                  AND gp.status = 'COMPLETED'
+                  AND gp.created_at >= NOW() - INTERVAL '7 days'
+            ) purchase_stats ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) AS weekly_saves
+                FROM saved_guides sg
+                WHERE sg.guide_id = g.id
+                  AND sg.created_at >= NOW() - INTERVAL '7 days'
+            ) save_stats ON TRUE
             WHERE g.status = 'PUBLISHED'
-            GROUP BY g.id, u.username, p.display_name, p.avatar_url
             ORDER BY g.created_at DESC
             LIMIT ? OFFSET ?
             """,

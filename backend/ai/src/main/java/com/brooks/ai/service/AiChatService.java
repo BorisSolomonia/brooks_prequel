@@ -18,7 +18,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +28,8 @@ public class AiChatService {
     private final AiKeyService keyService;
     private final GuideService guideService;
     private final GuidePurchaseRepository guidePurchaseRepository;
+    private final AiStreamExecutor streamExecutor;
+    private final AiStreamAdmissionController admissionController;
 
     // ── Buyer chat ────────────────────────────────────────────────────────────
 
@@ -40,7 +42,8 @@ public class AiChatService {
         var dk = keyService.decryptKey(userId, req.provider());
 
         // Buyers get no editing tools.
-        return stream(req.provider(), dk.apiKey(), dk.model(), systemPrompt, req.history(), req.userMessage(), null);
+        return stream(userId, req.provider(), dk.apiKey(), dk.model(), systemPrompt,
+                req.history(), req.userMessage(), null);
     }
 
     // ── Creator suggest ───────────────────────────────────────────────────────
@@ -52,8 +55,8 @@ public class AiChatService {
         var dk = keyService.decryptKey(userId, req.provider());
 
         // Native tool calling for guide edits (OpenAI today; other providers ignore + use text tags).
-        return stream(req.provider(), dk.apiKey(), dk.model(), systemPrompt, req.history(), req.userMessage(),
-                CreatorTools.specs());
+        return stream(userId, req.provider(), dk.apiKey(), dk.model(), systemPrompt,
+                req.history(), req.userMessage(), CreatorTools.specs());
     }
 
     // ── Guide hook (description generator) ──────────────────────────────────────
@@ -63,23 +66,39 @@ public class AiChatService {
 
     public SseEmitter guideHook(UUID userId, com.brooks.ai.dto.GuideHookRequest req) {
         var dk = keyService.decryptKey(userId, req.provider());
-        return stream(req.provider(), dk.apiKey(), dk.model(),
+        return stream(userId, req.provider(), dk.apiKey(), dk.model(),
                 GuideHookSystemPrompt.system(), List.of(), GuideHookSystemPrompt.user(req), null);
     }
 
     // ── Shared streaming logic ────────────────────────────────────────────────
 
-    private SseEmitter stream(AiProvider provider, String apiKey, String model, String systemPrompt,
+    private SseEmitter stream(UUID userId, AiProvider provider, String apiKey, String model, String systemPrompt,
                               List<com.brooks.ai.dto.ChatMessage> history, String userMessage,
                               List<com.brooks.ai.provider.ToolSpec> tools) {
+        AiStreamAdmissionController.Permit permit = admissionController.acquire(userId);
         SseEmitter emitter = new SseEmitter(120_000L);
-        CompletableFuture.runAsync(() -> {
-            try {
-                getClient(provider).streamChat(apiKey, model, systemPrompt, history, userMessage, tools, emitter);
-            } catch (Exception e) {
-                emitter.completeWithError(e);
-            }
-        });
+        emitter.onCompletion(permit::close);
+        emitter.onTimeout(permit::close);
+        emitter.onError(error -> permit.close());
+
+        try {
+            streamExecutor.execute(() -> {
+                try {
+                    getClient(provider).streamChat(
+                            apiKey, model, systemPrompt, history, userMessage, tools, emitter);
+                } catch (Exception e) {
+                    emitter.completeWithError(e);
+                } finally {
+                    permit.close();
+                }
+            });
+        } catch (org.springframework.core.task.TaskRejectedException rejected) {
+            permit.close();
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "AI service is busy. Try again shortly.",
+                    rejected);
+        }
         return emitter;
     }
 
