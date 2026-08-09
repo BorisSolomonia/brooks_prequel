@@ -29,6 +29,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -209,14 +211,54 @@ class MemoryServiceTest {
         replyA.setParentMemoryId(memory.getId());
         when(memoryRepository.findByParentMemoryIdAndDeletedAtIsNullOrderByCreatedAtAsc(memory.getId()))
                 .thenReturn(List.of(replyA));
-        when(userService.findById(viewer.getId())).thenReturn(viewer);
-        when(profileRepository.findByUserId(viewer.getId())).thenReturn(Optional.empty());
-        when(memoryRepository.countByParentMemoryIdAndDeletedAtIsNull(any())).thenReturn(0L);
+        // List path is batched now (BOR-82 N+1 fix): creators/profiles/reply-counts load in bulk.
+        when(userService.findAllByIds(any())).thenReturn(Map.of(viewer.getId(), viewer));
 
         List<MemoryResponse> replies = memoryService.listReplies("creator-subject", memory.getId());
 
         assertEquals(1, replies.size());
         assertEquals("B's added memory", replies.get(0).getTextContent());
+    }
+
+    /**
+     * BOR-82 regression: building a list of memory responses must NOT issue per-item creator or
+     * reply-count queries. Proven by asserting the batch calls fire once and the per-item calls
+     * (findById / countByParentMemoryIdAndDeletedAtIsNull) never fire.
+     */
+    @Test
+    void listMyCreatedMemories_batchesLookups_noNPlusOne() {
+        when(userService.findByAuth0Subject("creator-subject")).thenReturn(creator);
+
+        Memory m1 = new Memory(creator.getId(), "one", 41.7, 44.7);
+        m1.setId(UUID.randomUUID());
+        Memory m2 = new Memory(creator.getId(), "two", 41.7, 44.7);
+        m2.setId(UUID.randomUUID());
+        Memory m3 = new Memory(viewer.getId(), "three", 41.7, 44.7);
+        m3.setId(UUID.randomUUID());
+        when(memoryRepository.findMyCreatedMemories(creator.getId())).thenReturn(List.of(m1, m2, m3));
+
+        // No recipients, no self-locks.
+        when(memoryGrantRepository.findByMemoryIdInAndRemovedAtIsNull(any())).thenReturn(List.of());
+        when(memoryGrantRepository.findActiveGrantedMemoryIdsForBeneficiary(any(), any())).thenReturn(List.of());
+        when(memoryGrantRepository.findRevealedGrantedMemoryIdsForBeneficiary(any(), any())).thenReturn(List.of());
+
+        // Batched loads.
+        when(userService.findAllByIds(any()))
+                .thenReturn(Map.of(creator.getId(), creator, viewer.getId(), viewer));
+        when(memoryRepository.countRepliesByParentIds(any()))
+                .thenReturn(List.<Object[]>of(new Object[]{m1.getId(), 2L}));
+
+        List<MemoryResponse> result = memoryService.listMyCreatedMemories("creator-subject");
+
+        assertEquals(3, result.size());
+        assertEquals(2, result.get(0).getReplyCount());
+        assertEquals(0, result.get(1).getReplyCount());
+
+        // The N+1 must be gone: bulk calls once, per-item calls never.
+        verify(userService, times(1)).findAllByIds(any());
+        verify(memoryRepository, times(1)).countRepliesByParentIds(any());
+        verify(userService, never()).findById(any());
+        verify(memoryRepository, never()).countByParentMemoryIdAndDeletedAtIsNull(any());
     }
 
     private static MemoryRevealRequest revealRequest(double latitude, double longitude) {

@@ -31,6 +31,7 @@ val modules = listOf(
     "purchase",
     "ai",
     "notification",
+    "community",
     "app",
 )
 

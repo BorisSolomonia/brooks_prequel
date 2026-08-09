@@ -4,6 +4,8 @@ import com.brooks.ai.dto.ChatMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -19,6 +21,8 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class AnthropicClient implements AiClient {
+
+    private static final Logger log = LoggerFactory.getLogger(AnthropicClient.class);
 
     private static final String BASE_URL = "https://api.anthropic.com/v1/messages";
     private static final String DEFAULT_MODEL = "claude-sonnet-4-6";
@@ -55,26 +59,43 @@ public class AnthropicClient implements AiClient {
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
-        http.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
-                .thenAccept(response -> {
-                    try {
-                        response.body().forEach(line -> {
-                            if (!line.startsWith("data: ")) return;
-                            String data = line.substring(6).trim();
-                            try {
-                                JsonNode node = mapper.readTree(data);
-                                if ("content_block_delta".equals(node.path("type").asText(""))) {
-                                    String token = node.at("/delta/text").asText("");
-                                    if (!token.isEmpty()) emitter.send(SseEmitter.event().data(token));
-                                }
-                            } catch (Exception ignored) {}
-                        });
-                        emitter.complete();
-                    } catch (Exception e) {
-                        emitter.completeWithError(e);
+        HttpResponse<java.util.stream.Stream<String>> response;
+        try {
+            response = http.send(request, HttpResponse.BodyHandlers.ofLines());
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Anthropic request interrupted", interrupted);
+        }
+
+        if (response.statusCode() >= 400) {
+            String bodySnippet = response.body().limit(20).reduce("", (a, b) -> a + b);
+            if (bodySnippet.length() > 500) bodySnippet = bodySnippet.substring(0, 500);
+            log.warn("Anthropic API returned status {} for model {}: {}",
+                    response.statusCode(), model != null ? model : DEFAULT_MODEL, bodySnippet);
+            emitter.completeWithError(new IOException(
+                    "Anthropic API error: HTTP " + response.statusCode()));
+            return;
+        }
+
+        try {
+            response.body().forEach(line -> {
+                if (!line.startsWith("data: ")) return;
+                String data = line.substring(6).trim();
+                try {
+                    JsonNode node = mapper.readTree(data);
+                    if ("content_block_delta".equals(node.path("type").asText(""))) {
+                        String token = node.at("/delta/text").asText("");
+                        if (!token.isEmpty()) emitter.send(SseEmitter.event().data(token));
                     }
-                })
-                .exceptionally(ex -> { emitter.completeWithError(ex); return null; });
+                } catch (Exception parseError) {
+                    log.debug("Skipping unparseable Anthropic stream line: {}", parseError.getMessage());
+                }
+            });
+            emitter.complete();
+        } catch (Exception e) {
+            log.warn("Anthropic stream read failed", e);
+            emitter.completeWithError(e);
+        }
     }
 
     private List<Map<String, String>> buildMessages(List<ChatMessage> history, String userMessage) {

@@ -49,6 +49,14 @@ public class MemoryService {
     @Value("${app.memory.unlock-radius-meters:100}")
     private double unlockRadiusMeters;
 
+    // Grid step (degrees) used to coarsen the coordinates exposed in the
+    // unauthenticated share teaser. Must stay coarser than the unlock radius
+    // above: the teaser is meant to point a recipient at the neighbourhood,
+    // never leak the exact unlock point. 0.01 deg is ~1.1km, so a replayed
+    // teaser coordinate cannot satisfy the 100m reveal check. See getShareTeaser.
+    @Value("${app.memory.teaser-precision-degrees:0.01}")
+    private double teaserPrecisionDegrees;
+
     @Value("${app.memory.daily-create-limit:25}")
     private long dailyCreateLimit;
 
@@ -133,9 +141,15 @@ public class MemoryService {
         Memory parent = memoryRepository.findById(parentMemoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Memory", parentMemoryId));
         boolean parentCreator = parent.getCreatorId().equals(viewer.getId());
-        return memoryRepository.findByParentMemoryIdAndDeletedAtIsNullOrderByCreatedAtAsc(parentMemoryId).stream()
+        List<Memory> replies = memoryRepository.findByParentMemoryIdAndDeletedAtIsNullOrderByCreatedAtAsc(parentMemoryId).stream()
                 .filter(r -> parentCreator || r.getCreatorId().equals(viewer.getId()))
-                .map(r -> toResponse(r, viewer.getId()))
+                .toList();
+        if (replies.isEmpty()) {
+            return List.of();
+        }
+        ListContext ctx = listContext(replies);
+        return replies.stream()
+                .map(r -> toResponse(r, viewer.getId(), true, null, ctx))
                 .toList();
     }
 
@@ -185,9 +199,10 @@ public class MemoryService {
         Map<UUID, List<MemoryRecipientSummary>> recipientsByMemory = recipientsByMemory(createdIds);
         // BOR-50: redact self time-capsuled memories from their own creator until revealed.
         Set<UUID> selfLocked = ownerSelfLockedIds(viewer.getId(), createdIds);
+        ListContext ctx = listContext(created);
         return created.stream()
                 .map(m -> toResponse(m, viewer.getId(), !selfLocked.contains(m.getId()),
-                        recipientsByMemory.getOrDefault(m.getId(), List.of())))
+                        recipientsByMemory.getOrDefault(m.getId(), List.of()), ctx))
                 .toList();
     }
 
@@ -233,8 +248,10 @@ public class MemoryService {
         // BOR-50: granted-but-unrevealed = locked (applies the self time-capsule lock to own memories).
         Set<UUID> selfLockedIds = new HashSet<>(memoryIds);
         selfLockedIds.removeAll(revealedIds);
+        ListContext ctx = listContext(memories);
         return memories.stream()
-                .map(m -> toResponse(m, viewer.getId(), contentVisible(m, viewer.getId(), revealedIds, selfLockedIds)))
+                .map(m -> toResponse(m, viewer.getId(),
+                        contentVisible(m, viewer.getId(), revealedIds, selfLockedIds), null, ctx))
                 .toList();
     }
 
@@ -368,8 +385,8 @@ public class MemoryService {
                 .senderName(creator.displayName())
                 .senderAvatarUrl(creator.avatarUrl())
                 .placeLabel(memory.getPlaceLabel())
-                .approximateLatitude(memory.getLatitude())
-                .approximateLongitude(memory.getLongitude())
+                .approximateLatitude(coarsen(memory.getLatitude()))
+                .approximateLongitude(coarsen(memory.getLongitude()))
                 .available(true)
                 .createdAt(memory.getCreatedAt())
                 .build();
@@ -621,7 +638,26 @@ public class MemoryService {
      */
     private MemoryResponse toResponse(Memory memory, UUID viewerId, boolean contentVisible,
                                       List<MemoryRecipientSummary> recipients) {
+        // Single-item path (getMemory/reveal/create): a per-item creator + reply-count lookup is fine.
         CreatorSummary creator = creatorSummary(memory.getCreatorId());
+        int replyCount = (int) memoryRepository.countByParentMemoryIdAndDeletedAtIsNull(memory.getId());
+        return buildResponse(memory, viewerId, contentVisible, recipients, creator, replyCount);
+    }
+
+    /**
+     * List-path overload: creator/profile/reply-count are pre-batched in {@code ctx}, so mapping N
+     * memories issues a constant number of queries instead of ~3N (the /memories tabs' N+1). BOR-82.
+     */
+    private MemoryResponse toResponse(Memory memory, UUID viewerId, boolean contentVisible,
+                                      List<MemoryRecipientSummary> recipients, ListContext ctx) {
+        CreatorSummary creator = creatorSummary(memory.getCreatorId(), ctx.users(), ctx.profiles());
+        int replyCount = ctx.replyCounts().getOrDefault(memory.getId(), 0);
+        return buildResponse(memory, viewerId, contentVisible, recipients, creator, replyCount);
+    }
+
+    private MemoryResponse buildResponse(Memory memory, UUID viewerId, boolean contentVisible,
+                                         List<MemoryRecipientSummary> recipients,
+                                         CreatorSummary creator, int replyCount) {
         return MemoryResponse.builder()
                 .id(memory.getId())
                 .creatorId(memory.getCreatorId())
@@ -640,11 +676,30 @@ public class MemoryService {
                 .ownedByViewer(memory.getCreatorId().equals(viewerId))
                 .revealed(contentVisible)
                 .parentMemoryId(memory.getParentMemoryId())
-                .replyCount((int) memoryRepository.countByParentMemoryIdAndDeletedAtIsNull(memory.getId()))
+                .replyCount(replyCount)
                 .recipients(recipients)
                 .createdAt(memory.getCreatedAt())
                 .updatedAt(memory.getUpdatedAt())
                 .build();
+    }
+
+    /** Pre-batched creator/profile/reply-count maps for building a list of memory responses. */
+    private record ListContext(Map<UUID, User> users, Map<UUID, UserProfile> profiles,
+                               Map<UUID, Integer> replyCounts) {
+    }
+
+    /** One batched load of the creators, profiles, and reply counts a memory list needs. */
+    private ListContext listContext(List<Memory> memories) {
+        Set<UUID> creatorIds = memories.stream().map(Memory::getCreatorId).collect(Collectors.toSet());
+        List<UUID> ids = memories.stream().map(Memory::getId).toList();
+        Map<UUID, User> users = userService.findAllByIds(creatorIds);
+        Map<UUID, UserProfile> profiles = profileRepository.findAllByUserIdIn(creatorIds).stream()
+                .collect(Collectors.toMap(UserProfile::getUserId, p -> p));
+        Map<UUID, Integer> replyCounts = new HashMap<>();
+        for (Object[] row : memoryRepository.countRepliesByParentIds(ids)) {
+            replyCounts.put((UUID) row[0], ((Number) row[1]).intValue());
+        }
+        return new ListContext(users, profiles, replyCounts);
     }
 
     private MemoryMediaResponse toMediaResponse(MemoryMedia media) {
@@ -745,6 +800,22 @@ public class MemoryService {
             token.append(TOKEN_ALPHABET.charAt(SECURE_RANDOM.nextInt(TOKEN_ALPHABET.length())));
         }
         return token.toString();
+    }
+
+    /**
+     * Snap a coordinate to a coarse grid before exposing it in the public,
+     * unauthenticated share teaser. This keeps the teaser useful as a
+     * "head toward this area" pointer while ensuring the exact stored
+     * coordinate — the one the reveal endpoint checks GPS against — is never
+     * leaked. Without this, a token holder could read the precise location
+     * from the teaser and replay it as their GPS to unlock off-site,
+     * defeating the physical-presence gate.
+     */
+    private double coarsen(double coordinate) {
+        if (teaserPrecisionDegrees <= 0) {
+            return coordinate;
+        }
+        return Math.round(coordinate / teaserPrecisionDegrees) * teaserPrecisionDegrees;
     }
 
     private static double distanceMeters(double lat1, double lng1, double lat2, double lng2) {

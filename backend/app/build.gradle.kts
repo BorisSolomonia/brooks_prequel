@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":purchase"))
     implementation(project(":ai"))
     implementation(project(":notification"))
+    implementation(project(":community"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")

@@ -4,6 +4,8 @@ import com.brooks.ai.dto.ChatMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -21,6 +23,8 @@ import java.util.TreeMap;
 @Component
 @RequiredArgsConstructor
 public class OpenAiClient implements AiClient {
+
+    private static final Logger log = LoggerFactory.getLogger(OpenAiClient.class);
 
     private static final String BASE_URL = "https://api.openai.com/v1/chat/completions";
     private static final String DEFAULT_MODEL = "gpt-4o";
@@ -59,53 +63,70 @@ public class OpenAiClient implements AiClient {
         Map<Integer, String> toolNames = new TreeMap<>();
         Map<Integer, StringBuilder> toolArgs = new TreeMap<>();
 
-        http.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
-                .thenAccept(response -> {
-                    try {
-                        response.body().forEach(line -> {
-                            if (!line.startsWith("data: ")) return;
-                            String data = line.substring(6).trim();
-                            if ("[DONE]".equals(data)) return;
-                            try {
-                                JsonNode delta = mapper.readTree(data).at("/choices/0/delta");
-                                String token = delta.at("/content").asText("");
-                                if (!token.isEmpty()) {
-                                    emitter.send(SseEmitter.event().data(token));
-                                }
-                                JsonNode toolCalls = delta.at("/tool_calls");
-                                if (toolCalls.isArray()) {
-                                    for (JsonNode tc : toolCalls) {
-                                        int idx = tc.path("index").asInt(0);
-                                        String name = tc.at("/function/name").asText(null);
-                                        if (name != null && !name.isEmpty()) toolNames.put(idx, name);
-                                        String argChunk = tc.at("/function/arguments").asText("");
-                                        if (!argChunk.isEmpty()) {
-                                            toolArgs.computeIfAbsent(idx, k -> new StringBuilder()).append(argChunk);
-                                        }
-                                    }
-                                }
-                            } catch (Exception ignored) {}
-                        });
-                        // Emit one structured "action" SSE event per completed tool call.
-                        for (Map.Entry<Integer, String> e : toolNames.entrySet()) {
-                            StringBuilder args = toolArgs.get(e.getKey());
-                            if (args == null) continue;
-                            try {
-                                JsonNode parsed = mapper.readTree(args.toString());
-                                Map<String, Object> action = new LinkedHashMap<>();
-                                action.put("type", e.getValue());
-                                action.put("payload", parsed);
-                                emitter.send(SseEmitter.event().name("action").data(mapper.writeValueAsString(action)));
-                            } catch (Exception ignored) {
-                                // Malformed tool args — skip; the client's text-tag fallback still applies.
+        HttpResponse<java.util.stream.Stream<String>> response;
+        try {
+            response = http.send(request, HttpResponse.BodyHandlers.ofLines());
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IOException("OpenAI request interrupted", interrupted);
+        }
+
+        if (response.statusCode() >= 400) {
+            String bodySnippet = response.body().limit(20).reduce("", (a, b) -> a + b);
+            if (bodySnippet.length() > 500) bodySnippet = bodySnippet.substring(0, 500);
+            log.warn("OpenAI API returned status {} for model {}: {}",
+                    response.statusCode(), model != null ? model : DEFAULT_MODEL, bodySnippet);
+            emitter.completeWithError(new IOException(
+                    "OpenAI API error: HTTP " + response.statusCode()));
+            return;
+        }
+
+        try {
+            response.body().forEach(line -> {
+                if (!line.startsWith("data: ")) return;
+                String data = line.substring(6).trim();
+                if ("[DONE]".equals(data)) return;
+                try {
+                    JsonNode delta = mapper.readTree(data).at("/choices/0/delta");
+                    String token = delta.at("/content").asText("");
+                    if (!token.isEmpty()) {
+                        emitter.send(SseEmitter.event().data(token));
+                    }
+                    JsonNode toolCalls = delta.at("/tool_calls");
+                    if (toolCalls.isArray()) {
+                        for (JsonNode tc : toolCalls) {
+                            int idx = tc.path("index").asInt(0);
+                            String name = tc.at("/function/name").asText(null);
+                            if (name != null && !name.isEmpty()) toolNames.put(idx, name);
+                            String argChunk = tc.at("/function/arguments").asText("");
+                            if (!argChunk.isEmpty()) {
+                                toolArgs.computeIfAbsent(idx, k -> new StringBuilder()).append(argChunk);
                             }
                         }
-                        emitter.complete();
-                    } catch (Exception e) {
-                        emitter.completeWithError(e);
                     }
-                })
-                .exceptionally(ex -> { emitter.completeWithError(ex); return null; });
+                } catch (Exception parseError) {
+                    log.debug("Skipping unparseable OpenAI stream line: {}", parseError.getMessage());
+                }
+            });
+            for (Map.Entry<Integer, String> e : toolNames.entrySet()) {
+                StringBuilder args = toolArgs.get(e.getKey());
+                if (args == null) continue;
+                try {
+                    JsonNode parsed = mapper.readTree(args.toString());
+                    Map<String, Object> action = new LinkedHashMap<>();
+                    action.put("type", e.getValue());
+                    action.put("payload", parsed);
+                    emitter.send(SseEmitter.event().name("action").data(mapper.writeValueAsString(action)));
+                } catch (Exception actionError) {
+                    log.debug("Skipping malformed OpenAI tool action {}: {}",
+                            e.getValue(), actionError.getMessage());
+                }
+            }
+            emitter.complete();
+        } catch (Exception e) {
+            log.warn("OpenAI stream read failed", e);
+            emitter.completeWithError(e);
+        }
     }
 
     private static List<Map<String, Object>> toOpenAiTools(List<ToolSpec> tools) {

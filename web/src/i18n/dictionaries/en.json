@@ -1406,5 +1406,48 @@
   },
   "callback": {
     "signingIn": "Signing you in..."
+  },
+  "rightNow": {
+    "title": "Right Now",
+    "subtitle": "See what a public place is like right now — from people who are there.",
+    "loading": "Loading…",
+    "locationNeeded": "Turn on location to see nearby places.",
+    "noPlaces": "No Right Now places near you yet.",
+    "noReports": "No current reports. Be the first when you're there.",
+    "ask": "Ask Right Now",
+    "asked": "You're asking about this place.",
+    "answer": "Answer",
+    "answerRequiresApp": "Open the app to answer",
+    "grantConsent": "Enable to answer",
+    "answerTitle": "How is it right now?",
+    "answerHint": "Only the place's condition is shared — never your identity or exact location.",
+    "cancel": "Cancel",
+    "submitted": "Thanks — your update is live for a little while.",
+    "voteThanks": "Thanks for the feedback.",
+    "reported": "Reported. Our team will take a look.",
+    "somethingWrong": "Something went wrong. Try again.",
+    "suppressed": "Not enough people here yet to show updates privately.",
+    "trusted": "Trusted",
+    "corroborated": "Confirmed by others",
+    "helpful": "Helpful",
+    "report": "Report",
+    "demand": {
+      "few": "A few asking",
+      "several": "Several asking",
+      "many": "Many asking"
+    },
+    "status": {
+      "QUIET": "Quiet",
+      "NORMAL": "Normal",
+      "BUSY": "Busy",
+      "CLOSED": "Closed",
+      "CLOSED_UNCONFIRMED": "Closed (unconfirmed)"
+    },
+    "fresh": {
+      "under_15_min": "just now",
+      "about_30_min": "about 30 min ago",
+      "about_1_hour": "about an hour ago",
+      "over_1_hour": "over an hour ago"
+    }
   }
 }

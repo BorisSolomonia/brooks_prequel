@@ -5,6 +5,9 @@ import { isNative } from '@/lib/capacitor';
 export interface Coords {
   latitude: number;
   longitude: number;
+  /** GPS horizontal accuracy in metres, when the platform reports it. Used by
+   *  BOR-86 "Right Now" to reject vague fixes that can't prove presence. */
+  accuracy?: number;
 }
 
 // One-shot current position. Uses the native @capacitor/geolocation plugin in
@@ -27,7 +30,11 @@ export async function getCurrentCoords(): Promise<Coords | null> {
         typeof pos.coords.latitude === 'number' &&
         typeof pos.coords.longitude === 'number'
       ) {
-        return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        return {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: typeof pos.coords.accuracy === 'number' ? pos.coords.accuracy : undefined,
+        };
       }
       return null;
     } catch {
@@ -41,7 +48,11 @@ export async function getCurrentCoords(): Promise<Coords | null> {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => resolve({ latitude: coords.latitude, longitude: coords.longitude }),
+      ({ coords }) => resolve({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: typeof coords.accuracy === 'number' ? coords.accuracy : undefined,
+      }),
       () => resolve(null),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
     );

@@ -18,6 +18,7 @@ COPY search/ search/
 COPY purchase/ purchase/
 COPY ai/ ai/
 COPY notification/ notification/
+COPY community/ community/
 COPY app/ app/
 RUN chmod +x gradlew && ./gradlew :app:bootJar --no-daemon
 

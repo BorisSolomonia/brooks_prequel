@@ -4,6 +4,8 @@ import com.brooks.ai.dto.ChatMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -19,6 +21,8 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class GeminiClient implements AiClient {
+
+    private static final Logger log = LoggerFactory.getLogger(GeminiClient.class);
 
     private static final String BASE_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/";
@@ -54,25 +58,42 @@ public class GeminiClient implements AiClient {
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
-        http.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
-                .thenAccept(response -> {
-                    try {
-                        response.body().forEach(line -> {
-                            if (!line.startsWith("data: ")) return;
-                            String data = line.substring(6).trim();
-                            if ("[DONE]".equals(data)) return;
-                            try {
-                                JsonNode node = mapper.readTree(data);
-                                String token = node.at("/candidates/0/content/parts/0/text").asText("");
-                                if (!token.isEmpty()) emitter.send(SseEmitter.event().data(token));
-                            } catch (Exception ignored) {}
-                        });
-                        emitter.complete();
-                    } catch (Exception e) {
-                        emitter.completeWithError(e);
-                    }
-                })
-                .exceptionally(ex -> { emitter.completeWithError(ex); return null; });
+        HttpResponse<java.util.stream.Stream<String>> response;
+        try {
+            response = http.send(request, HttpResponse.BodyHandlers.ofLines());
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Gemini request interrupted", interrupted);
+        }
+
+        if (response.statusCode() >= 400) {
+            String bodySnippet = response.body().limit(20).reduce("", (a, b) -> a + b);
+            if (bodySnippet.length() > 500) bodySnippet = bodySnippet.substring(0, 500);
+            log.warn("Gemini API returned status {} for model {}: {}",
+                    response.statusCode(), resolvedModel, bodySnippet);
+            emitter.completeWithError(new IOException(
+                    "Gemini API error: HTTP " + response.statusCode()));
+            return;
+        }
+
+        try {
+            response.body().forEach(line -> {
+                if (!line.startsWith("data: ")) return;
+                String data = line.substring(6).trim();
+                if ("[DONE]".equals(data)) return;
+                try {
+                    JsonNode node = mapper.readTree(data);
+                    String token = node.at("/candidates/0/content/parts/0/text").asText("");
+                    if (!token.isEmpty()) emitter.send(SseEmitter.event().data(token));
+                } catch (Exception parseError) {
+                    log.debug("Skipping unparseable Gemini stream line: {}", parseError.getMessage());
+                }
+            });
+            emitter.complete();
+        } catch (Exception e) {
+            log.warn("Gemini stream read failed", e);
+            emitter.completeWithError(e);
+        }
     }
 
     private List<Map<String, Object>> buildContents(List<ChatMessage> history, String userMessage) {

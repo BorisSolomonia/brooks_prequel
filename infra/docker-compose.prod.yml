@@ -1,8 +1,19 @@
+# Bounded json-file logging shared by every service. Without a size/rotation
+# cap, container stdout logs grow unbounded and can fill the VM disk; with it,
+# each service keeps at most 3x50MB of rotated logs. This is the local-retention
+# floor — for cross-redeploy history, ship these to an aggregator/persistent volume.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: brooks-postgres
     restart: unless-stopped
+    logging: *default-logging
     # Postgres tuning via mounted postgresql.conf was disabled after a restart-loop
     # incident. See docs/INFRA.md and infra/postgres/postgresql.conf for the disabled
     # settings — re-enable only after `docker logs brooks-postgres` confirms each
@@ -27,6 +38,7 @@ services:
     image: ${BROOKS_BACKEND_IMAGE?BROOKS_BACKEND_IMAGE must be set}
     container_name: brooks-backend
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - ../.env.runtime
     environment:
@@ -63,6 +75,7 @@ services:
     image: ${BROOKS_WEB_IMAGE?BROOKS_WEB_IMAGE must be set}
     container_name: brooks-web
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - ../.env.runtime
     environment:
@@ -99,6 +112,7 @@ services:
     image: caddy:2-alpine
     container_name: brooks-caddy
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - ../.env.runtime
     environment:

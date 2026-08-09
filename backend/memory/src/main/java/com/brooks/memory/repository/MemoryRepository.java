@@ -18,6 +18,18 @@ public interface MemoryRepository extends JpaRepository<Memory, UUID> {
 
     long countByParentMemoryIdAndDeletedAtIsNull(UUID parentMemoryId);
 
+    /**
+     * Batched reply counts for many parents at once — avoids the per-memory count N+1 when
+     * building a list of memory responses. Returns rows of [parentMemoryId, count].
+     */
+    @Query("""
+        SELECT m.parentMemoryId, COUNT(m)
+        FROM Memory m
+        WHERE m.parentMemoryId IN :ids AND m.deletedAt IS NULL
+        GROUP BY m.parentMemoryId
+        """)
+    List<Object[]> countRepliesByParentIds(@Param("ids") Collection<UUID> ids);
+
     @Query(value = """
         SELECT m.id
         FROM memories m
