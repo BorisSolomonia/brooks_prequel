@@ -345,13 +345,21 @@ textarea {
   }
 
   .mw-button-primary {
-    border: 2px solid var(--action-primary);
-    background: var(--action-primary);
+    /* Deep river-cyan fill so the cream label clears WCAG AA — ~5.2:1, vs the ~1.8:1 the lighter
+       --action-primary (#7DB9C9) gave (BOR-82 a11y). Kept in the brand's teal family; one rule
+       serves both light and dark since it's a solid filled button. */
+    border: 2px solid #3F6673;
+    background: #3F6673;
     color: #F5EAD8;
     font-family: var(--font-archivo), var(--font-bricolage), sans-serif;
     font-weight: 800;
     letter-spacing: 0.02em;
     box-shadow: 4px 4px 0 color-mix(in srgb, var(--mw-pink) 34%, transparent);
+  }
+
+  .mw-button-primary:hover {
+    border-color: #345763;
+    background: #345763;
   }
 
   .mw-button-secondary {

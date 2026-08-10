@@ -1,10 +1,13 @@
 package com.brooks.purchase.service;
 
+import com.brooks.guide.domain.Guide;
 import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.purchase.domain.CreatorEarning;
+import com.brooks.purchase.domain.Purchase;
 import com.brooks.purchase.repository.CreatorEarningRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,6 +16,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -96,6 +101,43 @@ class CreatorEarningsRecorderTest {
         // PAID record is preserved (payment history intact) — surfaced via the outcome only.
         assertThat(earning.getPayoutStatus()).isEqualTo("PAID");
         verify(creatorEarningRepository, never()).save(earning);
+    }
+
+    @Test
+    void recordsEarningAndIncrementsCountForCompletedPurchase() {
+        UUID creatorId = UUID.randomUUID();
+        UUID purchaseId = UUID.randomUUID();
+        Purchase purchase = mock(Purchase.class);
+        when(purchase.getId()).thenReturn(purchaseId);
+        when(purchase.getPriceCentsPaid()).thenReturn(1900);
+        when(purchase.getCommissionRateBps()).thenReturn(1000);
+        when(purchase.getPlatformFeeCents()).thenReturn(190);
+        Guide guide = mock(Guide.class);
+        when(guide.getCreatorId()).thenReturn(creatorId);
+        when(creatorEarningRepository.existsByPurchaseId(purchaseId)).thenReturn(false);
+
+        recorder.recordForCompletedPurchase(purchase, guide);
+
+        verify(profileRepository).incrementPurchaseCount(creatorId);
+        ArgumentCaptor<CreatorEarning> saved = ArgumentCaptor.forClass(CreatorEarning.class);
+        verify(creatorEarningRepository).save(saved.capture());
+        assertThat(saved.getValue().getCreatorId()).isEqualTo(creatorId);
+        assertThat(saved.getValue().getNetAmountCents()).isEqualTo(1710); // 1900 - 190 fee
+    }
+
+    /**
+     * BOR-81/82 money-path regression: a COMPLETED purchase whose guide row is missing must NOT
+     * silently record nothing AND must not crash the completion — it records no earning, does not
+     * increment the count, and (see the logged ERROR in the service) surfaces for reconciliation.
+     */
+    @Test
+    void missingGuideRecordsNoEarningAndDoesNotIncrementCount() {
+        Purchase purchase = mock(Purchase.class);
+
+        recorder.recordForCompletedPurchase(purchase, null);
+
+        verify(creatorEarningRepository, never()).save(any());
+        verify(profileRepository, never()).incrementPurchaseCount(any());
     }
 
     @Test

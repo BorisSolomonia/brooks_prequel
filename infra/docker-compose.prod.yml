@@ -34,6 +34,31 @@ services:
       retries: 12
       start_period: 20s
 
+  # BOR-81/82: on-VM Postgres backup. Periodic pg_dump to a named volume with retention pruning
+  # (closes the "no DB backup at all" P1). For durability beyond VM/disk loss, sync /backups
+  # off-box — see infra/postgres/backup.sh.
+  db-backup:
+    image: postgres:16-alpine
+    container_name: brooks-db-backup
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      PGHOST: postgres
+      PGDATABASE: ${DB_NAME?DB_NAME must be set}
+      PGUSER: ${DB_USERNAME?DB_USERNAME must be set}
+      PGPASSWORD: ${DB_PASSWORD?DB_PASSWORD must be set}
+      BACKUP_INTERVAL_SECONDS: ${DB_BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${DB_BACKUP_RETENTION_DAYS:-14}
+    entrypoint: ["/bin/sh", "/usr/local/bin/backup.sh"]
+    volumes:
+      - brooks-postgres-backups:/backups
+      - ./postgres/backup.sh:/usr/local/bin/backup.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
   backend:
     image: ${BROOKS_BACKEND_IMAGE?BROOKS_BACKEND_IMAGE must be set}
     container_name: brooks-backend
@@ -144,6 +169,7 @@ services:
 
 volumes:
   brooks-postgres-data:
+  brooks-postgres-backups:
   brooks-caddy-data:
   brooks-caddy-config:
   brooks-media:

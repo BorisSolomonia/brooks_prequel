@@ -6,6 +6,7 @@ import com.brooks.purchase.domain.CreatorEarning;
 import com.brooks.purchase.domain.Purchase;
 import com.brooks.purchase.repository.CreatorEarningRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,13 +25,23 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class CreatorEarningsRecorder {
 
     private final UserProfileRepository profileRepository;
     private final CreatorEarningRepository creatorEarningRepository;
 
     public void recordForCompletedPurchase(Purchase purchase, Guide guide) {
-        if (guide == null) return;
+        if (guide == null) {
+            // A completed (paid) purchase whose guide row is gone means we cannot attribute the
+            // creator's earning — but it must NEVER be a silent skip: the creator is owed money.
+            // Log loudly so it surfaces in observability for manual reconciliation instead of
+            // vanishing (BOR-81/82 money-path).
+            log.error("Creator earnings NOT recorded: purchase {} is COMPLETED but its guide {} is "
+                    + "missing. Creator is un-credited — needs manual reconciliation.",
+                    purchase.getId(), purchase.getGuideId());
+            return;
+        }
 
         profileRepository.incrementPurchaseCount(guide.getCreatorId());
 
