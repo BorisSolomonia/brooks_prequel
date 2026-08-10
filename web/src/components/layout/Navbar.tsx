@@ -179,6 +179,7 @@ export default function Navbar() {
                   <div role="menu" className="mw-panel absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-2xl">
                     <Link href="/search" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.explore')}</Link>
                     <Link href="/maps" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.maps')}</Link>
+                    <Link href="/right-now" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.rightNow')}</Link>
                     <Link href="/guides" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.myGuides')}</Link>
                     <Link href="/profile" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.profile')}</Link>
                     <Link href="/settings" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.settings')}</Link>
