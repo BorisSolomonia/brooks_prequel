@@ -81,7 +81,7 @@ export default function MomentsViewer({ moments, startIndex = 0, onClose, onView
   if (!current) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
+    <div className="fixed inset-0 z-[120] flex flex-col bg-black">
       {/* Segment progress bars */}
       <div className="flex gap-1 px-3 pt-3">
         {moments.map((m, i) => (
@@ -135,7 +135,7 @@ export default function MomentsViewer({ moments, startIndex = 0, onClose, onView
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-center gap-6 px-4 py-4">
+      <div className="flex items-center justify-center gap-6 px-4 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))]">
         {onReact && (
           <button
             onClick={() => onReact(current.id)}

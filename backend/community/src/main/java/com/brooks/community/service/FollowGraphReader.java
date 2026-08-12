@@ -31,9 +31,11 @@ public class FollowGraphReader {
     /** The set of user ids {@code followerId} follows (the authors whose Moments they may see). */
     @Transactional(readOnly = true)
     public List<UUID> findFollowingIds(UUID followerId) {
+        // Read the uuid as text and parse it — driver-independent (getObject(col, UUID.class)
+        // support varies), so the follower's Moment/answer feed never silently fails to resolve.
         return jdbc.query(
                 "SELECT following_id FROM follows WHERE follower_id = ?",
-                (rs, i) -> rs.getObject("following_id", UUID.class),
+                (rs, i) -> UUID.fromString(rs.getString("following_id")),
                 followerId);
     }
 }

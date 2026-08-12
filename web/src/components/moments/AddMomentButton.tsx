@@ -89,8 +89,11 @@ export default function AddMomentButton({ placeId, onPosted }: AddMomentButtonPr
       </button>
 
       {file && preview && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={reset}>
-          <div className="w-full max-w-md rounded-t-2xl bg-ig-primary p-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/50 sm:items-center" onClick={reset}>
+          <div
+            className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-ig-border bg-ig-elevated p-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] sm:rounded-2xl sm:pb-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <p className="font-display font-black text-ig-text-primary">{t('moments.composeTitle')}</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={preview} alt="" className="mt-3 max-h-72 w-full rounded-lg object-cover" />

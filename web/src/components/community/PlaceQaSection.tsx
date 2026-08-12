@@ -226,8 +226,11 @@ export default function PlaceQaSection({ placeId }: { placeId: string }) {
 
       {/* Answer sheet */}
       {answeringId && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40" onClick={() => setAnsweringId(null)}>
-          <div className="w-full max-w-md rounded-t-2xl bg-ig-primary p-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setAnsweringId(null)}>
+          <div
+            className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-ig-border bg-ig-elevated p-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] sm:rounded-2xl sm:pb-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <p className="font-display font-black text-ig-text-primary">{t('placeQa.answerTitle')}</p>
             <p className="mt-1 text-xs text-ig-text-tertiary">{t('placeQa.answerHint')}</p>
             <input
