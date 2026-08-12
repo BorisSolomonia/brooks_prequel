@@ -10,6 +10,7 @@ import { getCurrentCoords } from '@/lib/geolocation';
 import { api } from '@/lib/api';
 import { ApiError } from '@/lib/api';
 import { buildMomentBody, postMoment } from '@/lib/moments';
+import { grantConsent } from '@/lib/rightNow';
 
 interface AddMomentButtonProps {
   placeId: string;
@@ -57,6 +58,11 @@ export default function AddMomentButton({ placeId, onPosted }: AddMomentButtonPr
         toast.error(t('moments.locationNeeded'));
         return;
       }
+      // Posting a Moment requires location-eligibility consent. Tapping Share IS the explicit
+      // opt-in (the sheet states it's location-based + followers-only), so grant it here — the
+      // call is idempotent server-side. Without this, a user who never used the answer flow
+      // would hit "Location consent is required" and be unable to post.
+      await grantConsent('LOCATION_ELIGIBILITY', token);
       const uploaded = await api.uploadMedia(file, 'PLACE_IMAGE', token);
       await postMoment(placeId, buildMomentBody(uploaded.url, coords, { caption }), token);
       toast.info(t('moments.shared'));
@@ -77,14 +83,14 @@ export default function AddMomentButton({ placeId, onPosted }: AddMomentButtonPr
     <>
       <button
         onClick={startCapture}
-        className="rounded-md bg-ig-text-primary px-3 py-1.5 text-sm font-bold text-ig-bg"
+        className="rounded-md bg-ig-text-primary px-3 py-1.5 text-sm font-bold text-ig-primary"
       >
         {t('moments.add')}
       </button>
 
       {file && preview && (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={reset}>
-          <div className="w-full max-w-md rounded-t-2xl bg-ig-bg p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-t-2xl bg-ig-primary p-4" onClick={(e) => e.stopPropagation()}>
             <p className="font-display font-black text-ig-text-primary">{t('moments.composeTitle')}</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={preview} alt="" className="mt-3 max-h-72 w-full rounded-lg object-cover" />
@@ -95,12 +101,12 @@ export default function AddMomentButton({ placeId, onPosted }: AddMomentButtonPr
               placeholder={t('moments.captionPlaceholder')}
               className="mt-3 w-full rounded-lg border-2 border-ig-border bg-transparent px-3 py-2 text-sm text-ig-text-primary"
             />
-            <p className="mt-1 text-xs text-ig-text-tertiary">{t('moments.followersOnlyHint')}</p>
+            <p className="mt-1 text-xs text-ig-text-tertiary">{t('moments.locationConsentHint')}</p>
             <div className="mt-3 flex gap-2">
               <button
                 disabled={busy}
                 onClick={share}
-                className="flex-1 rounded-lg bg-ig-text-primary py-2.5 text-sm font-bold text-ig-bg disabled:opacity-50"
+                className="flex-1 rounded-lg bg-ig-text-primary py-2.5 text-sm font-bold text-ig-primary disabled:opacity-50"
               >
                 {busy ? t('moments.sharing') : t('moments.share')}
               </button>

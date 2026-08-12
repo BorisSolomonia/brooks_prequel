@@ -1465,6 +1465,7 @@
     "composeTitle": "Share a Moment",
     "captionPlaceholder": "Say something (optional)…",
     "followersOnlyHint": "Only your followers will see this, for 24 hours.",
+    "locationConsentHint": "Followers-only for 24h. Sharing uses your location to confirm you're here.",
     "share": "Share",
     "sharing": "Sharing…",
     "cancel": "Cancel",

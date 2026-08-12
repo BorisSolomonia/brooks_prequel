@@ -17,7 +17,7 @@ import {
   voteAnswerHelpful,
   type PlaceQuestionView,
 } from '@/lib/placeQa';
-import { DEFAULT_FLAG_CATEGORY, type RightNowStatus } from '@/lib/rightNow';
+import { DEFAULT_FLAG_CATEGORY, grantConsent, type RightNowStatus } from '@/lib/rightNow';
 
 const ANSWER_CHIPS: RightNowStatus[] = ['QUIET', 'NORMAL', 'BUSY', 'CLOSED'];
 
@@ -79,6 +79,10 @@ export default function PlaceQaSection({ placeId }: { placeId: string }) {
           toast.error(t('placeQa.locationNeeded'));
           return;
         }
+        // Answering is present-only and needs location-eligibility consent — tapping send is the
+        // explicit opt-in (idempotent server-side), so a user without the answer-flow consent
+        // button doesn't hit a "consent required" wall.
+        await grantConsent('LOCATION_ELIGIBILITY', token);
         await answerQuestion(answeringId, buildAnswerBody(coords, { bodyText: answerText, statusChip }), token);
         toast.info(t('placeQa.submitted'));
         setAnsweringId(null);
@@ -182,7 +186,7 @@ export default function PlaceQaSection({ placeId }: { placeId: string }) {
                         <span className="font-bold text-ig-text-primary">{t(`rightNow.status.${a.statusChip}`)}</span>
                       )}
                       {a.contributorTier === 'TRUSTED' && (
-                        <span className="rounded bg-ig-bg px-1.5 py-0.5">{t('placeQa.trusted')}</span>
+                        <span className="rounded bg-ig-primary px-1.5 py-0.5">{t('placeQa.trusted')}</span>
                       )}
                       {a.corroborated && <span>{t('placeQa.corroborated')}</span>}
                     </div>
@@ -223,7 +227,7 @@ export default function PlaceQaSection({ placeId }: { placeId: string }) {
       {/* Answer sheet */}
       {answeringId && (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40" onClick={() => setAnsweringId(null)}>
-          <div className="w-full max-w-md rounded-t-2xl bg-ig-bg p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-t-2xl bg-ig-primary p-4" onClick={(e) => e.stopPropagation()}>
             <p className="font-display font-black text-ig-text-primary">{t('placeQa.answerTitle')}</p>
             <p className="mt-1 text-xs text-ig-text-tertiary">{t('placeQa.answerHint')}</p>
             <input
@@ -248,7 +252,7 @@ export default function PlaceQaSection({ placeId }: { placeId: string }) {
             <button
               disabled={busy}
               onClick={() => doAnswer()}
-              className="mt-2 w-full rounded-lg bg-ig-text-primary py-2.5 text-sm font-bold text-ig-bg disabled:opacity-50"
+              className="mt-2 w-full rounded-lg bg-ig-text-primary py-2.5 text-sm font-bold text-ig-primary disabled:opacity-50"
             >
               {busy ? t('placeQa.sending') : t('placeQa.send')}
             </button>

@@ -254,7 +254,7 @@ export default function RightNowPage() {
             </button>
             {isNative() ? (
               consentGranted ? (
-                <button onClick={() => openMenu(ANSWER_MENU_ID)} className="rounded-md bg-ig-text-primary px-3 py-1.5 text-sm font-bold text-ig-bg">
+                <button onClick={() => openMenu(ANSWER_MENU_ID)} className="rounded-md bg-ig-text-primary px-3 py-1.5 text-sm font-bold text-ig-primary">
                   {t('rightNow.answer')}
                 </button>
               ) : (
@@ -315,7 +315,7 @@ export default function RightNowPage() {
       {/* Answer modal — mutually exclusive via MenuCoordinator (BOR-47 pattern) */}
       {openMenuId === ANSWER_MENU_ID && (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40" onClick={() => closeMenu(ANSWER_MENU_ID)}>
-          <div className="w-full max-w-md rounded-t-2xl bg-ig-bg p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-t-2xl bg-ig-primary p-4" onClick={(e) => e.stopPropagation()}>
             <p className="font-display font-black text-ig-text-primary">{t('rightNow.answerTitle')}</p>
             <p className="mt-1 text-xs text-ig-text-tertiary">{t('rightNow.answerHint')}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
