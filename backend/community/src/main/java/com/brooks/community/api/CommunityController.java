@@ -34,6 +34,14 @@ public class CommunityController {
         return ResponseEntity.ok(rightNowService.listPlaces(subject(authentication), north, south, east, west));
     }
 
+    @GetMapping("/places/search")
+    public ResponseEntity<List<CommunityPlaceResponse>> searchPlaces(
+            Authentication authentication,
+            @RequestParam("q") String query,
+            @RequestParam(value = "city", required = false) String city) {
+        return ResponseEntity.ok(rightNowService.searchPlaces(subject(authentication), query, city));
+    }
+
     @GetMapping("/places/{placeId}/right-now")
     public ResponseEntity<RightNowFeedResponse> rightNow(
             Authentication authentication,

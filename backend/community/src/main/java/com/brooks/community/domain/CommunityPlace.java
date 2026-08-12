@@ -47,8 +47,29 @@ public class CommunityPlace extends BaseEntity {
     @Column(name = "excluded_reason", length = 200)
     private String excludedReason;
 
+    @Column(name = "city", length = 120)
+    private String city;
+
+    @Column(name = "country", length = 80)
+    private String country;
+
+    /**
+     * Q4: sensitive/kid-related POIs (schools, kindergartens…). {@code storiesExcluded} is the
+     * launch-off enforcement toggle; when true, Moments cannot be posted here. Off at launch.
+     */
+    @Column(name = "stories_excluded", nullable = false)
+    private boolean storiesExcluded = false;
+
+    @Column(name = "sensitive_category", length = 30)
+    private String sensitiveCategory;
+
     /** Eligible for Right Now v1 only if active and not low-footfall. */
     public boolean eligibleForV1() {
         return active && footfallClass != FootfallClass.LOW;
+    }
+
+    /** A place accepts Moments if it's active and not flagged as a sensitive/kid-related POI. */
+    public boolean acceptsMoments() {
+        return active && !storiesExcluded;
     }
 }

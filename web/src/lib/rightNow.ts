@@ -81,6 +81,12 @@ export function listPlaces(
   return api.get<CommunityPlace[]>(`/api/community/places?${qs}`, token);
 }
 
+/** Search places by name (remote asking / discovery), optionally scoped to a city. */
+export function searchPlaces(query: string, token: string, city?: string): Promise<CommunityPlace[]> {
+  const qs = `q=${encodeURIComponent(query)}${city ? `&city=${encodeURIComponent(city)}` : ''}`;
+  return api.get<CommunityPlace[]>(`/api/community/places/search?${qs}`, token);
+}
+
 export function getRightNow(placeId: string, token: string): Promise<RightNowFeed> {
   return api.get<RightNowFeed>(`/api/community/places/${placeId}/right-now`, token);
 }

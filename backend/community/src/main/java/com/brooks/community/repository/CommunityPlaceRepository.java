@@ -1,6 +1,7 @@
 package com.brooks.community.repository;
 
 import com.brooks.community.domain.CommunityPlace;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +30,17 @@ public interface CommunityPlaceRepository extends JpaRepository<CommunityPlace, 
             @Param("south") double south,
             @Param("east") double east,
             @Param("west") double west);
+
+    /**
+     * Name search for remote asking (D-2), optionally scoped to a city (Tbilisi at launch).
+     * Case-insensitive substring match; LOW-footfall exclusion applied in the service.
+     */
+    @Query("""
+        SELECT p FROM CommunityPlace p
+        WHERE p.active = true
+          AND (:city IS NULL OR LOWER(p.city) = LOWER(:city))
+          AND LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
+        ORDER BY p.name ASC
+        """)
+    List<CommunityPlace> searchByName(@Param("q") String q, @Param("city") String city, Pageable pageable);
 }

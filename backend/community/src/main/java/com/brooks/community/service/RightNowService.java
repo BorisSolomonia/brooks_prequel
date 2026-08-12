@@ -83,6 +83,23 @@ public class RightNowService {
                 .collect(Collectors.toList());
     }
 
+    /** Search active places by name (D-2 remote asking), optionally scoped to a city. */
+    @Transactional(readOnly = true)
+    public List<CommunityPlaceResponse> searchPlaces(String subject, String query, String city) {
+        userService.findByAuth0Subject(subject); // require a real user
+        String q = query == null ? "" : query.trim();
+        if (q.length() < 2) {
+            return List.of();
+        }
+        String cityFilter = (city == null || city.isBlank()) ? null : city.trim();
+        return placeRepository.searchByName(q, cityFilter,
+                        org.springframework.data.domain.PageRequest.of(0, 25)).stream()
+                .filter(CommunityPlace::eligibleForV1)
+                .map(p -> new CommunityPlaceResponse(p.getId(), p.getName(), p.getCategory(),
+                        p.getLatitude(), p.getLongitude(), p.getFootfallClass().name()))
+                .collect(Collectors.toList());
+    }
+
     /** Current Right Now state for a place — k-gated, block-filtered, expiry-filtered. */
     @Transactional(readOnly = true)
     public RightNowFeedResponse getRightNow(String subject, UUID placeId) {

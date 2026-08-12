@@ -17,12 +17,17 @@ import {
   getRightNow,
   grantConsent,
   listPlaces,
+  searchPlaces,
   submitReport,
   voteHelpful,
   type CommunityPlace,
   type RightNowFeed,
   type RightNowStatus,
 } from '@/lib/rightNow';
+import { listPlaceMoments, type MomentView } from '@/lib/moments';
+import MomentsRail from '@/components/moments/MomentsRail';
+import AddMomentButton from '@/components/moments/AddMomentButton';
+import PlaceQaSection from '@/components/community/PlaceQaSection';
 
 const ANSWER_MENU_ID = 'right-now-answer';
 const STATUSES: RightNowStatus[] = ['QUIET', 'NORMAL', 'BUSY', 'CLOSED'];
@@ -38,6 +43,8 @@ export default function RightNowPage() {
   const [noLocation, setNoLocation] = useState(false);
   const [selected, setSelected] = useState<CommunityPlace | null>(null);
   const [feed, setFeed] = useState<RightNowFeed | null>(null);
+  const [moments, setMoments] = useState<MomentView[]>([]);
+  const [query, setQuery] = useState('');
   const [consentGranted, setConsentGranted] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -67,16 +74,39 @@ export default function RightNowPage() {
       .finally(() => setLoading(false));
   }, [token, tokenLoading]);
 
+  const loadMoments = useCallback(
+    (placeId: string) => {
+      if (!token) return;
+      listPlaceMoments(placeId, token)
+        .then((f) => setMoments(f.moments))
+        .catch((err) => console.error('[right-now] moments:', err));
+    },
+    [token],
+  );
+
+  const runSearch = useCallback(async () => {
+    if (!token || query.trim().length < 2) return;
+    try {
+      const results = await searchPlaces(query.trim(), token, 'Tbilisi');
+      setPlaces(results);
+      setNoLocation(false);
+    } catch (err) {
+      console.error('[right-now] search:', err);
+    }
+  }, [token, query]);
+
   const openPlace = useCallback(
     (place: CommunityPlace) => {
       if (!token) return;
       setSelected(place);
       setFeed(null);
+      setMoments([]);
       getRightNow(place.id, token)
         .then(setFeed)
         .catch((err) => console.error('[right-now] feed:', err));
+      loadMoments(place.id);
     },
-    [token],
+    [token, loadMoments],
   );
 
   const refreshFeed = useCallback(() => {
@@ -163,6 +193,25 @@ export default function RightNowPage() {
       <h1 className="font-display text-xl font-black uppercase tracking-[0.06em] text-ig-text-primary">{t('rightNow.title')}</h1>
       <p className="mt-1 text-sm text-ig-text-tertiary">{t('rightNow.subtitle')}</p>
 
+      {/* Search a place by name (Tbilisi) — remote discovery beyond the nearby list */}
+      <form
+        className="mt-3 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          runSearch();
+        }}
+      >
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t('rightNow.searchPlaceholder')}
+          className="min-w-0 flex-1 rounded-lg border-2 border-ig-border bg-transparent px-3 py-2 text-sm text-ig-text-primary"
+        />
+        <button type="submit" className="rounded-lg border-2 border-ig-border px-3 py-2 text-sm font-bold text-ig-text-primary">
+          {t('rightNow.search')}
+        </button>
+      </form>
+
       {noLocation && (
         <div className="mw-card mt-4 py-6 text-center text-sm text-ig-text-secondary">{t('rightNow.locationNeeded')}</div>
       )}
@@ -217,6 +266,22 @@ export default function RightNowPage() {
               <span className="self-center text-xs text-ig-text-tertiary">{t('rightNow.answerRequiresApp')}</span>
             )}
           </div>
+
+          {/* Moments — follower-scoped 24h stories at this place */}
+          <div className="mt-4 border-t border-ig-border pt-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-sm font-black uppercase tracking-wide text-ig-text-primary">
+                {t('moments.sectionTitle')}
+              </h3>
+              <AddMomentButton placeId={selected.id} onPosted={() => loadMoments(selected.id)} />
+            </div>
+            <div className="mt-2">
+              <MomentsRail moments={moments} emptyHint={t('moments.placeEmpty')} />
+            </div>
+          </div>
+
+          {/* Q&A — ask this place a question, read anonymous answers */}
+          <PlaceQaSection placeId={selected.id} />
 
           {/* Reports */}
           <div className="mt-4 space-y-2">
