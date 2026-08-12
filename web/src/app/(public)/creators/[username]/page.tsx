@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import { useTranslation } from 'react-i18next';
 import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
 import Avatar from '@/components/ui/Avatar';
+import ProfileMomentAvatar from '@/components/moments/ProfileMomentAvatar';
 import FollowButton from '@/components/ui/FollowButton';
 import GuideCard from '@/components/ui/GuideCard';
 import ReviewComposer from '@/components/reviews/ReviewComposer';
@@ -221,7 +222,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row">
-        <Avatar src={profile.avatarUrl} name={profile.displayName ?? profile.username ?? ''} size="xl" verified={profile.verified} />
+        <ProfileMomentAvatar userId={profile.userId} src={profile.avatarUrl} name={profile.displayName ?? profile.username ?? ''} size="xl" verified={profile.verified} />
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
             <h1 data-tour="creator-profile-header" className="text-xl font-bold text-ig-text-primary">{profile.displayName ?? profile.username}</h1>

@@ -105,7 +105,10 @@ export default function MomentsViewer({ moments, startIndex = 0, onClose, onView
           )}
           <div className="leading-tight">
             {current.authorName && <p className="text-sm font-bold text-white">{current.authorName}</p>}
-            <p className="text-xs text-white/70">{t(`moments.fresh.${current.freshness}`)}</p>
+            <p className="text-xs text-white/70">
+              {current.placeName ? `📍 ${current.placeName} · ` : ''}
+              {t(`moments.fresh.${current.freshness}`)}
+            </p>
           </div>
         </div>
         <button aria-label={t('moments.close')} onClick={onClose} className="text-2xl leading-none text-white/90">

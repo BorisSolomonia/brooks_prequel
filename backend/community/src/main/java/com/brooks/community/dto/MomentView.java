@@ -12,6 +12,7 @@ import java.util.UUID;
 public record MomentView(
         UUID id,
         UUID placeId,
+        String placeName,
         UUID authorId,
         String authorName,
         String authorAvatarUrl,

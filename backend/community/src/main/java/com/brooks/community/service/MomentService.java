@@ -135,7 +135,9 @@ public class MomentService {
                 .filter(m -> canSee(viewerId, m))
                 .collect(Collectors.toList());
         Map<UUID, AuthorInfo> authors = resolveAuthors(visible);
-        List<MomentView> views = visible.stream().map(m -> toView(m, now, authors)).collect(Collectors.toList());
+        Map<UUID, String> placeNames = resolvePlaceNames(visible);
+        List<MomentView> views = visible.stream()
+                .map(m -> toView(m, now, authors, placeNames)).collect(Collectors.toList());
         return new MomentFeedResponse(placeId, place.getName(), views);
     }
 
@@ -157,7 +159,32 @@ public class MomentService {
                 .filter(m -> canSee(viewerId, m))
                 .collect(Collectors.toList());
         Map<UUID, AuthorInfo> authors = resolveAuthors(visible);
-        return visible.stream().map(m -> toView(m, now, authors)).collect(Collectors.toList());
+        Map<UUID, String> placeNames = resolvePlaceNames(visible);
+        return visible.stream().map(m -> toView(m, now, authors, placeNames)).collect(Collectors.toList());
+    }
+
+    /**
+     * One user's live Moments the viewer is allowed to see — powers the profile "moment ring".
+     * Visible only to the author themselves or a follower (block-filtered); empty otherwise, so a
+     * non-follower's profile shows no ring and leaks nothing.
+     */
+    @Transactional(readOnly = true)
+    public List<MomentView> listUserMoments(String subject, UUID targetUserId) {
+        UUID viewerId = userId(subject);
+        boolean allowed = viewerId.equals(targetUserId) || followGraph.isFollowing(viewerId, targetUserId);
+        if (!allowed || interactionBlocked(viewerId, targetUserId)) {
+            return List.of();
+        }
+        Instant now = Instant.now();
+        List<LocationMoment> visible = momentRepository
+                .findByAuthorIdAndVisibleAtBeforeAndExpiresAtAfterAndTakenDownAtIsNullAndGoGhostFalseOrderByCreatedAtDesc(
+                        targetUserId, now, now)
+                .stream()
+                .filter(m -> canSee(viewerId, m))
+                .collect(Collectors.toList());
+        Map<UUID, AuthorInfo> authors = resolveAuthors(visible);
+        Map<UUID, String> placeNames = resolvePlaceNames(visible);
+        return visible.stream().map(m -> toView(m, now, authors, placeNames)).collect(Collectors.toList());
     }
 
     // ---- Engagement (records into the dormant ledger) ---------------------------------------
@@ -254,12 +281,26 @@ public class MomentService {
                 .orElse(null);
     }
 
-    private MomentView toView(LocationMoment m, Instant now, Map<UUID, AuthorInfo> authors) {
+    private MomentView toView(LocationMoment m, Instant now, Map<UUID, AuthorInfo> authors,
+                              Map<UUID, String> placeNames) {
         AuthorInfo a = authors.get(m.getAuthorId());
-        return new MomentView(m.getId(), m.getPlaceId(), m.getAuthorId(),
+        return new MomentView(m.getId(), m.getPlaceId(), placeNames.get(m.getPlaceId()), m.getAuthorId(),
                 a == null ? null : a.name(), a == null ? null : a.avatarUrl(),
                 m.getMediaRef(), m.getMediaType(), m.getCaption(), freshness(m.getCreatedAt(), now),
                 Math.max(0, Duration.between(now, m.getExpiresAt()).toMinutes()));
+    }
+
+    /** Batch-resolve place names so each Moment shows where it was posted (the user asked for this). */
+    private Map<UUID, String> resolvePlaceNames(List<LocationMoment> moments) {
+        List<UUID> ids = moments.stream().map(LocationMoment::getPlaceId).distinct().collect(Collectors.toList());
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, String> out = new HashMap<>();
+        for (CommunityPlace p : placeRepository.findAllById(ids)) {
+            out.put(p.getId(), p.getName());
+        }
+        return out;
     }
 
     /**

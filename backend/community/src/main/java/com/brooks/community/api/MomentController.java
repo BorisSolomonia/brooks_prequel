@@ -44,6 +44,14 @@ public class MomentController {
         return ResponseEntity.ok(momentService.listTray(subject(authentication)));
     }
 
+    /** A user's active Moments the viewer may see — powers the profile "moment ring". */
+    @GetMapping("/users/{userId}/moments")
+    public ResponseEntity<List<MomentView>> userMoments(
+            Authentication authentication,
+            @PathVariable UUID userId) {
+        return ResponseEntity.ok(momentService.listUserMoments(subject(authentication), userId));
+    }
+
     @PostMapping("/moments/{momentId}/view")
     public ResponseEntity<Void> view(
             Authentication authentication,

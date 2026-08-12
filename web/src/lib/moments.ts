@@ -21,6 +21,7 @@ export type MomentFreshness = 'just_now' | 'within_the_hour' | 'a_few_hours_ago'
 export interface MomentView {
   id: string;
   placeId: string;
+  placeName: string | null;
   authorId: string;
   authorName: string | null;
   authorAvatarUrl: string | null;
@@ -102,6 +103,11 @@ export function listPlaceMoments(placeId: string, token: string): Promise<Moment
 
 export function getMomentTray(token: string): Promise<MomentView[]> {
   return api.get<MomentView[]>(`/api/community/moments/tray`, token);
+}
+
+/** A user's active moments the viewer may see — used for the profile "moment ring". */
+export function getUserMoments(userId: string, token: string): Promise<MomentView[]> {
+  return api.get<MomentView[]>(`/api/community/users/${userId}/moments`, token);
 }
 
 export function recordMomentView(

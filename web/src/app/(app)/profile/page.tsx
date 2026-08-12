@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import Avatar from '@/components/ui/Avatar';
+import ProfileMomentAvatar from '@/components/moments/ProfileMomentAvatar';
 import { AiKeysPanel } from '@/components/ai/AiKeysPanel';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { redirectToLogin } from '@/lib/capacitor';
@@ -74,7 +74,7 @@ function ProfilePageInner() {
             <div className="rounded-2xl border border-ig-border bg-ig-elevated p-6">
               <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                 <div className="flex min-w-0 gap-4">
-                  <Avatar src={profile.avatarUrl} name={profile.displayName ?? profile.username ?? t('account.profile.userFallback')} size="xl" verified={profile.verified} />
+                  <ProfileMomentAvatar userId={profile.userId} src={profile.avatarUrl} name={profile.displayName ?? profile.username ?? t('account.profile.userFallback')} size="xl" verified={profile.verified} />
                   <div>
                     <h1 className="text-2xl font-bold text-ig-text-primary">
                       {profile.displayName ?? profile.username ?? t('account.profile.unnamedCreator')}

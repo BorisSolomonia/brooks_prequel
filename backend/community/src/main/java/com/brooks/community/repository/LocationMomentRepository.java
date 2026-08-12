@@ -20,6 +20,10 @@ public interface LocationMomentRepository extends JpaRepository<LocationMoment, 
     List<LocationMoment> findByAuthorIdInAndVisibleAtBeforeAndExpiresAtAfterAndTakenDownAtIsNullAndGoGhostFalseOrderByCreatedAtDesc(
             Collection<UUID> authorIds, Instant visibleBefore, Instant expiresAfter);
 
+    /** One author's live+revealed moments (for the profile "moment ring"), newest first. */
+    List<LocationMoment> findByAuthorIdAndVisibleAtBeforeAndExpiresAtAfterAndTakenDownAtIsNullAndGoGhostFalseOrderByCreatedAtDesc(
+            UUID authorId, Instant visibleBefore, Instant expiresAfter);
+
     /** Rate-limit input: how many moments this author posted recently. */
     long countByAuthorIdAndCreatedAtAfter(UUID authorId, Instant since);
 }
