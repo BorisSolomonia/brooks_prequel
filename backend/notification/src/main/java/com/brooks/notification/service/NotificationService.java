@@ -34,7 +34,7 @@ public class NotificationService {
     private final FcmSender fcmSender;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Async
+    @Async("notificationTaskExecutor")
     @Transactional
     public void notifyUser(UUID userId, String title, String body, Map<String, String> data) {
         // 1. Persist in-app history FIRST so the bell dropdown shows the
@@ -45,7 +45,9 @@ public class NotificationService {
         if (data != null && !data.isEmpty()) {
             try {
                 dataJson = objectMapper.writeValueAsString(data);
-            } catch (Exception ignored) {
+            } catch (Exception serializationError) {
+                log.warn("Notification payload serialization failed for user {} and type {}",
+                        userId, type, serializationError);
                 /* fall through with null dataJson */
             }
         }
