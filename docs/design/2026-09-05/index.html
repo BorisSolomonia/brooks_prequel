@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Brooks Design Directions</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,500;10..48,700;10..48,800&family=DM+Sans:wght@400;500;700&display=swap');
+    :root { --ink:#152f46; --muted:#5b7184; --paper:#f2f4f5; --line:#d4dee3; --pink:#cc5b7e; --blue:#173f5f; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 "DM Sans", sans-serif; }
+    main { max-width:1240px; margin:auto; padding:64px 28px 88px; }
+    .eyebrow { color:var(--pink); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+    h1,h2,h3 { font-family:"Bricolage Grotesque", sans-serif; line-height:.98; margin:.3em 0; }
+    h1 { font-size:clamp(42px,7vw,86px); max-width:850px; letter-spacing:-.065em; }
+    h2 { font-size:29px; }
+    p { max-width:700px; color:var(--muted); }
+    .notice { border-left:4px solid var(--pink); padding:16px 20px; background:#fff; margin:36px 0 48px; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:20px; overflow:hidden; box-shadow:0 14px 30px #173f5f0b; }
+    .card img { display:block; width:100%; aspect-ratio:1.44; object-fit:cover; object-position:top; background:#e8ecee; }
+    .card > div { padding:24px; }
+    .number { color:var(--pink); font-size:13px; font-weight:700; }
+    .card h2 { margin:.2em 0 .3em; }
+    a { color:inherit; }
+    .open { display:inline-flex; border-radius:999px; background:var(--blue); color:#fff; padding:10px 15px; font-weight:700; text-decoration:none; margin-top:8px; }
+    table { border-collapse:collapse; width:100%; margin-top:18px; background:#fff; }
+    th,td { border:1px solid var(--line); text-align:left; padding:12px; vertical-align:top; }
+    th { color:var(--ink); font-size:13px; }
+    td { color:var(--muted); }
+    .pick { color:var(--ink); font-weight:700; }
+    footer { border-top:1px solid var(--line); margin-top:68px; padding-top:24px; font-size:14px; }
+    @media (max-width:720px) { main { padding:40px 18px 60px; } .grid { grid-template-columns:1fr; } table { font-size:14px; } th,td { padding:9px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Brooks visual system review / 5 September 2026</p>
+    <h1>Five directions for a city that feels personal.</h1>
+    <p>Each prototype is a self-contained, non-production preview of discovery, map, guide, creator, and trip flows. It uses fictional people, prices, guides, map locations, and no live APIs, payments, or tracking.</p>
+    <div class="notice"><strong>Recommended: 1. Atlas Studio.</strong> It gives map information and paid-guide decisions the clearest hierarchy, retains the pink Brooks signal as an accent rather than a background, and can be introduced into the existing design system with the least visual and accessibility risk.</div>
+
+    <section class="grid" aria-label="Five design directions">
+      <article class="card"><img src="screenshots/01-atlas-studio-desktop.png" alt="Atlas Studio desktop preview"><div><span class="number">01</span><h2>Atlas Studio</h2><p>Editorial cartography. Cool-paper surfaces, deep blue type, restrained pink signals, tight guide cards.</p><a class="open" href="01-atlas-studio.html">Open interactive preview</a></div></article>
+      <article class="card"><img src="screenshots/02-postcard-club-desktop.png" alt="Postcard Club desktop preview"><div><span class="number">02</span><h2>Postcard Club</h2><p>Warm paper, stamps, offsets, and collectable local stories. The most playful option.</p><a class="open" href="02-postcard-club.html">Open interactive preview</a></div></article>
+      <article class="card"><img src="screenshots/03-field-notes-desktop.png" alt="Field Notes desktop preview"><div><span class="number">03</span><h2>Field Notes</h2><p>Utility-first outdoor collection. Forest and ochre, compact route rows, calm planning emphasis.</p><a class="open" href="03-field-notes.html">Open interactive preview</a></div></article>
+      <article class="card"><img src="screenshots/04-after-hours-desktop.png" alt="After Hours desktop preview"><div><span class="number">04</span><h2>After Hours</h2><p>Cinematic creator culture. Dark gallery backdrop, large art direction, stronger editorial voice.</p><a class="open" href="04-after-hours.html">Open interactive preview</a></div></article>
+      <article class="card"><img src="screenshots/05-clear-current-desktop.png" alt="Clear Current desktop preview"><div><span class="number">05</span><h2>Clear Current</h2><p>Bright, rounded, mobile-forward utility. The closest evolution of a conventional map product.</p><a class="open" href="05-clear-current.html">Open interactive preview</a></div></article>
+    </section>
+
+    <section>
+      <p class="eyebrow">Decision guide</p>
+      <h2>Choose for the product you want Brooks to become.</h2>
+      <table>
+        <thead><tr><th>Version</th><th>Best when</th><th>Risk / trade-off</th></tr></thead>
+        <tbody>
+          <tr><td class="pick">01 Atlas Studio</td><td>Maps, guides, reviews, saved content, and creator discovery must all read clearly.</td><td>Needs disciplined use of the pink accent to stay distinctive.</td></tr>
+          <tr><td>02 Postcard Club</td><td>Brooks should feel like a memorable local-culture brand first.</td><td>Decorative elements must not compete with real maps and dense trip data.</td></tr>
+          <tr><td>03 Field Notes</td><td>Routes, walking, itinerary utility, and trust matter most.</td><td>More functional than expressive for creator-led content.</td></tr>
+          <tr><td>04 After Hours</td><td>Creator identity and discovery are the primary commercial differentiators.</td><td>Dark imagery can make map and accessibility states harder to manage.</td></tr>
+          <tr><td>05 Clear Current</td><td>Fastest path to a broadly familiar, mobile-safe map product.</td><td>Least distinctive of the five.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>Read the evidence and implementation constraints in <a href="research.md">research and architecture notes</a>. Screenshots were checked at 1440px and 390px; each of the five preview screens had no horizontal overflow or failed image load.</footer>
+  </main>
+</body>
+</html>

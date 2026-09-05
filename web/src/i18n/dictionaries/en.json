@@ -875,7 +875,11 @@
     "notifications": {
       "notifications": "Notifications",
       "unreadCount": "{{count}} unread notifications",
-      "empty": "Nothing yet. You'll see memory shares, follows and updates here."
+      "empty": "Nothing yet. You'll see memory shares, follows and updates here.",
+      "pushTitle": "Get important trip updates",
+      "pushBody": "Enable device notifications for memory shares, trip reminders, and guide updates.",
+      "enablePush": "Enable push notifications",
+      "managePush": "Manage notification permission"
     },
     "googlePay": {},
     "landing": {

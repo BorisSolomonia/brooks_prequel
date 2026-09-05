@@ -1,6 +1,6 @@
 import MapsExperience from '@/components/maps/MapsExperience';
 
-// Maps is fully interactive (Mapbox GL on the client) and reads its initial state from
+// Maps is fully interactive (Leaflet with Mapbox raster tiles) and reads its initial state from
 // useSearchParams in the imported component tree. Marking it dynamic avoids the
 // "useSearchParams() should be wrapped in a suspense boundary" prerender error.
 export const dynamic = 'force-dynamic';

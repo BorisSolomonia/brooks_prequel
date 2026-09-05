@@ -49,7 +49,9 @@ http://127.0.0.1 {
     X-Content-Type-Options nosniff
     X-Frame-Options SAMEORIGIN
     Referrer-Policy strict-origin-when-cross-origin
-    Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
+    # Memory capture is an explicit in-app action, so same-origin camera and
+    # microphone access are permitted while third-party frames remain denied.
+    Permissions-Policy "camera=(self), microphone=(self), geolocation=(self)"
     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     # Next.js emits inline hydration scripts by default; eliminating 'unsafe-inline'
     # requires nonce-injection middleware (https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy)

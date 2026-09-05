@@ -1,11 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { Map as LeafletMap, TileLayer as LeafletTileLayer } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { useTranslation } from 'react-i18next';
-import { rasterTileUrl, useMapboxStyle } from '@/lib/mapboxStyle';
 import Avatar from '@/components/ui/Avatar';
 import ProfileMomentAvatar from '@/components/moments/ProfileMomentAvatar';
 import FollowButton from '@/components/ui/FollowButton';
@@ -16,7 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import StarRating from '@/components/reviews/StarRating';
 import { api } from '@/lib/api';
 import { useAccessToken } from '@/hooks/useAccessToken';
-import type { CreatorReviewItem, CreatorReviewListResponse, GuideListItem, PageResponse, Profile } from '@/types';
+import type { CreatorReviewItem, CreatorReviewListResponse, GuideListItem, PageResponse, Profile, PublicProfile } from '@/types';
 
 type Tab = 'guides' | 'reviews' | 'about';
 
@@ -25,7 +22,7 @@ export default function CreatorProfilePage({ params }: { params: { username: str
   const { token } = useAccessToken();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('guides');
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [guides, setGuides] = useState<GuideListItem[]>([]);
   const [guidesLoading, setGuidesLoading] = useState(true);
@@ -35,23 +32,10 @@ export default function CreatorProfilePage({ params }: { params: { username: str
   const [reviews, setReviews] = useState<CreatorReviewItem[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<LeafletMap | null>(null);
-  const tileLayerRef = useRef<LeafletTileLayer | null>(null);
-  const mapInitRef = useRef(false);
-  const mapboxStyle = useMapboxStyle();
-
-  // Live theme switch: swap the raster tile URL rather than rebuilding the map.
-  useEffect(() => {
-    const token = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN;
-    if (!token) return;
-    tileLayerRef.current?.setUrl(rasterTileUrl(mapboxStyle, token));
-  }, [mapboxStyle]);
-
   useEffect(() => {
     // Profile and guides are independent — fetch them in parallel instead of
     // chaining (the chain added a full round-trip before guides loaded).
-    api.get<Profile>(`/api/creators/${params.username}`)
+    api.get<PublicProfile>(`/api/creators/${params.username}`)
       .then((profileResponse) => setProfile(profileResponse))
       .catch((err) => setError(err instanceof Error ? err.message : t('account.creatorProfile.errorLoad')));
     api.get<PageResponse<GuideListItem>>(`/api/creators/${params.username}/guides`)
@@ -87,73 +71,6 @@ export default function CreatorProfilePage({ params }: { params: { username: str
       .catch((err) => setReviewsError(err instanceof Error ? err.message : t('account.creatorProfile.errorLoadReviews')))
       .finally(() => setReviewsLoading(false));
   }, [params.username, token]);
-
-  useEffect(() => {
-    if (activeTab !== 'about' || !profile?.latitude || !profile?.longitude || mapInitRef.current) return;
-    const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN;
-    // Check prerequisites BEFORE arming the guard, so an early bail doesn't
-    // strand mapInitRef=true (which would block the map from ever initializing).
-    if (!mapboxToken || !mapContainerRef.current) return;
-    mapInitRef.current = true;
-
-    // `cancelled` prevents the async import from creating a map after the effect
-    // was cleaned up (fast tab switch / theme change) — that would orphan a context.
-    // Leaflet + Mapbox RASTER tiles (no WebGL): mapbox-gl's tile GL textures are
-    // never freed by the Android System WebView's GPU layer on pan (→ ~4 GB → LMK
-    // kill). This page is high-traffic (every creator-profile view), so it must
-    // not leak. See POSTMORTEM_MAPS_GPU_OOM.md.
-    let cancelled = false;
-    import('leaflet').then(({ default: L }) => {
-      if (cancelled || !mapContainerRef.current) return;
-      // interactive:false equivalent — a static locator map, no pan/zoom.
-      const map = L.map(mapContainerRef.current, {
-        center: [profile.latitude!, profile.longitude!],
-        zoom: 10,
-        zoomControl: false,
-        attributionControl: true,
-        dragging: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        touchZoom: false,
-      });
-      mapRef.current = map;
-
-      tileLayerRef.current = L.tileLayer(rasterTileUrl(mapboxStyle, mapboxToken), {
-        tileSize: 512,
-        zoomOffset: -1,
-        minZoom: 1,
-        maxZoom: 20,
-        crossOrigin: true,
-        attribution: '© Mapbox © OpenStreetMap',
-      }).addTo(map);
-
-      const icon = L.divIcon({
-        html: '<div style="width:22px;height:22px;border-radius:9999px;background:#3b82f6;border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,0.35)"></div>',
-        className: '',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
-      });
-      L.marker([profile.latitude!, profile.longitude!], { icon, interactive: false }).addTo(map);
-
-      map.whenReady(() => {
-        if (cancelled) return;
-        map.invalidateSize();
-        requestAnimationFrame(() => { if (!cancelled) map.invalidateSize(); });
-      });
-    }).catch(() => {});
-
-    return () => {
-      cancelled = true;
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      tileLayerRef.current = null;
-      mapInitRef.current = false;
-    };
-  }, [activeTab, profile, mapboxStyle]);
 
   const reloadReviews = async () => {
     const response = await api.get<CreatorReviewListResponse>(`/api/creators/${params.username}/reviews`, token || undefined);
@@ -448,17 +365,6 @@ export default function CreatorProfilePage({ params }: { params: { username: str
             <div>
               <h3 className="mb-1 text-sm font-medium text-ig-text-primary">{t('account.creatorProfile.regionLabel')}</h3>
               <p className="text-ig-text-secondary">{profile.region}</p>
-            </div>
-          )}
-          {profile.latitude && profile.longitude && (
-            <div>
-              <h3 className="mb-2 text-sm font-medium text-ig-text-primary">{t('account.creatorProfile.locationLabel')}</h3>
-              <div
-                ref={mapContainerRef}
-                className="w-full overflow-hidden rounded-xl border border-ig-border"
-                style={{ height: 200 }}
-              />
-              {profile.region && <p className="mt-1 text-xs text-ig-text-tertiary">{profile.region}</p>}
             </div>
           )}
         </div>

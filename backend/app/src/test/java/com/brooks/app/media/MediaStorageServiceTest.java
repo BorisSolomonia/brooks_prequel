@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,7 +42,7 @@ class MediaStorageServiceTest {
                 "file",
                 "avatar.png",
                 "image/png",
-                new byte[] {1, 2, 3}
+                new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3}
         );
 
         MediaUploadResponse response = service.upload(userId, MediaUsage.PROFILE_AVATAR, file);
@@ -56,7 +57,7 @@ class MediaStorageServiceTest {
         assertThat(response.getObjectName()).isEqualTo(blobInfo.getValue().getName());
         assertThat(response.getUrl()).startsWith("https://storage.googleapis.com/brooks-media/profiles/" + userId + "/");
         assertThat(response.getContentType()).isEqualTo("image/png");
-        assertThat(response.getSizeBytes()).isEqualTo(3);
+        assertThat(response.getSizeBytes()).isEqualTo(11);
     }
 
     @Test
@@ -74,13 +75,27 @@ class MediaStorageServiceTest {
     }
 
     @Test
+    void uploadRejectsContentThatDoesNotMatchDeclaredType() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "not-really-an-image.png",
+                "image/png",
+                "<script>alert('x')</script>".getBytes(StandardCharsets.UTF_8)
+        );
+
+        assertThatThrownBy(() -> service.upload(UUID.randomUUID(), MediaUsage.PROFILE_AVATAR, file))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Media content does not match its declared file type");
+    }
+
+    @Test
     void uploadRejectsMissingBucketConfig() {
         ReflectionTestUtils.setField(service, "bucketName", "");
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "avatar.jpg",
                 "image/jpeg",
-                new byte[] {1}
+                new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 1}
         );
 
         assertThatThrownBy(() -> service.upload(UUID.randomUUID(), MediaUsage.PROFILE_AVATAR, file))

@@ -9,7 +9,7 @@ import type { Map as LeafletMap, Marker as LeafletMarker, LayerGroup, TileLayer,
 // avoid touching every call site). Convert to Leaflet's [lat, lng] at use.
 type LngLat = [number, number];
 import StarRating from '@/components/reviews/StarRating';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, isAbortError } from '@/lib/api';
 import { scoreSearchMatch } from '@/lib/fuzzySearch';
 import { useMapboxStyle } from '@/lib/mapboxStyle';
 import { useAccessToken } from '@/hooks/useAccessToken';
@@ -1764,23 +1764,35 @@ export default function MapsExperience({
       return;
     }
 
+    const controller = new AbortController();
     setPinsLoading(true);
-    api.get<InfluencerMapResponse>('/api/maps/influencers', token)
+    api.get<InfluencerMapResponse>('/api/maps/influencers', token, { signal: controller.signal })
       .then((response) => {
         _cachedPins = response.pins;
         _pinsCacheExpiry = Date.now() + PINS_CACHE_TTL;
         setPins(response.pins);
       })
-      .catch((error) => setPageError(error instanceof Error ? error.message : 'Failed to load influencer map data'))
-      .finally(() => setPinsLoading(false));
+      .catch((error) => {
+        if (!isAbortError(error)) {
+          setPageError(error instanceof Error ? error.message : 'Failed to load influencer map data');
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setPinsLoading(false);
+        }
+      });
+    return () => controller.abort();
   }, [token]);
 
   // Cache key for the LAST quantized bounds we fetched. Skips the network
   // round-trip when the user's pan stays inside the same grid cell.
   // Reset by callers that need a force-refresh (memory created/deleted/shared).
   const lastFetchedBoundsKeyRef = useRef<string | null>(null);
+  const memoryRequestAbortRef = useRef<AbortController | null>(null);
+  const memoryRequestSequenceRef = useRef(0);
 
-  const refreshMemories = (force = false) => {
+  const refreshMemories = useCallback((force = false) => {
     if (!token || !currentBounds || !activeLayers.memories) {
       return;
     }
@@ -1802,25 +1814,36 @@ export default function MapsExperience({
       west: String(quantized.west),
     });
 
+    memoryRequestAbortRef.current?.abort();
+    const controller = new AbortController();
+    memoryRequestAbortRef.current = controller;
+    const requestSequence = ++memoryRequestSequenceRef.current;
     setMemoriesLoading(true);
-    api.get<MemoryMapResponse>(`/api/memories/map?${params.toString()}`, token)
+    api.get<MemoryMapResponse>(`/api/memories/map?${params.toString()}`, token, { signal: controller.signal })
       .then((response) => {
+        if (requestSequence !== memoryRequestSequenceRef.current) return;
         _cachedMemories = response.memories;
         _memoriesCacheExpiry = Date.now() + MEMORIES_CACHE_TTL;
         setMemories(response.memories);
       })
       .catch((error) => {
+        if (isAbortError(error) || requestSequence !== memoryRequestSequenceRef.current) return;
         console.warn('Memory map pins are unavailable', error);
         _cachedMemories = [];
         _memoriesCacheExpiry = Date.now() + MEMORIES_CACHE_TTL;
         setMemories([]);
       })
-      .finally(() => setMemoriesLoading(false));
-  };
+      .finally(() => {
+        if (requestSequence === memoryRequestSequenceRef.current) {
+          setMemoriesLoading(false);
+        }
+      });
+  }, [activeLayers.memories, currentBounds, token]);
 
   useEffect(() => {
     refreshMemories();
-  }, [token, currentBounds, activeLayers.memories]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => memoryRequestAbortRef.current?.abort();
+  }, [refreshMemories]);
 
   // Deep-link support: `/maps?memory=<id>` from the notification bell or a
   // tapped Android push opens the matching memory card. Two paths:
@@ -1984,22 +2007,24 @@ export default function MapsExperience({
           // @ts-ignore - resolved at runtime via npm install
           const mod = await import('@capacitor/geolocation');
           if (cancelled) return;
+          const permission = await mod.Geolocation.checkPermissions();
+          if (permission.location !== 'granted') {
+            if (permission.location === 'denied') {
+              handleFail();
+              return;
+            }
+            const requested = await mod.Geolocation.requestPermissions({ permissions: ['location'] });
+            if (requested.location !== 'granted') {
+              handleFail();
+              return;
+            }
+          }
           const pos = await mod.Geolocation.getCurrentPosition({
             enableHighAccuracy: true,
             timeout: 8000,
           });
-          // Defensive null check — the plugin can RESOLVE (not reject)
-          // with a position object whose `coords` is undefined when the
-          // OS permission race is still in flight (PermissionsBootstrap
-          // requests the dialog at roughly the same moment this effect
-          // fires; Android can't process two permission requests at once
-          // and returns a stale empty result). Reading `.longitude` from
-          // undefined was throwing "Cannot read properties of undefined"
-          // and dropping the user to fallback coords with a misleading
-          // stack trace. Now we just go to fallback silently and let
-          // PermissionsBootstrap's dialog finish; the watchPosition
-          // started elsewhere will deliver the real coords once they
-          // arrive.
+          // Some plugin/device combinations resolve with an empty coords
+          // object. Treat that as unavailable rather than dereferencing it.
           if (!pos?.coords
                 || typeof pos.coords.longitude !== 'number'
                 || typeof pos.coords.latitude !== 'number') {

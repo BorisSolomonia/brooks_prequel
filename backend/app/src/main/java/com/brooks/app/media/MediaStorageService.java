@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -139,6 +140,59 @@ public class MediaStorageService {
         if (file.getSize() > maxBytes) {
             throw new BusinessException("Media must be " + maxUploadSizeMb + " MB or smaller");
         }
+        if (!contentMatchesDeclaredType(file, contentType)) {
+            throw new BusinessException("Media content does not match its declared file type");
+        }
+    }
+
+    private boolean contentMatchesDeclaredType(MultipartFile file, String contentType) {
+        byte[] header;
+        try (InputStream input = file.getInputStream()) {
+            header = input.readNBytes(16);
+        } catch (IOException ex) {
+            throw new BusinessException("Could not inspect uploaded media");
+        }
+
+        return switch (contentType) {
+            case "image/jpeg" -> hasPrefix(header, 0xFF, 0xD8, 0xFF);
+            case "image/png" -> hasPrefix(header, 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A);
+            case "image/webp" -> hasAscii(header, 0, "RIFF") && hasAscii(header, 8, "WEBP");
+            case "audio/mpeg" -> hasAscii(header, 0, "ID3")
+                    || (header.length >= 2 && (header[0] & 0xFF) == 0xFF && (header[1] & 0xE0) == 0xE0);
+            case "audio/mp4" -> hasAscii(header, 4, "ftyp");
+            case "audio/webm" -> hasPrefix(header, 0x1A, 0x45, 0xDF, 0xA3);
+            case "audio/ogg" -> hasAscii(header, 0, "OggS");
+            case "audio/wav", "audio/x-wav" -> hasAscii(header, 0, "RIFF") && hasAscii(header, 8, "WAVE");
+            default -> false;
+        };
+    }
+
+    private static boolean hasAscii(byte[] bytes, int offset, String expected) {
+        return hasPrefixAt(bytes, offset, expected.getBytes(StandardCharsets.US_ASCII));
+    }
+
+    private static boolean hasPrefix(byte[] bytes, int... expected) {
+        if (bytes.length < expected.length) {
+            return false;
+        }
+        for (int i = 0; i < expected.length; i++) {
+            if ((bytes[i] & 0xFF) != expected[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean hasPrefixAt(byte[] bytes, int offset, byte[] expected) {
+        if (offset < 0 || bytes.length < offset + expected.length) {
+            return false;
+        }
+        for (int i = 0; i < expected.length; i++) {
+            if (bytes[offset + i] != expected[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static String publicUrl(String bucket, String objectName) {

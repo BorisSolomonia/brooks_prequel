@@ -7,8 +7,16 @@ import { startAuthFlow } from '@/lib/capacitor';
 
 const BLACK = '#050505';
 const YELLOW = '#D4AA3A';
+const POSTCARD_PLUM = '#70394F';
+const POSTCARD_PAPER = '#FFF4D6';
 
-export default function GetStartedButton({ mobile }: { mobile: boolean }) {
+export default function GetStartedButton({
+  mobile,
+  variant = 'warhol',
+}: {
+  mobile: boolean;
+  variant?: 'warhol' | 'postcard';
+}) {
   const { t } = useTranslation();
   const [loggingIn, setLoggingIn] = useState(false);
 
@@ -33,20 +41,20 @@ export default function GetStartedButton({ mobile }: { mobile: boolean }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        width: mobile ? 220 : 250,
+        width: variant === 'postcard' ? (mobile ? 210 : 224) : (mobile ? 220 : 250),
         height: mobile ? 54 : 60,
-        background: BLACK,
-        borderRadius: 8,
-        marginTop: mobile ? 20 : 24,
+        background: variant === 'postcard' ? POSTCARD_PLUM : BLACK,
+        borderRadius: variant === 'postcard' ? 6 : 8,
+        marginTop: variant === 'postcard' ? 0 : (mobile ? 20 : 24),
         paddingLeft: mobile ? 22 : 26,
         paddingRight: mobile ? 20 : 22,
         // Yellow border matches the button's text + arrow colour, giving the
         // pill a clean two-tone identity and lifting it off the warm hero
         // background. 3 px reads well at thumb distance without looking heavy.
-        border: `3px solid ${YELLOW}`,
+        border: variant === 'postcard' ? `2px solid ${POSTCARD_PLUM}` : `3px solid ${YELLOW}`,
         cursor: loggingIn ? 'wait' : 'pointer',
         opacity: loggingIn ? 0.85 : 1,
-        color: YELLOW,
+        color: variant === 'postcard' ? POSTCARD_PAPER : YELLOW,
       }}
       aria-label={loggingIn ? t('landing.signingInAria') : t('landing.getStarted')}
     >
@@ -54,7 +62,7 @@ export default function GetStartedButton({ mobile }: { mobile: boolean }) {
         style={{
           fontSize: mobile ? 17 : 19,
           fontWeight: 900,
-          color: YELLOW,
+          color: variant === 'postcard' ? POSTCARD_PAPER : YELLOW,
           letterSpacing: 1,
           textTransform: 'uppercase',
         }}
@@ -64,7 +72,7 @@ export default function GetStartedButton({ mobile }: { mobile: boolean }) {
       {loggingIn ? (
         <Spinner size={24} ariaLabel="Signing in" />
       ) : (
-        <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={YELLOW} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={variant === 'postcard' ? POSTCARD_PAPER : YELLOW} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M5 12h14M12 5l7 7-7 7" />
         </svg>
       )}

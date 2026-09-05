@@ -6,6 +6,13 @@ import { useRouter } from 'next/navigation';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
 import { api } from '@/lib/api';
+import { isNative, openAppSettings } from '@/lib/capacitor';
+import {
+  PUSH_PERMISSION_STATUS_EVENT,
+  type PushPermissionStatus,
+  readPushPermissionStatus,
+  requestPushPermission,
+} from '@/lib/pushPermission';
 
 // In-app notification bell. Polls /api/me/notifications every 60 s for
 // new items + unread count, renders a badge on the bell, and opens a
@@ -40,6 +47,15 @@ export default function NotificationBell() {
   const open = openMenuId === 'bell';
   const [items, setItems] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
+  const [pushPermission, setPushPermission] = useState<PushPermissionStatus>(() => readPushPermissionStatus());
+
+  useEffect(() => {
+    const handleStatus = (event: Event) => {
+      setPushPermission((event as CustomEvent<PushPermissionStatus>).detail);
+    };
+    window.addEventListener(PUSH_PERMISSION_STATUS_EVENT, handleStatus);
+    return () => window.removeEventListener(PUSH_PERMISSION_STATUS_EVENT, handleStatus);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -125,6 +141,14 @@ export default function NotificationBell() {
     }
   };
 
+  const handlePushPermission = () => {
+    if (pushPermission === 'denied') {
+      void openAppSettings();
+      return;
+    }
+    requestPushPermission();
+  };
+
   if (!token) return null;
 
   return (
@@ -167,6 +191,25 @@ export default function NotificationBell() {
               {t('widgets.notifications.notifications')}
             </p>
           </div>
+          {isNative() && pushPermission !== 'granted' && (
+            <div className="border-b border-ig-border bg-brand-500/5 px-4 py-3">
+              <p className="text-sm font-semibold text-ig-text-primary">
+                {t('widgets.notifications.pushTitle')}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-ig-text-secondary">
+                {t('widgets.notifications.pushBody')}
+              </p>
+              <button
+                type="button"
+                onClick={handlePushPermission}
+                className="mw-button-secondary mt-3 inline-flex min-h-11 items-center rounded-md px-4 py-2 text-sm font-semibold"
+              >
+                {pushPermission === 'denied'
+                  ? t('widgets.notifications.managePush')
+                  : t('widgets.notifications.enablePush')}
+              </button>
+            </div>
+          )}
           {/* Height capped to viewport minus the navbar + safe-area so the
               full dropdown is always visible on mobile (Pixel 3-button nav,
               iPhone notch). 9rem leaves room for navbar + small buffer. */}

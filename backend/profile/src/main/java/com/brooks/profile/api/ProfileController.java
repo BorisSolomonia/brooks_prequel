@@ -3,6 +3,7 @@ package com.brooks.profile.api;
 import com.brooks.profile.dto.InfluencerMapResponse;
 import com.brooks.profile.dto.ProfileResponse;
 import com.brooks.profile.dto.ProfileUpdateRequest;
+import com.brooks.profile.dto.PublicProfileResponse;
 import com.brooks.profile.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class ProfileController {
     }
 
     @GetMapping("/creators/{username}")
-    public ResponseEntity<ProfileResponse> getCreatorProfile(@PathVariable(name = "username") String username) {
+    public ResponseEntity<PublicProfileResponse> getCreatorProfile(@PathVariable(name = "username") String username) {
         return ResponseEntity.ok(profileService.getPublicProfile(username));
     }
 

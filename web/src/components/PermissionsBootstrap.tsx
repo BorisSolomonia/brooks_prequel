@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation';
 import { isNative, platform as detectPlatform } from '@/lib/capacitor';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { api } from '@/lib/api';
+import {
+  PUSH_PERMISSION_REQUEST_EVENT,
+  publishPushPermissionStatus,
+} from '@/lib/pushPermission';
 
-// Triggers the location + notification permission system dialogs on the
-// first launch after install, AND captures the FCM device token to POST
-// to the backend so the server can send pushes to this device.
+// Registers native notification listeners and captures the FCM token. It never
+// prompts at launch: the map requests location in context, and the notification
+// tray requests push permission only after an explicit user action.
 //
 // Why this needs the plugins (not the web APIs):
 //   • navigator.geolocation inside a Capacitor WebView is the BROWSER
@@ -19,19 +23,10 @@ import { api } from '@/lib/api';
 //     and FCM registration. The registration listener fires with the FCM
 //     token AFTER the user grants permission AND register() resolves.
 //
-// Flow:
-//   First install:
-//     1. Show location permission dialog → tap Allow → granted at OS level
-//     2. Show notifications dialog → tap Allow → register with FCM
-//     3. FCM returns a token → cache in localStorage
-//   Every app open:
-//     4. POST cached FCM token to /api/me/device-tokens (idempotent upsert)
-//
 // Token can rotate (Google rotates them periodically). The registration
 // listener fires whenever a new token arrives; we always POST the latest.
 // The backend upserts on token uniqueness so duplicate POSTs are cheap.
 
-const PERM_BOOTSTRAP_KEY = 'brooks.permissionsBootstrap.v2';
 const FCM_TOKEN_KEY = 'brooks.fcmToken.v1';
 
 export default function PermissionsBootstrap() {
@@ -42,46 +37,16 @@ export default function PermissionsBootstrap() {
     return window.localStorage.getItem(FCM_TOKEN_KEY);
   });
 
-  // Permission dialogs + FCM registration (fires once per install).
+  // Listener setup + FCM registration. Permission prompts are contextual.
   useEffect(() => {
     if (!isNative()) return;
     if (typeof window === 'undefined') return;
 
     let cancelled = false;
-    const firstRun = window.localStorage.getItem(PERM_BOOTSTRAP_KEY) !== '1';
+    const listenerHandles: Array<{ remove: () => Promise<void> }> = [];
+    let permissionRequestHandler: (() => void) | null = null;
 
     const run = async () => {
-      // LOCATION — always check the OS state first. If "prompt", request
-      // regardless of our localStorage sentinel: the sentinel can outlive
-      // the actual permission grant (uninstall+reinstall, app-data wipe,
-      // or user revokes in Settings then opens app again).
-      try {
-        // @ts-ignore - resolved at runtime via npm install
-        const mod = await import('@capacitor/geolocation');
-        if (cancelled) return;
-        const { Geolocation } = mod;
-        const current = await Geolocation.checkPermissions();
-        console.info('[PermissionsBootstrap] location current:', current.location);
-        if (current.location !== 'granted' && current.location !== 'denied') {
-          console.info('[PermissionsBootstrap] requesting location dialog');
-          const result = await Geolocation.requestPermissions({
-            permissions: ['location'],
-          });
-          console.info('[PermissionsBootstrap] location result:', result.location);
-          if (result.location === 'granted') {
-            void Geolocation.getCurrentPosition({
-              enableHighAccuracy: false,
-              timeout: 8000,
-            }).catch(() => undefined);
-          }
-        }
-      } catch (err) {
-        console.error('[PermissionsBootstrap] location:', err);
-      }
-
-      // NOTIFICATIONS — same logic: check OS state, request whenever it's
-      // "prompt". Sentinel is no longer used to gate the dialog. Then
-      // re-register every cold start so a rotated FCM token gets emitted.
       try {
         const mod = await import('@capacitor/push-notifications');
         if (cancelled) return;
@@ -89,7 +54,7 @@ export default function PermissionsBootstrap() {
 
         // Attach the token listener BEFORE register() so we never miss
         // the first emission.
-        await PushNotifications.addListener('registration', (t) => {
+        listenerHandles.push(await PushNotifications.addListener('registration', (t) => {
           if (cancelled) return;
           if (!t?.value) return;
           console.info('[PermissionsBootstrap] FCM token received:', t.value.slice(0, 12) + '...');
@@ -99,10 +64,10 @@ export default function PermissionsBootstrap() {
           } catch {
             /* localStorage may be unavailable in incognito; ignore. */
           }
-        });
-        await PushNotifications.addListener('registrationError', (err) => {
+        }));
+        listenerHandles.push(await PushNotifications.addListener('registrationError', (err) => {
           console.error('[PermissionsBootstrap] registration error:', err);
-        });
+        }));
 
         // System-tray push tap → deep-link into the matching in-app screen.
         // The data payload mirrors the in-app bell's switch (NotificationBell.tsx)
@@ -110,7 +75,7 @@ export default function PermissionsBootstrap() {
         // or the in-app row. The payload comes through as data.notification.data
         // on Android; @capacitor/push-notifications also flattens fields onto
         // the top-level notification object on iOS — we read both shapes.
-        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        listenerHandles.push(await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           if (cancelled) return;
           const raw = (action.notification as { data?: Record<string, string> }).data ?? {};
           const type = raw.type;
@@ -130,32 +95,43 @@ export default function PermissionsBootstrap() {
           } catch (err) {
             console.warn('[PermissionsBootstrap] push tap routing failed:', err);
           }
-        });
+        }));
 
         let permission = await PushNotifications.checkPermissions();
         console.info('[PermissionsBootstrap] notifications current:', permission.receive);
-        if (permission.receive !== 'granted' && permission.receive !== 'denied') {
-          console.info('[PermissionsBootstrap] requesting notifications dialog');
-          permission = await PushNotifications.requestPermissions();
-          console.info('[PermissionsBootstrap] notifications result:', permission.receive);
-        }
+        publishPushPermissionStatus(permission.receive);
         if (permission.receive === 'granted') {
           console.info('[PermissionsBootstrap] calling PushNotifications.register()');
           await PushNotifications.register();
-        } else {
-          console.warn('[PermissionsBootstrap] notifications NOT granted — push disabled');
         }
+
+        const handlePermissionRequest = async () => {
+          try {
+            permission = await PushNotifications.checkPermissions();
+            if (permission.receive !== 'granted' && permission.receive !== 'denied') {
+              permission = await PushNotifications.requestPermissions();
+            }
+            publishPushPermissionStatus(permission.receive);
+            if (permission.receive === 'granted') {
+              await PushNotifications.register();
+            }
+          } catch (err) {
+            console.error('[PermissionsBootstrap] permission request failed:', err);
+          }
+        };
+        permissionRequestHandler = () => void handlePermissionRequest();
+        window.addEventListener(PUSH_PERMISSION_REQUEST_EVENT, permissionRequestHandler);
 
         // Local-notification taps (arrival proximity alerts) deep-link to the memory, mirroring
         // the push tap routing above.
         try {
           const { LocalNotifications } = await import('@capacitor/local-notifications');
-          await LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
+          listenerHandles.push(await LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
             if (cancelled) return;
             const extra = (event.notification as { extra?: Record<string, string> })?.extra ?? {};
             if (extra.memoryId) router.push(`/maps?memory=${encodeURIComponent(extra.memoryId)}`);
             else router.push('/maps');
-          });
+          }));
         } catch (err) {
           console.warn('[PermissionsBootstrap] local notification listener failed:', err);
         }
@@ -163,14 +139,15 @@ export default function PermissionsBootstrap() {
         console.error('[PermissionsBootstrap] notifications:', err);
       }
 
-      if (firstRun && !cancelled) {
-        window.localStorage.setItem(PERM_BOOTSTRAP_KEY, '1');
-      }
     };
 
     void run();
     return () => {
       cancelled = true;
+      if (permissionRequestHandler) {
+        window.removeEventListener(PUSH_PERMISSION_REQUEST_EVENT, permissionRequestHandler);
+      }
+      listenerHandles.forEach((handle) => void handle.remove());
     };
     // router is intentionally omitted: registration must fire once per cold
     // start, and Next.js's useRouter return value is stable for the lifetime

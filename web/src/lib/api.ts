@@ -5,7 +5,15 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 interface RequestOptions extends RequestInit {
   token?: string;
+  timeoutMs?: number;
 }
+
+export interface ApiGetOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 
 // React Strict Mode and shared shell providers can request the same resource during
 // one navigation. Coalescing only while a GET is in flight removes duplicate network
@@ -20,14 +28,20 @@ function clearInFlightGets(): void {
   inFlightGets.clear();
 }
 
-function getRequest<T>(path: string, token?: string): Promise<T> {
+function getRequest<T>(path: string, token?: string, options: ApiGetOptions = {}): Promise<T> {
+  // A caller-owned signal usually means request ordering matters (for example,
+  // map viewport fetches). Such requests must not share another caller's promise.
+  if (options.signal) {
+    return request<T>(path, { method: 'GET', token, ...options });
+  }
+
   const key = requestIdentity(path, token);
   const existing = inFlightGets.get(key);
   if (existing) {
     return existing as Promise<T>;
   }
 
-  const pending = request<T>(path, { method: 'GET', token });
+  const pending = request<T>(path, { method: 'GET', token, ...options });
   inFlightGets.set(key, pending);
   const cleanup = () => {
     if (inFlightGets.get(key) === pending) {
@@ -49,8 +63,18 @@ export class ApiError extends Error {
   }
 }
 
+export function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { token, headers: customHeaders, ...rest } = options;
+  const {
+    token,
+    headers: customHeaders,
+    signal: callerSignal,
+    timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    ...rest
+  } = options;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -61,10 +85,39 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers,
-    ...rest,
-  });
+  const controller = new AbortController();
+  let timedOut = false;
+  const abortFromCaller = () => controller.abort();
+  if (callerSignal?.aborted) {
+    controller.abort();
+  } else {
+    callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
+  }
+  const timeoutId = timeoutMs > 0
+    ? setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, timeoutMs)
+    : null;
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers,
+      signal: controller.signal,
+      ...rest,
+    });
+  } catch (error) {
+    if (timedOut) {
+      throw new ApiError('Request timed out. Check your connection and try again.', 408);
+    }
+    throw error;
+  } finally {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+    callerSignal?.removeEventListener('abort', abortFromCaller);
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
@@ -130,8 +183,8 @@ export async function streamPost(
 }
 
 export const api = {
-  get: <T>(path: string, token?: string) =>
-    getRequest<T>(path, token),
+  get: <T>(path: string, token?: string, options?: ApiGetOptions) =>
+    getRequest<T>(path, token, options),
 
   post: <T>(path: string, body?: unknown, token?: string) => {
     clearInFlightGets();

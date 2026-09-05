@@ -2,6 +2,7 @@ package com.brooks.profile.service;
 
 import com.brooks.profile.domain.UserProfile;
 import com.brooks.profile.dto.InfluencerMapResponse;
+import com.brooks.profile.dto.PublicProfileResponse;
 import com.brooks.profile.repository.UserProfileRepository.InfluencerMapProjection;
 import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.user.domain.User;
@@ -14,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,6 +57,27 @@ class ProfileServiceTest {
         assertThat(response.getPins().get(1).getUsername()).isEqualTo("second-user");
         assertThat(response.getPins().get(1).getRank()).isEqualTo(2);
         assertThat(response.getPins()).noneMatch(pin -> "Hidden".equals(pin.getDisplayName()));
+    }
+
+    @Test
+    void getPublicProfileDoesNotExposePrivateAccountOrLocationFields() {
+        UUID userId = UUID.randomUUID();
+        User user = user(userId, "public-creator", Instant.now());
+        user.setEmail("private@example.com");
+        UserProfile profile = profile(userId, "Public Creator", 41.715, 44.827, 12, 3, true);
+        profile.setBio("Local guide");
+        profile.setRegion("Tbilisi");
+
+        when(userService.findByUsername("public-creator")).thenReturn(user);
+        when(profileRepository.findByUserId(userId)).thenReturn(java.util.Optional.of(profile));
+
+        PublicProfileResponse response = profileService.getPublicProfile("public-creator");
+
+        assertThat(response.getUserId()).isEqualTo(userId);
+        assertThat(response.getUsername()).isEqualTo("public-creator");
+        assertThat(response.getDisplayName()).isEqualTo("Public Creator");
+        assertThat(Arrays.stream(PublicProfileResponse.class.getDeclaredFields()).map(Field::getName))
+                .doesNotContain("email", "latitude", "longitude", "role", "onboardingCompleted", "primaryIntent");
     }
 
     private static UserProfile profile(

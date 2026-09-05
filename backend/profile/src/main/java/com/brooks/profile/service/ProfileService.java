@@ -7,6 +7,7 @@ import com.brooks.profile.dto.InfluencerMapPinResponse;
 import com.brooks.profile.dto.InfluencerMapResponse;
 import com.brooks.profile.dto.ProfileResponse;
 import com.brooks.profile.dto.ProfileUpdateRequest;
+import com.brooks.profile.dto.PublicProfileResponse;
 import com.brooks.profile.repository.UserProfileRepository;
 import com.brooks.user.domain.User;
 import com.brooks.user.service.UserService;
@@ -71,11 +72,11 @@ public class ProfileService {
     }
 
     @Transactional(readOnly = true)
-    public ProfileResponse getPublicProfile(String username) {
+    public PublicProfileResponse getPublicProfile(String username) {
         User user = userService.findByUsername(username);
         UserProfile profile = profileRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Profile", username));
-        return toResponse(user, profile);
+        return toPublicResponse(user, profile);
     }
 
     // Heavy native query with window functions + LATERAL joins. Cached for 5 min via the
@@ -137,6 +138,24 @@ public class ProfileService {
                 .creatorReviewCount(profile.getCreatorReviewCount())
                 .onboardingCompleted(user.isOnboardingCompleted())
                 .primaryIntent(user.getPrimaryIntent() != null ? user.getPrimaryIntent().name() : null)
+                .build();
+    }
+
+    private PublicProfileResponse toPublicResponse(User user, UserProfile profile) {
+        return PublicProfileResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .displayName(profile.getDisplayName())
+                .bio(profile.getBio())
+                .avatarUrl(profile.getAvatarUrl())
+                .region(profile.getRegion())
+                .interests(profile.getInterests())
+                .followerCount(profile.getFollowerCount())
+                .followingCount(profile.getFollowingCount())
+                .guideCount(profile.getGuideCount())
+                .verified(profile.isVerified())
+                .creatorRatingAverage(profile.getCreatorRatingAverage())
+                .creatorReviewCount(profile.getCreatorReviewCount())
                 .build();
     }
 

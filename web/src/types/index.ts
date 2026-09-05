@@ -29,6 +29,22 @@ export interface Profile {
   onboardingCompleted: boolean;
 }
 
+export interface PublicProfile {
+  userId: string;
+  username: string | null;
+  displayName: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  region: string | null;
+  interests: string | null;
+  followerCount: number;
+  followingCount: number;
+  guideCount: number;
+  verified: boolean;
+  creatorRatingAverage: number;
+  creatorReviewCount: number;
+}
+
 export interface ProfileUpdateRequest {
   displayName?: string;
   username?: string;

@@ -39,7 +39,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="font-display text-lg font-black text-ig-text-primary">Google user data — limited use disclosure</h2>
+          <h2 className="font-display text-lg font-black text-ig-text-primary">Google user data - limited use disclosure</h2>
           <p>Brooks&rsquo;s use and transfer of information received from Google APIs to any other app will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer" className="text-brand-500 hover:text-brand-400">Google API Services User Data Policy</a>, including the Limited Use requirements. Specifically: when you connect Google Calendar, we request only the calendar and email scopes needed to create a dedicated &ldquo;Brooks Trips&rdquo; calendar in your account and write the events for trips you have purchased. We never sell or share Google user data with third parties for advertising, do not transfer it for unrelated purposes, do not allow humans to read it except for support cases you initiate, and store the refresh token encrypted at rest. You can disconnect Google Calendar at any time from the Add-to-Calendar dialog, which deletes the stored refresh token from our database.</p>
         </section>
 
