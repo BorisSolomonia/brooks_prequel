@@ -65,10 +65,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <PermissionsBootstrap />
               {!isLandingPage && <Navbar />}
               <main
+                data-design="postcard-club"
                 className={
                   isLandingPage || isImmersive
                     ? ''
-                    : 'min-h-dvh pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-0'
+                    : 'pc-content'
                 }
               >
                 {children}

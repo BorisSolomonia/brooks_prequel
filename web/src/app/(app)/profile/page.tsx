@@ -16,7 +16,7 @@ type Tab = 'overview' | 'ai-keys';
 export default function ProfilePage() {
   const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">{t('account.profile.loading')}</div>}>
+    <Suspense fallback={<div className="pc-page max-w-2xl mx-auto px-4 text-center text-ig-text-tertiary">{t('account.profile.loading')}</div>}>
       <ProfilePageInner />
     </Suspense>
   );
@@ -44,7 +44,7 @@ function ProfilePageInner() {
   }, [router, token, tokenLoading]);
 
   if (tokenLoading) {
-    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">{t('account.profile.loading')}</div>;
+    return <div className="pc-page max-w-2xl mx-auto px-4 text-center text-ig-text-tertiary">{t('account.profile.loading')}</div>;
   }
 
   function tabHref(tab: Tab) {
@@ -59,7 +59,7 @@ function ProfilePageInner() {
     }`;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="pc-page max-w-2xl mx-auto px-4">
       {/* Tab bar */}
       <div className="mb-6 flex overflow-x-auto border-b border-[var(--border)]">
         <Link href={tabHref('overview')} className={tabClass('overview')}>{t('account.profile.tabs.overview')}</Link>
@@ -71,11 +71,11 @@ function ProfilePageInner() {
           {error && <p className="mb-4 text-sm text-ig-error">{error}</p>}
 
           {profile ? (
-            <div className="rounded-2xl border border-ig-border bg-ig-elevated p-6">
+            <div className="pc-profile-card">
               <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
-                <div className="flex min-w-0 gap-4">
+                <div className="flex min-w-0 flex-1 gap-4">
                   <ProfileMomentAvatar userId={profile.userId} src={profile.avatarUrl} name={profile.displayName ?? profile.username ?? t('account.profile.userFallback')} size="xl" verified={profile.verified} />
-                  <div>
+                  <div className="min-w-0">
                     <h1 className="text-2xl font-bold text-ig-text-primary">
                       {profile.displayName ?? profile.username ?? t('account.profile.unnamedCreator')}
                     </h1>

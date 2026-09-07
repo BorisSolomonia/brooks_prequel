@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
 import type { GuideSearchResult, PageResponse } from '@/types';
 import GuideSearchCard from '@/components/search/GuideSearchCard';
+import { PageHeading } from '@/components/ui/Postcard';
 import SearchSkeleton from '@/components/search/SearchSkeleton';
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -80,8 +81,8 @@ function ExploreContent() {
   const query = urlQuery.trim();
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mw-section-title mb-6 text-2xl">{t('discovery.search.exploreTitle')}</h1>
+    <div className="pc-page mx-auto max-w-5xl px-4">
+      <PageHeading title={t('discovery.search.exploreTitle')} />
 
       <div className="relative mb-8">
         <input
@@ -113,7 +114,7 @@ function ExploreContent() {
       )}
 
       {!loading && !error && results.length > 0 && (
-        <div className="space-y-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((guide) => (
             <GuideSearchCard key={guide.id} guide={guide} />
           ))}
@@ -130,7 +131,7 @@ function ExploreContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-2xl px-4 py-8"><SearchSkeleton /></div>}>
+    <Suspense fallback={<div className="pc-page mx-auto max-w-5xl px-4"><SearchSkeleton /></div>}>
       <ExploreContent />
     </Suspense>
   );

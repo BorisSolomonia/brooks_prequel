@@ -45,7 +45,7 @@ export default function PreviewTripPage() {
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-6xl px-4">
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Link href="/guides" className="text-sm text-brand-500 hover:text-brand-400">

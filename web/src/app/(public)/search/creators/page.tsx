@@ -65,7 +65,7 @@ function SearchCreatorsPageContent() {
   }, [fetchPage]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       <Link href={`/search?q=${encodeURIComponent(q)}`} className="mb-4 inline-block font-display text-sm font-black uppercase tracking-[0.06em] text-brand-500 hover:text-brand-400">
         {t('discovery.search.backToSearch')}
       </Link>
@@ -118,7 +118,7 @@ function SearchCreatorsPageContent() {
 
 export default function SearchCreatorsPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto px-4 py-8"><SearchSkeleton /></div>}>
+    <Suspense fallback={<div className="pc-page max-w-2xl mx-auto px-4"><SearchSkeleton /></div>}>
       <SearchCreatorsPageContent />
     </Suspense>
   );

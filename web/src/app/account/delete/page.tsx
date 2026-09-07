@@ -41,7 +41,7 @@ export default function PublicAccountDeletePage() {
 
   if (submitted) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="pc-page mx-auto max-w-2xl px-4">
         <h1 className="mw-section-title text-3xl">{t('account.deletePublic.checkEmailTitle')}</h1>
         <p className="mt-4 text-ig-text-secondary">
           {/* LEGAL EXCEPTION: confirmation details left mostly hardcoded */}
@@ -52,7 +52,7 @@ export default function PublicAccountDeletePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       <p className="mw-eyebrow">{t('account.deletePublic.eyebrow')}</p>
       <h1 className="mw-section-title mt-2 text-3xl">{t('account.deletePublic.title')}</h1>
 

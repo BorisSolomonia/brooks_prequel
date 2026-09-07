@@ -214,11 +214,11 @@ export default function EditProfilePage() {
   };
 
   if (tokenLoading || loading) {
-    return <div className="max-w-lg mx-auto px-4 py-12 text-center text-ig-text-tertiary">{t('account.edit.loading')}</div>;
+    return <div className="pc-page max-w-lg mx-auto px-4 text-center text-ig-text-tertiary">{t('account.edit.loading')}</div>;
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-8">
+    <div className="pc-page max-w-lg mx-auto px-4">
       <h1 className="text-2xl font-bold mb-6 text-ig-text-primary">{t('account.edit.title')}</h1>
 
       {message && (
@@ -339,7 +339,7 @@ export default function EditProfilePage() {
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-500 py-3 font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-500 py-3 font-medium text-[var(--on-action)] transition-colors hover:bg-brand-600 disabled:opacity-60"
         >
           {saving && <Spinner />}
           {saving ? t('account.edit.saving') : t('account.edit.saveButton')}

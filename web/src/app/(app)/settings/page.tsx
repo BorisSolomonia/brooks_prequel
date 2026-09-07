@@ -91,7 +91,7 @@ export default function SettingsPage() {
   const { start: startOnboarding } = useOnboarding();
 
   return (
-    <main className="mx-auto min-h-dvh max-w-2xl px-4 py-8 pb-24 md:py-12">
+    <main className="pc-page mx-auto min-h-dvh max-w-2xl px-4 pb-24 md:">
       <p className="mw-eyebrow">{t('account.settings.eyebrow')}</p>
       <h1 className="mw-section-title mt-2 text-3xl">{t('account.settings.title')}</h1>
       <p className="mt-3 text-sm text-ig-text-secondary">

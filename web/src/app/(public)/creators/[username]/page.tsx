@@ -126,22 +126,22 @@ export default function CreatorProfilePage({ params }: { params: { username: str
 
   if (error) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
+      <div className="pc-page mx-auto max-w-2xl px-4">
         <p className="text-sm text-ig-error">{error}</p>
       </div>
     );
   }
 
   if (!profile) {
-    return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">{t('account.creatorProfile.loading')}</div>;
+    return <div className="pc-page mx-auto max-w-2xl px-4 text-center text-ig-text-tertiary">{t('account.creatorProfile.loading')}</div>;
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row">
+    <div className="pc-page mx-auto max-w-2xl px-4">
+      <div className="pc-profile-card mb-6 flex flex-col items-start gap-5 sm:flex-row">
         <ProfileMomentAvatar userId={profile.userId} src={profile.avatarUrl} name={profile.displayName ?? profile.username ?? ''} size="xl" verified={profile.verified} />
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center gap-2">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
             <h1 data-tour="creator-profile-header" className="text-xl font-bold text-ig-text-primary">{profile.displayName ?? profile.username}</h1>
             {profile.verified && (
               <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-500">

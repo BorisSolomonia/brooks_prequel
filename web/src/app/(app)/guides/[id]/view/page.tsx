@@ -211,12 +211,12 @@ export default function ViewGuidePage() {
   };
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-3xl px-4 py-12 text-center text-ig-text-tertiary">{t('guidePages.guideView.loading')}</div>;
+    return <div className="pc-page mx-auto max-w-3xl px-4 text-center text-ig-text-tertiary">{t('guidePages.guideView.loading')}</div>;
   }
 
   if (!guide && !preview) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 text-center">
+      <div className="pc-page mx-auto max-w-3xl px-4 text-center">
         <p className="text-ig-error">{t('guidePages.guideView.guideNotFound')}</p>
       </div>
     );
@@ -229,7 +229,7 @@ export default function ViewGuidePage() {
   const reviewCount = reviewSummary?.reviewCount ?? displayPreview?.reviewCount ?? 0;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
+    <div className="pc-page mx-auto max-w-3xl px-4">
       {mode === 'owner' && (
         <div className="mw-card mb-4 px-3 py-2 text-sm text-ig-text-secondary">
           {t('guidePages.guideView.youOwnThisGuide')}{' '}

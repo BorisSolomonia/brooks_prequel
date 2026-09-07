@@ -20,7 +20,7 @@ export default function ConfirmDeletePage() {
 function Loading() {
   const { t } = useTranslation();
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl items-center justify-center px-4">
+    <main className="pc-page mx-auto flex min-h-dvh max-w-xl items-center justify-center px-4">
       <div className="flex items-center gap-3 text-ig-text-secondary">
         <Spinner />
         <span>{t('account.deleteConfirm.confirmingDeletion')}</span>
@@ -59,7 +59,7 @@ function ConfirmInner() {
   }, [token]);
 
   return (
-    <main className="mx-auto min-h-dvh max-w-xl px-4 py-12 pb-24">
+    <main className="pc-page mx-auto min-h-dvh max-w-xl px-4 pb-24">
       <p className="mw-eyebrow">{t('account.deleteConfirm.eyebrow')}</p>
       <h1 className="mw-section-title mt-2 text-3xl">{t('account.deleteConfirm.title')}</h1>
 

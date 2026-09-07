@@ -269,7 +269,7 @@ export default function TripDetailPage() {
   };
 
   if (tokenLoading || !trip) {
-    return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-ig-text-tertiary">{error || t('guidePages.tripDetail.loading')}</div>;
+    return <div className="pc-page mx-auto max-w-5xl px-4 text-center text-ig-text-tertiary">{error || t('guidePages.tripDetail.loading')}</div>;
   }
 
   const dayGroups = groupByDay(trip.items);
@@ -277,8 +277,8 @@ export default function TripDetailPage() {
 
   return (
     <>
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="pc-page mx-auto max-w-6xl px-4">
+      <div className="pc-page-header items-start">
         <div>
           <Link href="/guides" className="text-sm text-brand-500 hover:text-brand-400">
             {t('guidePages.tripDetail.backToPurchased')}
@@ -373,12 +373,12 @@ export default function TripDetailPage() {
       )}
 
       {review.submitted && (
-        <div className="mb-6 rounded-2xl border border-green-500/30 bg-green-500/5 p-4 text-sm text-green-400">
+        <div className="mb-6 rounded-2xl border border-ig-success/30 bg-ig-success/5 p-4 text-sm text-ig-success">
           {t('guidePages.tripDetail.reviewThankYou')}
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="order-2 space-y-6 lg:order-1">
           <div className="mw-card p-4 md:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -428,7 +428,7 @@ export default function TripDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+          <div className="pc-surface p-4 md:p-5">
             <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">{t('guidePages.tripDetail.itinerary')}</h2>
             <div className="mt-4 space-y-6">
               {sortedDays.map((dayNumber) => {
@@ -471,7 +471,7 @@ export default function TripDetailPage() {
                                   title={isVisited ? t('guidePages.tripDetail.markNotVisited') : t('guidePages.tripDetail.markVisited')}
                                   className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors md:h-7 md:w-7 lg:h-5 lg:w-5 ${
                                     isVisited
-                                      ? 'border-brand-500 bg-brand-500 text-white'
+                                      ? 'border-brand-500 bg-brand-500 text-[var(--on-action)]'
                                       : 'border-ig-border hover:border-brand-500/50'
                                   }`}
                                 >
@@ -585,7 +585,7 @@ export default function TripDetailPage() {
         </div>
 
         <div className="order-1 space-y-6 lg:order-2">
-          <div className="rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+          <div className="pc-surface p-4 md:p-5">
             <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">{t('guidePages.tripDetail.tripMap')}</h2>
             <p className="mt-1 text-sm text-ig-text-secondary">
               {t('guidePages.tripDetail.skippedHidden')}
@@ -609,7 +609,7 @@ export default function TripDetailPage() {
       </div>
 
 
-      <div className="mt-6 rounded-2xl border border-ig-border bg-ig-elevated p-4 md:p-5">
+      <div className="mt-6 pc-surface p-4 md:p-5">
         <h2 className="text-base font-semibold text-ig-text-primary md:text-lg">{t('guidePages.tripDetail.quickLinks')}</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visibleItems.map((item) => (

@@ -255,7 +255,7 @@ export default function GuideFilterSheet({
           <button
             type="button"
             onClick={apply}
-            className="inline-flex min-h-touch flex-1 items-center justify-center rounded-2xl bg-brand-500 px-4 text-sm font-semibold text-white transition hover:bg-brand-600"
+            className="inline-flex min-h-touch flex-1 items-center justify-center rounded-2xl bg-brand-500 px-4 text-sm font-semibold text-[var(--on-action)] transition hover:bg-brand-600"
           >
             {t('discovery.search.filterApply')}
           </button>

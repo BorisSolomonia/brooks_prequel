@@ -11,15 +11,15 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
-          'var(--font-bricolage)',
           'var(--font-archivo)',
+          'var(--font-bricolage)',
           '-apple-system',
           'BlinkMacSystemFont',
           'sans-serif',
         ],
         display: [
-          'var(--font-archivo)',
           'var(--font-bricolage)',
+          'var(--font-archivo)',
           'sans-serif',
         ],
       },
@@ -80,8 +80,10 @@ const config: Config = {
         DEFAULT: '8px',
         sm: '4px',
         md: '8px',
-        lg: '12px',
-        xl: '16px',
+        lg: 'var(--radius-card)',
+        xl: 'var(--radius-card)',
+        '2xl': '12px',
+        '3xl': '16px',
         pill: '100px',
       },
       spacing: {

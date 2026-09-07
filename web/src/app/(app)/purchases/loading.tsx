@@ -1,7 +1,7 @@
 // Skeleton for the Purchases list (matches the trips card shape).
 export default function PurchasesLoading() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-3xl px-4">
       <div className="mb-6 h-7 w-40 animate-pulse rounded bg-ig-bg-secondary" />
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (

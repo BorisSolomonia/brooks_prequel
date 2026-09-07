@@ -13,7 +13,7 @@ export default function PlaceSearchCard({ place }: PlaceSearchCardProps) {
   return (
     <Link
       href={`/guides/${place.guideId}/view`}
-      className="mw-card flex min-h-20 items-center gap-3 rounded-xl p-3 transition duration-200 hover:-translate-y-0.5 hover:border-brand-500/60"
+      className="pc-surface flex min-h-20 items-center gap-3 p-4 transition-colors hover:border-brand-500"
     >
       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border-2 border-ig-border bg-ig-primary">
         <svg className="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

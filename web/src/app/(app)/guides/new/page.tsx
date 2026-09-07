@@ -28,11 +28,11 @@ export default function NewGuidePage() {
   }, [loading, token, router]);
 
   if (loading) {
-    return <div className="max-w-3xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">{t('guidePages.newGuide.loading')}</div>;
+    return <div className="pc-page max-w-3xl mx-auto px-4 text-center text-ig-text-tertiary">{t('guidePages.newGuide.loading')}</div>;
   }
 
   if (!token) {
-    return <div className="max-w-3xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">{t('guidePages.newGuide.redirecting')}</div>;
+    return <div className="pc-page max-w-3xl mx-auto px-4 text-center text-ig-text-tertiary">{t('guidePages.newGuide.redirecting')}</div>;
   }
 
   return <GuideEditor token={token!} aiKeys={aiKeys} />;

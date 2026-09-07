@@ -16,7 +16,7 @@ const POLL_MAX_ATTEMPTS = 8;
 export default function PurchaseSuccessPage() {
   const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">{t('account.purchaseSuccess.loading')}</div>}>
+    <Suspense fallback={<div className="pc-page mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">{t('account.purchaseSuccess.loading')}</div>}>
       <PurchaseSuccessInner />
     </Suspense>
   );
@@ -84,7 +84,7 @@ function PurchaseSuccessInner() {
 
   if (!shopOrderId) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
+      <div className="pc-page mx-auto max-w-md px-4 py-16 text-center">
         <div className="mw-card p-6">
           <h1 className="mw-section-title text-xl">{t('account.purchaseSuccess.completeTitle')}</h1>
           <p className="mt-2 text-sm text-ig-text-secondary">{t('account.purchaseSuccess.addedToPurchases')}</p>
@@ -97,12 +97,12 @@ function PurchaseSuccessInner() {
   }
 
   if (tokenLoading || (!purchase && !error)) {
-    return <div className="mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">{t('account.purchaseSuccess.loadingReceipt')}</div>;
+    return <div className="pc-page mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">{t('account.purchaseSuccess.loadingReceipt')}</div>;
   }
 
   if (error) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
+      <div className="pc-page mx-auto max-w-md px-4 py-16 text-center">
         <p className="text-sm text-ig-error">{error}</p>
         <Link href="/purchases" className="mw-button-primary mt-6 inline-block min-h-11 rounded-lg px-6 py-2.5 text-sm">
           {t('account.purchaseSuccess.viewMyPurchases')}
@@ -123,7 +123,7 @@ function PurchaseSuccessInner() {
           body { background: white !important; color: black !important; }
         }
       `}</style>
-      <div className="mx-auto max-w-2xl px-4 py-8 print:py-2">
+      <div className="pc-page mx-auto max-w-2xl px-4 print:py-2">
         <div className="rounded-2xl border border-ig-border bg-ig-elevated p-6 print:border-0 print:bg-white">
           <div className="flex items-start justify-between gap-4">
             <div>

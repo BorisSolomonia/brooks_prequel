@@ -261,12 +261,12 @@ function isPinWithinBounds(pin: InfluencerMapPin, bounds: MapBoundsState | null)
 
 function getMemoryPinAppearance(memory: MemoryMapPin): { background: string; glyph: string; ariaLabel: string } {
   if (memory.ownedByViewer) {
-    return { background: '#ef2f6d', glyph: 'M', ariaLabel: 'Your memory' };
+    return { background: 'var(--map-guide)', glyph: 'M', ariaLabel: 'Your memory' };
   }
   if (memory.sharedWithViewer) {
-    return { background: '#b45309', glyph: '✦', ariaLabel: 'Memory shared with you' };
+    return { background: 'var(--map-shared)', glyph: '✦', ariaLabel: 'Memory shared with you' };
   }
-  return { background: '#12c7c9', glyph: 'M', ariaLabel: 'Memory pin' };
+  return { background: 'var(--map-memory)', glyph: 'M', ariaLabel: 'Memory pin' };
 }
 
 /**
@@ -513,7 +513,9 @@ const InfluencerViewportSlice = memo(function InfluencerViewportSlice({ pin, onH
 
   return (
     <div
-      className="flex items-center gap-3 rounded-full border border-ig-border bg-ig-primary px-3 py-2 shadow-[0_8px_21px_rgba(15,23,42,0.08)] transition-transform duration-150 hover:-translate-y-0.5"
+      className="pc-map-row"
+      onFocus={() => onHoverStart(pin.userId)}
+      onBlur={onHoverEnd}
       onMouseEnter={() => onHoverStart(pin.userId)}
       onMouseLeave={onHoverEnd}
     >
@@ -566,9 +568,9 @@ const MemoryViewportSlice = memo(function MemoryViewportSlice({ memory, onSelect
     <button
       type="button"
       onClick={() => onSelect(memory)}
-      className="flex w-full items-center gap-3 rounded-[24px] border border-ig-border bg-ig-primary px-3 py-2 text-left shadow-[0_8px_21px_rgba(15,23,42,0.08)] transition-transform duration-150 hover:-translate-y-0.5"
+      className="pc-map-row"
     >
-      <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-black text-white shadow-[0_0_0_2px_rgba(255,255,255,0.9)]">
+      <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-black text-[var(--on-action)] shadow-[0_0_0_2px_rgba(255,255,255,0.9)]">
         M
       </div>
       <div className="min-w-0 flex-1">
@@ -689,7 +691,7 @@ function MemoryReplies({
               type="button"
               disabled={submitting || !text.trim()}
               onClick={submit}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-[var(--on-action)] disabled:opacity-60"
             >
               {submitting && <Spinner />}
               {addLabel}
@@ -708,7 +710,7 @@ function MemoryReplies({
           type="button"
           onClick={() => setOpen(true)}
           className={`mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${
-            depth === 1 ? 'bg-brand-500 text-white' : 'border border-ig-border text-brand-500'
+            depth === 1 ? 'bg-brand-500 text-[var(--on-action)]' : 'border border-ig-border text-brand-500'
           }`}
         >
           {depth === 1 && <span aria-hidden>✨</span>} {addLabel}
@@ -813,7 +815,7 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
             type="button"
             disabled={busy}
             onClick={() => onShare(memory.id)}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-[var(--on-action)] transition-colors hover:bg-brand-600 disabled:opacity-60"
           >
             {busy && <Spinner />}
             Share
@@ -836,7 +838,7 @@ function SelectedMemoryCard({ memory, token, onClose, onShare, onDelete, onRemov
               type="button"
               disabled={busy}
               onClick={() => onReveal(memory)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-[var(--on-action)] transition-colors hover:bg-brand-600 disabled:opacity-60"
             >
               {busy && <Spinner />}
               Unlock here
@@ -928,7 +930,7 @@ function SelectedPinCard({ pin, onClose }: SelectedPinCardProps) {
       <div className="mt-4">
         <Link
           href={`/creators/${pin.username}`}
-          className="inline-flex min-h-11 items-center rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
+          className="inline-flex min-h-11 items-center rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-[var(--on-action)] transition-colors hover:bg-brand-600"
         >
           Open profile
         </Link>
@@ -2102,7 +2104,7 @@ export default function MapsExperience({
         showCoverageOnHover: false,
         spiderfyOnMaxZoom: false,
         iconCreateFunction: (cluster) => L.divIcon({
-          html: `<div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:9999px;background:#c084fc;color:#fff;font-weight:800;border:2px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,0.24)">${cluster.getChildCount()}</div>`,
+          html: `<div class="pc-map-cluster">${cluster.getChildCount()}</div>`,
           className: '',
           iconSize: [40, 40],
         }),
@@ -2221,7 +2223,7 @@ export default function MapsExperience({
         whiteRing.style.width = '100%';
         whiteRing.style.height = '100%';
         whiteRing.style.borderRadius = '9999px';
-        whiteRing.style.background = '#ffffff';
+        whiteRing.style.background = 'var(--map-on-marker)';
         whiteRing.style.padding = '1.5px';
 
         const avatar = document.createElement('div');
@@ -2347,9 +2349,9 @@ export default function MapsExperience({
         markerElement.style.width = '38px';
         markerElement.style.height = '38px';
         markerElement.style.borderRadius = '9999px';
-        markerElement.style.border = '2px solid #ffffff';
+        markerElement.style.border = '2px solid var(--map-on-marker)';
         markerElement.style.background = appearance.background;
-        markerElement.style.color = '#ffffff';
+        markerElement.style.color = 'var(--map-on-marker)';
         markerElement.style.fontWeight = '900';
         markerElement.style.boxShadow = '0 12px 24px rgba(0,0,0,0.24)';
         markerElement.style.cursor = 'pointer';
@@ -2465,8 +2467,8 @@ export default function MapsExperience({
       markerElement.style.width = '18px';
       markerElement.style.height = '18px';
       markerElement.style.borderRadius = '9999px';
-      markerElement.style.background = '#0095f6';
-      markerElement.style.border = '3px solid #ffffff';
+      markerElement.style.background = 'var(--map-location)';
+      markerElement.style.border = '3px solid var(--map-on-marker)';
       markerElement.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.18)';
 
       const [uLng, uLat] = userCoordinates;
@@ -2508,7 +2510,7 @@ export default function MapsExperience({
   // Root height uses svh (static), NOT dvh: dvh recomputes with the viewport and fed an
   // infinite resize->render loop (heights shrank 602->203px) that drove the GPU runaway.
   return (
-    <div className="relative h-[calc(100svh_-_9rem_-_env(safe-area-inset-bottom))] min-h-[420px] w-full overflow-hidden bg-ig-primary md:h-[calc(100svh_-_60px)] md:min-h-0">
+    <div className="pc-map">
       {(tokenLoading || !token) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-ig-primary">
           <p className="text-ig-text-tertiary">Loading map experience...</p>
@@ -2553,7 +2555,7 @@ export default function MapsExperience({
             type="button"
             data-tour="memory-create"
             onClick={() => setCreateMemoryOpen(true)}
-            className="absolute bottom-12 left-1/2 z-30 inline-flex min-h-touch -translate-x-1/2 items-center gap-2 rounded-full bg-brand-500 px-6 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95"
+            className="absolute bottom-12 left-1/2 z-30 inline-flex min-h-touch -translate-x-1/2 items-center gap-2 rounded-full bg-brand-500 px-6 text-sm font-semibold text-[var(--on-action)] shadow-[0_12px_32px_rgba(15,23,42,0.22)] transition hover:bg-brand-600 active:scale-95"
           >
             <span aria-hidden className="text-base leading-none">+</span>
             <span>{t('memory.createPill')}</span>
@@ -2585,7 +2587,7 @@ export default function MapsExperience({
           />
           <div
             data-tour="memory-panel"
-            className="absolute right-0 top-0 flex h-full w-[min(92vw,420px)] flex-col rounded-l-[28px] border-l-2 border-ig-border bg-ig-primary p-3 shadow-[-18px_0_48px_rgba(15,23,42,0.32)] md:p-4"
+            className="absolute right-0 top-0 flex h-full w-[min(92vw,420px)] flex-col border-l border-ig-border bg-ig-primary p-4 shadow-xl md:p-5"
             style={{ animation: 'mw-drawer-in 280ms cubic-bezier(0.22, 1, 0.36, 1)' }}
           >
             <div className="flex items-center justify-between gap-3">

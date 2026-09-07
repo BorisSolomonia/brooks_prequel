@@ -32,11 +32,11 @@ export default function MyPurchasesPage() {
   }, [token, tokenLoading, page]);
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">{t('account.purchases.loading')}</div>;
+    return <div className="pc-page mx-auto max-w-4xl px-4 text-center text-ig-text-tertiary">{t('account.purchases.loading')}</div>;
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
+    <div className="pc-page mx-auto max-w-4xl px-4">
       <h1 className="mw-section-title mb-6 text-xl">{t('account.purchases.title')}</h1>
 
       {purchases.length === 0 ? (

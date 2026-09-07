@@ -1,7 +1,7 @@
 // Skeleton for a creator profile (avatar + meta + tab strip + content grid).
 export default function CreatorLoading() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-4xl px-4">
       <div className="mb-6 flex items-center gap-4">
         <div className="h-20 w-20 shrink-0 animate-pulse rounded-full bg-ig-bg-secondary" />
         <div className="flex-1 space-y-2">

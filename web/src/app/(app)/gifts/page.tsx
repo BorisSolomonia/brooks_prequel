@@ -63,7 +63,7 @@ export default function GiftsPage() {
   const loading = tokenLoading || offers === null;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       <h1 className="mb-1 text-xl font-semibold text-ig-text-primary">{t('account.gifts.title')}</h1>
       <p className="mb-5 text-sm text-ig-text-tertiary">{t('account.gifts.subtitle')}</p>
 

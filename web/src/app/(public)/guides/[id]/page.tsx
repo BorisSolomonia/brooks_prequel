@@ -35,7 +35,7 @@ export default async function PublicGuidePreviewPage({ params }: { params: { id:
   const inSeason = seasonIsNow(preview.bestSeasonStartMonth, preview.bestSeasonEndMonth);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
+    <div className="pc-page mx-auto max-w-3xl px-4">
       <div className="mb-6">
         {preview.coverImageUrl && (
           <div className="mw-photo-frame relative mb-4 h-52 overflow-hidden rounded-xl bg-ig-secondary">
@@ -49,7 +49,7 @@ export default async function PublicGuidePreviewPage({ params }: { params: { id:
             />
             {preview.bestSeasonLabel && (
               <span className={`absolute right-3 top-3 rounded-full border-2 border-white/30 px-2.5 py-1 text-xs font-semibold ${
-                inSeason ? 'bg-brand-500 text-white' : 'bg-black/70 text-white/80'
+                inSeason ? 'bg-brand-500 text-[var(--on-action)]' : 'bg-black/70 text-white/80'
               }`}>
                 {inSeason ? 'In season now' : `Best in ${MONTH_NAMES[(preview.bestSeasonStartMonth ?? 1) - 1]}`}
               </span>

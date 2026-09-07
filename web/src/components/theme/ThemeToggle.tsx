@@ -18,7 +18,7 @@ type Variant = 'icon' | 'menu';
 
 export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant }) {
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -42,12 +42,12 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
         type="button"
         aria-label={t('widgets.themeToggle.themeToggle')}
         disabled
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated opacity-60"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated opacity-60"
       />
     );
   }
 
-  const current: ThemeChoice = theme === 'dark' ? 'dark' : theme === 'dim' ? 'dim' : 'light';
+  const current: ThemeChoice = resolvedTheme === 'dark' ? 'dark' : resolvedTheme === 'dim' ? 'dim' : 'light';
   const next = NEXT_CHOICE[current];
   const currentLabel = t(`widgets.themeToggle.${current}`);
   const nextLabel = t(`widgets.themeToggle.${next}`);
@@ -74,7 +74,7 @@ export default function ThemeToggle({ variant = 'icon' }: { variant?: Variant })
       aria-label={aria}
       title={aria}
       data-tour="theme-toggle"
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ig-border bg-ig-elevated text-ig-text-secondary transition-colors hover:bg-ig-hover hover:text-ig-text-primary"
     >
       {current === 'light' ? <SunIcon /> : current === 'dark' ? <MoonIcon /> : <DimIcon />}
     </button>
@@ -107,4 +107,3 @@ function DimIcon() {
     </svg>
   );
 }
-

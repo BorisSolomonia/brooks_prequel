@@ -46,8 +46,8 @@ export const viewport: Viewport = {
   // Distinct theme colors per scheme so the iOS Safari address-bar tint matches
   // each mode. Values come from --bg-primary in globals.css.
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F1E4D1' },
-    { media: '(prefers-color-scheme: dark)', color: '#0E0E0E' },
+    { media: '(prefers-color-scheme: light)', color: '#FFF5D9' },
+    { media: '(prefers-color-scheme: dark)', color: '#211B20' },
   ],
 };
 

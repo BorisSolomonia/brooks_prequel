@@ -108,7 +108,7 @@ function SearchGuidesPageContent() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       <Link href={`/search?q=${encodeURIComponent(q)}`} className="mb-4 inline-block font-display text-sm font-black uppercase tracking-[0.06em] text-brand-500 hover:text-brand-400">
         {t('discovery.search.backToSearch')}
       </Link>
@@ -132,7 +132,7 @@ function SearchGuidesPageContent() {
           </svg>
           {t('discovery.search.filtersTitle')}
           {activeFilterCount > 0 && (
-            <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[11px] font-bold text-white">
+            <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[11px] font-bold text-[var(--on-action)]">
               {activeFilterCount}
             </span>
           )}
@@ -188,7 +188,7 @@ function SearchGuidesPageContent() {
 
 export default function SearchGuidesPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto px-4 py-8"><SearchSkeleton /></div>}>
+    <Suspense fallback={<div className="pc-page max-w-2xl mx-auto px-4"><SearchSkeleton /></div>}>
       <SearchGuidesPageContent />
     </Suspense>
   );

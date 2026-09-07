@@ -77,7 +77,7 @@ export default function PayoutDetailsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-6">
+    <div className="pc-page mx-auto max-w-xl px-4">
       <div className="mb-4 flex items-center gap-3">
         <Link href="/profile" className="text-sm text-ig-text-secondary hover:text-ig-text-primary">{t('account.payout.backToProfile')}</Link>
       </div>

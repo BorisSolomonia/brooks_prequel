@@ -122,13 +122,13 @@ export default function AdminTransactionsPage() {
   if (tokenLoading) return <div className="px-4 py-12 text-center text-ig-text-tertiary">{t('creatorTools.admin.loading')}</div>;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-7xl px-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-ig-text-primary">{t('creatorTools.admin.transactionsTitle')}</h1>
         <button
           onClick={exportCsv}
           disabled={exporting}
-          className="rounded-md bg-ig-blue px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-md bg-ig-blue px-4 py-2 text-sm font-semibold text-[var(--on-action)] disabled:opacity-50"
         >
           {exporting ? t('creatorTools.admin.exporting') : t('creatorTools.admin.exportCsv')}
         </button>

@@ -71,6 +71,10 @@ jobs:
         working-directory: web
         run: npm run lint
 
+      - name: Postcard theme regression tests
+        working-directory: web
+        run: node --test tests/postcard-theme.test.cjs
+
       - name: Build
         working-directory: web
         run: npm run build

@@ -13,7 +13,7 @@ const DELETION_MAILTO = `mailto:${compliance.email}`
 
 export default function ContactPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="pc-page mx-auto max-w-3xl px-4">
       <p className="mw-eyebrow">Customer support</p>
       <h1 className="mw-section-title mt-2 text-3xl">Contact information</h1>
       <div className="mw-card mt-6 p-5">

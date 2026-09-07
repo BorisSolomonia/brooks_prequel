@@ -40,12 +40,12 @@ export default function EditGuidePage() {
   }, [guideId, token, tokenLoading, router]);
 
   if (tokenLoading || loading) {
-    return <div className="max-w-3xl mx-auto px-4 py-12 text-center text-ig-text-tertiary">{t('guidePages.editGuide.loading')}</div>;
+    return <div className="pc-page max-w-3xl mx-auto px-4 text-center text-ig-text-tertiary">{t('guidePages.editGuide.loading')}</div>;
   }
 
   if (error || !guide) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12 text-center">
+      <div className="pc-page max-w-3xl mx-auto px-4 text-center">
         <p className="text-ig-error">{error || t('guidePages.editGuide.guideNotFound')}</p>
       </div>
     );

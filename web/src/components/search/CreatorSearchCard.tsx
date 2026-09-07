@@ -14,9 +14,9 @@ export default function CreatorSearchCard({ creator }: CreatorSearchCardProps) {
   return (
     <Link
       href={`/creators/${creator.username}`}
-      className="mw-card flex min-h-20 items-center gap-3 rounded-xl p-3 transition duration-200 hover:-translate-y-0.5 hover:border-brand-500/60"
+      className="pc-surface flex min-h-20 items-center gap-3 p-4 transition-colors hover:border-brand-500"
     >
-      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-ig-border bg-gradient-to-br from-brand-500 to-accent-500">
+      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-ig-border bg-ig-hover">
         {creator.avatarUrl ? (
           <Image
             src={creator.avatarUrl}
@@ -45,7 +45,7 @@ export default function CreatorSearchCard({ creator }: CreatorSearchCardProps) {
         <p className="text-sm text-ig-text-secondary truncate">@{creator.username}</p>
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ig-text-tertiary">
           {creator.creatorRatingAverage > 0 && (
-            <span className="inline-flex items-center gap-0.5 font-semibold text-amber-400">
+            <span className="inline-flex items-center gap-0.5 font-semibold text-accent-500">
               <span aria-hidden>★</span>{creator.creatorRatingAverage.toFixed(1)}
             </span>
           )}

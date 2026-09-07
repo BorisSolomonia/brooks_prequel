@@ -37,11 +37,11 @@ export default function FeedPage() {
   }, [token, tokenLoading, router]);
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">{t('account.feed.loading')}</div>;
+    return <div className="pc-page mx-auto max-w-2xl px-4 text-center text-ig-text-tertiary">{t('account.feed.loading')}</div>;
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-4">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       {/* Story Strip */}
       <StoryStrip strips={storyStrips} />
 

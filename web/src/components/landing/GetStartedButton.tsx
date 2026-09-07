@@ -7,8 +7,8 @@ import { startAuthFlow } from '@/lib/capacitor';
 
 const BLACK = '#050505';
 const YELLOW = '#D4AA3A';
-const POSTCARD_PLUM = '#70394F';
-const POSTCARD_PAPER = '#FFF4D6';
+const POSTCARD_PLUM = 'var(--action-primary)';
+const POSTCARD_PAPER = 'var(--on-action)';
 
 export default function GetStartedButton({
   mobile,

@@ -1,0 +1,131 @@
+/* Postcard Club: role-based values shared by every route and appearance. */
+:root {
+  --bg-primary: #fff5d9;
+  --bg-secondary: #f1e5ce;
+  --bg-elevated: #fffdf5;
+  --bg-hover: #f1d5cf;
+  --text-primary: #332526;
+  --text-secondary: #705e55;
+  --text-tertiary: #77655b;
+  --border: #d9c4a0;
+  --border-light: #eadcc4;
+  --border-strong: #95745f;
+  --separator: #d9c4a0;
+  --brand-primary: #71374d;
+  --brand-hover: #57273a;
+  --action-primary: #71374d;
+  --action-hover: #57273a;
+  --on-action: #fffdf5;
+  --accent-primary: #d4aa3a;
+  --accent-secondary: #c95a7d;
+  --success: #34654a;
+  --error: #a3333d;
+  --mw-pink: #c95a7d;
+  --mw-magenta: #71374d;
+  --mw-orange: #a75438;
+  --mw-red: var(--error);
+  --mw-yellow: #d4aa3a;
+  --mw-lime: #34654a;
+  --mw-mint: #547864;
+  --mw-cyan: #416877;
+  --mw-blue: var(--action-primary);
+  --mw-violet: #71374d;
+  --brand-50: 250 240 242;
+  --brand-100: 241 213 207;
+  --brand-200: 228 177 183;
+  --brand-300: 171 91 117;
+  --brand-400: 134 66 90;
+  --brand-500: 113 55 77;
+  --brand-600: 87 39 58;
+  --brand-700: 73 32 49;
+  --brand-800: 58 25 40;
+  --brand-900: 45 19 30;
+  --accent-50: 251 247 229;
+  --accent-100: 240 225 182;
+  --accent-200: 229 203 135;
+  --accent-300: 217 180 89;
+  --accent-400: 169 126 35;
+  --accent-500: 137 100 24;
+  --accent-600: 119 86 19;
+  --accent-700: 99 71 16;
+  --accent-800: 80 57 12;
+  --accent-900: 61 43 9;
+  --ig-blue: 113 55 77;
+  --ig-blue-hover: 87 39 58;
+  --ig-error: 163 51 61;
+  --ig-success: 52 101 74;
+  --grain: rgba(51, 37, 38, .018);
+  --mw-card-shadow: 3px 4px 0 var(--border);
+  --mw-hard-shadow: 5px 6px 0 var(--border);
+  --panel-shadow: 0 12px 32px rgba(51, 37, 38, .14);
+  --mw-border-width: 1px;
+  --radius-card: 8px;
+  --radius-control: 7px;
+  --font-heading: var(--font-bricolage), sans-serif;
+  --font-body: var(--font-archivo), sans-serif;
+  --map-guide: #71374d;
+  --map-memory: #416877;
+  --map-shared: #8a5c22;
+  --map-location: #216c9b;
+  --map-on-marker: #fffdf5;
+  --header-height: calc(120px + env(safe-area-inset-top, 0px));
+  --bottom-nav-height: calc(64px + env(safe-area-inset-bottom, 0px));
+}
+
+.dark {
+  --bg-primary: #211b20;
+  --bg-secondary: #30272e;
+  --bg-elevated: #382e35;
+  --bg-hover: #48333f;
+  --text-primary: #fff5df;
+  --text-secondary: #dbcac2;
+  --text-tertiary: #c3aea6;
+  --border: #66535a;
+  --border-light: #50414a;
+  --border-strong: #b39399;
+  --separator: #66535a;
+  --brand-primary: #edb6c7;
+  --brand-hover: #f5d0dc;
+  --action-primary: #edb6c7;
+  --action-hover: #f5d0dc;
+  --on-action: #332526;
+  --success: #a8d6b4;
+  --error: #ffa9ae;
+  --brand-300: 245 208 220;
+  --brand-400: 240 195 209;
+  --brand-500: 237 182 199;
+  --brand-600: 245 208 220;
+  --brand-700: 249 224 232;
+  --ig-blue: 237 182 199;
+  --ig-blue-hover: 245 208 220;
+  --ig-error: 255 169 174;
+  --ig-success: 168 214 180;
+  --accent-400: 234 199 112;
+  --accent-500: 224 187 96;
+  --accent-600: 214 174 77;
+  --grain: rgba(255, 245, 223, .018);
+  --panel-shadow: 0 12px 32px rgba(0, 0, 0, .3);
+  --map-guide: #71374d;
+  --map-memory: #416877;
+  --map-shared: #8a5c22;
+  --map-location: #216c9b;
+}
+
+.dim {
+  --bg-primary: #f2f3f5;
+  --bg-secondary: #e8e9ee;
+  --bg-elevated: #fcfcfd;
+  --bg-hover: #eee3e9;
+  --text-primary: #302b36;
+  --text-secondary: #625966;
+  --text-tertiary: #6e6472;
+  --border: #cdc6d0;
+  --border-light: #e3dfe6;
+  --border-strong: #958597;
+  --separator: #cdc6d0;
+  --grain: rgba(48, 43, 54, .015);
+}
+
+@media (min-width: 768px) {
+  :root { --header-height: 80px; --bottom-nav-height: 0px; }
+}

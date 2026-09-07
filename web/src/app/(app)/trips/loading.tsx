@@ -1,7 +1,7 @@
 // Skeleton for the Trips list (card-per-trip).
 export default function TripsLoading() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-3xl px-4">
       <div className="mb-6 h-7 w-32 animate-pulse rounded bg-ig-bg-secondary" />
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (

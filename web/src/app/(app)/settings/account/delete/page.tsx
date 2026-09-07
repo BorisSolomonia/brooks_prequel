@@ -44,7 +44,7 @@ export default function DeleteAccountPage() {
 
   if (done) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="pc-page mx-auto max-w-2xl px-4">
         <h1 className="mw-section-title text-3xl">{t('account.deleteInApp.doneTitle')}</h1>
         <p className="mt-4 text-ig-text-secondary">
           {/* LEGAL EXCEPTION: long deletion confirmation prose left hardcoded */}
@@ -58,7 +58,7 @@ export default function DeleteAccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       <p className="mw-eyebrow">{t('account.deleteInApp.eyebrow')}</p>
       <h1 className="mw-section-title mt-2 text-3xl">{t('account.deleteInApp.title')}</h1>
 

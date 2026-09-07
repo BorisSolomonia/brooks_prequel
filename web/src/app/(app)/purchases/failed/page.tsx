@@ -19,7 +19,7 @@ interface PaidCheckoutResponse {
 export default function PurchaseFailedPage() {
   const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">{t('account.purchaseFailed.loading')}</div>}>
+    <Suspense fallback={<div className="pc-page mx-auto max-w-md px-4 py-16 text-center text-ig-text-tertiary">{t('account.purchaseFailed.loading')}</div>}>
       <PurchaseFailedInner />
     </Suspense>
   );
@@ -69,7 +69,7 @@ function PurchaseFailedInner() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16">
+    <div className="pc-page mx-auto max-w-md px-4 py-16">
       <div className="rounded-2xl border border-ig-border bg-ig-elevated p-6 text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-ig-error/15">
           <svg className="h-6 w-6 text-ig-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

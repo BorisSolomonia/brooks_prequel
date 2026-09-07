@@ -40,7 +40,7 @@ export default function PricingPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="pc-page mx-auto max-w-5xl px-4">
       <div className="max-w-3xl">
         <p className="mw-eyebrow">{t('pricing.eyebrow')}</p>
         <h1 className="mw-section-title mt-2 text-3xl">{t('pricing.catalogTitle')}</h1>

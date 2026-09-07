@@ -287,12 +287,12 @@ export default function AddToCalendarModal({ tripId, token, onClose }: AddToCale
 
         <div className="mt-5 space-y-3">
           {connection?.googleConnected ? (
-            <button type="button" onClick={syncGoogle} disabled={saving || !trip} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+            <button type="button" onClick={syncGoogle} disabled={saving || !trip} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-[var(--on-action)] hover:bg-brand-600 disabled:opacity-50">
               {saving && <Spinner />}
               {saving ? t('widgets.calendar.working') : t('widgets.calendar.syncToGoogle')}
             </button>
           ) : (
-            <a href={`/api/calendar/google/connect?returnTo=${encodeURIComponent(returnTo)}`} className="block min-h-12 w-full rounded-xl bg-brand-500 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-brand-600">
+            <a href={`/api/calendar/google/connect?returnTo=${encodeURIComponent(returnTo)}`} className="block min-h-12 w-full rounded-xl bg-brand-500 px-4 py-3 text-center text-sm font-semibold text-[var(--on-action)] hover:bg-brand-600">
               {t('widgets.calendar.connectGoogle')}
             </a>
           )}

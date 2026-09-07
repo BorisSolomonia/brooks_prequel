@@ -1,11 +1,12 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useTranslation } from 'react-i18next';
 import { useMenuCoordinator } from '@/components/layout/MenuCoordinator';
+import { Button } from '@/components/ui/Postcard';
 import GlobalSearchBar from '@/components/layout/GlobalSearchBar';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -76,6 +77,9 @@ export default function Navbar() {
   const { t } = useTranslation();
   const { openMenuId, openMenu, closeMenu } = useMenuCoordinator();
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+  const bottomRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const upperOpen = openMenuId === 'upper';
   const visibleDesktopLinks = desktopLinks.filter((link) => !link.auth || user);
   const visibleMobileTabs = mobileTabs.filter((tab) => !tab.auth || user);
@@ -91,150 +95,89 @@ export default function Navbar() {
     closeMenu('upper');
   }, [pathname, closeMenu]);
 
+  useEffect(() => {
+    const header = headerRef.current;
+    const bottom = bottomRef.current;
+    const measure = () => {
+      document.documentElement.style.setProperty('--header-height', `${header?.getBoundingClientRect().height ?? 0}px`);
+      document.documentElement.style.setProperty('--bottom-nav-height', `${bottom?.getBoundingClientRect().height ?? 0}px`);
+    };
+    const observer = new ResizeObserver(measure);
+    if (header) observer.observe(header);
+    if (bottom) observer.observe(bottom);
+    measure();
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--header-height');
+      document.documentElement.style.removeProperty('--bottom-nav-height');
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!upperOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeMenu('upper');
+        menuButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [upperOpen, closeMenu]);
+
   return (
     <>
-    <nav className="sticky top-0 z-50 border-b-2 border-ig-border bg-ig-elevated/95 pt-safe-top backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-2 px-3 md:h-[60px] md:gap-4 md:px-4">
-        {/* BOR-58: the logo is "Home". For a logged-in session that's the Map
-            (the authed home); only logged-out visitors go to the landing page —
-            this stops the logo from dumping authenticated users back onto the
-            unauthenticated landing + "Get Started". */}
-        <Link href={user ? '/maps' : '/'} className="font-display shrink-0 text-base font-black uppercase tracking-[0.08em] text-brand-500 md:text-xl">
-          {t('nav.brand')}
-        </Link>
-        <div data-tour="search-bar" className="min-w-0 flex-1">
-          <Suspense fallback={<SearchBarFallback />}>
-            <GlobalSearchBar />
-          </Suspense>
-        </div>
-
-        <div className="hidden items-center gap-3 whitespace-nowrap md:flex">
-          {isLoading ? (
-            <div className="h-9 w-20 animate-pulse rounded-md border border-ig-border bg-ig-elevated" />
-          ) : (
-            <>
-              {visibleDesktopLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  data-tour={link.href === '/trips' ? 'trips-tab' : undefined}
-                  className={`font-display text-xs font-bold uppercase tracking-[0.08em] transition-colors ${
-                    isActive(pathname, link.href)
-                      ? 'text-ig-text-primary'
-                      : 'text-ig-text-secondary hover:text-ig-text-primary'
-                  }`}
-                >
-                  {t(link.labelKey)}
-                </Link>
-              ))}
-              <NotificationBell />
-              <ThemeToggle />
-              {user ? (
-                <a
-                  href="/api/auth/logout"
-                  onClick={handleLogoutClick}
-                  className="mw-button-secondary rounded-md px-4 py-2 text-sm transition-colors hover:bg-ig-hover"
-                >
-                  {t('nav.auth.logOut')}
-                </a>
-              ) : (
-                <Link
-                  href="/api/auth/login"
-                  onClick={handleSignInClick}
-                  className="mw-button-primary rounded-md px-4 py-2 text-sm transition-colors"
-                >
-                  {t('nav.auth.signIn')}
-                </Link>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2 md:hidden">
-          <NotificationBell />
-          <ThemeToggle />
-          {isLoading ? (
-            <div className="h-12 w-12 animate-pulse rounded-full border border-ig-border bg-ig-elevated" />
-          ) : user ? (
+      <nav ref={headerRef} className="pc-header" aria-label={t('nav.menu.ariaPrimary')}>
+        <div className="pc-header-inner">
+          <Link href={user ? '/maps' : '/'} className="pc-brand" aria-label={t('nav.brand')}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 22s7-7 7-13a7 7 0 0 0-14 0c0 6 7 13 7 13Z" /><circle cx="12" cy="9" r="2.5" /></svg>
+            brooks
+          </Link>
+          <div data-tour="search-bar" className="pc-header-search">
+            <Suspense fallback={<SearchBarFallback />}><GlobalSearchBar /></Suspense>
+          </div>
+          <div className="pc-header-links">
+            {visibleDesktopLinks.filter(link => ['/search', '/maps', '/guides'].includes(link.href)).map(link => (
+              <Link key={link.href} href={link.href} aria-current={isActive(pathname, link.href) ? 'page' : undefined} className="pc-header-link">{t(link.labelKey)}</Link>
+            ))}
+          </div>
+          <div className="pc-header-actions">
+            {user && <NotificationBell />}
+            <ThemeToggle />
+            {!user && !isLoading && <Link href="/api/auth/login" onClick={handleSignInClick} className="pc-button hidden sm:inline-flex">{t('nav.auth.signIn')}</Link>}
             <div className="relative">
-              <button
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={upperOpen}
-                onClick={() => (upperOpen ? closeMenu('upper') : openMenu('upper'))}
-                className="flex h-12 min-w-12 cursor-pointer items-center justify-center rounded-full border-2 border-ig-border bg-ig-elevated px-3 text-sm font-semibold text-ig-text-primary"
-              >
+              <Button ref={menuButtonRef} tone="secondary" aria-expanded={upperOpen} aria-controls="account-navigation" onClick={() => upperOpen ? closeMenu('upper') : openMenu('upper')}>
                 {t('nav.menu.open')}
-              </button>
+              </Button>
               {upperOpen && (
                 <>
-                  {/* Tap-outside scrim — deterministic close (no native <details>
-                      toggle-event reliance, which let two menus stay open on Android). */}
-                  <button
-                    type="button"
-                    aria-label={t('common.actions.close')}
-                    onClick={() => closeMenu('upper')}
-                    className="fixed inset-0 z-40 cursor-default"
-                  />
-                  <div role="menu" className="mw-panel absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-2xl">
-                    <Link href="/search" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.explore')}</Link>
-                    <Link href="/maps" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.maps')}</Link>
-                    <Link href="/right-now" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.rightNow')}</Link>
-                    <Link href="/moments" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.moments')}</Link>
-                    <Link href="/guides" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.myGuides')}</Link>
-                    <Link href="/profile" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.profile')}</Link>
-                    <Link href="/settings" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.settings')}</Link>
-                    <Link href="/pricing" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.pricing')}</Link>
-                    <Link href="/contact" onClick={() => closeMenu('upper')} className="block px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.links.contact')}</Link>
-                    <a href="/api/auth/logout" onClick={(e) => { closeMenu('upper'); handleLogoutClick(e); }} className="block border-t border-ig-border px-4 py-3 text-sm text-ig-text-primary hover:bg-ig-hover">{t('nav.auth.logOut')}</a>
+                  <button type="button" aria-label={t('common.actions.close')} onClick={() => closeMenu('upper')} className="fixed inset-0 z-40 cursor-default" tabIndex={-1} />
+                  <div id="account-navigation" className="pc-account-menu">
+                    {!user && <Link href="/api/auth/login" onClick={handleSignInClick}>{t('nav.auth.signIn')}</Link>}
+                    {visibleDesktopLinks.map(link => <Link key={link.href} href={link.href} aria-current={isActive(pathname, link.href) ? 'page' : undefined} onClick={() => closeMenu('upper')}>{t(link.labelKey)}</Link>)}
+                    {user && <>
+                      <Link href="/right-now" onClick={() => closeMenu('upper')}>{t('nav.links.rightNow')}</Link>
+                      <Link href="/moments" onClick={() => closeMenu('upper')}>{t('nav.links.moments')}</Link>
+                      <a href="/api/auth/logout" className="border-t border-ig-border" onClick={event => { closeMenu('upper'); handleLogoutClick(event); }}>{t('nav.auth.logOut')}</a>
+                    </>}
                   </div>
                 </>
               )}
             </div>
-          ) : (
-            <Link
-              href="/api/auth/login"
-              onClick={handleSignInClick}
-              className="mw-button-primary inline-flex h-12 items-center rounded-full px-4 text-sm transition-colors"
-            >
-              {t('nav.auth.signIn')}
-            </Link>
-          )}
+          </div>
         </div>
-      </div>
-    </nav>
-    {/* Stronger backdrop-blur-xl + slight desaturation underneath give the
-        bottom-tab nav clear separation from the map / page content without
-        sacrificing the parchment transparency. Per-Link text-shadow lifts
-        labels + icons over busy backgrounds like map tiles. */}
-    {/* Only render the bottom tab bar when it offers real multi-destination
-        navigation. For logged-out users every tab except Explore is auth-gated,
-        so the bar collapses to a SINGLE Explore/search icon — a redundant
-        "transparent search button" sitting next to the top GlobalSearchBar
-        (BOR-25). Suppress that degenerate one-button bar; the full logged-in
-        5-tab nav and the top search are unaffected. */}
-    {visibleMobileTabs.length > 1 && (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t-2 border-ig-border bg-ig-elevated/95 backdrop-blur-xl backdrop-saturate-50 md:hidden" aria-label={t('nav.menu.ariaPrimary')}>
-      <div className="mx-auto flex max-w-lg justify-around px-1 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
-        {visibleMobileTabs.map((tab) => {
-          const active = isActive(pathname, tab.href);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              data-tour={tab.href === '/trips' ? 'trips-tab' : undefined}
-              className={`flex min-h-[60px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold transition-colors [text-shadow:0_1px_2px_rgba(15,23,42,0.18)] ${
-                active ? 'text-brand-500' : 'text-ig-text-secondary hover:text-ig-text-primary'
-              }`}
-            >
-              <MobileTabIcon path={tab.icon} />
-              <span className="leading-none">{t(tab.labelKey)}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-    )}
+      </nav>
+      {visibleMobileTabs.length > 1 && (
+        <nav ref={bottomRef} className="pc-bottom-nav" aria-label={t('nav.menu.ariaPrimary')}>
+          <div className="mx-auto flex max-w-lg justify-around gap-1 px-2 py-1 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
+            {visibleMobileTabs.map(tab => (
+              <Link key={tab.href} href={tab.href} aria-current={isActive(pathname, tab.href) ? 'page' : undefined} className="flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[11px] font-semibold text-ig-text-secondary">
+                <MobileTabIcon path={tab.icon} /><span className="text-center leading-tight">{t(tab.labelKey)}</span>
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
     </>
   );
 }

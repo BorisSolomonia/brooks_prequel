@@ -2,7 +2,7 @@
 // Shape mirrors the feed (story strip + scrollable card list).
 export default function FeedLoading() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       <div className="mb-6 flex gap-3 overflow-hidden">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="h-16 w-16 shrink-0 animate-pulse rounded-full bg-ig-bg-secondary" />

@@ -1,7 +1,7 @@
 // Skeleton for an individual guide view (cover + meta + day list).
 export default function GuideViewLoading() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-3xl px-4">
       <div className="mb-6 aspect-video w-full animate-pulse rounded-xl bg-ig-bg-secondary" />
       <div className="space-y-3">
         <div className="h-7 w-2/3 animate-pulse rounded bg-ig-bg-secondary" />

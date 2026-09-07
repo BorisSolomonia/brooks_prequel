@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 export default function GuideViewError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="mx-auto max-w-md px-4 py-16 text-center">
+    <div className="pc-page mx-auto max-w-md px-4 py-16 text-center">
       <p className="text-ig-text-primary">{t('errors.loadGuide')}</p>
       <button
         onClick={reset}

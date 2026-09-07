@@ -138,7 +138,7 @@ function ConfirmSurface({
             className={`inline-flex min-h-touch items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${
               req.destructive
                 ? 'bg-ig-error text-white hover:opacity-90'
-                : 'bg-brand-500 text-white hover:bg-brand-600'
+                : 'bg-brand-500 text-[var(--on-action)] hover:bg-brand-600'
             }`}
           >
             {req.confirmLabel ?? (req.destructive ? t('common.actions.delete') : t('common.actions.confirm'))}

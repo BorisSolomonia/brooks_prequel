@@ -216,7 +216,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
   return (
     <>
       {/* pb-24 clears the fixed Save bar below so the last field (Tags) is never hidden. */}
-      <div className="max-w-3xl mx-auto px-4 pt-6 pb-24">
+      <div className="pc-page max-w-4xl mx-auto px-4 pb-24">
         {error && (
           <div className="mb-4 p-3 bg-ig-error/10 border border-ig-error/30 rounded-md text-ig-error text-sm">
             {error}
@@ -240,7 +240,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
                 type="button"
                 onClick={handleDeleteGuide}
                 disabled={deleting}
-                className="min-h-11 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-11 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-ig-error transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {deleting ? t('guideEditor.editor.deleting') : t('guideEditor.editor.deleteGuideBtn')}
               </button>
@@ -333,7 +333,7 @@ export default function GuideEditor({ initialGuide, token, aiKeys = [] }: Props)
        * was trapped inside the overflow-hidden metadata card and scrolled away in Stage 2.
        * On mobile it sits flush above the app's bottom nav (mirroring AppShell's
        * 5rem+safe-area offset); on md+ the nav is hidden so it pins to bottom-0. */}
-      <div className="fixed inset-x-0 bottom-[calc(5rem_+_env(safe-area-inset-bottom))] z-40 border-t border-ig-border bg-ig-elevated/95 backdrop-blur-md md:bottom-0">
+      <div className="fixed inset-x-0 bottom-[var(--bottom-nav-height)] z-40 border-t border-ig-border bg-ig-elevated/95 backdrop-blur-md md:bottom-0">
         <div className="mx-auto w-full max-w-3xl px-4 py-3">
           <button
             onClick={handleSaveMetadata}
@@ -388,7 +388,7 @@ function DaysSection({
           {aiKeys.length === 0 ? (
             <a
               href="/profile?tab=ai-keys"
-              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-600 hover:shadow-lg lg:min-h-0 lg:py-2 lg:text-xs"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-[var(--on-action)] shadow-md transition-colors hover:bg-brand-600 hover:shadow-lg lg:min-h-0 lg:py-2 lg:text-xs"
             >
               <span className="text-base leading-none">✨</span>
               <span>{t('guideEditor.days.connectAiBtn')}</span>
@@ -399,7 +399,7 @@ function DaysSection({
               className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-md transition-colors lg:min-h-0 lg:py-2 lg:text-xs ${
                 showAiPanel
                   ? 'border-2 border-brand-500 bg-brand-500/10 text-brand-500 hover:bg-brand-500/20'
-                  : 'bg-brand-500 text-white hover:bg-brand-600 hover:shadow-lg'
+                  : 'bg-brand-500 text-[var(--on-action)] hover:bg-brand-600 hover:shadow-lg'
               }`}
             >
               <span className="text-base leading-none">✨</span>

@@ -328,7 +328,7 @@ function HookGenerator({ title, currentDescription, city, region, token, provide
           {t('guideEditor.hookGenerator.regenerate')}
         </button>
         <button type="button" disabled={streaming || !draft.trim()} onClick={() => { onApply(draft.trim()); setOpen(false); }}
-          className="rounded-md bg-ig-blue px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+          className="rounded-md bg-ig-blue px-3 py-1.5 text-xs font-semibold text-[var(--on-action)] disabled:opacity-50">
           {t('guideEditor.hookGenerator.apply')}
         </button>
       </div>

@@ -154,7 +154,7 @@ export default function SharedMemoryPage() {
         <section className="max-w-md rounded-3xl border border-ig-border bg-ig-elevated p-6 text-center">
           <h1 className="text-2xl font-semibold text-ig-text-primary">{t('account.memoryReveal.unavailableTitle')}</h1>
           <p className="mt-3 text-sm text-ig-text-secondary">{teaser?.unavailableReason || error || t('account.memoryReveal.unavailableBody')}</p>
-          <Link href="/" className="mt-5 inline-flex min-h-11 items-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white">{t('account.memoryReveal.goToBrooks')}</Link>
+          <Link href="/" className="mt-5 inline-flex min-h-11 items-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-[var(--on-action)]">{t('account.memoryReveal.goToBrooks')}</Link>
         </section>
       </main>
     );
@@ -208,7 +208,7 @@ export default function SharedMemoryPage() {
             {mobilePlatform === 'android' && currentUrl && (
               <a
                 href={buildChromeIntentUrl(currentUrl)}
-                className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600"
+                className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-[var(--on-action)] transition hover:bg-brand-600"
               >
                 {t('account.memoryReveal.openInChrome')}
               </a>
@@ -239,7 +239,7 @@ export default function SharedMemoryPage() {
         {!isMetaBrowser && !tokenLoading && !accessToken && (
           <Link
             href={`/api/auth/login?returnTo=/m/${encodeURIComponent(token)}`}
-            className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white"
+            className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-[var(--on-action)]"
           >
             {t('account.memoryReveal.registerOrSignIn')}
           </Link>
@@ -255,7 +255,7 @@ export default function SharedMemoryPage() {
               type="button"
               onClick={revealMemory}
               disabled={revealing}
-              className="mt-4 min-h-12 w-full rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60"
+              className="mt-4 min-h-12 w-full rounded-2xl bg-brand-500 px-5 text-sm font-semibold text-[var(--on-action)] transition hover:bg-brand-600 disabled:opacity-60"
             >
               {revealing ? t('account.memoryReveal.checkingLocation') : t('account.memoryReveal.allowLocationButton')}
             </button>

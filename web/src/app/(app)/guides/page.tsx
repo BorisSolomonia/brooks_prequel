@@ -152,12 +152,12 @@ export default function MyGuidesPage() {
   }, [activeTab, discover.length, discoverTotal, discoverLoading, discoverPage]);
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-4xl px-4 py-12 text-center text-ig-text-tertiary">{t('guidePages.guidesList.loading')}</div>;
+    return <div className="pc-page mx-auto max-w-4xl px-4 text-center text-ig-text-tertiary">{t('guidePages.guidesList.loading')}</div>;
   }
 
   if (error) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-12 text-center">
+      <div className="pc-page mx-auto max-w-4xl px-4 text-center">
         <p className="text-sm text-ig-error">{error}</p>
         <button
           type="button"
@@ -349,8 +349,8 @@ export default function MyGuidesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="pc-page mx-auto max-w-4xl px-4">
+      <div className="pc-page-header">
         <h1 className="mw-section-title text-xl">{t('guidePages.guidesList.pageTitle')}</h1>
         <Link
           href="/guides/new"
@@ -363,13 +363,14 @@ export default function MyGuidesPage() {
 
       {/* BOR-28: three tabs in a 3-column grid so they fit the width with no
           horizontal overflow, clear of the "+ New Guide" header button above. */}
-      <div className="mb-6 grid grid-cols-3 gap-2 border-b-2 border-ig-border pb-3">
+      <div className="pc-tabs mb-6 flex-wrap">
         {tabButtons.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`min-h-11 truncate rounded-pill px-2 py-2 text-center text-sm font-medium transition-colors ${
+            aria-pressed={activeTab === tab.key}
+            className={`min-h-11 rounded-md px-3 py-2 text-center text-sm font-medium transition-colors ${
               activeTab === tab.key
                 ? 'border-2 border-brand-500 bg-brand-500/15 text-brand-500'
                 : 'border-2 border-ig-border bg-ig-elevated text-ig-text-secondary hover:text-ig-text-primary'
@@ -387,7 +388,7 @@ export default function MyGuidesPage() {
           {savedGuides.length > 0 && (
             <section className="mb-6">
               <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">{t('guidePages.guidesList.savedSectionTitle')}</h2>
-              <div className="space-y-3">
+              <div className="grid gap-6 sm:grid-cols-2">
                 {savedGuides.map((g) => (
                   <GuideSearchCard key={`saved-${g.id}`} guide={g} initialSaved onSaveChange={handleSaveChange} />
                 ))}
@@ -415,7 +416,7 @@ export default function MyGuidesPage() {
               {savedGuides.length > 0 && (
                 <h2 className="mb-3 font-display text-sm font-black uppercase tracking-[0.08em] text-ig-text-secondary">{t('guidePages.guidesList.tabDiscover')}</h2>
               )}
-              <div className="space-y-3">
+              <div className="grid gap-6 sm:grid-cols-2">
                 {discover.map((g) => (
                   <GuideSearchCard key={g.id} guide={g} />
                 ))}
@@ -446,21 +447,21 @@ export default function MyGuidesPage() {
           {activeItems.map((guide) => (
             <div
               key={guide.id}
-              className="mw-card overflow-hidden p-0 transition-colors hover:border-brand-500/60"
+              className="pc-guide-card overflow-hidden transition-colors hover:border-brand-500/60"
             >
               <Link href={itemHref(guide)} className="block">
                 {guide.coverImageUrl ? (
-                  <div className="relative h-36 bg-ig-secondary">
+                  <div className="pc-guide-cover">
                     <Image src={guide.coverImageUrl} alt="" fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
                   </div>
                 ) : (
-                  <div className="h-36 bg-ig-secondary flex items-center justify-center">
+                  <div className="pc-guide-cover flex items-center justify-center">
                     <span className="text-ig-text-tertiary text-3xl">🗺️</span>
                   </div>
                 )}
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <h3 className="text-sm font-semibold text-ig-text-primary truncate">{guide.title}</h3>
+                    <h3 className="text-xl font-semibold text-ig-text-primary break-words">{guide.title}</h3>
                     {activeTab === 'saved' && (
                     <span className="mw-badge shrink-0">
                         {t('guidePages.guidesList.badgeSaved')}

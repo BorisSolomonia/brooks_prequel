@@ -70,7 +70,7 @@ function SearchResultsContent() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       <h1 className="mw-section-title mb-1 text-2xl">{t('discovery.search.searchResultsTitle')}</h1>
       {query && (
         <p className="mb-6 text-sm text-ig-text-secondary">
@@ -133,7 +133,7 @@ function SearchResultsContent() {
 
 export default function SearchResultsPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-2xl px-4 py-8"><SearchSkeleton /></div>}>
+    <Suspense fallback={<div className="pc-page mx-auto max-w-2xl px-4"><SearchSkeleton /></div>}>
       <SearchResultsContent />
     </Suspense>
   );

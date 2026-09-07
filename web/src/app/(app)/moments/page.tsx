@@ -30,11 +30,11 @@ export default function MomentsPage() {
   }, [token, tokenLoading]);
 
   if (tokenLoading || loading) {
-    return <div className="mx-auto max-w-2xl px-4 py-12 text-center text-ig-text-tertiary">{t('moments.loading')}</div>;
+    return <div className="pc-page mx-auto max-w-2xl px-4 text-center text-ig-text-tertiary">{t('moments.loading')}</div>;
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-4">
+    <div className="pc-page mx-auto max-w-2xl px-4">
       <h1 className="font-display text-xl font-black uppercase tracking-[0.06em] text-ig-text-primary">
         {t('moments.title')}
       </h1>

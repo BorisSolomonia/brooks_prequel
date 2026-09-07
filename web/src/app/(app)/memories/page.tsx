@@ -120,7 +120,7 @@ export default function MyMemoriesPage() {
   const filterLabel = tab === 'created' ? t('account.memories.filterSharedWith') : t('account.memories.filterFrom');
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
+    <div className="pc-page mx-auto max-w-3xl px-4">
       <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-black uppercase tracking-[0.04em] text-ig-text-primary">
           {t('account.memories.title')}
