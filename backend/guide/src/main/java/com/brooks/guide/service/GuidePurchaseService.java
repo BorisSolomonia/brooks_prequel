@@ -38,6 +38,7 @@ public class GuidePurchaseService {
     private final GuideService guideService;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher events;
+    private final com.brooks.guide.repository.GuideAccessSourceRepository accessSourceRepository;
 
     @Value("${app.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -243,16 +244,27 @@ public class GuidePurchaseService {
     }
 
     @Transactional
-    public void materializeTripForPurchase(UUID buyerId, UUID guideId, int guideVersionNumber, int amountCents, String currency, String provider) {
+    public void materializeTripForPurchase(UUID financialPurchaseId, UUID buyerId, UUID guideId, int guideVersionNumber, int amountCents, String currency, String provider) {
+        userService.lockForEntitlementChange(buyerId);
+        if (accessSourceRepository.findById(financialPurchaseId).filter(s -> s.getRevokedAt() != null).isPresent()) {
+            return;
+        }
         GuideVersion version = guideVersionRepository.findByGuideIdAndVersionNumber(guideId, guideVersionNumber)
                 .orElseThrow(() -> new BusinessException("Guide version snapshot is missing"));
 
         Optional<GuidePurchase> existing = guidePurchaseRepository
-                .findByBuyerIdAndGuideVersionIdAndStatus(buyerId, version.getId(), GuidePurchaseStatus.COMPLETED);
+                .findByBuyerIdAndGuideVersionId(buyerId, version.getId());
         if (existing.isPresent()) {
             // Idempotent. If the buyer had soft-removed this trip (V56) and bought again, restore
             // access instead of leaving it hidden — otherwise a paid re-purchase stays locked.
             GuidePurchase trip = existing.get();
+            if (trip.getStatus() != GuidePurchaseStatus.COMPLETED) {
+                trip.setProvider(provider);
+                trip.setStatus(GuidePurchaseStatus.COMPLETED);
+                if (trip.getGuideSnapshot() == null) trip.setGuideSnapshot(version.getSnapshot());
+                if (trip.getItems().isEmpty()) seedTripItems(trip, parseSnapshot(version));
+            }
+            accessSourceRepository.save(new GuideAccessSource(financialPurchaseId, trip.getId()));
             if (trip.getRemovedAt() != null) {
                 trip.setRemovedAt(null);
                 guidePurchaseRepository.save(trip);
@@ -278,6 +290,26 @@ public class GuidePurchaseService {
         purchase = guidePurchaseRepository.save(purchase);
 
         seedTripItems(purchase, parseSnapshot(version));
+        accessSourceRepository.save(new GuideAccessSource(financialPurchaseId, purchase.getId()));
+    }
+
+    @Transactional
+    public void revokeFinancialAccess(UUID financialPurchaseId, UUID buyerId) {
+        userService.lockForEntitlementChange(buyerId);
+        accessSourceRepository.findById(financialPurchaseId).ifPresent(source -> {
+            if (source.getRevokedAt() == null) {
+                source.setRevokedAt(Instant.now());
+                accessSourceRepository.saveAndFlush(source);
+            }
+            GuidePurchase trip = guidePurchaseRepository.findByIdAndBuyerId(source.getGuidePurchaseId(), buyerId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Trip", source.getGuidePurchaseId()));
+            // Gift/free/creator access is independent of the refunded payment.
+            if ("bog_ipay".equals(trip.getProvider())
+                    && !accessSourceRepository.existsByGuidePurchaseIdAndRevokedAtIsNull(trip.getId())) {
+                trip.setStatus(GuidePurchaseStatus.CANCELED);
+                guidePurchaseRepository.save(trip);
+            }
+        });
     }
 
     @Transactional
@@ -359,6 +391,7 @@ public class GuidePurchaseService {
         // Not findOwnedTrip — that treats a hidden trip as gone; we need to fetch it to un-hide.
         GuidePurchase purchase = guidePurchaseRepository.findByIdAndBuyerId(tripId, buyer.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trip", tripId));
+        requireActiveAccess(purchase);
         if (purchase.getRemovedAt() != null) {
             purchase.setRemovedAt(null);
             guidePurchaseRepository.save(purchase);
@@ -550,11 +583,18 @@ public class GuidePurchaseService {
     private GuidePurchase findOwnedTrip(UUID tripId, UUID buyerId) {
         GuidePurchase purchase = guidePurchaseRepository.findByIdAndBuyerId(tripId, buyerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip", tripId));
+        requireActiveAccess(purchase);
         // A removed trip is treated as gone (open/edit/calendar all 404).
         if (purchase.getRemovedAt() != null) {
             throw new ResourceNotFoundException("Trip", tripId);
         }
         return purchase;
+    }
+
+    private void requireActiveAccess(GuidePurchase purchase) {
+        if (purchase.getStatus() != GuidePurchaseStatus.COMPLETED) {
+            throw new ResourceNotFoundException("Trip", purchase.getId());
+        }
     }
 
     /** Remove a purchased guide from My Trips (soft — keeps the purchase record). */

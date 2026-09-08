@@ -25,6 +25,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
 
+    /** Serialize entitlement creation for a buyer, including the initially absent trip row. */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void lockForEntitlementChange(UUID buyerId) {
+        userRepository.findByIdForUpdate(buyerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", buyerId));
+    }
+
     private final UserRepository userRepository;
     private final AuditService auditService;
 

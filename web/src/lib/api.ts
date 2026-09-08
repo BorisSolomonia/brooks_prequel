@@ -31,7 +31,7 @@ function clearInFlightGets(): void {
 function getRequest<T>(path: string, token?: string, options: ApiGetOptions = {}): Promise<T> {
   // A caller-owned signal usually means request ordering matters (for example,
   // map viewport fetches). Such requests must not share another caller's promise.
-  if (options.signal) {
+  if (options.signal || options.timeoutMs !== undefined) {
     return request<T>(path, { method: 'GET', token, ...options });
   }
 
@@ -100,13 +100,22 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       }, timeoutMs)
     : null;
 
-  let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
       headers,
       signal: controller.signal,
       ...rest,
     });
+    if (!response.ok) {
+      const error = await response.json().catch((error: unknown) => {
+        if (controller.signal.aborted) throw error;
+        return { detail: 'An error occurred' };
+      });
+      throw new ApiError(error.detail || `HTTP ${response.status}`, response.status);
+    }
+    if (response.status === 204) return undefined as T;
+    // Keep timeout and caller cancellation active until the body is consumed.
+    return await response.json();
   } catch (error) {
     if (timedOut) {
       throw new ApiError('Request timed out. Check your connection and try again.', 408);
@@ -119,16 +128,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     callerSignal?.removeEventListener('abort', abortFromCaller);
   }
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
-    throw new ApiError(error.detail || `HTTP ${response.status}`, response.status);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json();
 }
 
 export async function streamPost(

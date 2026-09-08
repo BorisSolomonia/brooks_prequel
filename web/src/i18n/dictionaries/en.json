@@ -1216,7 +1216,7 @@
       "tapToAllow": "Tap the button below, then choose Allow when your browser asks for location access.",
       "checkingLocation": "Checking location...",
       "allowLocationButton": "Allow location to reveal memory",
-      "distanceAway": "You are about {{distance}}m away. Come within {{radius}}m to unlock it.",
+      "distanceAway": "The approximate area is {{distance}}m away. The exact location stays hidden until you are close enough to unlock it.",
       "mediaAlt": "Memory",
       "errorMetaBrowser": "Open this link in Chrome or Safari so Brooks can verify your location.",
       "errorInsecure": "Location detection requires a secure connection. Open this link on brooksweb.uk, then try again.",

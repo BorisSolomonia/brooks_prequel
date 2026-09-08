@@ -18,6 +18,14 @@ import java.util.List;
 @Repository
 public interface PurchaseRepository extends JpaRepository<Purchase, UUID> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Purchase p WHERE p.id = :id")
+    Optional<Purchase> findByIdForUpdate(@Param("id") UUID id);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Purchase p WHERE p.bogOrderId = :orderId")
+    Optional<Purchase> findByBogOrderIdForUpdate(@Param("orderId") String orderId);
+
     Optional<Purchase> findByBogOrderId(String bogOrderId);
 
     Optional<Purchase> findByExternalOrderId(String externalOrderId);

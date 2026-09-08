@@ -84,6 +84,7 @@ class MemoryServiceTest {
         );
         ReflectionTestUtils.setField(memoryService, "unlockRadiusMeters", 100.0);
         ReflectionTestUtils.setField(memoryService, "dailyCreateLimit", 25L);
+        ReflectionTestUtils.setField(memoryService, "teaserPrecisionDegrees", 0.01);
 
         viewer = new User("viewer-subject", "viewer@example.com");
         viewer.setId(UUID.randomUUID());
@@ -259,6 +260,53 @@ class MemoryServiceTest {
         verify(memoryRepository, times(1)).countRepliesByParentIds(any());
         verify(userService, never()).findById(any());
         verify(memoryRepository, never()).countByParentMemoryIdAndDeletedAtIsNull(any());
+    }
+
+    @Test
+    void lockedMapPinExposesOnlyCoarseCoordinates() {
+        when(userService.findByAuth0Subject("viewer-subject")).thenReturn(viewer);
+        when(memorySchemaHealthService.isMemorySchemaReady()).thenReturn(true);
+        when(memoryRepository.findVisibleMapMemoryIds(eq(viewer.getId()), any(Double.class), any(Double.class), any(Double.class), any(Double.class)))
+                .thenReturn(List.of(memory.getId()));
+        when(memoryRepository.findAllWithMediaByIdIn(any())).thenReturn(List.of(memory));
+        when(memoryGrantRepository.findActiveGrantedMemoryIdsForBeneficiary(any(), any())).thenReturn(List.of(memory.getId()));
+        when(userService.findAllByIds(any())).thenReturn(Map.of(creator.getId(), creator));
+        var pin = memoryService.getMapMemories("viewer-subject", 42, 41, 45, 44).getMemories().getFirst();
+        assertFalse(pin.isRevealed());
+        assertNull(pin.getTextPreview());
+        assertEquals(41.71, pin.getLatitude(), 0.000001);
+        assertEquals(44.77, pin.getLongitude(), 0.000001);
+    }
+
+    @Test
+    void lockedListAndGeofenceDoNotExposeExactLocation() {
+        when(userService.findByAuth0Subject("viewer-subject")).thenReturn(viewer);
+        when(memoryRepository.findMemoriesSharedWithMe(viewer.getId())).thenReturn(List.of(memory));
+        when(userService.findAllByIds(any())).thenReturn(Map.of(creator.getId(), creator));
+        var result = memoryService.listMemoriesSharedWithMe("viewer-subject").getFirst();
+        assertFalse(result.isRevealed());
+        assertNull(result.getTextContent());
+        assertEquals(41.71, result.getLatitude(), 0.000001);
+        assertEquals(44.77, result.getLongitude(), 0.000001);
+        when(userService.findById(creator.getId())).thenReturn(creator);
+        var fence = memoryService.listMyGeofences("viewer-subject").getFirst();
+        assertEquals(result.getLatitude(), fence.latitude());
+        assertEquals(result.getLongitude(), fence.longitude());
+        assertTrue(fence.radiusMeters() > 100);
+    }
+
+    @Test
+    void failedRevealDistanceDependsOnlyOnPublicGridPoint() {
+        when(userService.findByAuth0Subject("viewer-subject")).thenReturn(viewer);
+        when(shareRepository.findByTokenAndRevokedAtIsNull("share-token")).thenReturn(Optional.of(share));
+        var request = revealRequest(42.0, 45.0);
+        var first = memoryService.revealShare("viewer-subject", "share-token", request);
+        memory.setLatitude(41.706);
+        memory.setLongitude(44.772);
+        var second = memoryService.revealShare("viewer-subject", "share-token", request);
+        assertFalse(first.isRevealed());
+        assertFalse(second.isRevealed());
+        assertEquals(first.getDistanceMeters(), second.getDistanceMeters());
     }
 
     private static MemoryRevealRequest revealRequest(double latitude, double longitude) {

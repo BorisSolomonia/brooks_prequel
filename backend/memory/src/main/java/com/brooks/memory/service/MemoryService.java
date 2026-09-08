@@ -52,8 +52,8 @@ public class MemoryService {
     // Grid step (degrees) used to coarsen the coordinates exposed in the
     // unauthenticated share teaser. Must stay coarser than the unlock radius
     // above: the teaser is meant to point a recipient at the neighbourhood,
-    // never leak the exact unlock point. 0.01 deg is ~1.1km, so a replayed
-    // teaser coordinate cannot satisfy the 100m reveal check. See getShareTeaser.
+    // avoid disclosing the exact unlock point. A grid point can coincidentally
+    // fall inside the unlock radius; client GPS is not cryptographic presence proof.
     @Value("${app.memory.teaser-precision-degrees:0.01}")
     private double teaserPrecisionDegrees;
 
@@ -86,12 +86,7 @@ public class MemoryService {
         } catch (BusinessException | ResourceNotFoundException ex) {
             throw ex;
         } catch (RuntimeException ex) {
-            log.error("Failed to create memory for auth0Subject={}, latitude={}, longitude={}, mediaCount={}",
-                    auth0Subject,
-                    request.getLatitude(),
-                    request.getLongitude(),
-                    request.getMedia() == null ? 0 : request.getMedia().size(),
-                    ex);
+            log.error("Failed to create memory; exceptionType={}", ex.getClass().getSimpleName());
             throw ex;
         }
     }
@@ -257,7 +252,7 @@ public class MemoryService {
 
     /**
      * BOR-44 (Phase A): the geofences the caller's device should monitor — every
-     * memory shared WITH them, at its coordinates, with the platform unlock radius
+     * memory shared WITH them, at a coarse grid point with a notification radius
      * and the sharer's display name (for the proximity-notification copy). The
      * native client (Phase B) registers these with the OS geofencing APIs.
      */
@@ -267,9 +262,9 @@ public class MemoryService {
         return memoryRepository.findMemoriesSharedWithMe(viewer.getId()).stream()
                 .map(m -> new MemoryGeofenceResponse(
                         m.getId(),
-                        m.getLatitude(),
-                        m.getLongitude(),
-                        unlockRadiusMeters,
+                        coarsen(m.getLatitude()),
+                        coarsen(m.getLongitude()),
+                        Math.max(unlockRadiusMeters, teaserPrecisionDegrees * 157_430),
                         creatorSummary(m.getCreatorId()).displayName()))
                 .toList();
     }
@@ -333,13 +328,19 @@ public class MemoryService {
         validateBounds(north, south, east, west);
         List<Memory> memories;
         try {
-            List<UUID> memoryIds = memoryRepository.findVisibleMapMemoryIds(viewer.getId(), north, south, east, west);
+            // Quantize the query too: otherwise repeated tiny bounding boxes become an
+            // exact-location oracle even though the returned pin is coarse.
+            double precision = coordinatePrecision();
+            List<UUID> memoryIds = memoryRepository.findVisibleMapMemoryIds(viewer.getId(),
+                    Math.min(90, Math.ceil(north / precision) * precision),
+                    Math.max(-90, Math.floor(south / precision) * precision),
+                    Math.min(180, Math.ceil(east / precision) * precision),
+                    Math.max(-180, Math.floor(west / precision) * precision));
             memories = memoryIds.isEmpty()
                     ? List.of()
                     : orderByIds(memoryRepository.findAllWithMediaByIdIn(memoryIds), memoryIds);
         } catch (RuntimeException ex) {
-            log.error("Failed to load memory map pins for viewer {} and bounds north={}, south={}, east={}, west={}",
-                    viewer.getId(), north, south, east, west, ex);
+            log.error("Failed to load memory map pins; exceptionType={}", ex.getClass().getSimpleName());
             memories = List.of();
         }
         return MemoryMapResponse.builder()
@@ -384,7 +385,7 @@ public class MemoryService {
                 .token(token)
                 .senderName(creator.displayName())
                 .senderAvatarUrl(creator.avatarUrl())
-                .placeLabel(memory.getPlaceLabel())
+                .placeLabel(null)
                 .approximateLatitude(coarsen(memory.getLatitude()))
                 .approximateLongitude(coarsen(memory.getLongitude()))
                 .available(true)
@@ -412,7 +413,7 @@ public class MemoryService {
 
         return MemoryRevealResponse.builder()
                 .revealed(revealed)
-                .distanceMeters(distance)
+                .distanceMeters(revealed ? distance : approximateDistance(request, memory))
                 .unlockRadiusMeters(unlockRadiusMeters)
                 .memory(revealed ? toResponse(memory, viewer.getId()) : null)
                 .build();
@@ -453,7 +454,7 @@ public class MemoryService {
 
         return MemoryRevealResponse.builder()
                 .revealed(revealed)
-                .distanceMeters(distance)
+                .distanceMeters(revealed ? distance : approximateDistance(request, memory))
                 .unlockRadiusMeters(unlockRadiusMeters)
                 .memory(revealed ? toResponse(memory, viewer.getId()) : null)
                 .build();
@@ -565,9 +566,9 @@ public class MemoryService {
                             .creatorDisplayName(creator.displayName())
                             .creatorAvatarUrl(creator.avatarUrl())
                             .textPreview(revealed ? preview(memory.getTextContent()) : null)
-                            .latitude(memory.getLatitude())
-                            .longitude(memory.getLongitude())
-                            .placeLabel(memory.getPlaceLabel())
+                            .latitude(revealed ? memory.getLatitude() : coarsen(memory.getLatitude()))
+                            .longitude(revealed ? memory.getLongitude() : coarsen(memory.getLongitude()))
+                            .placeLabel(revealed ? memory.getPlaceLabel() : null)
                             .visibility(memory.getVisibility())
                             .ownedByViewer(memory.getCreatorId().equals(viewerId))
                             .sharedWithViewer(grantedIds.contains(memory.getId()))
@@ -665,9 +666,9 @@ public class MemoryService {
                 .creatorDisplayName(creator.displayName())
                 .creatorAvatarUrl(creator.avatarUrl())
                 .textContent(contentVisible ? memory.getTextContent() : null)
-                .latitude(memory.getLatitude())
-                .longitude(memory.getLongitude())
-                .placeLabel(memory.getPlaceLabel())
+                .latitude(contentVisible ? memory.getLatitude() : coarsen(memory.getLatitude()))
+                .longitude(contentVisible ? memory.getLongitude() : coarsen(memory.getLongitude()))
+                .placeLabel(contentVisible ? memory.getPlaceLabel() : null)
                 .visibility(memory.getVisibility())
                 .expiresAt(memory.getExpiresAt())
                 .media(contentVisible
@@ -812,10 +813,21 @@ public class MemoryService {
      * defeating the physical-presence gate.
      */
     private double coarsen(double coordinate) {
-        if (teaserPrecisionDegrees <= 0) {
-            return coordinate;
+        double precision = coordinatePrecision();
+        return Math.round(coordinate / precision) * precision;
+    }
+
+    private double coordinatePrecision() {
+        if (!Double.isFinite(teaserPrecisionDegrees) || teaserPrecisionDegrees <= 0) {
+            throw new IllegalStateException("Memory coordinate privacy requires positive teaser precision");
         }
-        return Math.round(coordinate / teaserPrecisionDegrees) * teaserPrecisionDegrees;
+        return teaserPrecisionDegrees;
+    }
+
+    // Distance to the already-public grid point, never a precise-distance oracle for the secret point.
+    private double approximateDistance(MemoryRevealRequest request, Memory memory) {
+        return distanceMeters(request.getLatitude(), request.getLongitude(),
+                coarsen(memory.getLatitude()), coarsen(memory.getLongitude()));
     }
 
     private static double distanceMeters(double lat1, double lng1, double lat2, double lng2) {

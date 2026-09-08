@@ -5,7 +5,7 @@
 # the `brooks-postgres-backups` named volume on a fixed interval and pruning old dumps.
 #
 # SCOPE: this is ON-VM local backup — it survives container recreation (named volume) and gives
-# point-in-time restore of the last N days. It does NOT survive VM/disk loss on its own; for real
+# snapshot restores for the last N days, not continuous PITR. It does NOT survive VM/disk loss; for real
 # durability, sync /backups off-box (e.g. to GCS: `gsutil rsync /backups gs://…`) or mount a
 # managed volume. Restore: `gunzip -c <file>.sql.gz | psql -U "$PGUSER" -d "$PGDATABASE"`.
 set -eu
@@ -21,16 +21,18 @@ while true; do
   TS="$(date -u +%Y%m%dT%H%M%SZ)"
   OUT="${DIR}/${PGDATABASE}-${TS}.sql.gz"
   TMP="${OUT}.partial"
+  RAW="${OUT}.sql.partial"
   echo "[db-backup] dumping ${PGDATABASE} -> ${OUT}"
   # --no-owner/--no-privileges so the dump restores cleanly into a fresh role on any host.
-  if pg_dump --no-owner --no-privileges "${PGDATABASE}" | gzip -c > "${TMP}"; then
+  # Check each producer independently: POSIX sh pipelines only report the last exit code.
+  if pg_dump --no-owner --no-privileges "${PGDATABASE}" > "${RAW}" && gzip -c "${RAW}" > "${TMP}"; then
     mv "${TMP}" "${OUT}"
     echo "[db-backup] ok: $(du -h "${OUT}" | cut -f1) ${OUT}"
+    # Only a successful new snapshot may retire older backups.
+    find "${DIR}" -name "${PGDATABASE}-*.sql.gz" -type f -mtime "+${RETENTION_DAYS}" -print -delete || true
   else
-    echo "[db-backup] ERROR: pg_dump failed for ${PGDATABASE}" >&2
-    rm -f "${TMP}"
+    echo "[db-backup] ERROR: dump or compression failed for ${PGDATABASE}" >&2
   fi
-  # Prune dumps older than the retention window (write a .partial-free listing first).
-  find "${DIR}" -name "${PGDATABASE}-*.sql.gz" -type f -mtime "+${RETENTION_DAYS}" -print -delete || true
+  rm -f "${RAW}" "${TMP}"
   sleep "${INTERVAL}"
 done

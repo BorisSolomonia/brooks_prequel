@@ -57,6 +57,7 @@ public class PurchaseService {
     // purchase deterministically unlocks even if the AFTER_COMMIT event listener was lost/failed.
     private final com.brooks.guide.service.GuidePurchaseService guidePurchaseService;
     private final FxRateService fxRateService;
+    private final PurchaseFulfillmentService fulfillmentService;
 
     public PurchaseService(
             PurchaseRepository purchaseRepository,
@@ -71,7 +72,8 @@ public class PurchaseService {
             PurchaseAuditWriter auditWriter,
             CreatorEarningsRecorder earningsRecorder,
             com.brooks.guide.service.GuidePurchaseService guidePurchaseService,
-            FxRateService fxRateService
+            FxRateService fxRateService,
+            PurchaseFulfillmentService fulfillmentService
     ) {
         this.purchaseRepository = purchaseRepository;
         this.guideRepository = guideRepository;
@@ -86,6 +88,7 @@ public class PurchaseService {
         this.followRepository = followRepository;
         this.guidePurchaseService = guidePurchaseService;
         this.fxRateService = fxRateService;
+        this.fulfillmentService = fulfillmentService;
     }
 
     /**
@@ -160,13 +163,7 @@ public class PurchaseService {
     /** Idempotently (re)create the access trip for a COMPLETED purchase. */
     private void ensureTripMaterialized(Purchase purchase) {
         try {
-            guidePurchaseService.materializeTripForPurchase(
-                    purchase.getBuyerId(),
-                    purchase.getGuideId(),
-                    purchase.getGuideVersionNumber(),
-                    purchase.getPriceCentsPaid(),
-                    purchase.getCurrency(),
-                    "bog_ipay");
+            fulfillmentService.fulfill(purchase.getId());
         } catch (Exception e) {
             log.error("Failed to ensure trip for completed purchase {}", purchase.getId(), e);
         }
@@ -413,13 +410,14 @@ public class PurchaseService {
 
     @Transactional
     public void handleCheckoutRefunded(String bogOrderId, String refundAmount, boolean partial) {
-        Purchase purchase = purchaseRepository.findByBogOrderId(bogOrderId).orElse(null);
+        Purchase purchase = purchaseRepository.findByBogOrderIdForUpdate(bogOrderId).orElse(null);
         if (purchase == null) {
             log.warn("BOG iPay refund callback for unknown order: {}", bogOrderId);
             return;
         }
         if (!partial) {
             purchase.setStatus(PurchaseStatus.REFUNDED);
+            guidePurchaseService.revokeFinancialAccess(purchase.getId(), purchase.getBuyerId());
         }
         auditWriter.record(purchase.getId(),
                 partial ? "CHECKOUT_REFUNDED_PARTIALLY" : "CHECKOUT_REFUNDED",

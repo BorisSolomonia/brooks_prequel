@@ -1,7 +1,7 @@
-package com.brooks.guide.event;
+package com.brooks.purchase.event;
 
 import com.brooks.common.event.PurchaseCompletedEvent;
-import com.brooks.guide.service.GuidePurchaseService;
+import com.brooks.purchase.service.PurchaseFulfillmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,19 +13,12 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Slf4j
 public class GuidePurchaseEventListener {
 
-    private final GuidePurchaseService guidePurchaseService;
+    private final PurchaseFulfillmentService fulfillmentService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPurchaseCompleted(PurchaseCompletedEvent event) {
         try {
-            guidePurchaseService.materializeTripForPurchase(
-                    event.buyerId(),
-                    event.guideId(),
-                    event.guideVersionNumber(),
-                    event.amountCents(),
-                    event.currency(),
-                    "bog_ipay"
-            );
+            fulfillmentService.fulfill(event.purchaseId());
         } catch (Exception e) {
             log.error("Failed to materialize trip for purchase {}", event.purchaseId(), e);
         }

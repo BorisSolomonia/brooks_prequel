@@ -1751,7 +1751,7 @@ export default function MapsExperience({
         refreshMemories(true);
       } else {
         setPageError(
-          `You are about ${Math.round(res.distanceMeters)}m away. Come within ${Math.round(res.unlockRadiusMeters)}m to unlock it.`,
+          `The approximate area is ${Math.round(res.distanceMeters)}m away. The exact location stays hidden until you are close enough to unlock it.`,
         );
       }
     } catch (error) {

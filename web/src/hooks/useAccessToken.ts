@@ -17,6 +17,7 @@ type TokenFetchResult = {
 let cachedToken: string | null = null;
 let cacheExpiry = 0;
 let inFlight: Promise<TokenFetchResult> | null = null;
+let generation = 0;
 
 // Read the JWT `exp` claim and use it for cache expiry. This avoids the previous 5-minute
 // fixed TTL, which forced every component to re-fetch /api/auth/token 12 times per hour.
@@ -41,6 +42,7 @@ function expiryFromJwt(token: string): number {
 // serving a stale access token through the logout transition (defends against
 // a silent re-auth even if a future logout path stops doing a full reload).
 export function clearAccessTokenCache(): void {
+  generation++;
   cachedToken = null;
   cacheExpiry = 0;
   inFlight = null;
@@ -51,8 +53,10 @@ function getToken(): Promise<TokenFetchResult> {
     return Promise.resolve({ token: cachedToken, error: null });
   }
   if (!inFlight) {
-    inFlight = fetch('/api/auth/token')
+    const requestGeneration = generation;
+    const pending = fetch('/api/auth/token')
       .then(async (res) => {
+        if (requestGeneration !== generation) return { token: null, error: null };
         if (res.status === 401) {
           cachedToken = null;
           cacheExpiry = 0;
@@ -62,11 +66,13 @@ function getToken(): Promise<TokenFetchResult> {
           throw new Error(`Token endpoint failed: HTTP ${res.status}`);
         }
         const data = await res.json();
+        if (requestGeneration !== generation) return { token: null, error: null };
         cachedToken = data.accessToken ?? null;
         cacheExpiry = cachedToken ? expiryFromJwt(cachedToken) : 0;
         return { token: cachedToken, error: null };
       })
       .catch((err) => {
+        if (requestGeneration !== generation) return { token: null, error: null };
         cachedToken = null;
         cacheExpiry = 0;
         const message = err instanceof Error ? err.message : 'Failed to fetch access token';
@@ -74,8 +80,9 @@ function getToken(): Promise<TokenFetchResult> {
         return { token: null, error: message };
       })
       .finally(() => {
-        inFlight = null;
+        if (inFlight === pending) inFlight = null;
       });
+    inFlight = pending;
   }
   return inFlight;
 }
@@ -87,13 +94,15 @@ export function useAccessToken(): UseAccessTokenResult {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (cachedToken && Date.now() < cacheExpiry) return;
+    let active = true;
     getToken()
       .then((result) => {
+        if (!active) return;
         setToken(result.token);
         setError(result.error);
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
   return { token, loading, error };

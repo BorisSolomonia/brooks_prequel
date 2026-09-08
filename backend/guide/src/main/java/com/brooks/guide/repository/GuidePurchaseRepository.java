@@ -13,6 +13,8 @@ import java.util.UUID;
 @Repository
 public interface GuidePurchaseRepository extends JpaRepository<GuidePurchase, UUID> {
 
+    Optional<GuidePurchase> findByBuyerIdAndGuideVersionId(UUID buyerId, UUID guideVersionId);
+
     List<GuidePurchase> findByBuyerIdAndStatusOrderByCreatedAtDesc(UUID buyerId, GuidePurchaseStatus status);
 
     Optional<GuidePurchase> findByIdAndBuyerId(UUID id, UUID buyerId);
